@@ -1,0 +1,6 @@
+# Copy to .dev.vars for local development. Never commit .dev.vars.
+AUTH_SECRET=local-development-secret-change-me
+DEV_MODE=true
+PUSH_MODE=log
+# Android emulators reach the host at 10.0.2.2. Use your LAN address for a physical device.
+PUBLIC_ORIGIN=http://10.0.2.2:8787

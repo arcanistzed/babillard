@@ -1,0 +1,45 @@
+{
+  "$schema": "./node_modules/wrangler/config-schema.json",
+  "name": "ideas-match-api",
+  "main": "src/index.ts",
+  "compatibility_date": "2026-11-04",
+  "compatibility_flags": ["nodejs_compat"],
+  "observability": {
+    "enabled": true,
+    "traces": { "enabled": true }
+  },
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "ideas-match",
+      // Replace with the id printed by `wrangler d1 create ideas-match` before deploying.
+      "database_id": "00000000-0000-0000-0000-000000000000",
+      "migrations_dir": "drizzle"
+    }
+  ],
+  "r2_buckets": [{ "binding": "AVATARS", "bucket_name": "ideas-match-avatars" }],
+  "durable_objects": {
+    "bindings": [
+      { "name": "CHAT_ROOM", "class_name": "ChatRoom" },
+      { "name": "COHORT", "class_name": "Cohort" }
+    ]
+  },
+  "migrations": [{ "tag": "v1", "new_sqlite_classes": ["ChatRoom", "Cohort"] }],
+  "send_email": [{ "name": "EMAIL" }],
+  "triggers": { "crons": ["*/5 * * * *"] },
+  "vars": {
+    "PUBLIC_ORIGIN": "https://api.ideasmatch.example",
+    "EMAIL_FROM": "hello@ideasmatch.example",
+    "PUSH_MODE": "expo",
+    "DEV_MODE": "false",
+    "ACCESS_TEAM_DOMAIN": "",
+    "ACCESS_AUD": "",
+    "APPLE_APP_ID": "",
+    "ANDROID_PACKAGE": "app.ideasmatch",
+    "ANDROID_CERT_SHA256": "",
+    "NUDGE_AFTER_MS": "",
+    "MATCH_EXPIRY_MS": "",
+    "MEETUP_REMINDER_LEAD_MS": "",
+    "MEETUP_CHECKIN_DELAY_MS": ""
+  }
+}

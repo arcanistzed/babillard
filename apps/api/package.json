@@ -1,0 +1,32 @@
+{
+  "name": "@ideas-match/api",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "wrangler dev --test-scheduled",
+    "deploy": "wrangler deploy",
+    "types": "wrangler types --strict-vars=false",
+    "typecheck": "tsc --noEmit && tsc --noEmit -p tsconfig.node.json",
+    "db:generate": "drizzle-kit generate",
+    "db:migrate:local": "wrangler d1 migrations apply ideas-match --local",
+    "db:migrate:remote": "wrangler d1 migrations apply ideas-match --remote",
+    "seed:sql": "node scripts/gen-seed-sql.ts",
+    "seed:local": "node scripts/gen-seed-sql.ts && wrangler d1 execute ideas-match --local --file seed/seed.sql",
+    "seed:dev": "node scripts/seed-dev.ts",
+    "test:e2e": "vitest run --config vitest.e2e.config.ts"
+  },
+  "dependencies": {
+    "@ideas-match/shared": "workspace:*",
+    "drizzle-orm": "^0.45.4",
+    "hono": "^4.13.16",
+    "zod": "^4.6.7"
+  },
+  "devDependencies": {
+    "@types/node": "^24",
+    "drizzle-kit": "^0.31.11",
+    "typescript": "~5.9.3",
+    "vitest": "^5.1.0",
+    "wrangler": "^4.157.0"
+  }
+}

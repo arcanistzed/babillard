@@ -1,0 +1,79 @@
+// Starts real local Workers with a throwaway database, then tears them down.
+// One runs in dev mode. The other runs with production-like settings, so the
+// tests can prove the protections that dev mode turns off.
+import { spawn, execFileSync, type ChildProcess } from "node:child_process";
+import { createWriteStream, mkdirSync, rmSync } from "node:fs";
+import { dirname, join } from "node:path";
+import { fileURLToPath } from "node:url";
+
+const apiDir = join(dirname(fileURLToPath(import.meta.url)), "..");
+const persist = ".wrangler/e2e";
+const wrangler = join(apiDir, "../../node_modules/.bin/wrangler");
+export const DEV_PORT = 8799;
+export const PROD_PORT = 8798;
+
+function runWrangler(args: string[]): void {
+  execFileSync(wrangler, args, { cwd: apiDir, stdio: "pipe", env: { ...process.env, CI: "true", WRANGLER_SEND_METRICS: "false" } });
+}
+
+function startServer(port: number, logName: string, persistDir: string, vars: Record<string, string>): ChildProcess {
+  const log = createWriteStream(join(apiDir, persist, logName));
+  const varFlags = Object.entries(vars).flatMap(([key, value]) => ["--var", `${key}:${value}`]);
+  const child = spawn(
+    wrangler,
+    ["dev", "--port", String(port), "--inspector-port", String(port + 1000), "--persist-to", persistDir, "--test-scheduled", "--show-interactive-dev-session=false", "--log-level", "log", ...varFlags],
+    { cwd: apiDir, stdio: ["ignore", "pipe", "pipe"], env: { ...process.env, CI: "true", WRANGLER_SEND_METRICS: "false" } },
+  );
+  child.stdout?.pipe(log);
+  child.stderr?.pipe(log);
+  return child;
+}
+
+async function waitForHealthy(port: number): Promise<void> {
+  const deadline = Date.now() + 120_000;
+  while (Date.now() < deadline) {
+    try {
+      const response = await fetch(`http://localhost:${port}/healthz`);
+      if (response.ok) return;
+    } catch {
+      // Not listening yet.
+    }
+    await new Promise((resolve) => setTimeout(resolve, 500));
+  }
+  throw new Error(`Worker on port ${port} did not become healthy`);
+}
+
+export default async function setup() {
+  rmSync(join(apiDir, persist), { recursive: true, force: true });
+  mkdirSync(join(apiDir, persist), { recursive: true });
+
+  const devDb = join(persist, "dev");
+  const prodDb = join(persist, "prod");
+  execFileSync("node", ["scripts/gen-seed-sql.ts"], { cwd: apiDir, stdio: "pipe" });
+  for (const dir of [devDb, prodDb]) {
+    runWrangler(["d1", "migrations", "apply", "ideas-match", "--local", "--persist-to", dir]);
+    runWrangler(["d1", "execute", "ideas-match", "--local", "--persist-to", dir, "--file", "seed/seed.sql"]);
+  }
+
+  const dev = startServer(DEV_PORT, "dev.log", devDb, {
+    AUTH_SECRET: "e2e-secret",
+    DEV_MODE: "true",
+    PUSH_MODE: "log",
+    PUBLIC_ORIGIN: `http://localhost:${DEV_PORT}`,
+    NUDGE_AFTER_MS: "2000",
+    MATCH_EXPIRY_MS: "4000",
+    MEETUP_CHECKIN_DELAY_MS: "500",
+  });
+  const prod = startServer(PROD_PORT, "prod.log", prodDb, {
+    AUTH_SECRET: "e2e-secret",
+    DEV_MODE: "false",
+    PUSH_MODE: "log",
+    PUBLIC_ORIGIN: `http://localhost:${PROD_PORT}`,
+  });
+  await Promise.all([waitForHealthy(DEV_PORT), waitForHealthy(PROD_PORT)]);
+
+  return () => {
+    dev.kill("SIGTERM");
+    prod.kill("SIGTERM");
+  };
+}

@@ -1,0 +1,17 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "api",
+      "runtimeExecutable": "bash",
+      "runtimeArgs": ["-c", "cd apps/api && ../../node_modules/.bin/wrangler dev --test-scheduled --port 8787 --ip 0.0.0.0 --show-interactive-dev-session=false"],
+      "port": 8787
+    },
+    {
+      "name": "metro",
+      "runtimeExecutable": "bash",
+      "runtimeArgs": ["-c", "cd apps/mobile && ../../node_modules/.bin/expo start --dev-client --port 8082"],
+      "port": 8082
+    }
+  ]
+}

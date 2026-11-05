@@ -1,0 +1,13 @@
+node_modules/
+dist/
+.wrangler/
+.dev.vars
+.expo/
+*.log
+.DS_Store
+apps/mobile/android/
+apps/mobile/ios/
+expo-env.d.ts
+coverage/
+apps/api/seed/seed.sql
+apps/mobile/.env

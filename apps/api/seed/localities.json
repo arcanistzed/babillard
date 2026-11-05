@@ -1,0 +1,18 @@
+[
+  { "id": "boston", "name": "Boston", "kind": "city", "parentId": null },
+  { "id": "harvard", "name": "Harvard", "kind": "campus", "parentId": "boston" },
+  { "id": "mit", "name": "MIT", "kind": "campus", "parentId": "boston" },
+  { "id": "boston-university", "name": "Boston University", "kind": "campus", "parentId": "boston" },
+  { "id": "new-york", "name": "New York", "kind": "city", "parentId": null },
+  { "id": "columbia", "name": "Columbia", "kind": "campus", "parentId": "new-york" },
+  { "id": "nyu", "name": "NYU", "kind": "campus", "parentId": "new-york" },
+  { "id": "san-francisco", "name": "San Francisco Bay Area", "kind": "city", "parentId": null },
+  { "id": "stanford", "name": "Stanford", "kind": "campus", "parentId": "san-francisco" },
+  { "id": "berkeley", "name": "UC Berkeley", "kind": "campus", "parentId": "san-francisco" },
+  { "id": "london", "name": "London", "kind": "city", "parentId": null },
+  { "id": "ucl", "name": "UCL", "kind": "campus", "parentId": "london" },
+  { "id": "lse", "name": "LSE", "kind": "campus", "parentId": "london" },
+  { "id": "toronto", "name": "Toronto", "kind": "city", "parentId": null },
+  { "id": "u-of-t", "name": "University of Toronto", "kind": "campus", "parentId": "toronto" },
+  { "id": "york-university", "name": "York University", "kind": "campus", "parentId": "toronto" }
+]

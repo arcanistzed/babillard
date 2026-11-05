@@ -1,0 +1,52 @@
+import type { ExpoConfig } from "expo/config";
+
+// The API domain hosts the Universal Link and App Link association files.
+const apiHost = new URL(process.env.EXPO_PUBLIC_API_URL ?? "https://api.ideasmatch.example").hostname;
+const isRealHost = !["localhost", "10.0.2.2", "127.0.0.1"].includes(apiHost);
+
+const config: ExpoConfig = {
+  name: "Ideas Match",
+  slug: "ideas-match",
+  version: "0.1.0",
+  orientation: "portrait",
+  scheme: "ideasmatch",
+  userInterfaceStyle: "automatic",
+  icon: "./assets/icon.png",
+  ios: {
+    bundleIdentifier: "app.ideasmatch",
+    supportsTablet: false,
+    ...(isRealHost ? { associatedDomains: [`applinks:${apiHost}`] } : {}),
+  },
+  android: {
+    package: "app.ideasmatch",
+    softwareKeyboardLayoutMode: "resize",
+    adaptiveIcon: { foregroundImage: "./assets/adaptive-icon.png", backgroundColor: "#FF5FAE" },
+    ...(isRealHost
+      ? {
+          intentFilters: [
+            {
+              action: "VIEW",
+              autoVerify: true,
+              data: [{ scheme: "https", host: apiHost, pathPrefix: "/auth/link" }],
+              category: ["BROWSABLE", "DEFAULT"],
+            },
+          ],
+        }
+      : {}),
+  },
+  plugins: [
+    "expo-router",
+    ["expo-splash-screen", { image: "./assets/splash.png", imageWidth: 200, backgroundColor: "#FF5FAE" }],
+    "expo-secure-store",
+    "expo-font",
+    "expo-notifications",
+    ["expo-calendar", { calendarPermission: "Ideas Match adds meetups you confirm to your calendar." }],
+    ["expo-image-picker", { photosPermission: "Ideas Match uses a photo you choose for your profile." }],
+  ],
+  extra: {
+    // Set this to your EAS project id so push tokens can be issued.
+    eas: { projectId: process.env.EAS_PROJECT_ID },
+  },
+};
+
+export default config;
