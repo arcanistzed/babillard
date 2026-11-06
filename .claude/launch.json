@@ -4,13 +4,37 @@
     {
       "name": "api",
       "runtimeExecutable": "bash",
-      "runtimeArgs": ["-c", "cd apps/api && ../../node_modules/.bin/wrangler dev --test-scheduled --port 8787 --ip 0.0.0.0 --show-interactive-dev-session=false"],
+      "runtimeArgs": [
+        "-c",
+        "cd apps/api && ../../node_modules/.bin/wrangler dev --test-scheduled --port 8787 --ip 0.0.0.0 --show-interactive-dev-session=false"
+      ],
       "port": 8787
     },
     {
       "name": "metro",
       "runtimeExecutable": "bash",
-      "runtimeArgs": ["-c", "cd apps/mobile && ../../node_modules/.bin/expo start --dev-client --port 8082"],
+      "runtimeArgs": [
+        "-c",
+        "cd apps/mobile && ../../node_modules/.bin/expo start --dev-client --port 8082"
+      ],
+      "port": 8082
+    },
+    {
+      "name": "api-device",
+      "runtimeExecutable": "bash",
+      "runtimeArgs": [
+        "-c",
+        "cd apps/api && ../../node_modules/.bin/wrangler dev --test-scheduled --port 8787 --show-interactive-dev-session=false --var PUBLIC_ORIGIN:http://localhost:8787"
+      ],
+      "port": 8787
+    },
+    {
+      "name": "metro-device",
+      "runtimeExecutable": "bash",
+      "runtimeArgs": [
+        "-c",
+        "cd apps/mobile && EXPO_PUBLIC_API_URL=http://localhost:8787 ../../node_modules/.bin/expo start --dev-client --port 8082"
+      ],
       "port": 8082
     }
   ]
