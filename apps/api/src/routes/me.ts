@@ -1,5 +1,5 @@
-import { isAdult, onboardingSchema, profileSchema, pushTokenSchema, type Locality, type Me } from "@ideas-match/shared";
-import { and, eq, inArray, or } from "drizzle-orm";
+import { isAdult, locationSchema, onboardingSchema, profileSchema, pushTokenSchema, type Locality, type Me } from "@ideas-match/shared";
+import { and, desc, eq, inArray, or } from "drizzle-orm";
 import { Hono } from "hono";
 import { getDb, schema } from "../db";
 import { avatarUrl } from "../lib/config";
@@ -9,6 +9,20 @@ import { requireAuth } from "../middleware";
 import type { AppEnv, UserRow } from "../types";
 
 const MAX_AVATAR_BYTES = 2 * 1024 * 1024;
+
+/** Confirms the city exists and the campus belongs to it. */
+async function requireLocation(db: ReturnType<typeof getDb>, cityId: string, campusId: string | null) {
+  const [city] = await db.select().from(schema.localities).where(and(eq(schema.localities.id, cityId), eq(schema.localities.kind, "city")));
+  if (!city) throw fail(400, "unknown_city");
+  if (campusId) {
+    const [campus] = await db
+      .select()
+      .from(schema.localities)
+      .where(and(eq(schema.localities.id, campusId), eq(schema.localities.kind, "campus"), eq(schema.localities.parentId, city.id)));
+    if (!campus) throw fail(400, "unknown_campus");
+  }
+  return city;
+}
 
 export async function loadMe(env: Env, user: UserRow): Promise<Me> {
   const [profile] = await getDb(env).select().from(schema.profiles).where(eq(schema.profiles.userId, user.id));
@@ -49,7 +63,7 @@ me.use("*", requireAuth);
 me.get("/", async (c) => c.json(await loadMe(c.env, c.get("user"))));
 
 me.get("/localities", async (c) => {
-  const rows: Locality[] = await getDb(c.env).select().from(schema.localities);
+  const rows: Locality[] = await getDb(c.env).select().from(schema.localities).orderBy(desc(schema.localities.population));
   return c.json(rows);
 });
 
@@ -61,15 +75,7 @@ me.put("/onboarding", async (c) => {
   if (!isAdult(input.dob)) throw fail(403, "under_age");
 
   const db = getDb(c.env);
-  const [city] = await db.select().from(schema.localities).where(and(eq(schema.localities.id, input.cityId), eq(schema.localities.kind, "city")));
-  if (!city) throw fail(400, "unknown_city");
-  if (input.campusId) {
-    const [campus] = await db
-      .select()
-      .from(schema.localities)
-      .where(and(eq(schema.localities.id, input.campusId), eq(schema.localities.kind, "campus"), eq(schema.localities.parentId, city.id)));
-    if (!campus) throw fail(400, "unknown_campus");
-  }
+  const city = await requireLocation(db, input.cityId, input.campusId);
 
   const profile = { displayName: input.displayName, bio: input.bio, role: input.role, fields: input.fields, lookingFor: input.lookingFor };
   await db.batch([
@@ -86,6 +92,17 @@ me.put("/profile", async (c) => {
   const input = await parseJson(c, profileSchema);
   await getDb(c.env).update(schema.profiles).set(input).where(eq(schema.profiles.userId, user.id));
   return c.json(await loadMe(c.env, user));
+});
+
+/** People move, or may have picked somewhere close before their city was listed. */
+me.put("/location", async (c) => {
+  const user = c.get("user");
+  if (!user.onboardedAt) throw fail(403, "onboarding_required");
+  const input = await parseJson(c, locationSchema);
+  const db = getDb(c.env);
+  await requireLocation(db, input.cityId, input.campusId);
+  const [updated] = await db.update(schema.users).set({ cityId: input.cityId, campusId: input.campusId }).where(eq(schema.users.id, user.id)).returning();
+  return c.json(await loadMe(c.env, updated!));
 });
 
 /** The app resizes before uploading, since Workers cannot resize images without an extra product. */

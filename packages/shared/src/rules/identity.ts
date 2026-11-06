@@ -13,16 +13,16 @@ export function isAdult(dob: string, now: Date = new Date()): boolean {
 
 const INSTITUTION_SUFFIXES = [".edu", ".ac.uk", ".ac.nz", ".ac.jp", ".ac.kr", ".ac.za", ".ac.in", ".ac.il", ".edu.au", ".edu.cn", ".edu.sg", ".edu.hk"];
 const INSTITUTION_DOMAINS = [
-  "utoronto.ca",
-  "mcgill.ca",
-  "ubc.ca",
-  "ethz.ch",
-  "epfl.ch",
-  "tum.de",
-  "lmu.de",
-  "sciencespo.fr",
-  "uva.nl",
-  "ku.dk",
+  // Canada
+  "uottawa.ca", "carleton.ca", "utoronto.ca", "yorku.ca", "torontomu.ca", "ryerson.ca", "ocadu.ca", "ontariotechu.ca",
+  "uwaterloo.ca", "wlu.ca", "mcmaster.ca", "queensu.ca", "uwo.ca", "uoguelph.ca", "brocku.ca", "trentu.ca", "uwindsor.ca",
+  "laurentian.ca", "lakeheadu.ca", "nipissingu.ca", "algomau.ca", "mcgill.ca", "umontreal.ca", "concordia.ca", "uqam.ca",
+  "ulaval.ca", "usherbrooke.ca", "ubishops.ca", "polymtl.ca", "etsmtl.ca", "hec.ca", "uqo.ca", "uqtr.ca", "uqac.ca", "ubc.ca", "sfu.ca", "uvic.ca",
+  "unbc.ca", "tru.ca", "viu.ca", "ucalgary.ca", "ualberta.ca", "mtroyal.ca", "macewan.ca", "uleth.ca", "athabascau.ca",
+  "umanitoba.ca", "uwinnipeg.ca", "brandonu.ca", "usask.ca", "uregina.ca", "dal.ca", "smu.ca", "acadiau.ca", "stfx.ca",
+  "unb.ca", "mta.ca", "umoncton.ca", "upei.ca", "mun.ca",
+  // Elsewhere
+  "ethz.ch", "epfl.ch", "tum.de", "lmu.de", "sciencespo.fr", "uva.nl", "ku.dk",
 ];
 
 /** Returns the institution domain for an academic email, or null. A verified login proves control of the address. */

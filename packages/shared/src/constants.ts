@@ -38,7 +38,7 @@ export const LOOKING_FOR_LABELS: Record<LookingFor, string> = {
   learning: "Learning",
   networking: "Networking",
   friends: "Friends",
-  more_than_friends: "More than friends",
+  more_than_friends: "Open to dating",
   research: "Research collaboration",
   reading_group: "Reading group",
   debate: "Debate",

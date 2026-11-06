@@ -46,7 +46,7 @@ export default function Report() {
     <KeyboardScreen style={styles.screen}>
       <ScrollView contentContainerStyle={styles.body} keyboardShouldPersistTaps="handled">
         <T variant="title">What's wrong with {params.name}?</T>
-        <T muted>{params.name} won't be told you reported them. Someone reviews every report.</T>
+        <T muted>{params.name} won't be told.</T>
         <ChipRow>
           {REPORT_REASONS.map((value) => (
             <Chip key={value} label={REASON_LABELS[value]} selected={reason === value} onPress={() => setReason(value)} />

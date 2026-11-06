@@ -5,10 +5,9 @@ import { fonts, flyerInk } from "@/theme";
 const STANCE_LABELS: Record<Stance, string> = { for: "For", against: "Against", unsure: "Not sure" };
 
 function nearbyLine(count: number): string {
-  if (count === 0) return "Nobody nearby yet. You'd be the first.";
-  if (count < GROUP_MIN_SIZE - 1) return `${count} nearby so far. A group opens at ${GROUP_MIN_SIZE}.`;
+  if (count === 0) return "Nobody nearby yet";
   if (count === GROUP_MIN_SIZE - 1) return `${count} nearby. You'd open the group.`;
-  return `${count} nearby are in.`;
+  return `${count} nearby`;
 }
 
 /**
@@ -61,7 +60,7 @@ export function Flyer({ topic, stance, onStance, isTop = true }: { topic: TopicC
 
         {isQuestion ? (
           <View style={styles.stances}>
-            <Text style={[styles.stancePrompt, { color: fg }]}>Where do you lean? Only your group's overall spread is shown.</Text>
+            <Text style={[styles.stancePrompt, { color: fg }]}>Where do you lean? Your group only sees totals.</Text>
             <View style={styles.stanceRow}>
               {(Object.keys(STANCE_LABELS) as Stance[]).map((value) => {
                 const selected = stance === value;
@@ -82,7 +81,7 @@ export function Flyer({ topic, stance, onStance, isTop = true }: { topic: TopicC
           </View>
         ) : null}
 
-        {topic.pending ? <Text style={[styles.nearby, { color: fg }]}>Only you can see this until it's reviewed.</Text> : <Text style={[styles.nearby, { color: fg }]}>{nearbyLine(topic.nearbyCount)}</Text>}
+        {topic.pending ? <Text style={[styles.nearby, { color: fg }]}>In review</Text> : <Text style={[styles.nearby, { color: fg }]}>{nearbyLine(topic.nearbyCount)}</Text>}
       </View>
       {/* The card underneath keeps its tabs hidden, or they'd show through the top card's torn ones. */}
       <View style={isTop ? null : styles.hidden}>

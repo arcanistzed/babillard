@@ -1,10 +1,11 @@
-import { FIELDS, FIELD_LABELS, LOOKING_FOR, LOOKING_FOR_LABELS, ROLES, ROLE_LABELS, isAdult, type Field as FieldName, type Locality, type LookingFor, type Me, type Role } from "@ideas-match/shared";
-import { useQuery } from "@tanstack/react-query";
+import { FIELDS, FIELD_LABELS, ROLES, ROLE_LABELS, isAdult, type Field as FieldName, type LookingFor, type Me, type Role } from "@ideas-match/shared";
 import { useState } from "react";
 import { ScrollView, StyleSheet, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { api, friendlyError, uploadAvatar } from "@/api";
 import { useAuth } from "@/auth";
+import { CityPicker } from "@/components/CityPicker";
+import { LookingForPicker } from "@/components/LookingForPicker";
 import { PhotoPicker, pickAndResizePhoto } from "@/components/PhotoPicker";
 import { Button, Chip, ChipRow, ErrorText, Field, T, KeyboardScreen } from "@/ui";
 
@@ -34,10 +35,6 @@ export default function Onboard() {
   const [photoUri, setPhotoUri] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
-
-  const localities = useQuery({ queryKey: ["localities"], queryFn: () => api.get<Locality[]>("/me/localities") });
-  const cities = localities.data?.filter((item) => item.kind === "city") ?? [];
-  const campuses = localities.data?.filter((item) => item.kind === "campus" && item.parentId === cityId) ?? [];
 
   const dobComplete = /^\d{4}-\d{2}-\d{2}$/.test(dob);
   const dobError = dobComplete && !isAdult(dob) ? "Ideas Match is for people 18 and over." : null;
@@ -83,7 +80,7 @@ export default function Onboard() {
                 error={dobError}
               />
               <T variant="small" muted>
-                You need to be 18 to join. Nobody else sees your date of birth.
+                You must be 18 or older. This stays private.
               </T>
             </>
           ) : null}
@@ -108,55 +105,28 @@ export default function Onboard() {
           {step === 2 ? (
             <>
               <T variant="title">What are you looking for?</T>
-              <T muted>Pick as many as you like. You can change this later.</T>
-              <ChipRow>
-                {LOOKING_FOR.map((value) => (
-                  <Chip key={value} label={LOOKING_FOR_LABELS[value]} selected={lookingFor.includes(value)} onPress={() => setLookingFor(toggle(lookingFor, value))} />
-                ))}
-              </ChipRow>
-              {lookingFor.includes("more_than_friends") ? (
-                <T variant="small" muted>
-                  Only people who also picked this will see it on your profile.
-                </T>
-              ) : null}
+              <LookingForPicker value={lookingFor} onChange={setLookingFor} />
             </>
           ) : null}
 
           {step === 3 ? (
             <>
               <T variant="title">Where can you meet people?</T>
-              <T muted>You'll only see people in this city, so every match is someone you could meet this week.</T>
-              {localities.isError ? <ErrorText>Couldn't load cities. Check your connection.</ErrorText> : null}
-              <ChipRow>
-                {cities.map((city) => (
-                  <Chip
-                    key={city.id}
-                    label={city.name}
-                    selected={cityId === city.id}
-                    onPress={() => {
-                      setCityId(city.id);
-                      setCampusId(null);
-                    }}
-                  />
-                ))}
-              </ChipRow>
-              {campuses.length > 0 ? (
-                <>
-                  <T variant="heading">Are you on a campus?</T>
-                  <ChipRow>
-                    {campuses.map((campus) => (
-                      <Chip key={campus.id} label={campus.name} selected={campusId === campus.id} onPress={() => setCampusId(campusId === campus.id ? null : campus.id)} />
-                    ))}
-                  </ChipRow>
-                </>
-              ) : null}
+              <CityPicker
+                cityId={cityId}
+                campusId={campusId}
+                onChange={(nextCity, nextCampus) => {
+                  setCityId(nextCity);
+                  setCampusId(nextCampus);
+                }}
+              />
             </>
           ) : null}
 
           {step === 4 ? (
             <>
               <T variant="title">Add a photo and a line about you</T>
-              <T muted>A face helps people recognise you when you meet. Both are optional.</T>
+              <T muted>Optional.</T>
               <PhotoPicker name={displayName} uri={photoUri} onPress={async () => setPhotoUri((await pickAndResizePhoto()) ?? photoUri)} />
               <Field label="A line about you" value={bio} onChangeText={setBio} multiline maxLength={500} placeholder="Writing a thesis on rent control. Will trade coffee for arguments." style={styles.bio} />
             </>

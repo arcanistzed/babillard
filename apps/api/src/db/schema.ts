@@ -34,6 +34,11 @@ export const localities = sqliteTable("localities", {
   name: text("name").notNull(),
   kind: text("kind", { enum: ["city", "campus"] }).notNull(),
   parentId: text("parent_id"),
+  region: text("region").notNull().default(""),
+  country: text("country").notNull().default(""),
+  countryCode: text("country_code").notNull().default(""),
+  population: integer("population").notNull().default(0),
+  aliases: text("aliases", { mode: "json" }).$type<string[]>().notNull().default([]),
 });
 
 export const topics = sqliteTable(

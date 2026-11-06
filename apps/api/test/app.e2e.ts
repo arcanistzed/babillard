@@ -129,6 +129,8 @@ describe("sign-in", () => {
   it("badges institution email without gating anyone else", async () => {
     const edu = await new Client(BASE).signIn("sam@cs.stanford.edu");
     const open = await new Client(BASE).signIn("sam@gmail.com");
+    const canadian = await new Client(BASE).signIn("sam@uottawa.ca");
+    expect((await canadian.get("/me")).verifiedInstitution).toBe(true);
     const eduMe = await edu.get("/me");
     expect(eduMe.verifiedInstitution).toBe(true);
     expect(eduMe.institutionDomain).toBe("cs.stanford.edu");
@@ -261,7 +263,33 @@ describe("onboarding", () => {
   it("serves all seeded localities", async () => {
     const client = await person("london");
     const localities = await client.get("/me/localities");
-    expect(localities.filter((l: any) => l.kind === "city").length).toBe(5);
+    const cities = localities.filter((l: any) => l.kind === "city");
+    expect(cities.length).toBeGreaterThan(2000);
+    const ottawa = cities.find((l: any) => l.name === "Ottawa" && l.countryCode === "CA");
+    expect(ottawa.region).toBe("Ontario");
+    expect(ottawa.aliases).toContain("Gatineau");
+    expect(localities.find((l: any) => l.id === "uottawa").parentId).toBe(ottawa.id);
+    expect(cities.map((l: any) => l.population)).toEqual([...cities.map((l: any) => l.population)].sort((a: number, b: number) => b - a));
+  });
+
+  it("lets someone change their city later, and scopes people to the new one", async () => {
+    const mover = await person("boston");
+    const local = await person("toronto");
+    const topicId = "urban-history";
+    for (const client of [mover, local]) await client.post(`/deck/topics/${topicId}/swipe`, { direction: "right" });
+    expect((await mover.get("/people")).map((card: any) => card.id)).not.toContain(local.id);
+
+    const moved = await mover.put("/me/location", { cityId: "toronto", campusId: "u-of-t" });
+    expect(moved.cityId).toBe("toronto");
+    expect(moved.campusId).toBe("u-of-t");
+    expect((await mover.get("/people")).map((card: any) => card.id)).toContain(local.id);
+
+    expect(await status(mover.put("/me/location", { cityId: "toronto", campusId: "mit" }))).toBe(400);
+    expect(await status(mover.put("/me/location", { cityId: "harvard", campusId: null }))).toBe(400);
+    expect((await mover.get("/me")).cityId).toBe("toronto");
+
+    const unfinished = await new Client(BASE).signIn("no-location@example.test");
+    expect(await status(unfinished.put("/me/location", { cityId: "toronto", campusId: null }))).toBe(403);
   });
 });
 

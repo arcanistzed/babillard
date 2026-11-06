@@ -119,7 +119,7 @@ async function checkInMeetups(env: Env, db: Db, now: number): Promise<number> {
     if (claimed.length === 0) continue;
     await sendPush(env, await responders(db, meetup.id, ["yes"]), {
       title: "Did you meet?",
-      body: "Tap to let us know how it went.",
+      body: "Tell us how it went.",
       data: { screen: "meetup", id: meetup.id },
     });
     handled += 1;

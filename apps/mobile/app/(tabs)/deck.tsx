@@ -1,4 +1,4 @@
-import { topicPhrase, type Stance, type TopicCard, type TopicSwipeResult } from "@ideas-match/shared";
+import type { Stance, TopicCard, TopicSwipeResult } from "@ideas-match/shared";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { router } from "expo-router";
 import { useCallback, useEffect, useRef, useState } from "react";
@@ -84,7 +84,6 @@ export default function Deck() {
               ) : (
                 <>
                   <T variant="title">You've seen every topic</T>
-                  <T muted>Suggest one you wish was here, or see who picked the same ones as you.</T>
                   <Button label="Suggest a topic" onPress={() => router.push("/topic/new")} />
                   <Button label="See people" kind="secondary" onPress={() => router.navigate("/people")} />
                 </>
@@ -114,7 +113,7 @@ export default function Deck() {
       {group ? (
         <Celebration
           title="Your group is open"
-          body={`People near you picked ${topicPhrase(group.title)} too. Say hi, then pick a time to meet.`}
+          body={group.title}
           action="Open the group"
           dismissLabel="Keep swiping"
           onAction={() => {

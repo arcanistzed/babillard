@@ -111,7 +111,7 @@ export default function Chat() {
       {detail?.expiresAt && !hasOwnMessage ? (
         <View style={[styles.banner, { backgroundColor: theme.accent }]}>
           <T variant="small" style={{ color: theme.onAccent, fontFamily: fonts.bodyBold }}>
-            {timeLeft(detail.expiresAt)} left. This match ends if nobody says anything.
+            {timeLeft(detail.expiresAt)} left to say hi
           </T>
         </View>
       ) : null}

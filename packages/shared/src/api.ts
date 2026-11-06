@@ -26,6 +26,12 @@ export interface Locality {
   name: string;
   kind: "city" | "campus";
   parentId: string | null;
+  region: string;
+  country: string;
+  countryCode: string;
+  population: number;
+  /** Suburbs and neighbouring towns that share this city's cohort. */
+  aliases: string[];
 }
 
 export interface TopicCard {

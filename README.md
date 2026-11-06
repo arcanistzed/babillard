@@ -144,6 +144,8 @@ Replace the `ideasmatch.example` placeholders in `apps/api/wrangler.jsonc` and `
 
 ## Decisions worth knowing
 
+- **Cities come from a fixed list, not free text.** Matching needs one shared ID per city, or "Ottawa" and "ottawa on" would never meet. Canadian suburbs share their metro area's row, so people in Gatineau and Ottawa end up together. City data comes from [GeoNames](https://www.geonames.org/) under [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/), filtered to cities over 300,000 people, or over 30,000 in Canada.
+
 - **Stance never decides who meets whom.** People gather around topics. A question's stance only feeds the group's overall spread, and later the policy consultation export.
 - **"More than friends" is private unless mutual.** Every response showing someone's chips goes through `visibleLookingFor`.
 - **18 and over.** Date of birth is checked at onboarding, nothing is stored for anyone younger, and it can't be edited afterward.

@@ -138,7 +138,7 @@ async function createMatch(env: Env, db: Db, a: string, b: string, topicId: stri
   await env.CHAT_ROOM.getByName(conversationId).postSystem(conversationId, matchOpenerMessage(title, opener));
   await sendPush(env, [userA, userB], {
     title: "It's a match",
-    body: `You both want to dig into ${topicPhrase(title)}${title.endsWith("?") ? "" : "."} Say hi and pick a time to meet.`,
+    body: `You both picked ${topicPhrase(title)}`,
     data: { screen: "chat", id: conversationId },
   });
   return conversationId;

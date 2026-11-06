@@ -39,14 +39,14 @@ export default function SignIn() {
             autoCapitalize="none"
             autoComplete="email"
             keyboardType="email-address"
-            placeholder="you@example.edu"
+            placeholder="you@uottawa.ca"
             returnKeyType="go"
             onSubmitEditing={submit}
           />
           {error ? <ErrorText>{error}</ErrorText> : null}
           <Button label="Email me a code" onPress={submit} busy={busy} disabled={!email.includes("@")} />
           <T variant="small" muted>
-            A school email adds a verified badge to your profile. Any email works.
+            Any email works. School emails get a verified badge.
           </T>
         </View>
       </KeyboardScreen>

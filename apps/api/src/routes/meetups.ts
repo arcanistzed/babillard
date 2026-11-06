@@ -130,7 +130,7 @@ meetups.post("/", async (c) => {
   });
   const others = (await memberIds(db, conversationId)).filter((id) => id !== user.id);
   c.executionCtx.waitUntil(
-    sendPush(c.env, others, { title: `${name} wants to meet`, body: "Tap to say yes, no, or maybe.", data: { screen: "meetup", id: meetup.id } }),
+    sendPush(c.env, others, { title: `${name} wants to meet`, body: venueName(meetup), data: { screen: "meetup", id: meetup.id } }),
   );
   return c.json(await summaryFor(c.env, db, meetup, conversation.kind, user.id), 201);
 });
@@ -173,7 +173,7 @@ meetups.post("/:id/respond", async (c) => {
       await stub.postSystem(meetup.conversationId, `It's on! Meetup confirmed at ${where}.`, { kind: "meetup", meetupId: meetup.id });
       console.log(JSON.stringify({ event: "meetup_confirmed", meetupId: meetup.id, conversationKind: conversation.kind }));
       c.executionCtx.waitUntil(
-        sendPush(c.env, await memberIds(db, meetup.conversationId), { title: "Your meetup is on", body: `Confirmed at ${where}. Tap for the details.`, data: { screen: "meetup", id: meetup.id } }),
+        sendPush(c.env, await memberIds(db, meetup.conversationId), { title: "Your meetup is on", body: where, data: { screen: "meetup", id: meetup.id } }),
       );
     }
   }

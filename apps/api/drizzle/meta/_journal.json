@@ -8,6 +8,13 @@
       "when": 1793848927633,
       "tag": "0000_sour_changeling",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "6",
+      "when": 1793964029894,
+      "tag": "0001_lucky_princess_powerful",
+      "breakpoints": true
     }
   ]
 }

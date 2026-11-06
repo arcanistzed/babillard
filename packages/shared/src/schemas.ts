@@ -24,6 +24,11 @@ export const onboardingSchema = profileSchema.extend({
   campusId: z.string().min(1).nullable().default(null),
 });
 
+export const locationSchema = z.object({
+  cityId: z.string().min(1),
+  campusId: z.string().min(1).nullable().default(null),
+});
+
 export const topicSwipeSchema = z.object({
   direction: z.enum(["right", "left"]),
   stance: z.enum(STANCES).nullable().default(null),

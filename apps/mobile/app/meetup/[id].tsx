@@ -60,7 +60,7 @@ export default function MeetupScreen() {
               <Button label="It didn't happen" kind="secondary" onPress={() => didMeet.mutate(false)} style={styles.flex} disabled={didMeet.isPending} />
             </View>
           ) : (
-            <T muted>{meetup.myDidMeet ? "Glad it happened. Thanks for telling us." : "Thanks for telling us. There's always next time."}</T>
+            <T muted>{meetup.myDidMeet ? "Glad you met." : "Thanks for letting us know."}</T>
           )}
         </View>
       ) : null}
@@ -75,7 +75,7 @@ export default function MeetupScreen() {
 
       {upcoming ? (
         <T variant="small" muted>
-          Meeting someone for the first time? Pick a public place and tell a friend where you're going.
+          First time meeting? Choose a public place and tell a friend.
         </T>
       ) : null}
       {error ? <ErrorText>{error}</ErrorText> : null}

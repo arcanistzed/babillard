@@ -1,7 +1,7 @@
 // Turns seed/*.json into idempotent SQL for `wrangler d1 execute`.
 import { readFileSync, writeFileSync } from "node:fs";
 
-interface SeedLocality { id: string; name: string; kind: string; parentId: string | null }
+interface SeedLocality { id: string; name: string; kind: string; parentId: string | null; region: string; country: string; countryCode: string; population: number; aliases: string[] }
 interface SeedTopic { id: string; kind: string; title: string; blurb: string; fieldTags: string[]; openers: string[] }
 
 const root = new URL("../seed/", import.meta.url);
@@ -13,7 +13,8 @@ const now = Date.now();
 
 const statements = [
   ...localities.map(
-    (l) => `INSERT OR IGNORE INTO localities (id, slug, name, kind, parent_id) VALUES (${quote(l.id)}, ${quote(l.id)}, ${quote(l.name)}, ${quote(l.kind)}, ${quote(l.parentId)});`,
+    (l) =>
+      `INSERT INTO localities (id, slug, name, kind, parent_id, region, country, country_code, population, aliases) VALUES (${quote(l.id)}, ${quote(l.id)}, ${quote(l.name)}, ${quote(l.kind)}, ${quote(l.parentId)}, ${quote(l.region)}, ${quote(l.country)}, ${quote(l.countryCode)}, ${l.population}, ${quote(JSON.stringify(l.aliases))}) ON CONFLICT(id) DO UPDATE SET name=excluded.name, kind=excluded.kind, parent_id=excluded.parent_id, region=excluded.region, country=excluded.country, country_code=excluded.country_code, population=excluded.population, aliases=excluded.aliases;`,
   ),
   ...topics.map(
     (t) =>

@@ -90,7 +90,6 @@ export default function Inbox() {
           ) : (
             <View style={styles.empty}>
               <T variant="heading">No chats yet</T>
-              <T muted>When four people near you pick the same topic, a group opens here. So does a chat with anyone you match with.</T>
               <Button label="Pick topics" onPress={() => router.navigate("/deck")} />
             </View>
           )

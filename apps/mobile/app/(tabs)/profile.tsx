@@ -1,12 +1,11 @@
 import { LOOKING_FOR_LABELS, ROLE_LABELS } from "@ideas-match/shared";
-import type { Locality } from "@ideas-match/shared";
-import { useQuery } from "@tanstack/react-query";
 import { router } from "expo-router";
 import { useState } from "react";
 import { Alert, Pressable, ScrollView, Share, StyleSheet, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { api, friendlyError, uploadAvatar } from "@/api";
 import { useAuth } from "@/auth";
+import { useLocalities } from "@/components/CityPicker";
 import { pickAndResizePhoto } from "@/components/PhotoPicker";
 import { fonts, useTheme } from "@/theme";
 import { Avatar, Button, Chip, ChipRow, ErrorText, T } from "@/ui";
@@ -15,7 +14,7 @@ export default function Profile() {
   const { me, refresh, signOut, forgetSession } = useAuth();
   const theme = useTheme();
   const [error, setError] = useState<string | null>(null);
-  const localities = useQuery({ queryKey: ["localities"], queryFn: () => api.get<Locality[]>("/me/localities") });
+  const localities = useLocalities();
   const profile = me?.profile;
   if (!me || !profile) return null;
 
@@ -35,7 +34,7 @@ export default function Profile() {
   }
 
   function confirmDelete() {
-    Alert.alert("Delete your account?", "This removes your profile, your swipes, and everything you've written. You can't undo it.", [
+    Alert.alert("Delete your account?", "This deletes your profile and messages, and can't be undone.", [
       { text: "Keep my account", style: "cancel" },
       {
         text: "Delete account",
@@ -85,6 +84,9 @@ export default function Profile() {
           <Button label="Sign out" kind="quiet" onPress={signOut} />
           <Button label="Delete account" kind="danger" onPress={confirmDelete} />
         </View>
+        <T variant="small" muted>
+          City data from GeoNames, CC BY 4.0.
+        </T>
       </ScrollView>
     </SafeAreaView>
   );

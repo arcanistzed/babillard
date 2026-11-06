@@ -53,7 +53,7 @@ export default function NewMeetup() {
           <Field label="Name the place (optional)" value={venueNote} onChangeText={setVenueNote} maxLength={200} placeholder="Blue Door on Main Street" />
         </View>
         <T variant="small" muted>
-          Meeting someone for the first time? Pick a public place and tell a friend where you're going.
+          First time meeting? Choose a public place and tell a friend.
         </T>
         {error ? <ErrorText>{error}</ErrorText> : null}
       </ScrollView>

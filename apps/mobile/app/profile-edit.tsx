@@ -1,9 +1,12 @@
-import { FIELDS, FIELD_LABELS, LOOKING_FOR, LOOKING_FOR_LABELS, ROLES, ROLE_LABELS, type Me } from "@ideas-match/shared";
+import { FIELDS, FIELD_LABELS, ROLES, ROLE_LABELS, type Me } from "@ideas-match/shared";
+import { useQueryClient } from "@tanstack/react-query";
 import { router } from "expo-router";
 import { useState } from "react";
 import { ScrollView, StyleSheet, View } from "react-native";
 import { api, friendlyError } from "@/api";
 import { useAuth } from "@/auth";
+import { CityPicker } from "@/components/CityPicker";
+import { LookingForPicker } from "@/components/LookingForPicker";
 import { Button, Chip, ChipRow, ErrorText, Field, T, KeyboardScreen } from "@/ui";
 
 function toggle<T>(list: T[], value: T): T[] {
@@ -12,12 +15,15 @@ function toggle<T>(list: T[], value: T): T[] {
 
 export default function ProfileEdit() {
   const { me, setMe } = useAuth();
+  const queryClient = useQueryClient();
   const profile = me?.profile;
   const [displayName, setDisplayName] = useState(profile?.displayName ?? "");
   const [bio, setBio] = useState(profile?.bio ?? "");
   const [role, setRole] = useState(profile?.role ?? "other");
   const [fields, setFields] = useState(profile?.fields ?? []);
   const [lookingFor, setLookingFor] = useState(profile?.lookingFor ?? []);
+  const [cityId, setCityId] = useState<string | null>(me?.cityId ?? null);
+  const [campusId, setCampusId] = useState<string | null>(me?.campusId ?? null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -25,7 +31,10 @@ export default function ProfileEdit() {
     setBusy(true);
     setError(null);
     try {
-      setMe(await api.put<Me>("/me/profile", { displayName: displayName.trim(), bio: bio.trim(), role, fields, lookingFor }));
+      await api.put<Me>("/me/profile", { displayName: displayName.trim(), bio: bio.trim(), role, fields, lookingFor });
+      setMe(await api.put<Me>("/me/location", { cityId, campusId }));
+      await queryClient.invalidateQueries({ queryKey: ["people"] });
+      await queryClient.invalidateQueries({ queryKey: ["topics"] });
       router.back();
     } catch (caught) {
       setError(friendlyError(caught));
@@ -41,12 +50,16 @@ export default function ProfileEdit() {
         <T variant="heading">What do you do?</T>
         <ChipRow>{ROLES.map((value) => <Chip key={value} label={ROLE_LABELS[value]} selected={role === value} onPress={() => setRole(value)} />)}</ChipRow>
         <T variant="heading">What are you looking for?</T>
-        <ChipRow>{LOOKING_FOR.map((value) => <Chip key={value} label={LOOKING_FOR_LABELS[value]} selected={lookingFor.includes(value)} onPress={() => setLookingFor(toggle(lookingFor, value))} />)}</ChipRow>
-        {lookingFor.includes("more_than_friends") ? (
-          <T variant="small" muted>
-            Only people who also picked "more than friends" will see that on your profile.
-          </T>
-        ) : null}
+        <LookingForPicker value={lookingFor} onChange={setLookingFor} />
+        <T variant="heading">Where can you meet people?</T>
+        <CityPicker
+          cityId={cityId}
+          campusId={campusId}
+          onChange={(nextCity, nextCampus) => {
+            setCityId(nextCity);
+            setCampusId(nextCampus);
+          }}
+        />
         <T variant="heading">Fields you care about</T>
         <ChipRow>
           {FIELDS.map((value) => (
@@ -56,7 +69,7 @@ export default function ProfileEdit() {
         {error ? <ErrorText>{error}</ErrorText> : null}
       </ScrollView>
       <View style={styles.actions}>
-        <Button label="Save changes" onPress={save} busy={busy} disabled={!displayName.trim() || fields.length === 0 || lookingFor.length === 0} />
+        <Button label="Save changes" onPress={save} busy={busy} disabled={!displayName.trim() || fields.length === 0 || lookingFor.length === 0 || !cityId} />
       </View>
     </KeyboardScreen>
   );

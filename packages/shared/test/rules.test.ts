@@ -24,6 +24,8 @@ import {
   topicPhrase,
   scoreTopic,
   visibleLookingFor,
+  searchCities,
+  type Locality,
   type MatchTiming,
   type MeetupTiming,
   type Waiter,
@@ -310,5 +312,71 @@ describe("suggestMeetupSlots", () => {
     const slots = suggestMeetupSlots(new Date(2026, 10, 7, 23));
     expect(slots).toHaveLength(6);
     expect(slots[0]?.label).toBe("Tomorrow morning");
+  });
+});
+
+describe("searchCities", () => {
+  const city = (id: string, name: string, region: string, country: string, countryCode: string, population: number, aliases: string[] = []): Locality => ({ id, slug: id, name, kind: "city", parentId: null, region, country, countryCode, population, aliases });
+  const cities = [
+    city("toronto", "Toronto", "Ontario", "Canada", "CA", 2_794_000, ["Mississauga"]),
+    city("montreal", "Montréal", "Quebec", "Canada", "CA", 1_762_000, ["Laval"]),
+    city("ottawa", "Ottawa", "Ontario", "Canada", "CA", 1_017_000, ["Gatineau"]),
+    city("london-uk", "London", "England", "United Kingdom", "GB", 8_900_000),
+    city("london-on", "London", "Ontario", "Canada", "CA", 422_000),
+    city("paris", "Paris", "Île-de-France", "France", "FR", 2_100_000),
+    { ...city("uottawa", "uOttawa", "", "", "", 0), kind: "campus" as const, parentId: "ottawa" },
+  ];
+  const ids = (query: string) => searchCities(cities, query).map((item) => item.id);
+
+  it("suggests major Canadian cities, biggest first, when nothing is typed", () => {
+    expect(ids("")).toEqual(["toronto", "montreal", "ottawa", "london-on"]);
+  });
+
+  it("ignores accents and case", () => {
+    expect(ids("montreal")).toEqual(["montreal"]);
+    expect(ids("MONTRÉAL")).toEqual(["montreal"]);
+  });
+
+  it("finds a metro area by its suburb", () => {
+    expect(ids("gatineau")).toEqual(["ottawa"]);
+    expect(ids("missis")).toEqual(["toronto"]);
+  });
+
+  it("tells same-named cities apart by province or country", () => {
+    expect(ids("london")).toEqual(["london-uk", "london-on"]);
+    expect(ids("london ontario")).toEqual(["london-on"]);
+    expect(ids("london, canada")).toEqual(["london-on"]);
+  });
+
+  it("puts a name match ahead of a province match", () => {
+    expect(ids("ot")[0]).toBe("ottawa");
+  });
+
+  it("finds cities in a country or province", () => {
+    expect(ids("france")).toEqual(["paris"]);
+    expect(ids("ontario")).toEqual(["toronto", "ottawa", "london-on"]);
+  });
+
+  it("never returns campuses, and returns nothing for no match", () => {
+    expect(ids("uottawa")).toEqual([]);
+    expect(ids("zzzz")).toEqual([]);
+  });
+
+  it("respects the limit", () => {
+    expect(searchCities(cities, "", 2)).toHaveLength(2);
+  });
+});
+
+describe("Canadian school email", () => {
+  it("recognises Canadian universities, including student subdomains", () => {
+    expect(institutionDomain("student@uottawa.ca")).toBe("uottawa.ca");
+    expect(institutionDomain("a@cmail.carleton.ca")).toBe("carleton.ca");
+    expect(institutionDomain("a@mail.mcgill.ca")).toBe("mcgill.ca");
+    expect(institutionDomain("a@student.ubc.ca")).toBe("ubc.ca");
+  });
+
+  it("does not match lookalike domains", () => {
+    expect(institutionDomain("a@notuottawa.ca")).toBeNull();
+    expect(institutionDomain("a@uottawa.ca.evil.com")).toBeNull();
   });
 });

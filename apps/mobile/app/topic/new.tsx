@@ -31,7 +31,6 @@ export default function NewTopic() {
   return (
     <KeyboardScreen style={styles.screen}>
       <ScrollView contentContainerStyle={styles.body} keyboardShouldPersistTaps="handled">
-        <T muted>It goes into your deck right away, and into everyone else's once it's been reviewed.</T>
         <ChipRow>
           <Chip label="An interest" selected={kind === "interest"} onPress={() => setKind("interest")} />
           <Chip label="A question to debate" selected={kind === "question"} onPress={() => setKind("question")} />

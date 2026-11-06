@@ -40,8 +40,8 @@ export default function CheckInbox() {
     <KeyboardScreen style={styles.body}>
       <View style={styles.copy}>
         <T variant="title">Check your email</T>
-        <T muted>We sent a six-digit code to {email}. Type it here to sign in.</T>
-        <T muted>Don't see it? Check your junk or quarantine folder. School email often files new senders there.</T>
+        <T muted>We sent a code to {email}.</T>
+        <T muted>Not there? Check junk and quarantine.</T>
       </View>
       <Field
         label="Six-digit code"

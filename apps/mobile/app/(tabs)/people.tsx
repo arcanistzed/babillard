@@ -135,7 +135,6 @@ export default function People() {
               ) : (
                 <>
                   <T variant="title">Nobody new right now</T>
-                  <T muted>People show up here once you've both picked the same topic. The more topics you pick, the more people you'll see.</T>
                   <Button label="Pick more topics" onPress={() => router.navigate("/deck")} />
                 </>
               )}
@@ -164,7 +163,7 @@ export default function People() {
       {match ? (
         <Celebration
           title="It's a match"
-          body={`You and ${match.name} both want to talk. We've started the conversation for you. Say hi and pick a time to meet.`}
+          body={`You and ${match.name} both want to talk.`}
           action={`Say hi to ${match.name}`}
           dismissLabel="Keep swiping"
           onAction={() => {

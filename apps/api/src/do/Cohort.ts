@@ -175,7 +175,7 @@ export class Cohort extends DurableObject<Env> {
       ]);
       await this.env.CHAT_ROOM.getByName(group.id).postSystem(
         group.id,
-        `A group on ${topicPhrase(input.topicTitle)} just opened in ${input.cityName}. Say hi, then pick a time to meet.`,
+        `A group on ${topicPhrase(input.topicTitle)} just opened in ${input.cityName}.`,
       );
       sqlite.exec("UPDATE groups SET flushed = 1 WHERE id = ?", group.id);
       console.log(JSON.stringify({ event: "group_formed", conversationId: group.id, topicId: input.topicId, cityId: input.cityId, size: memberIds.length }));
