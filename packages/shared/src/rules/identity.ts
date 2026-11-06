@@ -33,3 +33,22 @@ export function institutionDomain(email: string): string | null {
   const known = INSTITUTION_DOMAINS.find((item) => domain === item || domain.endsWith(`.${item}`));
   return known ?? null;
 }
+
+const CAMPUS_BY_DOMAIN: Record<string, string> = {
+  "uottawa.ca": "uottawa", "carleton.ca": "carleton-university", "utoronto.ca": "u-of-t", "yorku.ca": "york-university",
+  "torontomu.ca": "toronto-metropolitan", "ryerson.ca": "toronto-metropolitan", "ocadu.ca": "ocad", "ontariotechu.ca": "ontario-tech",
+  "uwaterloo.ca": "uwaterloo", "wlu.ca": "laurier", "mcmaster.ca": "mcmaster", "queensu.ca": "queens", "uwo.ca": "western",
+  "uoguelph.ca": "uoguelph", "brocku.ca": "brock", "mcgill.ca": "mcgill", "umontreal.ca": "umontreal", "concordia.ca": "concordia",
+  "uqam.ca": "uqam", "ulaval.ca": "ulaval", "usherbrooke.ca": "usherbrooke", "ubishops.ca": "bishops", "ubc.ca": "ubc", "sfu.ca": "sfu",
+  "uvic.ca": "uvic", "ucalgary.ca": "ucalgary", "mtroyal.ca": "mount-royal", "ualberta.ca": "ualberta", "macewan.ca": "macewan",
+  "umanitoba.ca": "umanitoba", "usask.ca": "usask", "uregina.ca": "uregina", "dal.ca": "dalhousie", "smu.ca": "smu", "mun.ca": "memorial",
+  "harvard.edu": "harvard", "mit.edu": "mit", "bu.edu": "boston-university", "columbia.edu": "columbia", "nyu.edu": "nyu",
+  "stanford.edu": "stanford", "berkeley.edu": "berkeley", "ucl.ac.uk": "ucl", "lse.ac.uk": "lse",
+};
+
+/** The campus a verified school domain belongs to, including subdomains such as cs.stanford.edu. */
+export function campusForDomain(domain: string | null | undefined): string | null {
+  if (!domain) return null;
+  const match = Object.keys(CAMPUS_BY_DOMAIN).find((known) => domain === known || domain.endsWith(`.${known}`));
+  return match ? CAMPUS_BY_DOMAIN[match]! : null;
+}

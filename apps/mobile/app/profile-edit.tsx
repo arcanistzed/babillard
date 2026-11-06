@@ -1,7 +1,7 @@
 import { FIELDS, FIELD_LABELS, ROLES, ROLE_LABELS, type Me } from "@ideas-match/shared";
 import { useQueryClient } from "@tanstack/react-query";
 import { router } from "expo-router";
-import { useState } from "react";
+import { useCallback, useState } from "react";
 import { ScrollView, StyleSheet, View } from "react-native";
 import { api, friendlyError } from "@/api";
 import { useAuth } from "@/auth";
@@ -26,6 +26,11 @@ export default function ProfileEdit() {
   const [campusId, setCampusId] = useState<string | null>(me?.campusId ?? null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  const setLocation = useCallback((nextCity: string | null, nextCampus: string | null) => {
+    setCityId(nextCity);
+    setCampusId(nextCampus);
+  }, []);
 
   async function save() {
     setBusy(true);
@@ -52,14 +57,7 @@ export default function ProfileEdit() {
         <T variant="heading">What are you looking for?</T>
         <LookingForPicker value={lookingFor} onChange={setLookingFor} />
         <T variant="heading">Where can you meet people?</T>
-        <CityPicker
-          cityId={cityId}
-          campusId={campusId}
-          onChange={(nextCity, nextCampus) => {
-            setCityId(nextCity);
-            setCampusId(nextCampus);
-          }}
-        />
+        <CityPicker cityId={cityId} campusId={campusId} onChange={setLocation} />
         <T variant="heading">Fields you care about</T>
         <ChipRow>
           {FIELDS.map((value) => (

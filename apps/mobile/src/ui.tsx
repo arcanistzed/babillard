@@ -70,17 +70,20 @@ export function ChipRow({ children, style }: { children: ReactNode; style?: Styl
   return <View style={[styles.chipRow, style]}>{children}</View>;
 }
 
-export function Field({ label, error, style, ...props }: TextInputProps & { label: string; error?: string | null }) {
+export function Field({ label, error, style, trailing, ...props }: TextInputProps & { label: string; error?: string | null; trailing?: ReactNode }) {
   const theme = useTheme();
   return (
     <View style={styles.field}>
       <T variant="bodyBold">{label}</T>
-      <TextInput
-        placeholderTextColor={theme.muted}
-        accessibilityLabel={label}
-        {...props}
-        style={[VARIANTS.body, styles.input, { color: theme.ink, borderColor: error ? theme.danger : theme.ink, backgroundColor: theme.surface }, style]}
-      />
+      <View>
+        <TextInput
+          placeholderTextColor={theme.muted}
+          accessibilityLabel={label}
+          {...props}
+          style={[VARIANTS.body, styles.input, { color: theme.ink, borderColor: error ? theme.danger : theme.ink, backgroundColor: theme.surface }, trailing ? styles.inputWithTrailing : null, style]}
+        />
+        {trailing ? <View style={styles.trailing}>{trailing}</View> : null}
+      </View>
       {error ? <T variant="small" style={{ color: theme.danger }}>{error}</T> : null}
     </View>
   );
@@ -113,6 +116,8 @@ const styles = StyleSheet.create({
   chip: { minHeight: 36, paddingHorizontal: 13, justifyContent: "center", borderRadius: 18, borderWidth: 1.5 },
   chipRow: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
   field: { gap: 6 },
+  inputWithTrailing: { paddingRight: 52 },
+  trailing: { position: "absolute", top: 0, bottom: 0, right: 4, width: 44, alignItems: "center", justifyContent: "center" },
   keyboardScreen: { flex: 1 },
   input: { minHeight: 52, borderWidth: 2, borderRadius: 12, paddingHorizontal: 14, paddingVertical: 10 },
 });

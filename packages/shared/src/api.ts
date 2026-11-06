@@ -32,6 +32,8 @@ export interface Locality {
   population: number;
   /** Suburbs and neighbouring towns that share this city's cohort. */
   aliases: string[];
+  latitude: number;
+  longitude: number;
 }
 
 export interface TopicCard {

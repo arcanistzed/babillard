@@ -24,6 +24,8 @@ import {
   topicPhrase,
   scoreTopic,
   visibleLookingFor,
+  campusForDomain,
+  nearestCity,
   searchCities,
   type Locality,
   type MatchTiming,
@@ -316,7 +318,7 @@ describe("suggestMeetupSlots", () => {
 });
 
 describe("searchCities", () => {
-  const city = (id: string, name: string, region: string, country: string, countryCode: string, population: number, aliases: string[] = []): Locality => ({ id, slug: id, name, kind: "city", parentId: null, region, country, countryCode, population, aliases });
+  const city = (id: string, name: string, region: string, country: string, countryCode: string, population: number, aliases: string[] = []): Locality => ({ id, slug: id, name, kind: "city", parentId: null, region, country, countryCode, population, aliases, latitude: 0, longitude: 0 });
   const cities = [
     city("toronto", "Toronto", "Ontario", "Canada", "CA", 2_794_000, ["Mississauga"]),
     city("montreal", "Montréal", "Quebec", "Canada", "CA", 1_762_000, ["Laval"]),
@@ -378,5 +380,41 @@ describe("Canadian school email", () => {
   it("does not match lookalike domains", () => {
     expect(institutionDomain("a@notuottawa.ca")).toBeNull();
     expect(institutionDomain("a@uottawa.ca.evil.com")).toBeNull();
+  });
+});
+
+describe("nearestCity", () => {
+  const place = (id: string, latitude: number, longitude: number, kind: "city" | "campus" = "city"): Locality => ({ id, slug: id, name: id, kind, parentId: null, region: "", country: "", countryCode: "", population: 0, aliases: [], latitude, longitude });
+  const places = [place("ottawa", 45.411, -75.698), place("montreal", 45.509, -73.588), place("toronto", 43.701, -79.416), place("london-uk", 51.509, -0.126), place("london-on", 42.983, -81.233), place("uottawa", 45.423, -75.683, "campus")];
+
+  it("picks the closest city", () => {
+    expect(nearestCity(places, 45.477, -75.701)?.id).toBe("ottawa");
+    expect(nearestCity(places, 45.52, -73.6)?.id).toBe("montreal");
+    expect(nearestCity(places, 43.0, -81.2)?.id).toBe("london-on");
+  });
+
+  it("works across the antimeridian without wrapping the wrong way", () => {
+    const pacific = [place("east", 0, 179), place("west", 0, 170)];
+    expect(nearestCity(pacific, 0, -179)?.id).toBe("east");
+  });
+
+  it("never picks a campus, and returns null with no cities", () => {
+    expect(nearestCity(places, 45.423, -75.683)?.id).toBe("ottawa");
+    expect(nearestCity([], 0, 0)).toBeNull();
+  });
+});
+
+describe("campusForDomain", () => {
+  it("maps a verified school domain to its campus", () => {
+    expect(campusForDomain("uottawa.ca")).toBe("uottawa");
+    expect(campusForDomain("cmail.carleton.ca")).toBe("carleton-university");
+    expect(campusForDomain("cs.stanford.edu")).toBe("stanford");
+  });
+
+  it("returns null for anything else", () => {
+    expect(campusForDomain("gmail.com")).toBeNull();
+    expect(campusForDomain("notuottawa.ca")).toBeNull();
+    expect(campusForDomain(null)).toBeNull();
+    expect(campusForDomain(undefined)).toBeNull();
   });
 });

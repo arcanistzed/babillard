@@ -5,6 +5,7 @@ import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
 import { ApiError, Client, createPerson, type PersonSeed } from "../scripts/api-client.ts";
 import { loginEmailContent } from "../src/lib/loginEmailContent.ts";
+import { nearestCity, searchCities, type Locality } from "@ideas-match/shared";
 
 const apiDir = join(dirname(fileURLToPath(import.meta.url)), "..");
 const BASE = "http://localhost:8799";
@@ -233,6 +234,46 @@ describe("sign-in email content", () => {
   });
 });
 
+describe("city data", () => {
+  const localities: Locality[] = JSON.parse(readFileSync(join(apiDir, "seed/localities.json"), "utf8"));
+  const nearest = (latitude: number, longitude: number) => nearestCity(localities, latitude, longitude)?.name;
+
+  it("puts suburbs in their metro area when using location", () => {
+    expect(nearest(45.394, -75.85)).toBe("Ottawa"); // Aylmer
+    expect(nearest(45.477, -75.701)).toBe("Ottawa"); // Gatineau
+    expect(nearest(45.31, -75.91)).toBe("Ottawa"); // Kanata
+    expect(nearest(43.59, -79.64)).toBe("Toronto"); // Mississauga
+    expect(nearest(45.57, -73.69)).toBe("Montréal"); // Laval
+    expect(nearest(45.52, -73.58)).toBe("Montréal"); // The Plateau
+    expect(nearest(49.19, -122.85)).toBe("Vancouver"); // Surrey
+  });
+
+  it("finds a metro area by searching a suburb or borough", () => {
+    for (const [query, city] of [["aylmer", "Ottawa"], ["gatineau", "Ottawa"], ["stittsville", "Ottawa"], ["mississauga", "Toronto"], ["ville-marie", "Montréal"], ["laval", "Montréal"]] as const) {
+      expect(searchCities(localities, query)[0]?.name, query).toBe(city);
+    }
+  });
+
+  it("keeps separate Canadian cities separate", () => {
+    expect(nearest(43.25, -79.87)).toBe("Hamilton");
+    expect(nearest(43.46, -80.52)).toBe("Waterloo");
+    expect(nearest(43.55, -80.25)).toBe("Guelph");
+  });
+
+  it("has no merged place left as its own row, and every move points at a real city", () => {
+    const merged: Record<string, string> = JSON.parse(readFileSync(join(apiDir, "seed/merged-cities.json"), "utf8"));
+    const ids = new Set(localities.map((locality) => locality.id));
+    for (const [from, to] of Object.entries(merged)) {
+      expect(ids.has(from), from).toBe(false);
+      expect(ids.has(to), to).toBe(true);
+    }
+    expect(ids.has("aylmer-10-ca")).toBe(false);
+    // Hand-merged suburbs need a move recorded too, or their old rows stay behind in production.
+    expect(merged["aylmer-10-ca"]).toBe("ottawa-08-ca");
+    expect(merged["gatineau-10-ca"]).toBe("ottawa-08-ca");
+  });
+});
+
 describe("onboarding", () => {
   const profile = { displayName: "Test", bio: "", role: "grad", fields: ["law"], lookingFor: ["learning"], cityId: "london", campusId: null };
 
@@ -264,10 +305,12 @@ describe("onboarding", () => {
     const client = await person("london");
     const localities = await client.get("/me/localities");
     const cities = localities.filter((l: any) => l.kind === "city");
-    expect(cities.length).toBeGreaterThan(2000);
+    expect(cities.length).toBeGreaterThan(1500);
     const ottawa = cities.find((l: any) => l.name === "Ottawa" && l.countryCode === "CA");
     expect(ottawa.region).toBe("Ontario");
     expect(ottawa.aliases).toContain("Gatineau");
+    expect(ottawa.latitude).toBeCloseTo(45.4, 0);
+    expect(ottawa.longitude).toBeCloseTo(-75.7, 0);
     expect(localities.find((l: any) => l.id === "uottawa").parentId).toBe(ottawa.id);
     expect(cities.map((l: any) => l.population)).toEqual([...cities.map((l: any) => l.population)].sort((a: number, b: number) => b - a));
   });

@@ -1,5 +1,5 @@
 import { FIELDS, FIELD_LABELS, ROLES, ROLE_LABELS, isAdult, type Field as FieldName, type LookingFor, type Me, type Role } from "@ideas-match/shared";
-import { useState } from "react";
+import { useCallback, useState } from "react";
 import { ScrollView, StyleSheet, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { api, friendlyError, uploadAvatar } from "@/api";
@@ -35,6 +35,11 @@ export default function Onboard() {
   const [photoUri, setPhotoUri] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  const setLocation = useCallback((nextCity: string | null, nextCampus: string | null) => {
+    setCityId(nextCity);
+    setCampusId(nextCampus);
+  }, []);
 
   const dobComplete = /^\d{4}-\d{2}-\d{2}$/.test(dob);
   const dobError = dobComplete && !isAdult(dob) ? "Ideas Match is for people 18 and over." : null;
@@ -112,14 +117,7 @@ export default function Onboard() {
           {step === 3 ? (
             <>
               <T variant="title">Where can you meet people?</T>
-              <CityPicker
-                cityId={cityId}
-                campusId={campusId}
-                onChange={(nextCity, nextCampus) => {
-                  setCityId(nextCity);
-                  setCampusId(nextCampus);
-                }}
-              />
+              <CityPicker cityId={cityId} campusId={campusId} onChange={setLocation} />
             </>
           ) : null}
 

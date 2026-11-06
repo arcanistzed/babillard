@@ -1,4 +1,4 @@
-import { index, integer, primaryKey, sqliteTable, text, uniqueIndex } from "drizzle-orm/sqlite-core";
+import { index, integer, primaryKey, real, sqliteTable, text, uniqueIndex } from "drizzle-orm/sqlite-core";
 import type { Field, LookingFor, Role, Stance, VenueKind } from "@ideas-match/shared";
 
 export const users = sqliteTable(
@@ -39,6 +39,8 @@ export const localities = sqliteTable("localities", {
   countryCode: text("country_code").notNull().default(""),
   population: integer("population").notNull().default(0),
   aliases: text("aliases", { mode: "json" }).$type<string[]>().notNull().default([]),
+  latitude: real("latitude").notNull().default(0),
+  longitude: real("longitude").notNull().default(0),
 });
 
 export const topics = sqliteTable(

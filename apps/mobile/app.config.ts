@@ -42,6 +42,7 @@ const config: ExpoConfig = {
     "expo-notifications",
     ["expo-calendar", { calendarPermission: "Ideas Match adds meetups you confirm to your calendar." }],
     ["expo-image-picker", { photosPermission: "Ideas Match uses a photo you choose for your profile." }],
+    ["expo-location", { locationWhenInUsePermission: "Ideas Match uses your location once to suggest your city. It stays on your phone." }],
   ],
   extra: {
     // Set this to your EAS project id so push tokens can be issued.

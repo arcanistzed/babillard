@@ -48,3 +48,31 @@ export function searchCities(localities: Locality[], query: string, limit = 12):
 export function describeCity(city: Locality): string {
   return [city.region, city.country].filter(Boolean).join(", ");
 }
+
+const EARTH_RADIUS_KM = 6371;
+
+function radians(degrees: number): number {
+  return (degrees * Math.PI) / 180;
+}
+
+function distanceKm(lat1: number, lon1: number, lat2: number, lon2: number): number {
+  const dLat = radians(lat2 - lat1);
+  const dLon = radians(lon2 - lon1);
+  const a = Math.sin(dLat / 2) ** 2 + Math.cos(radians(lat1)) * Math.cos(radians(lat2)) * Math.sin(dLon / 2) ** 2;
+  return 2 * EARTH_RADIUS_KM * Math.asin(Math.sqrt(a));
+}
+
+/** Runs on the phone, so someone's coordinates never need to reach the server. */
+export function nearestCity(localities: Locality[], latitude: number, longitude: number): Locality | null {
+  let nearest: Locality | null = null;
+  let best = Number.POSITIVE_INFINITY;
+  for (const locality of localities) {
+    if (locality.kind !== "city") continue;
+    const distance = distanceKm(latitude, longitude, locality.latitude, locality.longitude);
+    if (distance < best) {
+      best = distance;
+      nearest = locality;
+    }
+  }
+  return nearest;
+}
