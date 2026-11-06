@@ -36,6 +36,15 @@
         "cd apps/mobile && EXPO_PUBLIC_API_URL=http://localhost:8787 ../../node_modules/.bin/expo start --dev-client --port 8082"
       ],
       "port": 8082
+    },
+    {
+      "name": "metro-production",
+      "runtimeExecutable": "bash",
+      "runtimeArgs": [
+        "-c",
+        "cd apps/mobile && EXPO_PUBLIC_API_URL=https://ideas-match-api.ideas-match.workers.dev ../../node_modules/.bin/expo start --dev-client --port 8082 --clear"
+      ],
+      "port": 8082
     }
   ]
 }
