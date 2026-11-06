@@ -120,7 +120,7 @@ Replace the `ideasmatch.example` placeholders in `apps/api/wrangler.jsonc` and `
    npx wrangler secret put SES_SECRET_ACCESS_KEY
    ```
 
-4. **Protect the admin pages.** Create a Cloudflare Access application covering `/admin/*`, then set `ACCESS_TEAM_DOMAIN` and `ACCESS_AUD`. Until both are set, admin pages return 403 for everyone.
+4. **Protect the admin pages.** Create a self-hosted Cloudflare Access application with a public hostname destination of `<your-worker-host>/admin`, then set `ACCESS_TEAM_DOMAIN` and `ACCESS_AUD` (the AUD tag is under the application's Additional settings). Until both are set, admin pages return 403 for everyone. Don't use a Workers destination or "Protect this Worker": it locks the whole API, and the app stops working.
 
 5. **Apply the database and deploy.**
 
