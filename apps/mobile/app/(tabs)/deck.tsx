@@ -28,7 +28,11 @@ export default function Deck() {
     setCards((current) => {
       const known = new Set(current.map((card) => card.id));
       const fresh = topics.data.filter((card) => !known.has(card.id) && !swiped.current.has(card.id));
-      return [...current, ...fresh];
+      // A topic this person just suggested goes right after the card they're looking at.
+      const [top, ...rest] = current;
+      const suggested = fresh.filter((card) => card.pending);
+      const others = fresh.filter((card) => !card.pending);
+      return top ? [top, ...suggested, ...rest, ...others] : [...suggested, ...others];
     });
   }, [topics.data]);
 

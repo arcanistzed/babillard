@@ -1,4 +1,4 @@
-import { rankTopics, topicSwipeSchema, topicSubmissionSchema, type TopicCard, type TopicSwipeResult } from "@ideas-match/shared";
+import { DECK_PAGE_SIZE, rankTopics, topicSwipeSchema, topicSubmissionSchema, type TopicCard, type TopicSwipeResult } from "@ideas-match/shared";
 import { and, eq, gt, inArray, isNull, or, sql } from "drizzle-orm";
 import { Hono } from "hono";
 import { getDb, schema } from "../db";
@@ -60,10 +60,16 @@ deck.get("/topics", async (c) => {
   ]);
 
   const nearby = new Map(cohorts.map((row) => [row.topicId, row.count]));
-  const ranked = rankTopics(
-    candidates.map(({ topic }) => ({ ...topic, cohortSize: nearby.get(topic.id) ?? 0 })),
-    { userFields: profile[0]?.fields ?? [] },
-  );
+  const withCohorts = candidates.map(({ topic }) => ({ ...topic, cohortSize: nearby.get(topic.id) ?? 0 }));
+  // Someone's own suggestion is promised to appear right away, so it never competes on ranking.
+  const ownPending = withCohorts.filter((topic) => topic.status === "pending");
+  const ranked = [
+    ...ownPending,
+    ...rankTopics(
+      withCohorts.filter((topic) => topic.status !== "pending"),
+      { userFields: profile[0]?.fields ?? [], limit: Math.max(DECK_PAGE_SIZE - ownPending.length, 0) },
+    ),
+  ];
   const cards: TopicCard[] = ranked.map((topic) => ({
     id: topic.id,
     kind: topic.kind,

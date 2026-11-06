@@ -794,6 +794,17 @@ describe("submitted topics", () => {
     expect((await submitter.get(`/conversations/${groupId}`)).members).toHaveLength(4);
   });
 
+  it("always puts someone's own suggestion in the first page, even with many ranked above it", async () => {
+    const client = await person("san-francisco", { fields: ["economics", "politics", "law", "history", "philosophy", "sociology", "psychology", "medicine"] });
+    const { id } = await client.post("/deck/topics", { kind: "interest", title: "A very niche corner of chemistry", fieldTags: ["chemistry"] });
+    for (let i = 0; i < 5; i += 1) {
+      const cards = await client.get("/deck/topics");
+      expect(cards).toHaveLength(20);
+      expect(cards[0].id).toBe(id);
+      expect(cards[0].pending).toBe(true);
+    }
+  });
+
   it("limits submissions per day", async () => {
     const client = await person("san-francisco");
     for (let i = 0; i < 5; i += 1) await client.post("/deck/topics", { kind: "interest", title: `Topic number ${i}`, fieldTags: ["art"] });
