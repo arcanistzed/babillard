@@ -28,11 +28,13 @@
     ]
   },
   "migrations": [{ "tag": "v1", "new_sqlite_classes": ["ChatRoom", "Cohort"] }],
-  "send_email": [{ "name": "EMAIL" }],
   "triggers": { "crons": ["*/5 * * * *"] },
   "vars": {
     "PUBLIC_ORIGIN": "https://ideas-match-api.ideas-match.workers.dev",
-    "EMAIL_FROM": "hello@ideasmatch.example",
+    // Must be an address on a domain verified in SES.
+    "EMAIL_FROM": "Ideas Match <login@danielthorp.com>",
+    "SES_REGION": "ca-central-1",
+    "SES_ENDPOINT": "",
     "PUSH_MODE": "expo",
     "DEV_MODE": "false",
     "ACCESS_TEAM_DOMAIN": "",

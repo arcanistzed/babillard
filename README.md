@@ -11,7 +11,7 @@ The number that matters is meetups that actually happened, shown at the top of t
 | Path | What it is |
 |---|---|
 | `apps/mobile` | Expo and React Native app with expo-router, Reanimated, and Gesture Handler |
-| `apps/api` | Cloudflare Worker with Hono and Drizzle on D1, two Durable Objects, R2, and Email Service |
+| `apps/api` | Cloudflare Worker with Hono and Drizzle on D1, two Durable Objects, and R2, sending email through Amazon SES |
 | `packages/shared` | Matching rules, request schemas, and response types used by both |
 
 The rules that decide who sees whom and who gets grouped are plain functions in `packages/shared/src/rules`.
@@ -110,10 +110,14 @@ Replace the `ideasmatch.example` placeholders in `apps/api/wrangler.jsonc` and `
    npx wrangler secret put AUTH_SECRET
    ```
 
-3. **Enable email sending** for your domain, and make `EMAIL_FROM` an address on it.
+3. **Set up sign-in email with Amazon SES.** Verify a domain in SES in a region with production access. Set `EMAIL_FROM` to an address on that domain and `SES_REGION` to that region. Then create an IAM user that can only call `ses:SendEmail` from that address, and store its keys as secrets.
 
    ```bash
-   npx wrangler email sending enable yourdomain.com
+   npx wrangler secret put SES_ACCESS_KEY_ID
+   ```
+
+   ```bash
+   npx wrangler secret put SES_SECRET_ACCESS_KEY
    ```
 
 4. **Protect the admin pages.** Create a Cloudflare Access application covering `/admin/*`, then set `ACCESS_TEAM_DOMAIN` and `ACCESS_AUD`. Until both are set, admin pages return 403 for everyone.

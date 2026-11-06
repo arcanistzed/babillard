@@ -4,6 +4,7 @@ import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
 import { ApiError, Client, createPerson, type PersonSeed } from "../scripts/api-client.ts";
+import { loginEmailContent } from "../src/lib/loginEmailContent.ts";
 
 const apiDir = join(dirname(fileURLToPath(import.meta.url)), "..");
 const BASE = "http://localhost:8799";
@@ -25,6 +26,23 @@ async function status(promise: Promise<unknown>): Promise<number> {
     if (error instanceof ApiError) return error.status;
     throw error;
   }
+}
+
+interface SesRequest {
+  method: string;
+  path: string;
+  authorization: string;
+  amzDate: string;
+  body: { FromEmailAddress: string; Destination: { ToAddresses: string[] }; Content: { Simple: { Subject: { Data: string }; Body: { Text: { Data: string }; Html: { Data: string } } } } };
+}
+
+function sesRequests(to: string): SesRequest[] {
+  const file = readFileSync(join(apiDir, ".wrangler/e2e/ses.jsonl"), { encoding: "utf8", flag: "a+" });
+  return file
+    .split("\n")
+    .filter(Boolean)
+    .map((line) => JSON.parse(line) as SesRequest)
+    .filter((request) => request.body.Destination.ToAddresses.includes(to));
 }
 
 const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
@@ -140,29 +158,28 @@ describe("production settings", () => {
     const send = () =>
       fetch(`${PROD}/auth/start`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ email: "flood@example.test" }) });
     for (let i = 0; i < 5; i += 1) expect((await send()).status).toBe(200);
-    await sleep(300);
-    const log = readFileSync(join(apiDir, ".wrangler/e2e/prod.log"), "utf8");
-    expect(log.split("\n").filter((line) => line.includes("To: flood@example.test"))).toHaveLength(3);
+    expect(sesRequests("flood@example.test")).toHaveLength(3);
   });
 
-  it("emails a working code and link", async () => {
+  it("sends a correctly signed SES request with a working code and link", async () => {
     const email = "real-mail@example.test";
     const start = await fetch(`${PROD}/auth/start`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ email }) });
     expect(start.status).toBe(200);
 
-    const mail = await waitFor(
-      async () => {
-        const log = readFileSync(join(apiDir, ".wrangler/e2e/prod.log"), "utf8");
-        const [, entry] = log.split(`To: ${email}`);
-        const path = entry && /Text: (\S+\.txt)/.exec(entry)?.[1];
-        return path ? readFileSync(path, "utf8") : null;
-      },
-      (text) => text !== null,
-      "login email",
-    );
-    const code = /code is (\d{6})/.exec(mail!)?.[1];
-    const link = /(http\S+\/auth\/link\?token=\S+)/.exec(mail!)?.[1];
+    const [request] = sesRequests(email);
+    expect(request?.method).toBe("POST");
+    expect(request?.path).toBe("/v2/email/outbound-emails");
+    expect(request?.authorization).toMatch(/^AWS4-HMAC-SHA256 Credential=AKIAE2EFAKEKEY\/\d{8}\/ca-central-1\/ses\/aws4_request, SignedHeaders=\S+, Signature=[0-9a-f]{64}$/);
+    expect(request?.amzDate).toMatch(/^\d{8}T\d{6}Z$/);
+    expect(JSON.stringify(request)).not.toContain("e2e-fake-secret-value");
+    expect(request?.body.FromEmailAddress).toBe("Ideas Match <login@example.test>");
+
+    const text = request!.body.Content.Simple.Body.Text.Data;
+    const code = /code is (\d{6})/.exec(text)?.[1];
+    const link = /(http\S+\/auth\/link\?token=\S+)/.exec(text)?.[1];
     expect(code).toBeTruthy();
+    expect(request!.body.Content.Simple.Subject.Data).toBe(`${code} is your Ideas Match code`);
+    expect(request!.body.Content.Simple.Body.Html.Data).toContain(code);
     expect(link?.startsWith(PROD)).toBe(true);
 
     const landing = await fetch(link!);
@@ -174,10 +191,43 @@ describe("production settings", () => {
     expect(await status(client.post("/auth/verify", { token: new URL(link!).searchParams.get("token") }))).toBe(401);
   });
 
+  it("reports a clear error when SES refuses, without leaking details", async () => {
+    const response = await fetch(`${PROD}/auth/start`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ email: "ses-reject@example.test" }) });
+    expect(response.status).toBe(503);
+    expect(await response.json()).toEqual({ error: "email_unavailable" });
+    const log = await waitFor(
+      async () => readFileSync(join(apiDir, ".wrangler/e2e/prod.log"), "utf8"),
+      (text) => text.includes("SES returned 400 MessageRejected"),
+      "SES failure in the log",
+    );
+    expect(log).not.toContain("e2e-fake-secret-value");
+    expect(log).not.toMatch(/is your Ideas Match code/);
+  });
+
   it("closes admin pages when Access is not configured", async () => {
     expect((await fetch(`${PROD}/admin`)).status).toBe(403);
     expect((await fetch(`${PROD}/admin/reports`, { headers: { "cf-access-jwt-assertion": "forged" } })).status).toBe(403);
     expect((await fetch(`${PROD}/admin/topics`, { method: "POST" })).status).toBe(403);
+  });
+});
+
+describe("sign-in email content", () => {
+  it("leaves out workers.dev links, which mail filters treat as phishing", () => {
+    const email = loginEmailContent("123456", "https://ideas-match-api.ideas-match.workers.dev/auth/link?token=abc");
+    expect(email.subject).toBe("123456 is your Ideas Match code");
+    for (const body of [email.text, email.html]) {
+      expect(body).toContain("123456");
+      expect(body).not.toContain("workers.dev");
+      expect(body).not.toContain("token=");
+      expect(body).not.toContain("Both expire");
+    }
+  });
+
+  it("includes the link on the API's own domain", () => {
+    const email = loginEmailContent("123456", "https://api.example.org/auth/link?token=abc");
+    expect(email.text).toContain("https://api.example.org/auth/link?token=abc");
+    expect(email.html).toContain('href="https://api.example.org/auth/link?token=abc"');
+    expect(email.text).toContain("Both expire");
   });
 });
 
