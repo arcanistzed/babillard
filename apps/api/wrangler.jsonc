@@ -1,7 +1,11 @@
 {
   "$schema": "./node_modules/wrangler/config-schema.json",
   "name": "ideas-match-api",
+  "account_id": "04b61c9801867f8e9b37768bb3483b7b",
   "main": "src/index.ts",
+  "workers_dev": true,
+  // Preview URLs would be public and share production data.
+  "preview_urls": false,
   "compatibility_date": "2026-11-04",
   "compatibility_flags": ["nodejs_compat"],
   "observability": {
@@ -12,8 +16,7 @@
     {
       "binding": "DB",
       "database_name": "ideas-match",
-      // Replace with the id printed by `wrangler d1 create ideas-match` before deploying.
-      "database_id": "00000000-0000-0000-0000-000000000000",
+      "database_id": "fe92edf7-f0ff-4497-b4bb-1ba46d15c854",
       "migrations_dir": "drizzle"
     }
   ],
@@ -28,7 +31,7 @@
   "send_email": [{ "name": "EMAIL" }],
   "triggers": { "crons": ["*/5 * * * *"] },
   "vars": {
-    "PUBLIC_ORIGIN": "https://api.ideasmatch.example",
+    "PUBLIC_ORIGIN": "https://ideas-match-api.ideas-match.workers.dev",
     "EMAIL_FROM": "hello@ideasmatch.example",
     "PUSH_MODE": "expo",
     "DEV_MODE": "false",

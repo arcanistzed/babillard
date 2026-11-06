@@ -8,11 +8,11 @@
     },
     "preview": {
       "distribution": "internal",
-      "env": { "EXPO_PUBLIC_API_URL": "https://api.ideasmatch.example" }
+      "env": { "EXPO_PUBLIC_API_URL": "https://ideas-match-api.ideas-match.workers.dev" }
     },
     "production": {
       "autoIncrement": true,
-      "env": { "EXPO_PUBLIC_API_URL": "https://api.ideasmatch.example" }
+      "env": { "EXPO_PUBLIC_API_URL": "https://ideas-match-api.ideas-match.workers.dev" }
     }
   },
   "submit": { "production": {} }

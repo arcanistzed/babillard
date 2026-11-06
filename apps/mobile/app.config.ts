@@ -1,7 +1,7 @@
 import type { ExpoConfig } from "expo/config";
 
 // The API domain hosts the Universal Link and App Link association files.
-const apiHost = new URL(process.env.EXPO_PUBLIC_API_URL ?? "https://api.ideasmatch.example").hostname;
+const apiHost = new URL(process.env.EXPO_PUBLIC_API_URL ?? "https://ideas-match-api.ideas-match.workers.dev").hostname;
 const isRealHost = !["localhost", "10.0.2.2", "127.0.0.1"].includes(apiHost);
 
 const config: ExpoConfig = {
