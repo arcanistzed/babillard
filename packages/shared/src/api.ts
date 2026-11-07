@@ -1,4 +1,5 @@
 import type { Envelope } from "./e2ee";
+import type { Lean } from "./rules/match";
 import type { Field, LookingFor, Role, Stance, VenueKind } from "./constants";
 
 /** Response shapes shared by the Worker and the app. */
@@ -47,6 +48,10 @@ export interface TopicCard {
   fieldTags: string[];
   nearbyCount: number;
   pending: boolean;
+  /** Percentages for this city. Null until enough people have answered and they don't all agree. */
+  lean: Lean | null;
+  /** Meetups on this topic that someone confirmed really happened. Null until there are enough to be worth showing. */
+  meetupsHeld: number | null;
 }
 
 export interface TopicSwipeResult {

@@ -2,7 +2,7 @@
 {
 "id": "behavioral-economics",
 "kind": "interest",
-"title": "Behavioral economics",
+"title": "Behavioural economics",
 "blurb": "Why people don't act like the models say they should.",
 "fieldTags": [
 "economics",
@@ -40,7 +40,7 @@
 "title": "Économie du développement",
 "blurb": "Ce qui fait vraiment progresser les pays et les ménages pauvres.",
 "openers": [
-"Essais randomisés ou grandes institutions : par où commencez-vous?",
+"Essais randomisés ou grandes institutions: par où commencez-vous?",
 "Quelle trajectoire de pays vous intrigue le plus?"
 ]
 }
@@ -70,7 +70,7 @@
 {
 "id": "labor-markets-and-the-future-of-work",
 "kind": "interest",
-"title": "Labor markets and the future of work",
+"title": "Labour markets and the future of work",
 "blurb": "Wages, unions, gig work, and who bargains with whom.",
 "fieldTags": [
 "economics",
@@ -537,7 +537,7 @@
 "history"
 ],
 "openers": [
-"What's your favorite medieval myth to debunk?",
+"What's your favourite medieval myth to debunk?",
 "Which place and century would you visit?"
 ],
 "fr": {
@@ -626,7 +626,7 @@
 ],
 "openers": [
 "What's the strangest thing about this city's past?",
-"Which neighborhood's story should more people know?"
+"Which neighbourhood's story should more people know?"
 ],
 "fr": {
 "title": "Histoire urbaine",
@@ -896,7 +896,7 @@
 "title": "Le roman du XIXe siècle",
 "blurb": "De gros livres, de grandes sociétés et de très longues phrases.",
 "openers": [
-"Tolstoï, Eliot, Dickens : qui choisissez-vous?",
+"Tolstoï, Eliot, Dickens: qui choisissez-vous?",
 "Quel long roman valait chaque page?"
 ]
 }
@@ -1263,7 +1263,7 @@
 "biology"
 ],
 "openers": [
-"What's your favorite strange adaptation?",
+"What's your favourite strange adaptation?",
 "Which popular evolutionary story is wrong?"
 ],
 "fr": {
@@ -1745,7 +1745,7 @@
 "mathematics"
 ],
 "openers": [
-"What's your favorite proof?",
+"What's your favourite proof?",
 "Which result felt like magic when you first saw it?"
 ],
 "fr": {
@@ -1966,7 +1966,7 @@
 ],
 "openers": [
 "Which system should we copy?",
-"What's your favorite transit line and why?"
+"What's your favourite transit line and why?"
 ],
 "fr": {
 "title": "Ingénierie du transport en commun",
@@ -2272,7 +2272,7 @@
 "sociology"
 ],
 "openers": [
-"What's your favorite third place around here?",
+"What's your favourite third place around here?",
 "Which ones have we lost?"
 ],
 "fr": {
@@ -2353,7 +2353,7 @@
 {
 "id": "finding-research-collaborators",
 "kind": "interest",
-"title": "Finding research collaborators",
+"title": "Finding research collabourators",
 "blurb": "Meet people to work on a real project with.",
 "fieldTags": [
 "education",
@@ -2731,7 +2731,7 @@
 "id": "should-cities-abolish-single-family-zoning",
 "kind": "question",
 "title": "Should cities abolish single-family zoning?",
-"blurb": "Allowing more homes on every lot could cut rents. It could also change neighborhoods quickly.",
+"blurb": "Allowing more homes on every lot could cut rents. It could also change neighbourhoods quickly.",
 "fieldTags": [
 "urbanism",
 "economics"
@@ -2789,14 +2789,14 @@
 "blurb": "Le coût, l'achalandage, et si l'argent serait plus utile ailleurs.",
 "openers": [
 "La gratuité changerait-elle vos déplacements?",
-"Le service ou le prix : qu'est-ce qui compte le plus?"
+"Le service ou le prix: qu'est-ce qui compte le plus?"
 ]
 }
 },
 {
 "id": "should-cars-be-banned-from-city-centers",
 "kind": "question",
-"title": "Should cars be banned from city centers?",
+"title": "Should cars be banned from city centres?",
 "blurb": "Cleaner and quieter, but who loses access?",
 "fieldTags": [
 "urbanism",
@@ -2830,7 +2830,7 @@
 ],
 "fr": {
 "title": "Les villes devraient-elles imposer un péage de congestion?",
-"blurb": "Payer pour rouler au centre-ville : efficace ou injuste?",
+"blurb": "Payer pour rouler au centre-ville: efficace ou injuste?",
 "openers": [
 "Une ville l'a-t-elle bien fait?",
 "À qui devraient aller les revenus?"
@@ -3201,7 +3201,7 @@
 "politics"
 ],
 "openers": [
-"Who should grant the license?",
+"Who should grant the licence?",
 "What would you require?"
 ],
 "fr": {
@@ -3418,7 +3418,7 @@
 "id": "should-carbon-be-taxed-at-the-consumer-level",
 "kind": "question",
 "title": "Should carbon be taxed at the consumer level?",
-"blurb": "Prices that change behavior but hit some harder.",
+"blurb": "Prices that change behaviour but hit some harder.",
 "fieldTags": [
 "environment",
 "economics"
@@ -3704,7 +3704,7 @@
 "id": "should-immigration-be-significantly-increased",
 "kind": "question",
 "title": "Should immigration be significantly increased?",
-"blurb": "Labor markets, identity, and moral claims.",
+"blurb": "Labour markets, identity, and moral claims.",
 "fieldTags": [
 "politics",
 "economics"
@@ -4836,7 +4836,7 @@
 ],
 "openers": [
 "Where have you seen the two work together well?",
-"What does respectful collaboration look like?"
+"What does respectful collabouration look like?"
 ],
 "fr": {
 "title": "Savoirs autochtones et science",

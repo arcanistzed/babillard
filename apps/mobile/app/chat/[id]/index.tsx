@@ -88,7 +88,7 @@ export default function Chat() {
         <Pressable
           onLongPress={() => onLongPress(item)}
           onPress={item.failed && me ? () => send(item.body, me.id, item.clientId) : undefined}
-          accessibilityLabel={`${mine ? t("You", "Vous") : name}: ${item.unreadable ? UNREADABLE : item.body}. ${item.failed ? NOT_SENT : messageTime(item.createdAt)}`}
+          accessibilityLabel={`${mine ? t("You", "Vous"): name}: ${item.unreadable ? UNREADABLE: item.body}. ${item.failed ? NOT_SENT: messageTime(item.createdAt)}`}
           style={[styles.bubbleRow, mine ? styles.bubbleRowMine : null]}
         >
           <View style={[styles.bubble, mine ? { backgroundColor: theme.ink } : { backgroundColor: theme.surface, borderColor: theme.line, borderWidth: 1 }, item.pending && !item.failed ? styles.pending : null]}>

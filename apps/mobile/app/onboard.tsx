@@ -1,4 +1,4 @@
-import { FIELDS, ROLES, isAdult, type Field as FieldName, type LookingFor, type Me, type Role } from "@ideas-match/shared";
+import { ROLES, isAdult, type Field as FieldName, type LookingFor, type Me, type Role } from "@ideas-match/shared";
 import { useCallback, useState } from "react";
 import { ScrollView, StyleSheet, View } from "react-native";
 import Animated, { FadeInLeft, FadeInRight, useAnimatedStyle, withTiming } from "react-native-reanimated";
@@ -6,18 +6,15 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { api, friendlyError, uploadAvatar } from "@/api";
 import { useAuth } from "@/auth";
 import { CityPicker } from "@/components/CityPicker";
+import { FieldPicker } from "@/components/FieldPicker";
 import { TermsAgreement } from "@/components/TermsAgreement";
 import { LookingForPicker } from "@/components/LookingForPicker";
 import { PhotoPicker, pickAndResizePhoto } from "@/components/PhotoPicker";
 import { useTheme } from "@/theme";
 import { Button, Chip, ChipRow, ErrorText, Field, KeyboardScreen, T, useKeyboardOpen } from "@/ui";
-import { fieldLabel, roleLabel, t } from "@/i18n";
+import { roleLabel, t } from "@/i18n";
 
 const STEP_COUNT = 5;
-
-function toggle<T>(list: T[], value: T): T[] {
-  return list.includes(value) ? list.filter((item) => item !== value) : [...list, value];
-}
 
 /** Accepts the digits as typed and shows them as YYYY-MM-DD. */
 function formatDob(raw: string): string {
@@ -123,11 +120,7 @@ export default function Onboard() {
                   ))}
                 </ChipRow>
                 <T variant="heading">{t("Pick the fields you care about", "Choisissez les domaines qui vous intéressent")}</T>
-                <ChipRow>
-                  {FIELDS.map((value) => (
-                    <Chip key={value} label={fieldLabel(value)} selected={fields.includes(value)} disabled={!fields.includes(value) && fields.length >= 8} onPress={() => setFields(toggle(fields, value))} />
-                  ))}
-                </ChipRow>
+                <FieldPicker value={fields} onChange={setFields} max={8} />
               </>
             ) : null}
 

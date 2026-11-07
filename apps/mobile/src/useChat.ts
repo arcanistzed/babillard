@@ -2,7 +2,7 @@ import type { ChatMessage, ConversationDetail, ServerSocketEvent } from "@ideas-
 import { useQueryClient } from "@tanstack/react-query";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { api, ApiError, openConversationSocket } from "./api";
-import { ensureDeviceKey, readMessage, sealFor, type ReadableMessage } from "./e2ee";
+import { ensureDeviceKey, readingKeys, readMessage, sealFor, type ReadableMessage } from "./e2ee";
 
 export interface LocalMessage extends ReadableMessage {
   pending?: boolean;
@@ -56,13 +56,13 @@ export function useChat(conversationId: string, myId: string | undefined, onRemo
   const read = useCallback(
     async (incoming: ChatMessage[]): Promise<LocalMessage[]> => {
       if (!myId || !incoming.some((message) => message.envelope)) return incoming;
-      const me = await ensureDeviceKey(myId);
+      const keys = await readingKeys(myId);
       const roster = await members();
-      const opened = incoming.map((message) => readMessage(message, conversationId, me, roster));
+      const opened = incoming.map((message) => readMessage(message, conversationId, keys, roster));
       // Someone may have signed in on a new phone since this list was fetched.
-      if (!opened.some((message) => message.unreadable && message.envelope?.keys[me.publicKey])) return opened;
+      if (!opened.some((message) => message.unreadable && keys.some((key) => message.envelope?.keys[key.publicKey]))) return opened;
       const latest = await members(true);
-      return incoming.map((message) => readMessage(message, conversationId, me, latest));
+      return incoming.map((message) => readMessage(message, conversationId, keys, latest));
     },
     [conversationId, members, myId],
   );

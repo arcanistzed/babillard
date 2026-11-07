@@ -68,7 +68,7 @@ export default function MeetupScreen() {
       {upcoming ? (
         <View style={styles.actions}>
           {meetup.state === "confirmed" ? <Button label={t("Add to calendar", "Ajouter au calendrier")} onPress={addToCalendar} /> : null}
-          <Button label={t("Share the details", "Partager les détails")} kind="secondary" onPress={() => void Share.share({ message: t(`Meetup ${when} at ${place}: ${meetup.shareUrl}`, `Rencontre ${when}, ${place} : ${meetup.shareUrl}`) })} />
+          <Button label={t("Share the details", "Partager les détails")} kind="secondary" onPress={() => void Share.share({ message: t(`Meetup ${when} at ${place}: ${meetup.shareUrl}`, `Rencontre ${when}, ${place}: ${meetup.shareUrl}`) })} />
           {meetup.proposedBy === me?.id ? <Button label={t("Cancel this meetup", "Annuler cette rencontre")} kind="danger" onPress={() => cancel.mutate()} busy={cancel.isPending} /> : null}
         </View>
       ) : null}

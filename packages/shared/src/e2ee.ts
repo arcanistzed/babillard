@@ -1,6 +1,7 @@
 import { xchacha20poly1305 } from "@noble/ciphers/chacha.js";
 import { x25519 } from "@noble/curves/ed25519.js";
 import { hkdf } from "@noble/hashes/hkdf.js";
+import { scryptAsync } from "@noble/hashes/scrypt.js";
 import { sha256 } from "@noble/hashes/sha2.js";
 
 /**
@@ -156,4 +157,40 @@ export function securityCode(publicKeys: string[]): string {
     groups.push(String(value).padStart(5, "0"));
   }
   return groups.join(" ");
+}
+
+const BACKUP_KDF = { N: 2 ** 15, r: 8, p: 1, dkLen: 32 };
+
+export interface KeyBackup {
+  app: "ideas-match";
+  v: 1;
+  salt: string;
+  nonce: string;
+  ciphertext: string;
+}
+
+function backupKey(passphrase: string, salt: Uint8Array): Promise<Uint8Array> {
+  // The slow setting is the point: it makes guessing a passphrase from a stolen file expensive.
+  return scryptAsync(encoder.encode(passphrase.normalize("NFKC")), salt, BACKUP_KDF);
+}
+
+/** Wraps private keys so that the file is useless without the passphrase, which is never stored or sent anywhere. */
+export async function createKeyBackup(secretKeys: Uint8Array[], passphrase: string, random: Random): Promise<KeyBackup> {
+  const [salt, nonce] = [random(16), random(24)];
+  const key = await backupKey(passphrase, salt);
+  const plain = encoder.encode(JSON.stringify(secretKeys.map(toBase64)));
+  return { app: "ideas-match", v: 1, salt: toBase64(salt), nonce: toBase64(nonce), ciphertext: toBase64(xchacha20poly1305(key, nonce).encrypt(plain)) };
+}
+
+/** Returns null for a wrong passphrase or a file that isn't a backup. */
+export async function openKeyBackup(text: string, passphrase: string): Promise<Uint8Array[] | null> {
+  try {
+    const backup = JSON.parse(text) as KeyBackup;
+    if (backup.app !== "ideas-match" || backup.v !== 1) return null;
+    const key = await backupKey(passphrase, fromBase64(backup.salt));
+    const plain = xchacha20poly1305(key, fromBase64(backup.nonce)).decrypt(fromBase64(backup.ciphertext));
+    return (JSON.parse(decoder.decode(plain)) as string[]).map(fromBase64);
+  } catch {
+    return null;
+  }
 }

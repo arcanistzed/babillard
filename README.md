@@ -132,6 +132,10 @@ The `/admin` pages live behind Cloudflare Access.
 - **History** records every action and who took it, using the email Access verified.
 - **Crashes** groups reports from the app by error message for 30 days. Stack traces from release builds are minified, so they show roughly where a crash happened, not the original line.
 
+## How people lean
+
+Question cards show how the city leans, as percentages, once someone picks a stance. The totals stay hidden below 10 answers and when everyone agrees, because then they would reveal each person's answer. Topic cards also show how many meetups were confirmed as held, from 5 up. Stance never decides who meets whom.
+
 ## Languages
 
 The app is in English and French, and follows the phone's language. Text in the app uses `t("English", "Français")` from `apps/mobile/src/i18n.ts`, and it sends the language with each request. The server uses that to pick topic text, and to send push and email in each person's language. Each seeded topic carries its French in `seed/topics.json`. Topics people suggest show as written, and city names stay in English.
@@ -146,7 +150,8 @@ What this changes elsewhere:
 
 - **Previews and push.** The server can't write a preview, so the phone decrypts the latest message for the inbox. Push notifications say only who wrote and "New message", because push services can read them.
 - **Reports.** The reporter's phone reveals the keys for the reported message and its neighbours. The server decrypts the stored ciphertext with those keys, which proves the text is what was sent, and keeps that text with the report. Nothing else in the chat becomes readable.
-- **New phones.** A new phone, or a reinstall, can read messages from then on and shows older ones as unreadable. There is no key backup.
+- **New phones.** A new phone, or a reinstall, can read messages from then on, and shows older ones as unreadable unless it restores a backup.
+- **Key backup.** Back up messages, under You, saves a file holding this phone's keys, encrypted with XChaCha20-Poly1305 under a scrypt-derived key from a passphrase. The phone's share sheet saves it wherever the person chooses, including Google Drive. The file never reaches our servers, and a lost passphrase can't be recovered. Restored keys only open older messages, and the phone keeps its own key for new ones.
 - **Groups.** Someone who joins reads from then on. Someone who leaves stops being included.
 
 Not encrypted: messages the app writes itself (such as "Sam proposed a meetup"), meetup times and places (the server sends reminders and share pages from them), profiles, and swipes.
@@ -236,7 +241,7 @@ cd apps/api && npx wrangler d1 execute ideas-match --remote --file seed/seed.sql
 
 6. **Set up the app builds.** The EAS project ID is in `apps/mobile/app.config.ts`. Android push needs a Firebase project, with `google-services.json` in `apps/mobile` and an FCM V1 key uploaded through `eas credentials`. iOS push needs an Apple Developer account.
 
-7. **Turn on sign-in links.** Set `APPLE_APP_ID` (team ID and bundle ID) and `ANDROID_CERT_SHA256` so Universal Links and App Links verify. Until then, emails still carry the six-digit code.
+7. **Turn on sign-in links.** `ANDROID_CERT_SHA256` is set, so Android verifies App Links. iOS still needs `APPLE_APP_ID` (team ID and bundle ID). Emails only include a link once the API has its own domain, because mail filters treat `workers.dev` links as phishing, so for now people sign in with the six-digit code.
 
 ## Decisions worth knowing
 

@@ -1456,7 +1456,7 @@ describe("crash reports and public pages", () => {
     expect(detail.suggestedOpeners[0]).toContain("Quel résultat classique");
 
     const [opener] = await french.get(`/conversations/${conversationId}/messages`);
-    expect(opener.body).toMatch(/^You both want to dig into Behavioral economics\. /);
+    expect(opener.body).toMatch(/^You both want to dig into Behavioural economics\. /);
     expect(opener.bodyFr).toMatch(/^Vous voulez tous les deux explorer Économie comportementale\. /);
     const inbox = await frenchGet("/conversations");
     expect(inbox.find((row: any) => row.id === conversationId).lastMessagePreview).toMatch(/^Vous voulez/);
@@ -1465,6 +1465,50 @@ describe("crash reports and public pages", () => {
     const invite = await (await fetch(`${BASE}/invite`, { headers: { "accept-language": "fr" } })).text();
     expect(invite).toContain("Obtenir l'application Android");
     expect(await (await fetch(`${BASE}/t/behavioral-economics`, { headers: { "accept-language": "fr" } })).text()).toContain("Économie comportementale");
+  });
+
+  it("shows a city's lean only once enough people answered and they disagree, and counts meetups held from five", async () => {
+    const topic = "should-zoos-exist";
+    const answer = async (stance: string) => (await person("boston")).post(`/deck/topics/${topic}/swipe`, { direction: "right", stance });
+    // Asks a brand new person, passing on cards until this topic comes up.
+    const cardForNewPerson = async () => {
+      const viewer = await person("boston");
+      for (let page = 0; page < 15; page += 1) {
+        const cards = await viewer.get("/deck/topics");
+        const card = cards.find((row: any) => row.id === topic);
+        if (card) return card;
+        for (const row of cards) await viewer.post(`/deck/topics/${row.id}/swipe`, { direction: "left" });
+      }
+      throw new Error("topic never came up");
+    };
+
+    for (let i = 0; i < 10; i += 1) await answer("for");
+    expect((await cardForNewPerson()).lean).toBeNull();
+    await answer("against");
+    const card = await cardForNewPerson();
+    expect(card.lean).toEqual({ for: 91, against: 9, unsure: 0 });
+    expect(card.meetupsHeld).toBeNull();
+
+    const held: { client: Client; id: string }[] = [];
+    for (let i = 0; i < 5; i += 1) {
+      const [a, b] = [await person("new-york"), await person("new-york")];
+      const chat = await match(a, b, topic);
+      const soon = Date.now();
+      const meetup = await a.post(`/meetups?conversationId=${chat}`, { startsAt: soon + 500, endsAt: soon + 1000, venueKind: "cafe", venueNote: "" });
+      await b.post(`/meetups/${meetup.id}/respond`, { response: "yes" });
+      held.push({ client: a, id: meetup.id });
+    }
+    await sleep(2000);
+    await sweep();
+    for (const { client, id } of held) await client.post(`/meetups/${id}/did-meet`, { didMeet: true });
+    expect((await cardForNewPerson()).meetupsHeld).toBe(5);
+  }, 120_000);
+
+  it("filters the deck by field group", async () => {
+    const viewer = await person("toronto");
+    const arts = await viewer.get("/deck/topics?group=arts");
+    expect(arts.length).toBeGreaterThan(0);
+    expect(arts.every((card: any) => card.fieldTags.some((tag: string) => ["art", "music_film"].includes(tag)))).toBe(true);
   });
 
   it("rejects oversized crash reports", async () => {

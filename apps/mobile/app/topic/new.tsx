@@ -1,11 +1,12 @@
-import { FIELDS, type Field as FieldName } from "@ideas-match/shared";
+import type { Field as FieldName } from "@ideas-match/shared";
 import { useQueryClient } from "@tanstack/react-query";
 import { router } from "expo-router";
 import { useState } from "react";
 import { StyleSheet } from "react-native";
 import { api, friendlyError } from "@/api";
 import { Button, Chip, ChipRow, ErrorText, Field, FormScreen, T } from "@/ui";
-import { fieldLabel, t } from "@/i18n";
+import { FieldPicker } from "@/components/FieldPicker";
+import { t } from "@/i18n";
 
 export default function NewTopic() {
   const queryClient = useQueryClient();
@@ -44,20 +45,7 @@ export default function NewTopic() {
         />
         <Field label={t("One line on why it's interesting (optional)", "Pourquoi c'est intéressant, en une ligne (facultatif)")} value={blurb} onChangeText={setBlurb} maxLength={400} multiline style={styles.blurb} />
         <T variant="heading">{t("Which fields does it touch?", "Quels domaines touche-t-il?")}</T>
-        <ChipRow>
-          {FIELDS.map((field) => {
-            const selected = fieldTags.includes(field);
-            return (
-              <Chip
-                key={field}
-                label={fieldLabel(field)}
-                selected={selected}
-                disabled={!selected && fieldTags.length >= 4}
-                onPress={() => setFieldTags(selected ? fieldTags.filter((item) => item !== field) : [...fieldTags, field])}
-              />
-            );
-          })}
-        </ChipRow>
+        <FieldPicker value={fieldTags} onChange={setFieldTags} max={4} />
         {error ? <ErrorText>{error}</ErrorText> : null}
       <Button label={t("Suggest this topic", "Suggérer ce sujet")} onPress={submit} busy={busy} disabled={title.trim().length < 4 || fieldTags.length === 0} />
     </FormScreen>

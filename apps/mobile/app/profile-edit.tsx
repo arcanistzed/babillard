@@ -1,4 +1,4 @@
-import { FIELDS, ROLES, type Me } from "@ideas-match/shared";
+import { ROLES, type Me } from "@ideas-match/shared";
 import { useQueryClient } from "@tanstack/react-query";
 import { router } from "expo-router";
 import { useCallback, useState } from "react";
@@ -6,13 +6,10 @@ import { ScrollView, StyleSheet, View } from "react-native";
 import { api, friendlyError } from "@/api";
 import { useAuth } from "@/auth";
 import { CityPicker } from "@/components/CityPicker";
+import { FieldPicker } from "@/components/FieldPicker";
 import { LookingForPicker } from "@/components/LookingForPicker";
 import { Button, Chip, ChipRow, ErrorText, Field, KeyboardScreen, T, useBottomPadding } from "@/ui";
-import { fieldLabel, roleLabel, t } from "@/i18n";
-
-function toggle<T>(list: T[], value: T): T[] {
-  return list.includes(value) ? list.filter((item) => item !== value) : [...list, value];
-}
+import { roleLabel, t } from "@/i18n";
 
 export default function ProfileEdit() {
   const { me, setMe } = useAuth();
@@ -60,11 +57,7 @@ export default function ProfileEdit() {
         <T variant="heading">{t("Where can you meet people?", "Où pouvez-vous rencontrer des gens?")}</T>
         <CityPicker cityId={cityId} campusId={campusId} onChange={setLocation} />
         <T variant="heading">{t("Fields you care about", "Domaines qui vous intéressent")}</T>
-        <ChipRow>
-          {FIELDS.map((value) => (
-            <Chip key={value} label={fieldLabel(value)} selected={fields.includes(value)} disabled={!fields.includes(value) && fields.length >= 8} onPress={() => setFields(toggle(fields, value))} />
-          ))}
-        </ChipRow>
+        <FieldPicker value={fields} onChange={setFields} max={8} />
         {error ? <ErrorText>{error}</ErrorText> : null}
       </ScrollView>
       <View style={[styles.actions, { paddingBottom: bottomPadding }]}>

@@ -5,7 +5,7 @@ import { useState } from "react";
 import { StyleSheet } from "react-native";
 import { api, friendlyError } from "@/api";
 import { useAuth } from "@/auth";
-import { ensureDeviceKey, readMessage } from "@/e2ee";
+import { readingKeys, readMessage } from "@/e2ee";
 import { Button, Chip, ChipRow, ErrorText, Field, FormScreen, T } from "@/ui";
 import { t } from "@/i18n";
 
@@ -38,10 +38,10 @@ export default function Report() {
   async function collectEvidence() {
     if (!params.conversationId || !me) return [];
     try {
-      const key = await ensureDeviceKey(me.id);
+      const keys = await readingKeys(me.id);
       const nearby = await api.get<ChatMessage[]>(`/conversations/${params.conversationId}/messages?around=${params.messageId ?? ""}`);
       return nearby.flatMap((message) => {
-        const { contentKey } = readMessage(message, params.conversationId!, key);
+        const { contentKey } = readMessage(message, params.conversationId!, keys);
         return contentKey ? [{ messageId: message.id, contentKey }] : [];
       });
     } catch {

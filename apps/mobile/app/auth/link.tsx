@@ -11,7 +11,7 @@ import { t } from "@/i18n";
 export default function AuthLink() {
   const { token } = useLocalSearchParams<{ token?: string }>();
   const { completeSignIn, me } = useAuth();
-  const [error, setError] = useState<string | null>(token ? null : t("This link is missing its sign-in details.", "Il manque les renseignements de connexion à ce lien."));
+  const [error, setError] = useState<string | null>(token ? null: t("This link is missing its sign-in details.", "Il manque les renseignements de connexion à ce lien."));
   const started = useRef(false);
 
   useEffect(() => {

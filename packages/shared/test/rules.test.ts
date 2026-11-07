@@ -26,6 +26,11 @@ import {
   scoreTopic,
   visibleLookingFor,
   campusForDomain,
+  createKeyBackup,
+  openKeyBackup,
+  FIELD_GROUPS,
+  FIELDS,
+  leanSummary,
   meetupDays,
   meetupSlotAt,
   meetupTimes,
@@ -531,4 +536,54 @@ describe("picking a custom meetup time", () => {
     const { startsAt, endsAt } = meetupSlotAt(new Date(2026, 10, 8, 18));
     expect(endsAt - startsAt).toBe(2 * 60 * 60 * 1000);
   });
+});
+
+describe("how a city leans", () => {
+  it("stays hidden below ten answers", () => {
+    expect(leanSummary({ for: 5, against: 4 })).toBeNull();
+    expect(leanSummary({})).toBeNull();
+  });
+
+  it("stays hidden when everyone agrees, since that would reveal each person's answer", () => {
+    expect(leanSummary({ for: 40 })).toBeNull();
+  });
+
+  it("gives whole percentages, never counts", () => {
+    expect(leanSummary({ for: 6, against: 3, unsure: 1 })).toEqual({ for: 60, against: 30, unsure: 10 });
+    expect(leanSummary({ for: 2, against: 9 })).toEqual({ for: 18, against: 82, unsure: 0 });
+  });
+});
+
+describe("field groups", () => {
+  it("put every field in exactly one group", () => {
+    const grouped = FIELD_GROUPS.flatMap((group) => group.fields as readonly string[]);
+    expect([...grouped].sort()).toEqual([...FIELDS].sort());
+  });
+});
+
+describe("key backup", () => {
+  const random = (length: number) => webcrypto.getRandomValues(new Uint8Array(length));
+  const secrets = [random(32), random(32)];
+
+  it("brings the keys back with the right passphrase, and opens a message on a new phone", async () => {
+    const old = deviceKeyFromSecret(secrets[0]!);
+    const sender = generateDeviceKey(random);
+    const envelope = sealMessage({ text: "from before", conversationId: "c", senderId: "s", sender, readers: [old.publicKey], random });
+    const file = JSON.stringify(await createKeyBackup(secrets, "correct horse", random));
+    const restored = await openKeyBackup(file, "correct horse");
+    expect(restored?.map(toBase64)).toEqual(secrets.map(toBase64));
+    expect(openMessage({ envelope, conversationId: "c", senderId: "s", me: deviceKeyFromSecret(restored![0]!) })?.text).toBe("from before");
+  }, 30_000);
+
+  it("gives nothing for a wrong passphrase, or a file that isn't a backup", async () => {
+    const file = JSON.stringify(await createKeyBackup(secrets, "correct horse", random));
+    expect(await openKeyBackup(file, "wrong horse")).toBeNull();
+    expect(await openKeyBackup("{}", "correct horse")).toBeNull();
+    expect(await openKeyBackup("not json", "correct horse")).toBeNull();
+  }, 30_000);
+
+  it("doesn't contain the keys in readable form", async () => {
+    const file = JSON.stringify(await createKeyBackup(secrets, "correct horse", random));
+    expect(file).not.toContain(toBase64(secrets[0]!));
+  }, 30_000);
 });

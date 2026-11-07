@@ -126,7 +126,7 @@ meetups.post("/", async (c) => {
   const [profile] = await db.select({ name: schema.profiles.displayName }).from(schema.profiles).where(eq(schema.profiles.userId, user.id));
   const name = profile?.name ?? "Someone";
   await c.env.CHAT_ROOM.getByName(conversationId).postSystem(conversationId, `${name} proposed a meetup at ${venueName(meetup).en}.`, {
-    fr: `${profile?.name ?? "Quelqu'un"} a proposé une rencontre : ${venueName(meetup).fr}.`,
+    fr: `${profile?.name ?? "Quelqu'un"} a proposé une rencontre: ${venueName(meetup).fr}.`,
     kind: "meetup",
     meetupId: meetup.id,
   });
@@ -172,7 +172,7 @@ meetups.post("/:id/respond", async (c) => {
       .returning({ id: schema.meetups.id });
     if (confirmed.length > 0) {
       const where = venueName(meetup);
-      await stub.postSystem(meetup.conversationId, `It's on! Meetup confirmed at ${where.en}.`, { fr: `C'est confirmé! Rencontre : ${where.fr}.`, kind: "meetup", meetupId: meetup.id });
+      await stub.postSystem(meetup.conversationId, `It's on! Meetup confirmed at ${where.en}.`, { fr: `C'est confirmé! Rencontre: ${where.fr}.`, kind: "meetup", meetupId: meetup.id });
       console.log(JSON.stringify({ event: "meetup_confirmed", meetupId: meetup.id, conversationKind: conversation.kind }));
       c.executionCtx.waitUntil(
         sendPush(c.env, await memberIds(db, meetup.conversationId), { title: "Your meetup is on", body: where.en, fr: { title: "Votre rencontre est confirmée", body: where.fr }, data: { screen: "meetup", id: meetup.id } }),

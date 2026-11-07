@@ -1,4 +1,4 @@
-import type { Field, LookingFor, Role, VenueKind } from "@ideas-match/shared";
+import type { Field, FieldGroupId, LookingFor, Role, VenueKind } from "@ideas-match/shared";
 import { FIELD_LABELS, LOOKING_FOR_LABELS, ROLE_LABELS, VENUE_LABELS } from "@ideas-match/shared";
 
 /** The app follows the phone's language: French if it's set to French, English otherwise. */
@@ -57,6 +57,21 @@ const ROLE_LABELS_FR: Record<Role, string> = {
 
 const VENUE_LABELS_FR: Record<VenueKind, string> = { cafe: "Café", library: "Bibliothèque", campus: "Campus", park: "Parc", other: "Ailleurs" };
 
+const FIELD_GROUP_LABELS: Record<FieldGroupId, [string, string]> = {
+  society: ["Society and public life", "Société et vie publique"],
+  humanities: ["Humanities", "Sciences humaines"],
+  arts: ["Arts", "Arts"],
+  science: ["Science and technology", "Sciences et technologie"],
+};
+const SHORT_GROUP_LABELS: Record<FieldGroupId, [string, string]> = {
+  society: ["Society", "Société"],
+  humanities: ["Humanities", "Humanités"],
+  arts: ["Arts", "Arts"],
+  science: ["Science", "Sciences"],
+};
+
+export const fieldGroupLabel = (group: FieldGroupId) => FIELD_GROUP_LABELS[group][isFrench ? 1 : 0];
+export const shortGroupLabel = (group: FieldGroupId) => SHORT_GROUP_LABELS[group][isFrench ? 1 : 0];
 export const fieldLabel = (field: Field) => (isFrench ? FIELD_LABELS_FR[field] : FIELD_LABELS[field]);
 export const lookingForLabel = (item: LookingFor) => (isFrench ? LOOKING_FOR_LABELS_FR[item] : LOOKING_FOR_LABELS[item]);
 export const roleLabel = (role: Role) => (isFrench ? ROLE_LABELS_FR[role] : ROLE_LABELS[role]);

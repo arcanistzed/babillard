@@ -1,8 +1,8 @@
-import { GROUP_MIN_SIZE, type Stance, type TopicCard, type TopicSwipeResult } from "@ideas-match/shared";
+import { FIELD_GROUPS, GROUP_MIN_SIZE, type FieldGroupId, type Stance, type TopicCard, type TopicSwipeResult } from "@ideas-match/shared";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { router } from "expo-router";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { ActivityIndicator, StyleSheet, View } from "react-native";
+import { ActivityIndicator, ScrollView, StyleSheet, View } from "react-native";
 import Animated, { FadeIn, FadeOut } from "react-native-reanimated";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { api } from "@/api";
@@ -11,8 +11,8 @@ import { DeckControls } from "@/components/DeckControls";
 import { Flyer } from "@/components/Flyer";
 import { SwipeDeck, type SwipeDeckHandle, type SwipeDirection } from "@/components/SwipeDeck";
 import { inviteToApp, inviteToTopic } from "@/invite";
-import { Button, ErrorText, T } from "@/ui";
-import { t } from "@/i18n";
+import { Button, Chip, ErrorText, T } from "@/ui";
+import { shortGroupLabel, t } from "@/i18n";
 
 const REFILL_AT = 5;
 const IN_LABEL = t("I'm in", "J'embarque");
@@ -23,13 +23,20 @@ export default function Deck() {
   const deck = useRef<SwipeDeckHandle>(null);
   const [cards, setCards] = useState<TopicCard[]>([]);
   const [stances, setStances] = useState<Record<string, Stance | null>>({});
-  const [group, setGroup] = useState<{ id: string; title: string } | null>(null);
+  const [openedGroup, setOpenedGroup] = useState<{ id: string; title: string } | null>(null);
   // The last topic this person joined that still needs people, which makes it the moment to bring a friend.
   const [nudge, setNudge] = useState<{ topic: TopicCard; needed: number } | null>(null);
   const [swipeFailed, setSwipeFailed] = useState(false);
   const swiped = useRef(new Set<string>());
 
-  const topics = useQuery({ queryKey: ["topics"], queryFn: () => api.get<TopicCard[]>("/deck/topics"), staleTime: 0 });
+  const [group, setGroupFilter] = useState<FieldGroupId | null>(null);
+  const topics = useQuery({ queryKey: ["topics", group], queryFn: () => api.get<TopicCard[]>(`/deck/topics${group ? `?group=${group}` : ""}`), staleTime: 0 });
+
+  function chooseGroup(next: FieldGroupId | null) {
+    if (next === group) return;
+    setCards([]);
+    setGroupFilter(next);
+  }
 
   useEffect(() => {
     if (!topics.data) return;
@@ -61,7 +68,7 @@ export default function Deck() {
           void queryClient.invalidateQueries({ queryKey: ["people"] });
           if (result.groupConversationId) {
             void queryClient.invalidateQueries({ queryKey: ["inbox"] });
-            setGroup({ id: result.groupConversationId, title: topic.title });
+            setOpenedGroup({ id: result.groupConversationId, title: topic.title });
           } else if (direction === "right" && !topic.pending && topic.nearbyCount + 1 < GROUP_MIN_SIZE) {
             setNudge({ topic, needed: GROUP_MIN_SIZE - topic.nearbyCount - 1 });
           }
@@ -102,6 +109,13 @@ export default function Deck() {
           </T>
         )}
       </View>
+
+      <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.filterRow} contentContainerStyle={styles.filters}>
+        <Chip label={t("All", "Tous")} selected={group === null} onPress={() => chooseGroup(null)} />
+        {FIELD_GROUPS.map((entry) => (
+          <Chip key={entry.id} label={shortGroupLabel(entry.id)} selected={group === entry.id} onPress={() => chooseGroup(entry.id)} />
+        ))}
+      </ScrollView>
 
       <View style={styles.deck}>
         {empty ? (
@@ -144,18 +158,18 @@ export default function Deck() {
         </View>
       ) : null}
 
-      {group ? (
+      {openedGroup ? (
         <Celebration
           title={t("Your group is open", "Votre groupe est ouvert")}
-          body={group.title}
+          body={openedGroup.title}
           action={t("Open the group", "Ouvrir le groupe")}
           dismissLabel={t("Keep swiping", "Continuer")}
           onAction={() => {
-            const id = group.id;
-            setGroup(null);
+            const id = openedGroup.id;
+            setOpenedGroup(null);
             router.push(`/chat/${id}`);
           }}
-          onDismiss={() => setGroup(null)}
+          onDismiss={() => setOpenedGroup(null)}
         />
       ) : null}
     </SafeAreaView>
@@ -165,7 +179,9 @@ export default function Deck() {
 const styles = StyleSheet.create({
   screen: { flex: 1 },
   // Tall enough for two lines of title, so swapping in the invite prompt doesn't resize the card.
-  header: { paddingHorizontal: 20, paddingTop: 10, paddingBottom: 12, minHeight: 84, justifyContent: "center" },
+  header: { paddingHorizontal: 20, paddingTop: 10, paddingBottom: 8, minHeight: 80, justifyContent: "center" },
+  filterRow: { flexGrow: 0 },
+  filters: { gap: 8, paddingHorizontal: 16, paddingBottom: 10 },
   nudge: { flexDirection: "row", alignItems: "center", gap: 12 },
   nudgeText: { flex: 1 },
   deck: { flex: 1, marginHorizontal: 16 },

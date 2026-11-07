@@ -1,4 +1,4 @@
-import { openMessage, type InboxItem } from "@ideas-match/shared";
+import type { InboxItem } from "@ideas-match/shared";
 import { useQuery } from "@tanstack/react-query";
 import { router, useFocusEffect } from "expo-router";
 import { useCallback, useEffect, useState } from "react";
@@ -6,7 +6,7 @@ import { FlatList, Pressable, RefreshControl, StyleSheet, View } from "react-nat
 import { SafeAreaView } from "react-native-safe-area-context";
 import { api } from "@/api";
 import { useAuth } from "@/auth";
-import { ensureDeviceKey } from "@/e2ee";
+import { readingKeys, readMessage } from "@/e2ee";
 import { describeWhen, timeLeft } from "@/format";
 import { inviteToApp } from "@/invite";
 import { flyerInk, fonts, useTheme } from "@/theme";
@@ -20,13 +20,14 @@ function usePreviews(items: InboxItem[] | undefined): Record<string, string> {
   useEffect(() => {
     if (!me || !items) return;
     let active = true;
-    void ensureDeviceKey(me.id)
-      .then((key) => {
+    void readingKeys(me.id)
+      .then((keys) => {
         const next: Record<string, string> = {};
         for (const item of items) {
           if (!item.lastMessageEnvelope || !item.lastMessageSenderId) continue;
-          const opened = openMessage({ envelope: item.lastMessageEnvelope, conversationId: item.id, senderId: item.lastMessageSenderId, me: key });
-          next[item.id] = opened?.text ?? t("New message", "Nouveau message");
+          const message = { envelope: item.lastMessageEnvelope, senderId: item.lastMessageSenderId, seq: 0, id: item.id, body: "", kind: "text" as const, meetupId: null, createdAt: 0 };
+          const opened = readMessage(message, item.id, keys);
+          next[item.id] = opened.unreadable ? t("New message", "Nouveau message") : opened.body;
         }
         if (active) setPreviews(next);
       })

@@ -1,6 +1,6 @@
-import { GROUP_MAX_SIZE, GROUP_MIN_SIZE, type Field, type Stance, type TopicCard } from "@ideas-match/shared";
+import { GROUP_MAX_SIZE, GROUP_MIN_SIZE, type Field, type Lean, type Stance, type TopicCard } from "@ideas-match/shared";
 import { Pressable, StyleSheet, Text, View } from "react-native";
-import Animated, { Extrapolation, interpolate, useAnimatedStyle, type SharedValue } from "react-native-reanimated";
+import Animated, { Extrapolation, FadeIn, interpolate, useAnimatedStyle, type SharedValue } from "react-native-reanimated";
 import { fonts, flyerInk } from "@/theme";
 import { fieldLabel, t } from "@/i18n";
 
@@ -34,11 +34,27 @@ function TearOffTabs({ nearby, bg, pull }: { nearby: number; bg: string; pull?: 
   );
 }
 
+/** Only appears after someone picks a stance, so seeing the totals can't sway the answer. */
+function CityLean({ lean, fg }: { lean: Lean; fg: string }) {
+  const summary = t(`In your city: ${lean.for}% for, ${lean.against}% against, ${lean.unsure}% not sure`, `Dans votre ville: ${lean.for} % pour, ${lean.against} % contre, ${lean.unsure} % incertain`);
+  return (
+    <Animated.View entering={FadeIn.duration(200)} style={styles.lean} accessible accessibilityLabel={summary}>
+      <View style={styles.leanBar}>
+        {lean.for > 0 ? <View style={{ flex: lean.for, backgroundColor: fg }} /> : null}
+        {lean.unsure > 0 ? <View style={{ flex: lean.unsure, backgroundColor: fg, opacity: 0.45 }} /> : null}
+        {lean.against > 0 ? <View style={{ flex: lean.against, backgroundColor: fg, opacity: 0.2 }} /> : null}
+      </View>
+      <Text style={[styles.leanText, { color: fg }]}>{summary}</Text>
+    </Animated.View>
+  );
+}
+
 export function Flyer({ topic, stance, onStance, isTop = true, pull }: { topic: TopicCard; stance: Stance | null; onStance: (stance: Stance | null) => void; isTop?: boolean; pull?: SharedValue<number> }) {
   const { bg, fg } = flyerInk(topic.fieldTags[0]);
   const fields = topic.fieldTags.map((tag) => fieldLabel(tag as Field) ?? tag).join(t(" and ", " et "));
   const isQuestion = topic.kind === "question";
-  const nearby = topic.pending ? t("In review", "En cours d'examen") : nearbyLine(topic.nearbyCount);
+  const held = topic.meetupsHeld ? t(`${topic.meetupsHeld} meetups held`, `${topic.meetupsHeld} rencontres tenues`) : null;
+  const nearby = topic.pending ? t("In review", "En cours d'examen") : [nearbyLine(topic.nearbyCount), held].filter(Boolean).join(" · ") || null;
   const titleSize = topic.title.length > 48 ? 32 : topic.title.length > 26 ? 38 : 46;
 
   return (
@@ -76,6 +92,7 @@ export function Flyer({ topic, stance, onStance, isTop = true, pull }: { topic: 
                 );
               })}
             </View>
+            {stance && topic.lean ? <CityLean lean={topic.lean} fg={fg} /> : null}
           </View>
         ) : null}
 
@@ -101,7 +118,10 @@ const styles = StyleSheet.create({
   middle: { flex: 1, justifyContent: "center", gap: 12 },
   title: { fontFamily: fonts.display },
   blurb: { fontFamily: fonts.body, fontSize: 18, lineHeight: 25 },
-  stances: { marginBottom: 12 },
+  stances: { marginBottom: 12, gap: 10 },
+  lean: { gap: 5 },
+  leanBar: { flexDirection: "row", height: 8, borderRadius: 4, overflow: "hidden", gap: 2 },
+  leanText: { fontFamily: fonts.bodyBold, fontSize: 13, lineHeight: 18 },
   stanceRow: { flexDirection: "row", gap: 8 },
   stance: { flex: 1, minHeight: 44, borderWidth: 2, borderRadius: 10, alignItems: "center", justifyContent: "center" },
   stanceText: { fontFamily: fonts.bodyBold, fontSize: 15 },

@@ -113,6 +113,21 @@ export const FIELD_LABELS: Record<Field, string> = {
   music_film: "Music & film",
 };
 
+/** Broad groups, so that pickers and the deck aren't one long list of fields. */
+export const FIELD_GROUPS = [
+  { id: "society", fields: ["politics", "public_policy", "law", "economics", "business", "sociology", "urbanism", "education", "media"] },
+  { id: "humanities", fields: ["philosophy", "history", "literature", "linguistics", "religion", "indigenous_studies"] },
+  { id: "arts", fields: ["art", "music_film"] },
+  { id: "science", fields: ["psychology", "biology", "medicine", "physics", "chemistry", "mathematics", "computer_science", "engineering", "environment"] },
+] as const satisfies readonly { id: string; fields: readonly Field[] }[];
+export type FieldGroupId = (typeof FIELD_GROUPS)[number]["id"];
+
+/** Fewer answers than this could point to individuals, so city-wide totals stay hidden. */
+export const LEAN_MIN_ANSWERS = 10;
+
+/** A count of one or two meetups reads as discouraging, so the number only shows once it says something. */
+export const MEETUPS_HELD_MIN_SHOWN = 5;
+
 export const STANCES = ["for", "against", "unsure"] as const;
 export type Stance = (typeof STANCES)[number];
 

@@ -1,3 +1,5 @@
+import { LEAN_MIN_ANSWERS, type Stance } from "../constants";
+
 export function orderedPair(userA: string, userB: string): [string, string] {
   return userA < userB ? [userA, userB] : [userB, userA];
 }
@@ -37,4 +39,18 @@ export function defaultOpeners(kind: "interest" | "question", title: string): st
   return kind === "question"
     ? ["Where do you land on this, and why?", "What would change your mind?"]
     : [`What got you interested in ${title}?`, "What should I read or look at first?"];
+}
+
+export type Lean = Record<Stance, number>;
+
+/**
+ * How a city leans on a question, as whole percentages. Hidden below a minimum
+ * number of answers, and when everyone agrees, because then the total would
+ * reveal how each person answered.
+ */
+export function leanSummary(counts: Partial<Record<Stance, number>>): Lean | null {
+  const [yes, no, unsure] = [counts.for ?? 0, counts.against ?? 0, counts.unsure ?? 0];
+  const total = yes + no + unsure;
+  if (total < LEAN_MIN_ANSWERS || Math.max(yes, no, unsure) === total) return null;
+  return { for: Math.round((yes / total) * 100), against: Math.round((no / total) * 100), unsure: Math.round((unsure / total) * 100) };
 }

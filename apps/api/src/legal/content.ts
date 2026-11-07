@@ -38,7 +38,7 @@ If you tap the location icon, the app asks your phone for your rough location on
 
 People in your city who share a topic with you can see your first name, photo, line about yourself, role, campus, fields, what you're looking for, and the topics you share. If your school email verified you, they see that too, but not the address.
 
-Your date of birth and email address are never shown to other people. Your stance on a question is never shown as yours. A group only sees the total number of people with each stance.
+Your date of birth and email address are never shown to other people. Your stance on a question is never shown as yours. A group only sees the total number of people with each stance. People in your city can see percentages for a question once at least 10 people have answered and they don't all agree.
 
 People in a chat with you can see your messages and profile. Anyone with a meetup's share link can see its topic, time, and place, but not who's going. If you report someone, we don't tell them it was you.
 
@@ -52,7 +52,7 @@ The app ranks topics and people automatically, using your fields, the topics you
 
 ## Your messages
 
-Messages are end-to-end encrypted. Only the phones of the people in a chat can read them, and we can't, so we couldn't hand them over even if asked. If you report someone from a chat, your phone shares the reported message and the ones around it with us so a moderator can review them, and we keep that text with the report. We can see who you chat with and when. Meetup times and places, and notes the app itself adds to a chat, aren't encrypted, because we use them to send reminders and share links. If you sign in on a new phone or reinstall the app, it can't read older messages. Each chat's About screen has a security code you can compare in person, to check that nobody else was added.
+Messages are end-to-end encrypted. Only the phones of the people in a chat can read them, and we can't, so we couldn't hand them over even if asked. If you report someone from a chat, your phone shares the reported message and the ones around it with us so a moderator can review them, and we keep that text with the report. We can see who you chat with and when. Meetup times and places, and notes the app itself adds to a chat, aren't encrypted, because we use them to send reminders and share links. If you sign in on a new phone or reinstall the app, it can't read older messages unless you restore a backup. A backup is a file you choose to save, protected by a passphrase we never see. Each chat's About screen has a security code you can compare in person, to check that nobody else was added.
 
 ## Emails and notifications
 
@@ -199,7 +199,7 @@ Safety concerns, including anything involving a child: safety@danielthorp.com. H
 
 const privacyFr = `# Politique de confidentialité
 
-Dernière mise à jour : 7 novembre 2026
+Dernière mise à jour: 7 novembre 2026
 
 Ideas Match aide les gens à trouver des personnes près de chez eux qui veulent parler des mêmes sujets, puis à se rencontrer en personne. Dans cette politique, « nous » désigne l'exploitant d'Ideas Match, nommé dans nos Conditions d'utilisation. Nous sommes établis au Canada. Notre responsable de la protection des renseignements personnels répond de la façon dont nous traitons vos renseignements. Adressez vos questions et demandes à privacy@danielthorp.com.
 
@@ -215,7 +215,7 @@ Ideas Match aide les gens à trouver des personnes près de chez eux qui veulent
 
 ## Votre consentement
 
-Vous acceptez cette politique en cochant la case à l'inscription. Certains renseignements que vous nous donnez sont sensibles : votre date de naissance, votre position sur les questions, et le fait que vous êtes ouvert ou ouverte aux rencontres amoureuses. Nous exigeons votre date de naissance parce que l'application est réservée aux adultes. Vous pouvez retirer votre consentement à tout moment en supprimant votre compte, mais vous ne pouvez pas utiliser l'application sans compte.
+Vous acceptez cette politique en cochant la case à l'inscription. Certains renseignements que vous nous donnez sont sensibles: votre date de naissance, votre position sur les questions, et le fait que vous êtes ouvert ou ouverte aux rencontres amoureuses. Nous exigeons votre date de naissance parce que l'application est réservée aux adultes. Vous pouvez retirer votre consentement à tout moment en supprimant votre compte, mais vous ne pouvez pas utiliser l'application sans compte.
 
 ## Votre emplacement
 
@@ -225,7 +225,7 @@ Si vous touchez l'icône d'emplacement, l'application demande une seule fois vot
 
 Les personnes de votre ville qui partagent un sujet avec vous peuvent voir votre prénom, votre photo, votre phrase de présentation, votre rôle, votre campus, vos domaines, ce que vous recherchez et les sujets en commun. Si votre courriel scolaire vous a vérifié, elles le voient aussi, mais pas l'adresse.
 
-Votre date de naissance et votre adresse courriel ne sont jamais montrées aux autres. Votre position sur une question n'est jamais présentée comme la vôtre. Un groupe voit seulement le nombre total de personnes par position.
+Votre date de naissance et votre adresse courriel ne sont jamais montrées aux autres. Votre position sur une question n'est jamais présentée comme la vôtre. Un groupe voit seulement le nombre total de personnes par position. Les gens de votre ville peuvent voir des pourcentages pour une question lorsqu'au moins 10 personnes ont répondu et qu'elles ne sont pas toutes du même avis.
 
 Les personnes d'une conversation peuvent voir vos messages et votre profil. Toute personne qui a le lien de partage d'une rencontre peut en voir le sujet, l'heure et le lieu, mais pas qui y va. Si vous signalez quelqu'un, nous ne lui disons pas que c'est vous.
 
@@ -239,7 +239,7 @@ L'application classe automatiquement les sujets et les personnes selon vos domai
 
 ## Vos messages
 
-Les messages sont chiffrés de bout en bout. Seuls les téléphones des personnes d'une conversation peuvent les lire. Nous ne le pouvons pas, et nous ne pourrions donc pas les remettre même si on nous le demandait. Si vous signalez quelqu'un depuis une conversation, votre téléphone nous transmet le message signalé et ceux qui l'entourent pour qu'un modérateur les examine, et nous conservons ce texte avec le signalement. Nous pouvons voir avec qui vous discutez et quand. Les heures et lieux des rencontres, ainsi que les notes ajoutées par l'application, ne sont pas chiffrés, parce que nous les utilisons pour les rappels et les liens de partage. Si vous vous connectez sur un nouveau téléphone ou réinstallez l'application, elle ne pourra pas lire les anciens messages. L'écran À propos de chaque conversation affiche un code de sécurité à comparer en personne, pour vérifier que personne d'autre n'a été ajouté.
+Les messages sont chiffrés de bout en bout. Seuls les téléphones des personnes d'une conversation peuvent les lire. Nous ne le pouvons pas, et nous ne pourrions donc pas les remettre même si on nous le demandait. Si vous signalez quelqu'un depuis une conversation, votre téléphone nous transmet le message signalé et ceux qui l'entourent pour qu'un modérateur les examine, et nous conservons ce texte avec le signalement. Nous pouvons voir avec qui vous discutez et quand. Les heures et lieux des rencontres, ainsi que les notes ajoutées par l'application, ne sont pas chiffrés, parce que nous les utilisons pour les rappels et les liens de partage. Si vous vous connectez sur un nouveau téléphone ou réinstallez l'application, elle ne pourra pas lire les anciens messages, sauf si vous restaurez une sauvegarde. Une sauvegarde est un fichier que vous choisissez d'enregistrer, protégé par une phrase secrète que nous ne voyons jamais. L'écran À propos de chaque conversation affiche un code de sécurité à comparer en personne, pour vérifier que personne d'autre n'a été ajouté.
 
 ## Courriels et notifications
 
@@ -247,7 +247,7 @@ Nous vous écrivons seulement pour vous connecter, et au sujet de la sécurité 
 
 ## Avec qui nous les partageons
 
-Nous faisons appel à ces entreprises pour faire fonctionner le service, et seulement à cette fin :
+Nous faisons appel à ces entreprises pour faire fonctionner le service, et seulement à cette fin:
 
 - Cloudflare héberge l'application, la base de données, les messages chiffrés et les photos.
 - Amazon Web Services envoie les courriels de connexion et de modération, et traite donc votre adresse courriel.
@@ -257,12 +257,12 @@ Ces entreprises peuvent traiter des renseignements à l'extérieur du Canada, y 
 
 ## Combien de temps nous les conservons
 
-- Codes de connexion : jusqu'à un jour.
-- Sessions : 90 jours après la connexion, ou jusqu'à la déconnexion.
-- Rapports de plantage : 30 jours.
-- Signalements, y compris les messages transmis, et historique de modération : deux ans après la fermeture du dossier.
-- Adresse courriel d'une personne bannie : tant que dure le bannissement, pour l'empêcher de se réinscrire.
-- Tout le reste : jusqu'à la suppression de votre compte, ou après deux ans sans utiliser l'application. Nous vous écrivons 30 jours avant de supprimer un compte inactif.
+- Codes de connexion: jusqu'à un jour.
+- Sessions: 90 jours après la connexion, ou jusqu'à la déconnexion.
+- Rapports de plantage: 30 jours.
+- Signalements, y compris les messages transmis, et historique de modération: deux ans après la fermeture du dossier.
+- Adresse courriel d'une personne bannie: tant que dure le bannissement, pour l'empêcher de se réinscrire.
+- Tout le reste: jusqu'à la suppression de votre compte, ou après deux ans sans utiliser l'application. Nous vous écrivons 30 jours avant de supprimer un compte inactif.
 
 ## Supprimer votre compte
 
@@ -288,7 +288,7 @@ Si nous modifions cette politique de façon importante, nous vous en informerons
 
 const termsFr = `# Conditions d'utilisation
 
-Dernière mise à jour : 7 novembre 2026
+Dernière mise à jour: 7 novembre 2026
 
 Ces conditions constituent une entente entre vous et Daniel Thorp, qui exploite Ideas Match. En cochant la case à l'inscription, vous les acceptez, ainsi que notre Politique de confidentialité. Si vous n'êtes pas d'accord, n'utilisez pas l'application.
 
@@ -298,7 +298,7 @@ Vous devez avoir 18 ans ou plus, et vous ne pouvez avoir qu'un seul compte. Donn
 
 ## Comment se comporter
 
-Vous pouvez être en désaccord avec n'importe qui sur n'importe quoi. C'est le but. Nous ne tolérons ni les abus ni les contenus répréhensibles. Il est interdit de :
+Vous pouvez être en désaccord avec n'importe qui sur n'importe quoi. C'est le but. Nous ne tolérons ni les abus ni les contenus répréhensibles. Il est interdit de:
 
 - Harceler, menacer ou rabaisser des gens, notamment pour ce qu'ils sont.
 - Faire pression sur quelqu'un pour une rencontre, ou pour quoi que ce soit lors d'une rencontre.
@@ -324,7 +324,7 @@ Vous pouvez signaler quelqu'un depuis son profil ou en appuyant longuement sur u
 
 ## Le service
 
-Ideas Match est gratuit pour l'instant. C'est un jeune produit : ses fonctions peuvent changer, il peut connaître des pannes ou cesser de fonctionner. Si possible, nous donnerons un préavis avant de le fermer.
+Ideas Match est gratuit pour l'instant. C'est un jeune produit: ses fonctions peuvent changer, il peut connaître des pannes ou cesser de fonctionner. Si possible, nous donnerons un préavis avant de le fermer.
 
 ## Limites de notre responsabilité
 
@@ -356,7 +356,7 @@ Les données sur les villes proviennent de GeoNames (geonames.org), sous licence
 
 const safetyFr = `# Normes de sécurité
 
-Dernière mise à jour : 7 novembre 2026
+Dernière mise à jour: 7 novembre 2026
 
 Ideas Match s'adresse aux adultes qui veulent se rencontrer en personne pour parler d'idées. Cette page explique comment nous assurons la sécurité des gens, en particulier des enfants, qui ne sont pas admis sur l'application.
 
@@ -374,7 +374,7 @@ Chacun peut signaler une personne depuis son profil ou en appuyant longuement su
 
 ## Messages privés
 
-Les messages sont chiffrés de bout en bout : nous ne pouvons ni les lire ni les analyser. Lorsqu'une personne signale une conversation, son téléphone nous transmet le message signalé et ceux qui l'entourent, et c'est ce que les modérateurs examinent.
+Les messages sont chiffrés de bout en bout: nous ne pouvons ni les lire ni les analyser. Lorsqu'une personne signale une conversation, son téléphone nous transmet le message signalé et ceux qui l'entourent, et c'est ce que les modérateurs examinent.
 
 ## Se rencontrer en sécurité
 
@@ -382,7 +382,7 @@ Nous ne faisons pas de vérification des antécédents. Rencontrez-vous dans un 
 
 ## Nous joindre
 
-Préoccupations de sécurité, y compris tout ce qui concerne un enfant : safety@danielthorp.com. Au Canada, de l'aide en cas de crise est offerte au 9-8-8, par appel ou texto. Pour signaler l'exploitation d'un enfant, rendez-vous sur Cyberaide.ca.`;
+Préoccupations de sécurité, y compris tout ce qui concerne un enfant: safety@danielthorp.com. Au Canada, de l'aide en cas de crise est offerte au 9-8-8, par appel ou texto. Pour signaler l'exploitation d'un enfant, rendez-vous sur Cyberaide.ca.`;
 
 export const LEGAL_TEXT: Record<LegalPage, Record<Language, string>> = {
   privacy: { en: privacyEn, fr: privacyFr },

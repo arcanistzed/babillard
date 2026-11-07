@@ -1,6 +1,6 @@
-import { DECK_PAGE_SIZE, rankTopics, topicSwipeSchema, topicSubmissionSchema, type TopicCard, type TopicSwipeResult } from "@ideas-match/shared";
+import { DECK_PAGE_SIZE, FIELD_GROUPS, leanSummary, MEETUPS_HELD_MIN_SHOWN, rankTopics, topicSwipeSchema, topicSubmissionSchema, type TopicCard, type TopicSwipeResult } from "@ideas-match/shared";
 import { localizeTopic, requestLanguage } from "../lib/language";
-import { and, eq, gt, inArray, isNull, or, sql } from "drizzle-orm";
+import { and, eq, gt, inArray, isNotNull, isNull, or, sql } from "drizzle-orm";
 import { Hono } from "hono";
 import { getDb, schema } from "../db";
 import { fail, parseJson } from "../lib/http";
@@ -62,7 +62,9 @@ deck.get("/topics", async (c) => {
   ]);
 
   const nearby = new Map(cohorts.map((row) => [row.topicId, row.count]));
-  const withCohorts = candidates.map(({ topic }) => ({ ...topic, cohortSize: nearby.get(topic.id) ?? 0 }));
+  const group = FIELD_GROUPS.find((entry) => entry.id === c.req.query("group"));
+  const inGroup = (topic: { fieldTags: string[] }) => !group || topic.fieldTags.some((tag) => (group.fields as readonly string[]).includes(tag));
+  const withCohorts = candidates.filter(({ topic }) => inGroup(topic)).map(({ topic }) => ({ ...topic, cohortSize: nearby.get(topic.id) ?? 0 }));
   // Someone's own suggestion is promised to appear right away, so it never competes on ranking.
   const ownPending = withCohorts.filter((topic) => topic.status === "pending");
   const ranked = [
@@ -72,6 +74,27 @@ deck.get("/topics", async (c) => {
       { userFields: profile[0]?.fields ?? [], limit: Math.max(DECK_PAGE_SIZE - ownPending.length, 0) },
     ),
   ];
+  const ids = ranked.map((topic) => topic.id);
+  const [stanceRows, heldRows] = ids.length
+    ? await Promise.all([
+        db
+          .select({ topicId: swipes.topicId, stance: swipes.stance, count: sql<number>`count(*)` })
+          .from(swipes)
+          .innerJoin(schema.users, eq(schema.users.id, swipes.userId))
+          .where(and(inArray(swipes.topicId, ids), eq(swipes.direction, "right"), isNotNull(swipes.stance), eq(schema.users.cityId, user.cityId!), eq(schema.users.status, "active")))
+          .groupBy(swipes.topicId, swipes.stance),
+        db
+          .select({ topicId: schema.conversations.topicId, count: sql<number>`count(DISTINCT ${schema.meetups.id})` })
+          .from(schema.meetups)
+          .innerJoin(schema.conversations, eq(schema.conversations.id, schema.meetups.conversationId))
+          .innerJoin(schema.meetupResponses, eq(schema.meetupResponses.meetupId, schema.meetups.id))
+          .where(and(inArray(schema.conversations.topicId, ids), eq(schema.meetupResponses.didMeet, true)))
+          .groupBy(schema.conversations.topicId),
+      ])
+    : [[], []];
+  const stanceCounts = (topicId: string) => Object.fromEntries(stanceRows.filter((row) => row.topicId === topicId).map((row) => [row.stance, row.count]));
+  const held = new Map(heldRows.map((row) => [row.topicId, row.count]));
+
   const language = requestLanguage(c);
   const cards: TopicCard[] = ranked.map((topic) => ({
     id: topic.id,
@@ -81,6 +104,8 @@ deck.get("/topics", async (c) => {
     fieldTags: topic.fieldTags,
     nearbyCount: topic.cohortSize,
     pending: topic.status === "pending",
+    lean: topic.kind === "question" ? leanSummary(stanceCounts(topic.id)) : null,
+    meetupsHeld: (held.get(topic.id) ?? 0) >= MEETUPS_HELD_MIN_SHOWN ? held.get(topic.id)! : null,
   }));
   return c.json(cards);
 });
