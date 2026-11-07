@@ -1,4 +1,4 @@
-import { FIELD_LABELS, LOOKING_FOR_LABELS, ROLE_LABELS, type PeopleSwipeResult, type PersonCard } from "@ideas-match/shared";
+import { type PeopleSwipeResult, type PersonCard } from "@ideas-match/shared";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { router, useFocusEffect } from "expo-router";
 import { useCallback, useEffect, useRef, useState } from "react";
@@ -11,21 +11,22 @@ import { SwipeDeck, type SwipeDeckHandle, type SwipeDirection } from "@/componen
 import { inviteToApp } from "@/invite";
 import { fonts, useTheme } from "@/theme";
 import { Avatar, Button, Chip, ChipRow, ErrorText, T } from "@/ui";
+import { fieldLabel, lookingForLabel, roleLabel, t } from "@/i18n";
 
 function PersonFlyer({ person }: { person: PersonCard }) {
   const theme = useTheme();
-  const subtitle = [ROLE_LABELS[person.role], person.campusName].filter(Boolean).join(", ");
+  const subtitle = [roleLabel(person.role), person.campusName].filter(Boolean).join(", ");
   return (
     <View style={[styles.card, { backgroundColor: theme.surface, borderColor: theme.ink }]}>
       <Pressable
         accessibilityRole="button"
-        accessibilityLabel={`Report or block ${person.displayName}`}
+        accessibilityLabel={t(`Report or block ${person.displayName}`, `Signaler ou bloquer ${person.displayName}`)}
         hitSlop={8}
         style={styles.report}
         onPress={() => router.push({ pathname: "/report", params: { targetUserId: person.id, name: person.displayName } })}
       >
         <T variant="small" muted>
-          Report or block
+          {t("Report or block", "Signaler ou bloquer")}
         </T>
       </Pressable>
       <View style={styles.identity}>
@@ -35,7 +36,7 @@ function PersonFlyer({ person }: { person: PersonCard }) {
           <T muted>{subtitle}</T>
           {person.verifiedInstitution ? (
             <T variant="small" style={{ color: theme.good, fontFamily: fonts.bodyBold }}>
-              Verified school email
+              {t("Verified school email", "Courriel scolaire vérifié")}
             </T>
           ) : null}
         </View>
@@ -44,30 +45,33 @@ function PersonFlyer({ person }: { person: PersonCard }) {
       {person.bio ? <T numberOfLines={4}>{person.bio}</T> : null}
 
       <View style={styles.section}>
-        <T variant="heading">You both picked</T>
+        <T variant="heading">{t("You both picked", "Vous avez tous deux choisi")}</T>
         {person.sharedTopics.slice(0, 3).map((topic) => (
           <T key={topic.id} variant="bodyBold">
             {topic.title}
           </T>
         ))}
-        {person.sharedTopics.length > 3 ? <T muted>and {person.sharedTopics.length - 3} more</T> : null}
+        {person.sharedTopics.length > 3 ? <T muted>{t(`and ${person.sharedTopics.length - 3} more`, `et ${person.sharedTopics.length - 3} de plus`)}</T> : null}
       </View>
 
       <View style={styles.section}>
-        <T variant="heading">Looking for</T>
+        <T variant="heading">{t("Looking for", "Recherche")}</T>
         <ChipRow>
           {person.lookingFor.map((item) => (
-            <Chip key={item} label={LOOKING_FOR_LABELS[item]} />
+            <Chip key={item} label={lookingForLabel(item)} />
           ))}
         </ChipRow>
       </View>
 
       <T variant="small" muted numberOfLines={2}>
-        Into {person.fields.map((field) => FIELD_LABELS[field]).join(", ")}
+        {t("Into", "Intérêts :")} {person.fields.map((field) => fieldLabel(field)).join(", ")}
       </T>
     </View>
   );
 }
+
+const TALK_LABEL = t("Let's talk", "Parlons-en");
+const PASS_LABEL = t("Pass", "Passer");
 
 export default function People() {
   const queryClient = useQueryClient();
@@ -124,25 +128,25 @@ export default function People() {
   return (
     <SafeAreaView edges={["top"]} style={styles.screen}>
       <View style={styles.header}>
-        {swipeFailed ? <ErrorText>That didn't save, so they'll come back. Check your connection.</ErrorText> : <T variant="title" numberOfLines={2}>People who picked your topics</T>}
+        {swipeFailed ? <ErrorText>{t("That didn't save, so they'll come back. Check your connection.", "Ce choix n'a pas été enregistré. Cette personne reviendra. Vérifiez votre connexion.")}</ErrorText> : <T variant="title" numberOfLines={2}>{t("People who picked your topics", "Ils ont choisi vos sujets")}</T>}
       </View>
 
       <View style={styles.deck}>
         {empty ? (
           people.isPending ? (
-            <ActivityIndicator accessibilityLabel="Loading people" size="large" style={styles.center} />
+            <ActivityIndicator accessibilityLabel={t("Loading people", "Chargement des personnes")} size="large" style={styles.center} />
           ) : (
             <View style={styles.center}>
               {people.isError ? (
                 <>
-                  <ErrorText>Couldn't load people. Check your connection.</ErrorText>
-                  <Button label="Try again" kind="secondary" onPress={() => people.refetch()} />
+                  <ErrorText>{t("Couldn't load people. Check your connection.", "Impossible de charger les personnes. Vérifiez votre connexion.")}</ErrorText>
+                  <Button label={t("Try again", "Réessayer")} kind="secondary" onPress={() => people.refetch()} />
                 </>
               ) : (
                 <>
-                  <T variant="title">Nobody new right now</T>
-                  <Button label="Invite a friend" onPress={inviteToApp} />
-                  <Button label="Pick more topics" kind="secondary" onPress={() => router.navigate("/deck")} />
+                  <T variant="title">{t("Nobody new right now", "Personne de nouveau pour l'instant")}</T>
+                  <Button label={t("Invite a friend", "Inviter quelqu'un")} onPress={inviteToApp} />
+                  <Button label={t("Pick more topics", "Choisir d'autres sujets")} kind="secondary" onPress={() => router.navigate("/deck")} />
                 </>
               )}
             </View>
@@ -153,9 +157,9 @@ export default function People() {
             items={cards}
             keyOf={(person) => person.id}
             onSwipe={onSwipe}
-            rightLabel="Let's talk"
-            leftLabel="Pass"
-            describeCard={(person) => `${person.displayName}. You both picked ${person.sharedTopics.map((topic) => topic.title).join(", ")}.`}
+            rightLabel={TALK_LABEL}
+            leftLabel={PASS_LABEL}
+            describeCard={(person) => `${person.displayName}. ${t("You both picked", "Vous avez tous deux choisi")} ${person.sharedTopics.map((topic) => topic.title).join(", ")}.`}
             renderCard={(person) => <PersonFlyer person={person} />}
           />
         )}
@@ -163,16 +167,16 @@ export default function People() {
 
       {!empty ? (
         <View style={styles.controls}>
-          <DeckControls leftLabel="Pass" rightLabel="Let's talk" onLeft={() => deck.current?.swipe("left")} onRight={() => deck.current?.swipe("right")} />
+          <DeckControls leftLabel={PASS_LABEL} rightLabel={TALK_LABEL} onLeft={() => deck.current?.swipe("left")} onRight={() => deck.current?.swipe("right")} />
         </View>
       ) : null}
 
       {match ? (
         <Celebration
-          title="It's a match"
-          body={`You and ${match.name} both want to talk.`}
-          action={`Say hi to ${match.name}`}
-          dismissLabel="Keep swiping"
+          title={t("It's a match", "C'est un jumelage")}
+          body={t(`You and ${match.name} both want to talk.`, `${match.name} et vous voulez en parler.`)}
+          action={t(`Say hi to ${match.name}`, `Écrire à ${match.name}`)}
+          dismissLabel={t("Keep swiping", "Continuer")}
           onAction={() => {
             const id = match.conversationId;
             setMatch(null);

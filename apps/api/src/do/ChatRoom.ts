@@ -15,6 +15,7 @@ interface MessageRow extends Record<string, SqlStorageValue> {
   id: string;
   sender_id: string | null;
   body: string;
+  body_fr: string | null;
   kind: string;
   meetup_id: string | null;
   created_at: number;
@@ -34,6 +35,7 @@ function toMessage(row: MessageRow): ChatMessage {
     id: row.id,
     senderId: row.sender_id,
     body: isEncrypted ? "" : row.body,
+    ...(row.body_fr ? { bodyFr: row.body_fr } : {}),
     ...(isEncrypted ? { envelope: JSON.parse(row.body) as Envelope } : {}),
     kind: row.kind as ChatMessage["kind"],
     meetupId: row.meetup_id,
@@ -53,6 +55,7 @@ export class ChatRoom extends DurableObject<Env> {
           id TEXT NOT NULL UNIQUE,
           sender_id TEXT,
           body TEXT NOT NULL,
+          body_fr TEXT,
           kind TEXT NOT NULL,
           meetup_id TEXT,
           created_at INTEGER NOT NULL,
@@ -60,6 +63,10 @@ export class ChatRoom extends DurableObject<Env> {
         );
         CREATE UNIQUE INDEX IF NOT EXISTS messages_client_idx ON messages (sender_id, client_id) WHERE client_id IS NOT NULL;
       `);
+      // Rooms created before French was added lack this column.
+      if (!this.ctx.storage.sql.exec("SELECT 1 FROM pragma_table_info('messages') WHERE name = 'body_fr'").toArray().length) {
+        this.ctx.storage.sql.exec("ALTER TABLE messages ADD COLUMN body_fr TEXT");
+      }
       // Messages from before encryption were plain text, and shouldn't sit readable on the server.
       if (!this.ctx.storage.kv.get("plaintext_removed")) {
         this.ctx.storage.sql.exec(`DELETE FROM messages WHERE kind = 'text' AND body NOT LIKE '{"v":1,%'`);
@@ -156,6 +163,7 @@ export class ChatRoom extends DurableObject<Env> {
         .update(schema.conversations)
         .set({
           lastMessagePreview: null,
+          lastMessagePreviewFr: null,
           lastMessageEnvelope: envelope,
           lastMessageSenderId: senderId,
           lastMessageAt: now,
@@ -188,6 +196,7 @@ export class ChatRoom extends DurableObject<Env> {
           title: profile?.name ?? "Ideas Match",
           // Push services can read this, so it never holds the message itself.
           body: "New message",
+          ...(profile?.name ? { fr: { title: profile.name, body: "Nouveau message" } } : {}),
           data: { screen: "chat", id: conversationId },
         }),
       );
@@ -206,13 +215,13 @@ export class ChatRoom extends DurableObject<Env> {
   }
 
   /** System and meetup messages. The caller decides who gets a push. */
-  async postSystem(conversationId: string, body: string, options: { kind?: "system" | "meetup"; meetupId?: string } = {}): Promise<ChatMessage> {
-    const message = this.insert({ senderId: null, body, kind: options.kind ?? "system", meetupId: options.meetupId ?? null, clientId: null });
+  async postSystem(conversationId: string, body: string, options: { fr?: string; kind?: "system" | "meetup"; meetupId?: string } = {}): Promise<ChatMessage> {
+    const message = this.insert({ senderId: null, body, bodyFr: options.fr ?? null, kind: options.kind ?? "system", meetupId: options.meetupId ?? null, clientId: null });
     this.broadcast({ type: "message", message });
     const db = getDb(this.env);
     await db
       .update(schema.conversations)
-      .set({ lastMessagePreview: body.slice(0, PREVIEW_LENGTH), lastMessageEnvelope: null, lastMessageSenderId: null, lastMessageAt: message.createdAt })
+      .set({ lastMessagePreview: body.slice(0, PREVIEW_LENGTH), lastMessagePreviewFr: options.fr?.slice(0, PREVIEW_LENGTH) ?? null, lastMessageEnvelope: null, lastMessageSenderId: null, lastMessageAt: message.createdAt })
       .where(eq(schema.conversations.id, conversationId));
     return message;
   }
@@ -267,17 +276,19 @@ export class ChatRoom extends DurableObject<Env> {
       // SQLite counts characters where JavaScript counts UTF-16 units, so an emoji in a name needs the spread.
       const prefixLength = [...displayName].length + 1;
       this.ctx.storage.sql.exec("UPDATE messages SET body = 'Someone ' || substr(body, ?) WHERE sender_id IS NULL AND substr(body, 1, ?) = ?", prefixLength + 1, prefixLength, `${displayName} `);
+      this.ctx.storage.sql.exec("UPDATE messages SET body_fr = 'Quelqu''un ' || substr(body_fr, ?) WHERE sender_id IS NULL AND substr(body_fr, 1, ?) = ?", prefixLength + 1, prefixLength, `${displayName} `);
     }
     this.kick(userId);
   }
 
-  private insert(input: { senderId: string | null; body: string; kind: ChatMessage["kind"]; meetupId: string | null; clientId: string | null }): ChatMessage {
+  private insert(input: { senderId: string | null; body: string; bodyFr?: string | null; kind: ChatMessage["kind"]; meetupId: string | null; clientId: string | null }): ChatMessage {
     const row = this.ctx.storage.sql
       .exec<MessageRow>(
-        "INSERT INTO messages (id, sender_id, body, kind, meetup_id, created_at, client_id) VALUES (?, ?, ?, ?, ?, ?, ?) RETURNING *",
+        "INSERT INTO messages (id, sender_id, body, body_fr, kind, meetup_id, created_at, client_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?) RETURNING *",
         newId(),
         input.senderId,
         input.body,
+        input.bodyFr ?? null,
         input.kind,
         input.meetupId,
         Date.now(),

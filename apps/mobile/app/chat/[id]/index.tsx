@@ -13,9 +13,11 @@ import { haptics } from "@/haptics";
 import { fonts, useTheme } from "@/theme";
 import { Chip, KeyboardScreen, T, useBottomPadding } from "@/ui";
 import { useChat, type LocalMessage } from "@/useChat";
+import { isFrench, t } from "@/i18n";
 
 const SAME_RUN_MS = 5 * 60 * 1000;
-const UNREADABLE = "Sent before you signed in on this phone";
+const NOT_SENT = t("Not sent. Tap to retry.", "Non envoyé. Touchez pour réessayer.");
+const UNREADABLE = t("Sent before you signed in on this phone", "Envoyé avant votre connexion sur ce téléphone");
 
 export default function Chat() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -57,10 +59,10 @@ export default function Chat() {
 
   function onLongPress(message: LocalMessage) {
     if (!message.senderId || message.senderId === me?.id) return;
-    const name = names.get(message.senderId) ?? "this person";
-    Alert.alert(`Message from ${name}`, undefined, [
-      { text: "Report this message", onPress: () => router.push({ pathname: "/report", params: { targetUserId: message.senderId!, name, conversationId: id, messageId: message.id } }) },
-      { text: "Cancel", style: "cancel" },
+    const name = names.get(message.senderId) ?? t("this person", "cette personne");
+    Alert.alert(t(`Message from ${name}`, `Message de ${name}`), undefined, [
+      { text: t("Report this message", "Signaler ce message"), onPress: () => router.push({ pathname: "/report", params: { targetUserId: message.senderId!, name, conversationId: id, messageId: message.id } }) },
+      { text: t("Cancel", "Annuler"), style: "cancel" },
     ]);
   }
 
@@ -70,13 +72,13 @@ export default function Chat() {
       return (
         <View style={styles.system}>
           <T variant="small" muted style={styles.systemText}>
-            {item.body}
+            {isFrench && item.bodyFr ? item.bodyFr : item.body}
           </T>
         </View>
       );
     }
     const mine = item.senderId === me?.id;
-    const name = item.senderId ? (names.get(item.senderId) ?? "Former member") : "";
+    const name = item.senderId ? (names.get(item.senderId) ?? t("Former member", "Ancien membre")) : "";
     // The list is newest first. A time goes under the last message of each run from one person.
     const next = reversed[index - 1];
     const endsRun = !next || next.senderId !== item.senderId || next.kind !== "text" || next.createdAt - item.createdAt > SAME_RUN_MS;
@@ -86,7 +88,7 @@ export default function Chat() {
         <Pressable
           onLongPress={() => onLongPress(item)}
           onPress={item.failed && me ? () => send(item.body, me.id, item.clientId) : undefined}
-          accessibilityLabel={`${mine ? "You" : name}: ${item.unreadable ? UNREADABLE : item.body}. ${item.failed ? "Not sent. Tap to retry." : messageTime(item.createdAt)}`}
+          accessibilityLabel={`${mine ? t("You", "Vous") : name}: ${item.unreadable ? UNREADABLE : item.body}. ${item.failed ? NOT_SENT : messageTime(item.createdAt)}`}
           style={[styles.bubbleRow, mine ? styles.bubbleRowMine : null]}
         >
           <View style={[styles.bubble, mine ? { backgroundColor: theme.ink } : { backgroundColor: theme.surface, borderColor: theme.line, borderWidth: 1 }, item.pending && !item.failed ? styles.pending : null]}>
@@ -105,7 +107,7 @@ export default function Chat() {
           </View>
           {item.failed ? (
             <T variant="small" style={{ color: theme.danger }}>
-              Not sent. Tap to retry.
+              {NOT_SENT}
             </T>
           ) : endsRun && !item.pending ? (
             <T variant="small" muted style={styles.time}>
@@ -125,7 +127,7 @@ export default function Chat() {
         options={{
           title: detail?.title ?? "",
           headerRight: () => (
-            <Pressable accessibilityRole="button" accessibilityLabel="About this chat" hitSlop={10} onPress={() => router.push(`/chat/${id}/info`)}>
+            <Pressable accessibilityRole="button" accessibilityLabel={t("About this chat", "À propos de cette conversation")} hitSlop={10} onPress={() => router.push(`/chat/${id}/info`)}>
               <Ionicons name="information-circle-outline" size={26} color={theme.ink} />
             </Pressable>
           ),
@@ -135,13 +137,13 @@ export default function Chat() {
       {detail?.expiresAt && !hasOwnMessage ? (
         <View style={[styles.banner, { backgroundColor: theme.accent }]}>
           <T variant="small" style={{ color: theme.onAccent, fontFamily: fonts.bodyBold }}>
-            {timeLeft(detail.expiresAt)} left to say hi
+            {t(`${timeLeft(detail.expiresAt)} left to say hi`, `Il reste ${timeLeft(detail.expiresAt)} pour dire bonjour`)}
           </T>
         </View>
       ) : null}
 
       {!loaded ? (
-        <ActivityIndicator accessibilityLabel="Loading messages" size="large" style={styles.loading} />
+        <ActivityIndicator accessibilityLabel={t("Loading messages", "Chargement des messages")} size="large" style={styles.loading} />
       ) : (
         <FlatList
           inverted
@@ -166,26 +168,26 @@ export default function Chat() {
         <View style={styles.composer}>
           <Pressable
             accessibilityRole="button"
-            accessibilityLabel="Propose a meetup"
+            accessibilityLabel={t("Propose a meetup", "Proposer une rencontre")}
             onPress={() => router.push({ pathname: "/meetup/new", params: { conversationId: id } })}
             style={[styles.meetButton, { backgroundColor: theme.accent }]}
           >
             <Ionicons name="calendar" size={18} color={theme.onAccent} />
             <T variant="small" style={{ color: theme.onAccent, fontFamily: fonts.bodyBold }}>
-              Meet up
+              {t("Meet up", "Se voir")}
             </T>
           </Pressable>
           <TextInput
             value={draft}
             onChangeText={setDraft}
-            placeholder="Write a message"
+            placeholder={t("Write a message", "Écrire un message")}
             placeholderTextColor={theme.muted}
-            accessibilityLabel="Write a message"
+            accessibilityLabel={t("Write a message", "Écrire un message")}
             multiline
             maxLength={4000}
             style={[styles.input, { color: theme.ink, backgroundColor: theme.surface, borderColor: theme.line, fontFamily: fonts.body }]}
           />
-          <Pressable accessibilityRole="button" accessibilityLabel="Send" disabled={!draft.trim()} onPress={() => submit()} hitSlop={6} style={[styles.send, { opacity: draft.trim() ? 1 : 0.35 }]}>
+          <Pressable accessibilityRole="button" accessibilityLabel={t("Send", "Envoyer")} disabled={!draft.trim()} onPress={() => submit()} hitSlop={6} style={[styles.send, { opacity: draft.trim() ? 1 : 0.35 }]}>
             <Ionicons name="send" size={24} color={theme.ink} />
           </Pressable>
         </View>

@@ -5,12 +5,15 @@ import { html, raw } from "hono/html";
 import { getDb, schema } from "../db";
 import { LEGAL_PATHS, LEGAL_TEXT, type Language, type LegalPage } from "../legal/content";
 import { buildIcs } from "../lib/ics";
+import { localizeTopic, requestLanguage } from "../lib/language";
 import type { AppEnv } from "../types";
 
 const ANDROID_APK_KEY = "releases/ideas-match.apk";
 
-function getApp() {
-  return html`<p><a class="button" href="/download/android">Get the Android app</a></p><p class="muted">iPhone is coming soon.</p>`;
+function getApp(language: Language = "en") {
+  return language === "fr"
+    ? html`<p><a class="button" href="/download/android">Obtenir l'application Android</a></p><p class="muted">Bientôt sur iPhone.</p>`
+    : html`<p><a class="button" href="/download/android">Get the Android app</a></p><p class="muted">iPhone is coming soon.</p>`;
 }
 
 const escapeHtml = (text: string) => text.replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;").replaceAll('"', "&quot;");
@@ -111,9 +114,14 @@ for (const pageName of Object.keys(LEGAL_PATHS) as LegalPage[]) {
   }
 }
 
-publicRoutes.get("/invite", (c) =>
-  c.html(page("Join Ideas Match", html`<h1>Someone wants to talk ideas with you</h1><p>Swipe on the topics you care about, match with people nearby, and meet up.</p>${getApp()}`)),
-);
+publicRoutes.get("/invite", (c) => {
+  const language = requestLanguage(c);
+  return c.html(
+    language === "fr"
+      ? page("Rejoindre Ideas Match", html`<h1>Quelqu'un veut parler d'idées avec vous</h1><p>Faites glisser les sujets qui vous intéressent, trouvez des gens près de chez vous et rencontrez-les.</p>${getApp("fr")}`, "fr")
+      : page("Join Ideas Match", html`<h1>Someone wants to talk ideas with you</h1><p>Swipe on the topics you care about, match with people nearby, and meet up.</p>${getApp()}`),
+  );
+});
 
 publicRoutes.get("/t/:id", async (c) => {
   const db = getDb(c.env);
@@ -122,7 +130,9 @@ publicRoutes.get("/t/:id", async (c) => {
     .from(schema.topics)
     .where(and(eq(schema.topics.id, c.req.param("id")), inArray(schema.topics.status, ["seeded", "approved"])));
   if (!topic) return c.notFound();
-  return c.html(page(topic.title, html`<h1>${topic.title}</h1><p>${topic.blurb}</p>${getApp()}`));
+  const language = requestLanguage(c);
+  const { title, blurb } = localizeTopic(topic, language);
+  return c.html(page(title, html`<h1>${title}</h1><p>${blurb}</p>${getApp(language)}`, language));
 });
 
 /** Reachable only through an unguessable token. Shows the plan, never who's going. */

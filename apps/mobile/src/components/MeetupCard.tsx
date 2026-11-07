@@ -1,4 +1,4 @@
-import { VENUE_LABELS, type MeetupSummary } from "@ideas-match/shared";
+import type { MeetupSummary } from "@ideas-match/shared";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { router } from "expo-router";
 import { Pressable, StyleSheet, View } from "react-native";
@@ -7,17 +7,18 @@ import { describeWhen } from "@/format";
 import { haptics } from "@/haptics";
 import { fonts, useTheme } from "@/theme";
 import { Chip, ChipRow, T } from "@/ui";
+import { t, venueLabel } from "@/i18n";
 
 export function stateLine(meetup: MeetupSummary): string {
   switch (meetup.state) {
     case "confirmed":
-      return "It's on";
+      return t("It's on", "C'est confirmé");
     case "cancelled":
-      return "Cancelled";
+      return t("Cancelled", "Annulée");
     case "done":
-      return "This meetup has passed";
+      return t("This meetup has passed", "Cette rencontre est passée");
     default:
-      return `${meetup.yesCount} yes so far, ${meetup.requiredYes} needed`;
+      return t(`${meetup.yesCount} yes so far, ${meetup.requiredYes} needed`, `${meetup.yesCount} oui jusqu'ici, ${meetup.requiredYes} requis`);
   }
 }
 
@@ -41,9 +42,9 @@ export function RsvpChips({ meetup, onRespond, disabled }: { meetup: MeetupSumma
   if (!open) return null;
   return (
     <ChipRow>
-      <Chip label="I'll be there" selected={meetup.myResponse === "yes"} disabled={disabled} onPress={() => onRespond("yes")} />
-      <Chip label="Maybe" selected={meetup.myResponse === "maybe"} disabled={disabled} onPress={() => onRespond("maybe")} />
-      <Chip label="Can't make it" selected={meetup.myResponse === "no"} disabled={disabled} onPress={() => onRespond("no")} />
+      <Chip label={t("I'll be there", "J'y serai")} selected={meetup.myResponse === "yes"} disabled={disabled} onPress={() => onRespond("yes")} />
+      <Chip label={t("Maybe", "Peut-être")} selected={meetup.myResponse === "maybe"} disabled={disabled} onPress={() => onRespond("maybe")} />
+      <Chip label={t("Can't make it", "Je ne peux pas")} selected={meetup.myResponse === "no"} disabled={disabled} onPress={() => onRespond("no")} />
     </ChipRow>
   );
 }
@@ -58,9 +59,9 @@ export function MeetupCard({ id }: { id: string }) {
   const faded = meetup.state === "cancelled" || meetup.state === "done";
   return (
     <View style={[styles.card, { backgroundColor: theme.surface, borderColor: meetup.state === "confirmed" ? theme.good : theme.ink, opacity: faded ? 0.65 : 1 }]}>
-      <Pressable accessibilityRole="button" accessibilityLabel="Open meetup details" onPress={() => router.push(`/meetup/${id}`)} style={styles.details}>
+      <Pressable accessibilityRole="button" accessibilityLabel={t("Open meetup details", "Ouvrir les détails de la rencontre")} onPress={() => router.push(`/meetup/${id}`)} style={styles.details}>
         <T variant="heading">{describeWhen(meetup.startsAt).replace(/^./, (letter) => letter.toUpperCase())}</T>
-        <T>{meetup.venueNote || VENUE_LABELS[meetup.venueKind]}</T>
+        <T>{meetup.venueNote || venueLabel(meetup.venueKind)}</T>
         <T variant="small" style={{ fontFamily: fonts.bodyBold, color: meetup.state === "confirmed" ? theme.good : theme.muted }}>
           {stateLine(meetup)}
         </T>

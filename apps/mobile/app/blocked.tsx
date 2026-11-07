@@ -3,6 +3,7 @@ import { FlatList, StyleSheet, View } from "react-native";
 import { api } from "@/api";
 import { useTheme } from "@/theme";
 import { Button, T } from "@/ui";
+import { t } from "@/i18n";
 
 export default function Blocked() {
   const theme = useTheme();
@@ -18,13 +19,13 @@ export default function Blocked() {
       data={blocked.data ?? []}
       keyExtractor={(item) => item.id}
       contentContainerStyle={styles.body}
-      ListEmptyComponent={blocked.isPending ? undefined : <T muted>You haven't blocked anyone.</T>}
+      ListEmptyComponent={blocked.isPending ? undefined : <T muted>{t("You haven't blocked anyone.", "Vous n'avez bloqué personne.")}</T>}
       renderItem={({ item }) => (
         <View style={[styles.row, { borderBottomColor: theme.line }]}>
           <T variant="bodyBold" style={styles.name}>
             {item.displayName}
           </T>
-          <Button label="Unblock" kind="secondary" onPress={() => unblock.mutate(item.id)} disabled={unblock.isPending} />
+          <Button label={t("Unblock", "Débloquer")} kind="secondary" onPress={() => unblock.mutate(item.id)} disabled={unblock.isPending} />
         </View>
       )}
     />

@@ -1,4 +1,3 @@
-import { LOOKING_FOR_LABELS, ROLE_LABELS } from "@ideas-match/shared";
 import { router } from "expo-router";
 import { useState } from "react";
 import { Alert, Pressable, ScrollView, StyleSheet, View } from "react-native";
@@ -11,11 +10,12 @@ import { inviteToApp } from "@/invite";
 import { openLegalPage } from "@/legal";
 import { fonts, useTheme } from "@/theme";
 import { Avatar, Button, Chip, ChipRow, ErrorText, T } from "@/ui";
+import { lookingForLabel, roleLabel, t } from "@/i18n";
 
 const LEGAL_LINKS = [
-  ["Privacy policy", "privacy"],
-  ["Terms of use", "terms"],
-  ["Safety", "safety"],
+  [t("Privacy policy", "Confidentialité"), "privacy"],
+  [t("Terms of use", "Conditions d'utilisation"), "terms"],
+  [t("Safety", "Sécurité"), "safety"],
 ] as const;
 
 export default function Profile() {
@@ -42,10 +42,10 @@ export default function Profile() {
   }
 
   function confirmDelete() {
-    Alert.alert("Delete your account?", "This deletes your profile and messages, and can't be undone.", [
-      { text: "Keep my account", style: "cancel" },
+    Alert.alert(t("Delete your account?", "Supprimer votre compte?"), t("This deletes your profile and messages, and can't be undone.", "Cela supprime votre profil et vos messages, et c'est irréversible."), [
+      { text: t("Keep my account", "Garder mon compte"), style: "cancel" },
       {
-        text: "Delete account",
+        text: t("Delete account", "Supprimer le compte"),
         style: "destructive",
         onPress: async () => {
           try {
@@ -63,15 +63,15 @@ export default function Profile() {
   return (
     <SafeAreaView edges={["top"]} style={styles.screen}>
       <ScrollView contentContainerStyle={styles.body}>
-        <Pressable accessibilityRole="button" accessibilityLabel="Change your photo" onPress={changePhoto} style={styles.identity}>
+        <Pressable accessibilityRole="button" accessibilityLabel={t("Change your photo", "Changer votre photo")} onPress={changePhoto} style={styles.identity}>
           <Avatar name={profile.displayName} url={profile.avatarUrl} size={96} />
           <View style={styles.identityText}>
             <T variant="title">{profile.displayName}</T>
-            <T muted>{ROLE_LABELS[profile.role]}</T>
+            <T muted>{roleLabel(profile.role)}</T>
             {place ? <T muted>{place}</T> : null}
             {me.verifiedInstitution ? (
               <T variant="small" style={{ color: theme.good, fontFamily: fonts.bodyBold }}>
-                Verified with {me.institutionDomain}
+                {t("Verified with", "Vérifié avec")} {me.institutionDomain}
               </T>
             ) : null}
           </View>
@@ -79,19 +79,19 @@ export default function Profile() {
         {profile.bio ? <T>{profile.bio}</T> : null}
 
         <View style={styles.section}>
-          <T variant="heading">Looking for</T>
-          <ChipRow>{profile.lookingFor.map((item) => <Chip key={item} label={LOOKING_FOR_LABELS[item]} />)}</ChipRow>
+          <T variant="heading">{t("Looking for", "Recherche")}</T>
+          <ChipRow>{profile.lookingFor.map((item) => <Chip key={item} label={lookingForLabel(item)} />)}</ChipRow>
         </View>
 
         {error ? <ErrorText>{error}</ErrorText> : null}
 
         <View style={styles.actions}>
-          <Button label="Invite a friend" onPress={inviteToApp} />
-          <Button label="Edit profile" kind="secondary" onPress={() => router.push("/profile-edit")} />
-          <Button label="Suggest a topic" kind="secondary" onPress={() => router.push("/topic/new")} />
-          <Button label="Blocked people" kind="quiet" onPress={() => router.push("/blocked")} />
-          <Button label="Sign out" kind="quiet" onPress={signOut} />
-          <Button label="Delete account" kind="danger" onPress={confirmDelete} />
+          <Button label={t("Invite a friend", "Inviter quelqu'un")} onPress={inviteToApp} />
+          <Button label={t("Edit profile", "Modifier le profil")} kind="secondary" onPress={() => router.push("/profile-edit")} />
+          <Button label={t("Suggest a topic", "Suggérer un sujet")} kind="secondary" onPress={() => router.push("/topic/new")} />
+          <Button label={t("Blocked people", "Personnes bloquées")} kind="quiet" onPress={() => router.push("/blocked")} />
+          <Button label={t("Sign out", "Se déconnecter")} kind="quiet" onPress={signOut} />
+          <Button label={t("Delete account", "Supprimer le compte")} kind="danger" onPress={confirmDelete} />
         </View>
         <View style={styles.legal}>
           {LEGAL_LINKS.map(([label, page]) => (

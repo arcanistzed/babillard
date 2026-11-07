@@ -40,10 +40,12 @@ export async function notifyAdminOfReport(env: Env, reason: string): Promise<voi
 }
 
 /** Throws if the email can't be sent, so a report is never closed as "warned" when nobody was told. */
-export async function sendConductWarning(env: Env, email: string): Promise<void> {
-  const text =
-    "Someone reported a recent interaction with you on Ideas Match. Please keep conversations respectful. If this happens again, your account may be closed.";
-  await sendEmail(env, { to: email, subject: "A note about your conduct on Ideas Match", text, html: `<p>${text}</p>` });
+export async function sendConductWarning(env: Env, email: string, language: "en" | "fr" = "en"): Promise<void> {
+  const french = language === "fr";
+  const text = french
+    ? "Quelqu'un a signalé un échange récent avec vous sur Ideas Match. Merci de garder vos conversations respectueuses. Si cela se reproduit, votre compte pourrait être fermé."
+    : "Someone reported a recent interaction with you on Ideas Match. Please keep conversations respectful. If this happens again, your account may be closed.";
+  await sendEmail(env, { to: email, subject: french ? "Un mot sur votre comportement sur Ideas Match" : "A note about your conduct on Ideas Match", text, html: `<p>${text}</p>` });
 }
 
 /** Ends every session and removes push tokens. Their profile and memberships stay, so a ban can be undone. */

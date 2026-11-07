@@ -6,6 +6,7 @@ import { api, friendlyError } from "@/api";
 import { useAuth } from "@/auth";
 import { TermsAgreement } from "@/components/TermsAgreement";
 import { Button, ErrorText, T } from "@/ui";
+import { t } from "@/i18n";
 
 /** Shown to existing members when the terms or policy change enough to need their agreement again. */
 export default function Agree() {
@@ -28,13 +29,13 @@ export default function Agree() {
   return (
     <SafeAreaView style={styles.screen}>
       <View style={styles.body}>
-        <T variant="title">Our terms have changed</T>
+        <T variant="title">{t("Our terms have changed", "Nos conditions ont changé")}</T>
         <TermsAgreement agreed={agreed} onChange={setAgreed} />
         {error ? <ErrorText>{error}</ErrorText> : null}
       </View>
       <View style={styles.actions}>
-        <Button label="Continue" onPress={accept} busy={busy} disabled={!agreed} />
-        <Button label="Sign out" kind="quiet" onPress={signOut} />
+        <Button label={t("Continue", "Continuer")} onPress={accept} busy={busy} disabled={!agreed} />
+        <Button label={t("Sign out", "Se déconnecter")} kind="quiet" onPress={signOut} />
       </View>
     </SafeAreaView>
   );

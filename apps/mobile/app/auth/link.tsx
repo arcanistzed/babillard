@@ -5,12 +5,13 @@ import { ActivityIndicator, StyleSheet, View } from "react-native";
 import { api, friendlyError } from "@/api";
 import { useAuth } from "@/auth";
 import { Button, ErrorText, T } from "@/ui";
+import { t } from "@/i18n";
 
 /** Where the emailed link lands, whether through a Universal Link, an App Link, or the custom scheme. */
 export default function AuthLink() {
   const { token } = useLocalSearchParams<{ token?: string }>();
   const { completeSignIn, me } = useAuth();
-  const [error, setError] = useState<string | null>(token ? null : "This link is missing its sign-in details.");
+  const [error, setError] = useState<string | null>(token ? null : t("This link is missing its sign-in details.", "Il manque les renseignements de connexion à ce lien."));
   const started = useRef(false);
 
   useEffect(() => {
@@ -27,12 +28,12 @@ export default function AuthLink() {
     <View style={styles.screen}>
       {error ? (
         <>
-          <T variant="title">That link didn't work</T>
+          <T variant="title">{t("That link didn't work", "Ce lien n'a pas fonctionné")}</T>
           <ErrorText>{error}</ErrorText>
-          <Button label="Get a new code" onPress={() => router.replace("/sign-in")} />
+          <Button label={t("Get a new code", "Obtenir un nouveau code")} onPress={() => router.replace("/sign-in")} />
         </>
       ) : (
-        <ActivityIndicator accessibilityLabel="Signing you in" size="large" />
+        <ActivityIndicator accessibilityLabel={t("Signing you in", "Connexion en cours")} size="large" />
       )}
     </View>
   );

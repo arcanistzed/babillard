@@ -1,4 +1,5 @@
 import { authStartSchema, authVerifySchema, institutionDomain } from "@ideas-match/shared";
+import { requestLanguage } from "../lib/language";
 import { and, desc, eq, gt, isNull, sql } from "drizzle-orm";
 import { Hono } from "hono";
 import { createMiddleware } from "hono/factory";
@@ -70,7 +71,7 @@ auth.post("/start", limitByIp("SIGN_IN_START_LIMIT"), async (c) => {
   if (isDevMode(c.env)) return c.json({ ok: true, devCode: code, devToken: token });
 
   try {
-    await sendLoginEmail(c.env, email, code, `${c.env.PUBLIC_ORIGIN}/auth/link?token=${encodeURIComponent(token)}`);
+    await sendLoginEmail(c.env, email, code, `${c.env.PUBLIC_ORIGIN}/auth/link?token=${encodeURIComponent(token)}`, requestLanguage(c));
   } catch (error) {
     console.error(JSON.stringify({ event: "login_email_failed", error: String(error) }));
     throw fail(503, "email_unavailable");

@@ -1,10 +1,11 @@
-import { meetupDays, meetupSlotAt, meetupTimes, suggestMeetupSlots, VENUE_KINDS, VENUE_LABELS, type MeetupSummary, type VenueKind } from "@ideas-match/shared";
+import { meetupDays, meetupSlotAt, meetupTimes, suggestMeetupSlots, VENUE_KINDS, type MeetupSummary, type VenueKind } from "@ideas-match/shared";
 import { useQueryClient } from "@tanstack/react-query";
 import { router, useLocalSearchParams } from "expo-router";
 import { useMemo, useState } from "react";
 import { ScrollView, StyleSheet, View } from "react-native";
 import { api, friendlyError } from "@/api";
 import { Button, Chip, ChipRow, ErrorText, Field, FormScreen, T } from "@/ui";
+import { slotLabel, t, venueLabel } from "@/i18n";
 
 /** Everything starts filled in, so proposing a meetup can be a single tap. */
 export default function NewMeetup() {
@@ -40,12 +41,12 @@ export default function NewMeetup() {
   return (
     <FormScreen gap={22}>
         <View style={styles.section}>
-          <T variant="heading">When?</T>
+          <T variant="heading">{t("When?", "Quand?")}</T>
           <ChipRow>
             {slots.map((slot, index) => (
               <Chip
                 key={slot.startsAt}
-                label={slot.label}
+                label={slotLabel(slot.label)}
                 selected={!customOpen && index === slotIndex}
                 onPress={() => {
                   setCustomOpen(false);
@@ -53,7 +54,7 @@ export default function NewMeetup() {
                 }}
               />
             ))}
-            <Chip label="Pick another time" selected={customOpen} onPress={() => setCustomOpen(true)} />
+            <Chip label={t("Pick another time", "Choisir un autre moment")} selected={customOpen} onPress={() => setCustomOpen(true)} />
           </ChipRow>
           {customOpen ? (
             <>
@@ -77,25 +78,25 @@ export default function NewMeetup() {
                   ))}
                 </ScrollView>
               ) : (
-                <T muted>No times left today. Pick another day.</T>
+                <T muted>{t("No times left today. Pick another day.", "Plus d'heures aujourd'hui. Choisissez un autre jour.")}</T>
               )}
             </>
           ) : null}
         </View>
         <View style={styles.section}>
-          <T variant="heading">Where?</T>
+          <T variant="heading">{t("Where?", "Où?")}</T>
           <ChipRow>
             {VENUE_KINDS.map((kind) => (
-              <Chip key={kind} label={VENUE_LABELS[kind]} selected={kind === venueKind} onPress={() => setVenueKind(kind)} />
+              <Chip key={kind} label={venueLabel(kind)} selected={kind === venueKind} onPress={() => setVenueKind(kind)} />
             ))}
           </ChipRow>
-          <Field label="Name the place (optional)" value={venueNote} onChangeText={setVenueNote} maxLength={200} placeholder="Blue Door on Main Street" />
+          <Field label={t("Name the place (optional)", "Nom du lieu (facultatif)")} value={venueNote} onChangeText={setVenueNote} maxLength={200} placeholder={t("Blue Door on Main Street", "La Porte bleue, rue Principale")} />
         </View>
         <T variant="small" muted>
-          First time meeting? Choose a public place and tell a friend.
+          {t("First time meeting? Choose a public place and tell a friend.", "Première rencontre? Choisissez un lieu public et prévenez quelqu'un.")}
         </T>
         {error ? <ErrorText>{error}</ErrorText> : null}
-      <Button label="Propose this meetup" onPress={propose} busy={busy} disabled={customOpen && !customTime} />
+      <Button label={t("Propose this meetup", "Proposer cette rencontre")} onPress={propose} busy={busy} disabled={customOpen && !customTime} />
     </FormScreen>
   );
 }

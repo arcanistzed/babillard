@@ -11,6 +11,7 @@ import { describeWhen, timeLeft } from "@/format";
 import { inviteToApp } from "@/invite";
 import { flyerInk, fonts, useTheme } from "@/theme";
 import { Avatar, Button, ErrorText, T } from "@/ui";
+import { t } from "@/i18n";
 
 /** The server only has ciphertext for the latest message, so the phone works out the preview itself. */
 function usePreviews(items: InboxItem[] | undefined): Record<string, string> {
@@ -25,7 +26,7 @@ function usePreviews(items: InboxItem[] | undefined): Record<string, string> {
         for (const item of items) {
           if (!item.lastMessageEnvelope || !item.lastMessageSenderId) continue;
           const opened = openMessage({ envelope: item.lastMessageEnvelope, conversationId: item.id, senderId: item.lastMessageSenderId, me: key });
-          next[item.id] = opened?.text ?? "New message";
+          next[item.id] = opened?.text ?? t("New message", "Nouveau message");
         }
         if (active) setPreviews(next);
       })
@@ -45,7 +46,7 @@ function Row({ item, preview }: { item: InboxItem; preview: string | null }) {
   return (
     <Pressable
       accessibilityRole="button"
-      accessibilityLabel={`${item.title}. ${preview ?? ""}${unread ? `. ${item.unreadCount} unread` : ""}`}
+      accessibilityLabel={`${item.title}. ${preview ?? ""}${unread ? t(`. ${item.unreadCount} unread`, `. ${item.unreadCount} non lus`) : ""}`}
       onPress={() => router.push(`/chat/${item.id}`)}
       style={({ pressed }) => [styles.row, { borderBottomColor: theme.line, opacity: pressed ? 0.7 : 1 }]}
     >
@@ -61,7 +62,7 @@ function Row({ item, preview }: { item: InboxItem; preview: string | null }) {
         ) : null}
         {item.kind === "group" ? (
           <T variant="small" muted>
-            {item.memberCount} people
+            {t(`${item.memberCount} people`, `${item.memberCount} personnes`)}
           </T>
         ) : null}
         {preview ? (
@@ -71,12 +72,12 @@ function Row({ item, preview }: { item: InboxItem; preview: string | null }) {
         ) : null}
         {item.nextMeetupAt ? (
           <T variant="small" style={{ color: theme.good, fontFamily: fonts.bodyBold }}>
-            Meeting {describeWhen(item.nextMeetupAt)}
+            {t("Meeting", "Rencontre")} {describeWhen(item.nextMeetupAt)}
           </T>
         ) : null}
         {expiring ? (
           <T variant="small" style={{ color: theme.accent, fontFamily: fonts.bodyBold }}>
-            {timeLeft(item.expiresAt!)} left to say hi
+            {t(`${timeLeft(item.expiresAt!)} left to say hi`, `Il reste ${timeLeft(item.expiresAt!)} pour dire bonjour`)}
           </T>
         ) : null}
       </View>
@@ -109,18 +110,18 @@ export default function Inbox() {
         keyExtractor={(item) => item.id}
         renderItem={({ item }) => <Row item={item} preview={item.lastMessagePreview ?? previews[item.id] ?? null} />}
         refreshControl={<RefreshControl refreshing={inbox.isRefetching} onRefresh={() => void inbox.refetch()} />}
-        ListHeaderComponent={<T variant="title" style={styles.title}>Chats</T>}
+        ListHeaderComponent={<T variant="title" style={styles.title}>{t("Chats", "Conversations")}</T>}
         ListEmptyComponent={
           inbox.isPending ? undefined : inbox.isError ? (
             <View style={styles.empty}>
-              <ErrorText>Couldn't load your chats. Check your connection.</ErrorText>
-              <Button label="Try again" kind="secondary" onPress={() => inbox.refetch()} />
+              <ErrorText>{t("Couldn't load your chats. Check your connection.", "Impossible de charger vos conversations. Vérifiez votre connexion.")}</ErrorText>
+              <Button label={t("Try again", "Réessayer")} kind="secondary" onPress={() => inbox.refetch()} />
             </View>
           ) : (
             <View style={styles.empty}>
-              <T variant="heading">No chats yet</T>
-              <Button label="Pick topics" onPress={() => router.navigate("/deck")} />
-              <Button label="Invite a friend" kind="secondary" onPress={inviteToApp} />
+              <T variant="heading">{t("No chats yet", "Aucune conversation pour l'instant")}</T>
+              <Button label={t("Pick topics", "Choisir des sujets")} onPress={() => router.navigate("/deck")} />
+              <Button label={t("Invite a friend", "Inviter quelqu'un")} kind="secondary" onPress={inviteToApp} />
             </View>
           )
         }

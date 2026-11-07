@@ -12,6 +12,7 @@ export interface CohortJoin {
   topicId: string;
   topicKind: "interest" | "question";
   topicTitle: string;
+  topicTitleFr: string;
   cityId: string;
   cityName: string;
 }
@@ -115,7 +116,7 @@ export class Cohort extends DurableObject<Env> {
       .select({ name: schema.profiles.displayName })
       .from(schema.profiles)
       .where(eq(schema.profiles.userId, input.userId));
-    await this.env.CHAT_ROOM.getByName(newest.id).postSystem(newest.id, `${profile?.name ?? "Someone new"} joined the group.`);
+    await this.env.CHAT_ROOM.getByName(newest.id).postSystem(newest.id, `${profile?.name ?? "Someone new"} joined the group.`, { fr: `${profile?.name ?? "Une nouvelle personne"} a rejoint le groupe.` });
     return newest.id;
   }
 
@@ -176,6 +177,7 @@ export class Cohort extends DurableObject<Env> {
       await this.env.CHAT_ROOM.getByName(group.id).postSystem(
         group.id,
         `A group on ${topicPhrase(input.topicTitle)} just opened in ${input.cityName}.`,
+        { fr: `Un groupe sur ${topicPhrase(input.topicTitleFr, "fr")} vient d'ouvrir à ${input.cityName}.` },
       );
       sqlite.exec("UPDATE groups SET flushed = 1 WHERE id = ?", group.id);
       console.log(JSON.stringify({ event: "group_formed", conversationId: group.id, topicId: input.topicId, cityId: input.cityId, size: memberIds.length }));
@@ -183,6 +185,7 @@ export class Cohort extends DurableObject<Env> {
         sendPush(this.env, memberIds, {
           title: "Your group is open",
           body: `A group on ${topicPhrase(input.topicTitle)} just opened in ${input.cityName}`,
+          fr: { title: "Votre groupe est ouvert", body: `Un groupe sur ${topicPhrase(input.topicTitleFr, "fr")} vient d'ouvrir à ${input.cityName}` },
           data: { screen: "chat", id: group.id },
         }),
       );

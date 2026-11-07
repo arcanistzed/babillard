@@ -7,8 +7,9 @@ import { useAuth } from "@/auth";
 import { inviteToTopic } from "@/invite";
 import { fonts, useTheme } from "@/theme";
 import { Avatar, Button, T } from "@/ui";
+import { t } from "@/i18n";
 
-const STANCE_LABELS: Record<Stance, string> = { for: "For", against: "Against", unsure: "Not sure" };
+const STANCE_LABELS: Record<Stance, string> = { for: t("For", "Pour"), against: t("Against", "Contre"), unsure: t("Not sure", "Incertain") };
 
 function StanceSpread({ spread }: { spread: Record<Stance, number> }) {
   const theme = useTheme();
@@ -18,7 +19,7 @@ function StanceSpread({ spread }: { spread: Record<Stance, number> }) {
   const stances = Object.keys(STANCE_LABELS) as Stance[];
   return (
     <View style={styles.section}>
-      <T variant="heading">Where this group leans</T>
+      <T variant="heading">{t("Where this group leans", "Les positions du groupe")}</T>
       <View style={styles.bar} accessibilityElementsHidden importantForAccessibility="no-hide-descendants">
         {stances.map((stance) => (spread[stance] > 0 ? <View key={stance} style={{ flex: spread[stance], backgroundColor: shades[stance] }} /> : null))}
       </View>
@@ -41,10 +42,10 @@ export default function ChatInfo() {
   if (!detail) return null;
 
   function confirmLeave() {
-    Alert.alert("Leave this group?", "You won't be able to come back to it.", [
-      { text: "Stay", style: "cancel" },
+    Alert.alert(t("Leave this group?", "Quitter ce groupe?"), t("You won't be able to come back to it.", "Vous ne pourrez pas y revenir."), [
+      { text: t("Stay", "Rester"), style: "cancel" },
       {
-        text: "Leave group",
+        text: t("Leave group", "Quitter le groupe"),
         style: "destructive",
         onPress: async () => {
           await api.post(`/conversations/${id}/leave`);
@@ -61,7 +62,7 @@ export default function ChatInfo() {
       {detail.stanceSpread ? <StanceSpread spread={detail.stanceSpread} /> : null}
 
       <View style={styles.section}>
-        <T variant="heading">{detail.kind === "group" ? `${detail.members.length} people` : "In this chat"}</T>
+        <T variant="heading">{detail.kind === "group" ? t(`${detail.members.length} people`, `${detail.members.length} personnes`) : t("In this chat", "Dans cette conversation")}</T>
         {detail.members.map((member) => {
           const isMe = member.id === me?.id;
           return (
@@ -73,29 +74,29 @@ export default function ChatInfo() {
               style={[styles.member, { borderBottomColor: theme.line }]}
             >
               <Avatar name={member.displayName} url={member.avatarUrl} />
-              <T variant="bodyBold">{isMe ? `${member.displayName} (you)` : member.displayName}</T>
+              <T variant="bodyBold">{isMe ? t(`${member.displayName} (you)`, `${member.displayName} (vous)`) : member.displayName}</T>
             </Pressable>
           );
         })}
       </View>
 
       <View style={styles.section}>
-        <T variant="heading">Security code</T>
+        <T variant="heading">{t("Security code", "Code de sécurité")}</T>
         <T style={styles.code} selectable>
           {securityCode(detail.members.flatMap((member) => member.deviceKeys))}
         </T>
         <T variant="small" muted>
-          Messages here are end-to-end encrypted. Compare this code when you meet. If it matches, only the people in this chat can read them.
+          {t("Messages here are end-to-end encrypted. Compare this code when you meet. If it matches, only the people in this chat can read them.", "Les messages sont chiffrés de bout en bout. Comparez ce code quand vous vous rencontrez. S'il est identique, seules les personnes de cette conversation peuvent les lire.")}
         </T>
       </View>
 
       <View style={styles.setting}>
-        <T variant="bodyBold">Mute notifications</T>
-        <Switch accessibilityLabel="Mute notifications" value={detail.muted} onValueChange={(value) => mute.mutate(value)} />
+        <T variant="bodyBold">{t("Mute notifications", "Couper les notifications")}</T>
+        <Switch accessibilityLabel={t("Mute notifications", "Couper les notifications")} value={detail.muted} onValueChange={(value) => mute.mutate(value)} />
       </View>
 
-      {detail.kind === "group" && detail.topic ? <Button label="Invite someone to this topic" kind="secondary" onPress={() => inviteToTopic(detail.topic!)} /> : null}
-      {detail.kind === "group" ? <Button label="Leave group" kind="danger" onPress={confirmLeave} /> : null}
+      {detail.kind === "group" && detail.topic ? <Button label={t("Invite someone to this topic", "Inviter quelqu'un à ce sujet")} kind="secondary" onPress={() => inviteToTopic(detail.topic!)} /> : null}
+      {detail.kind === "group" ? <Button label={t("Leave group", "Quitter le groupe")} kind="danger" onPress={confirmLeave} /> : null}
     </ScrollView>
   );
 }

@@ -1,14 +1,15 @@
-import { FIELD_LABELS, GROUP_MAX_SIZE, GROUP_MIN_SIZE, type Field, type Stance, type TopicCard } from "@ideas-match/shared";
+import { GROUP_MAX_SIZE, GROUP_MIN_SIZE, type Field, type Stance, type TopicCard } from "@ideas-match/shared";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import Animated, { Extrapolation, interpolate, useAnimatedStyle, type SharedValue } from "react-native-reanimated";
 import { fonts, flyerInk } from "@/theme";
+import { fieldLabel, t } from "@/i18n";
 
-const STANCE_LABELS: Record<Stance, string> = { for: "For", against: "Against", unsure: "Not sure" };
+const STANCE_LABELS: Record<Stance, string> = { for: t("For", "Pour"), against: t("Against", "Contre"), unsure: t("Not sure", "Incertain") };
 
 function nearbyLine(count: number): string | null {
   if (count === 0) return null;
-  if (count === GROUP_MIN_SIZE - 1) return `${count} nearby. You'd open the group.`;
-  return `${count} nearby`;
+  if (count === GROUP_MIN_SIZE - 1) return t(`${count} nearby. You'd open the group.`, `${count} à proximité. Vous ouvririez le groupe.`);
+  return t(`${count} nearby`, `${count} à proximité`);
 }
 
 /**
@@ -35,9 +36,9 @@ function TearOffTabs({ nearby, bg, pull }: { nearby: number; bg: string; pull?: 
 
 export function Flyer({ topic, stance, onStance, isTop = true, pull }: { topic: TopicCard; stance: Stance | null; onStance: (stance: Stance | null) => void; isTop?: boolean; pull?: SharedValue<number> }) {
   const { bg, fg } = flyerInk(topic.fieldTags[0]);
-  const fields = topic.fieldTags.map((tag) => FIELD_LABELS[tag as Field] ?? tag).join(" and ");
+  const fields = topic.fieldTags.map((tag) => fieldLabel(tag as Field) ?? tag).join(t(" and ", " et "));
   const isQuestion = topic.kind === "question";
-  const nearby = topic.pending ? "In review" : nearbyLine(topic.nearbyCount);
+  const nearby = topic.pending ? t("In review", "En cours d'examen") : nearbyLine(topic.nearbyCount);
   const titleSize = topic.title.length > 48 ? 32 : topic.title.length > 26 ? 38 : 46;
 
   return (

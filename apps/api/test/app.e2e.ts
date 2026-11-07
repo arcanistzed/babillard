@@ -1439,6 +1439,34 @@ describe("crash reports and public pages", () => {
     expect(await (await fetch(`${BASE}/terms`)).text()).toContain("<strong>If you live in Quebec");
   });
 
+  it("serves French to people whose phone is in French, and records it for push", async () => {
+    const french = await person("new-york", { displayName: "Camille" });
+    const other = await person("new-york", { displayName: "Robin" });
+    const frenchGet = async (path: string) => (await fetch(`${BASE}${path}`, { headers: { authorization: `Bearer ${french.token}`, "accept-language": "fr-CA" } })).json() as Promise<any>;
+
+    const deck = await frenchGet("/deck/topics");
+    expect(deck.some((card: any) => card.id === "behavioral-economics" || card.title.startsWith("Faut-il"))).toBe(true);
+    const englishDeck = await other.get("/deck/topics");
+    const shared = englishDeck.find((card: any) => deck.some((row: any) => row.id === card.id))!;
+    expect(deck.find((row: any) => row.id === shared.id).title).not.toBe(shared.title);
+
+    const conversationId = await match(french, other, "behavioral-economics");
+    const detail = await frenchGet(`/conversations/${conversationId}`);
+    expect(detail.topic.title).toBe("Économie comportementale");
+    expect(detail.suggestedOpeners[0]).toContain("Quel résultat classique");
+
+    const [opener] = await french.get(`/conversations/${conversationId}/messages`);
+    expect(opener.body).toMatch(/^You both want to dig into Behavioral economics\. /);
+    expect(opener.bodyFr).toMatch(/^Vous voulez tous les deux explorer Économie comportementale\. /);
+    const inbox = await frenchGet("/conversations");
+    expect(inbox.find((row: any) => row.id === conversationId).lastMessagePreview).toMatch(/^Vous voulez/);
+    expect((await other.get("/conversations")).find((row: any) => row.id === conversationId).lastMessagePreview).toMatch(/^You both/);
+
+    const invite = await (await fetch(`${BASE}/invite`, { headers: { "accept-language": "fr" } })).text();
+    expect(invite).toContain("Obtenir l'application Android");
+    expect(await (await fetch(`${BASE}/t/behavioral-economics`, { headers: { "accept-language": "fr" } })).text()).toContain("Économie comportementale");
+  });
+
   it("rejects oversized crash reports", async () => {
     expect(await status(new Client(BASE).post("/client-errors", { message: "x".repeat(1001) }))).toBe(400);
   });

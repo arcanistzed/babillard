@@ -1,4 +1,4 @@
-import { isCheckinDue, isMatchExpired, isNudgeDue, isProposalStale, isReminderDue, pickOpener } from "@ideas-match/shared";
+import { isCheckinDue, isMatchExpired, isNudgeDue, isProposalStale, isReminderDue, pickBilingualOpener } from "@ideas-match/shared";
 import { deleteAccount } from "./lib/accounts";
 import { sendEmail } from "./lib/email";
 import { and, eq, inArray, isNotNull, isNull, lt, lte, sql } from "drizzle-orm";
@@ -44,11 +44,12 @@ async function nudgeMatches(env: Env, db: Db, now: number): Promise<number> {
     if (claimed.length === 0) continue;
 
     const [topic] = match.topicId ? await db.select().from(schema.topics).where(eq(schema.topics.id, match.topicId)) : [];
-    const opener = pickOpener(topic?.openers ?? []);
-    await env.CHAT_ROOM.getByName(match.conversationId).postSystem(match.conversationId, `Still curious? ${opener}`);
+    const opener = pickBilingualOpener(topic);
+    await env.CHAT_ROOM.getByName(match.conversationId).postSystem(match.conversationId, `Still curious? ${opener.en}`, { fr: `Encore envie d'en parler? ${opener.fr}` });
     await sendPush(env, [match.userA, match.userB], {
       title: "Your match is about to expire",
-      body: `Two days left to say hi. ${opener}`,
+      body: `Two days left to say hi. ${opener.en}`,
+      fr: { title: "Votre jumelage expire bientôt", body: `Il reste deux jours pour dire bonjour. ${opener.fr}` },
       data: { screen: "chat", id: match.conversationId },
     });
     handled += 1;
@@ -95,6 +96,7 @@ async function remindMeetups(env: Env, db: Db, now: number): Promise<number> {
     await sendPush(env, await responders(db, meetup.id, ["yes", "maybe"]), {
       title: "Your meetup is coming up",
       body: meetup.venueNote ? `Soon at ${meetup.venueNote}` : "It starts soon. See you there.",
+      fr: { title: "Votre rencontre approche", body: meetup.venueNote ? `Bientôt à ${meetup.venueNote}` : "Ça commence bientôt. À tout de suite." },
       data: { screen: "meetup", id: meetup.id },
     });
     handled += 1;
@@ -122,6 +124,7 @@ async function checkInMeetups(env: Env, db: Db, now: number): Promise<number> {
     await sendPush(env, await responders(db, meetup.id, ["yes"]), {
       title: "Did you meet?",
       body: "Tell us how it went.",
+      fr: { title: "Vous êtes-vous rencontrés?", body: "Dites-nous comment ça s'est passé." },
       data: { screen: "meetup", id: meetup.id },
     });
     handled += 1;
@@ -165,13 +168,17 @@ const lastUsed = sql`coalesce(${schema.users.lastActiveAt}, ${schema.users.creat
 
 async function warnInactiveAccounts(env: Env, db: Db, now: number): Promise<number> {
   const due = await db
-    .select({ id: schema.users.id, email: schema.users.email })
+    .select({ id: schema.users.id, email: schema.users.email, language: schema.users.language })
     .from(schema.users)
     .where(and(eq(schema.users.status, "active"), isNull(schema.users.inactivityWarnedAt), lt(lastUsed, now - INACTIVE_AFTER_MS + INACTIVITY_NOTICE_MS)))
     .limit(INACTIVITY_BATCH);
   for (const user of due) {
-    const text = "You haven't used Ideas Match in almost two years, so we'll delete your account and your information in 30 days. To keep your account, open the app and sign in.";
-    await sendEmail(env, { to: user.email, subject: "Your Ideas Match account will be deleted in 30 days", text, html: `<p>${text}</p>` });
+    const french = user.language === "fr";
+    const text = french
+      ? "Vous n'avez pas utilisé Ideas Match depuis presque deux ans. Nous supprimerons donc votre compte et vos renseignements dans 30 jours. Pour garder votre compte, ouvrez l'application et connectez-vous."
+      : "You haven't used Ideas Match in almost two years, so we'll delete your account and your information in 30 days. To keep your account, open the app and sign in.";
+    const subject = french ? "Votre compte Ideas Match sera supprimé dans 30 jours" : "Your Ideas Match account will be deleted in 30 days";
+    await sendEmail(env, { to: user.email, subject, text, html: `<p>${text}</p>` });
     await db.update(schema.users).set({ inactivityWarnedAt: now }).where(eq(schema.users.id, user.id));
   }
   return due.length;

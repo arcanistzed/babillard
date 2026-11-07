@@ -35,7 +35,7 @@ export async function deleteAccount(env: Env, id: string): Promise<void> {
       .set({ status: "deleted", email: `deleted-${id}@deleted.invalid`, dob: null, institutionDomain: null, verifiedInstitution: false, cityId: null, campusId: null })
       .where(eq(schema.users.id, id)),
     ...(conversationIds.length
-      ? [db.update(schema.conversations).set({ lastMessagePreview: null, lastMessageEnvelope: null, lastMessageSenderId: null }).where(and(inArray(schema.conversations.id, conversationIds), previewNamesDeletedUser))]
+      ? [db.update(schema.conversations).set({ lastMessagePreview: null, lastMessagePreviewFr: null, lastMessageEnvelope: null, lastMessageSenderId: null }).where(and(inArray(schema.conversations.id, conversationIds), previewNamesDeletedUser))]
       : []),
   ]);
 }

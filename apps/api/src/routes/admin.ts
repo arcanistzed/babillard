@@ -230,7 +230,7 @@ admin.post("/reports/:id", async (c) => {
     const [user] = await db.select().from(schema.users).where(eq(schema.users.id, target));
     if (!user || user.status !== "active") return c.redirect("/admin/reports?error=no_recipient");
     try {
-      await sendConductWarning(c.env, user.email);
+      await sendConductWarning(c.env, user.email, user.language);
     } catch (error) {
       console.error(JSON.stringify({ event: "warning_email_failed", error: String(error) }));
       return c.redirect("/admin/reports?error=warning_failed");
@@ -240,6 +240,7 @@ admin.post("/reports/:id", async (c) => {
         sendPush(c.env, [target], {
           title: "A note about your conduct",
           body: "Please keep conversations respectful, or your account may be closed.",
+          fr: { title: "Un mot sur votre comportement", body: "Merci de garder vos échanges respectueux, sinon votre compte pourrait être fermé." },
           data: { screen: "chat", id: report.conversationId },
         }),
       );

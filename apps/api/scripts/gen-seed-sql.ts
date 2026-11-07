@@ -2,7 +2,7 @@
 import { readFileSync, writeFileSync } from "node:fs";
 
 interface SeedLocality { id: string; name: string; kind: string; parentId: string | null; region: string; country: string; countryCode: string; population: number; aliases: string[]; latitude: number; longitude: number }
-interface SeedTopic { id: string; kind: string; title: string; blurb: string; fieldTags: string[]; openers: string[] }
+interface SeedTopic { id: string; kind: string; title: string; blurb: string; fieldTags: string[]; openers: string[]; fr: { title: string; blurb: string; openers: string[] } }
 
 const root = new URL("../seed/", import.meta.url);
 const localities: SeedLocality[] = JSON.parse(readFileSync(new URL("localities.json", root), "utf8"));
@@ -26,6 +26,10 @@ const statements = [
   ...topics.map(
     (t) =>
       `INSERT OR IGNORE INTO topics (id, kind, title, blurb, field_tags, openers, status, created_at) VALUES (${quote(t.id)}, ${quote(t.kind)}, ${quote(t.title)}, ${quote(t.blurb)}, ${quote(JSON.stringify(t.fieldTags))}, ${quote(JSON.stringify(t.openers))}, 'seeded', ${now});`,
+  ),
+  // Existing rows pick up new fields and translations. Topics people suggested are left alone.
+  ...topics.map(
+    (t) => `UPDATE topics SET field_tags = ${quote(JSON.stringify(t.fieldTags))}, fr = ${quote(JSON.stringify(t.fr))} WHERE id = ${quote(t.id)} AND status = 'seeded';`,
   ),
 ];
 

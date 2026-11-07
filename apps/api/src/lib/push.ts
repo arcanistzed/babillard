@@ -5,6 +5,8 @@ import { getDb, schema } from "../db";
 export interface PushMessage {
   title: string;
   body: string;
+  /** Sent instead to people whose phone is in French. Falls back to English. */
+  fr?: { title: string; body: string };
   data: PushData;
 }
 
@@ -21,7 +23,11 @@ export async function sendPush(env: Env, userIds: string[], message: PushMessage
   if (userIds.length === 0) return;
   try {
     const db = getDb(env);
-    const rows = await db.select().from(schema.pushTokens).where(inArray(schema.pushTokens.userId, userIds));
+    const rows = await db
+      .select({ token: schema.pushTokens.token, language: schema.users.language })
+      .from(schema.pushTokens)
+      .innerJoin(schema.users, eq(schema.users.id, schema.pushTokens.userId))
+      .where(inArray(schema.pushTokens.userId, userIds));
 
     if (env.PUSH_MODE === "log") {
       console.log(JSON.stringify({ event: "push", userIds, title: message.title, body: message.body, data: message.data }));
@@ -33,7 +39,7 @@ export async function sendPush(env: Env, userIds: string[], message: PushMessage
       const response = await fetch(EXPO_PUSH_URL, {
         method: "POST",
         headers: { "content-type": "application/json", accept: "application/json" },
-        body: JSON.stringify(batch.map((row) => ({ to: row.token, sound: "default", ...message }))),
+        body: JSON.stringify(batch.map((row) => ({ to: row.token, sound: "default", data: message.data, ...(row.language === "fr" && message.fr ? message.fr : { title: message.title, body: message.body }) }))),
       });
       if (!response.ok) {
         console.error(JSON.stringify({ event: "push_failed", status: response.status }));

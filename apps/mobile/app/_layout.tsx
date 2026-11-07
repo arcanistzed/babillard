@@ -16,6 +16,7 @@ import { AuthProvider, useAuth } from "@/auth";
 import { installCrashReporter, reportCrash } from "@/crashReporter";
 import { fonts, useTheme } from "@/theme";
 import { Button, T } from "@/ui";
+import { t } from "@/i18n";
 
 void SplashScreen.preventAutoHideAsync();
 installCrashReporter();
@@ -30,8 +31,8 @@ export function ErrorBoundary({ error, retry }: ErrorBoundaryProps) {
   return (
     <View style={[styles.crash, { backgroundColor: theme.paper }]}>
       <StatusBar style="auto" />
-      <T variant="title">Something went wrong</T>
-      <Button label="Try again" onPress={() => void retry()} />
+      <T variant="title">{t("Something went wrong", "Un problème est survenu")}</T>
+      <Button label={t("Try again", "Réessayer")} onPress={() => void retry()} />
     </View>
   );
 }
@@ -104,14 +105,14 @@ function Navigator() {
       <Stack.Screen name="agree" options={{ headerShown: false }} />
       <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
       <Stack.Screen name="chat/[id]/index" options={{ title: "" }} />
-      <Stack.Screen name="chat/[id]/info" options={{ title: "About this chat" }} />
-      <Stack.Screen name="meetup/new" options={{ title: "Propose a meetup", presentation: "modal" }} />
-      <Stack.Screen name="meetup/[id]" options={{ title: "Meetup" }} />
+      <Stack.Screen name="chat/[id]/info" options={{ title: t("About this chat", "À propos") }} />
+      <Stack.Screen name="meetup/new" options={{ title: t("Propose a meetup", "Proposer une rencontre"), presentation: "modal" }} />
+      <Stack.Screen name="meetup/[id]" options={{ title: t("Meetup", "Rencontre") }} />
       <Stack.Screen name="member/[conversationId]/[userId]" options={{ title: "" }} />
-      <Stack.Screen name="report" options={{ title: "Report", presentation: "modal" }} />
-      <Stack.Screen name="topic/new" options={{ title: "Suggest a topic", presentation: "modal" }} />
-      <Stack.Screen name="blocked" options={{ title: "Blocked people" }} />
-      <Stack.Screen name="profile-edit" options={{ title: "Edit profile" }} />
+      <Stack.Screen name="report" options={{ title: t("Report", "Signaler"), presentation: "modal" }} />
+      <Stack.Screen name="topic/new" options={{ title: t("Suggest a topic", "Suggérer un sujet"), presentation: "modal" }} />
+      <Stack.Screen name="blocked" options={{ title: t("Blocked people", "Personnes bloquées") }} />
+      <Stack.Screen name="profile-edit" options={{ title: t("Edit profile", "Modifier le profil") }} />
     </Stack>
   );
 }

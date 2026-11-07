@@ -1,7 +1,8 @@
-import { LOOKING_FOR, LOOKING_FOR_LABELS, type LookingFor } from "@ideas-match/shared";
+import { LOOKING_FOR, type LookingFor } from "@ideas-match/shared";
 import { StyleSheet, View } from "react-native";
 import { useTheme } from "@/theme";
 import { Chip, ChipRow, T } from "@/ui";
+import { lookingForLabel, t } from "@/i18n";
 
 const PRIVATE_OPTION: LookingFor = "more_than_friends";
 
@@ -14,15 +15,15 @@ export function LookingForPicker({ value, onChange }: { value: LookingFor[]; onC
     <View style={styles.picker}>
       <ChipRow>
         {LOOKING_FOR.filter((item) => item !== PRIVATE_OPTION).map((item) => (
-          <Chip key={item} label={LOOKING_FOR_LABELS[item]} selected={value.includes(item)} onPress={() => toggle(item)} />
+          <Chip key={item} label={lookingForLabel(item)} selected={value.includes(item)} onPress={() => toggle(item)} />
         ))}
       </ChipRow>
       <View style={[styles.privateBox, { borderColor: theme.line, backgroundColor: theme.surface }]}>
         <ChipRow>
-          <Chip label={LOOKING_FOR_LABELS[PRIVATE_OPTION]} selected={value.includes(PRIVATE_OPTION)} onPress={() => toggle(PRIVATE_OPTION)} />
+          <Chip label={lookingForLabel(PRIVATE_OPTION)} selected={value.includes(PRIVATE_OPTION)} onPress={() => toggle(PRIVATE_OPTION)} />
         </ChipRow>
         <T variant="small" muted>
-          Only shown to people who also choose this.
+          {t("Only shown to people who also choose this.", "Visible seulement par les personnes qui font le même choix.")}
         </T>
       </View>
     </View>

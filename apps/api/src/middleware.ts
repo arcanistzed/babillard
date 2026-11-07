@@ -1,4 +1,5 @@
 import { and, eq, gt } from "drizzle-orm";
+import { requestLanguage } from "./lib/language";
 import { createMiddleware } from "hono/factory";
 import { getDb, schema } from "./db";
 import { fail } from "./lib/http";
@@ -22,9 +23,12 @@ export const requireAuth = createMiddleware<AppEnv>(async (c, next) => {
   if (!row || row.user.status !== "active") throw fail(401, "unauthorized");
 
   const now = Date.now();
-  if (now - (row.user.lastActiveAt ?? 0) > ACTIVITY_RESOLUTION_MS) {
-    c.executionCtx.waitUntil(db.update(schema.users).set({ lastActiveAt: now, inactivityWarnedAt: null }).where(eq(schema.users.id, row.user.id)));
-  }
+  const language = requestLanguage(c);
+  const updates = {
+    ...(now - (row.user.lastActiveAt ?? 0) > ACTIVITY_RESOLUTION_MS ? { lastActiveAt: now, inactivityWarnedAt: null } : {}),
+    ...(c.req.header("accept-language") && language !== row.user.language ? { language } : {}),
+  };
+  if (Object.keys(updates).length > 0) c.executionCtx.waitUntil(db.update(schema.users).set(updates).where(eq(schema.users.id, row.user.id)));
 
   c.set("user", row.user);
   c.set("sessionId", sessionId);

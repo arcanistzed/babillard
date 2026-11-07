@@ -7,15 +7,16 @@ import { api, friendlyError } from "@/api";
 import { useAuth } from "@/auth";
 import { ensureDeviceKey, readMessage } from "@/e2ee";
 import { Button, Chip, ChipRow, ErrorText, Field, FormScreen, T } from "@/ui";
+import { t } from "@/i18n";
 
 const REASON_LABELS: Record<ReportReason, string> = {
-  harassment: "Harassment",
-  spam: "Spam",
-  fake_profile: "Fake profile",
-  underage: "May be under 18",
-  intimate_images: "Intimate images",
-  safety: "I feel unsafe",
-  other: "Something else",
+  harassment: t("Harassment", "Harcèlement"),
+  spam: t("Spam", "Pourriel"),
+  fake_profile: t("Fake profile", "Faux profil"),
+  underage: t("May be under 18", "A peut-être moins de 18 ans"),
+  intimate_images: t("Intimate images", "Images intimes"),
+  safety: t("I feel unsafe", "Je ne me sens pas en sécurité"),
+  other: t("Something else", "Autre chose"),
 };
 
 export default function Report() {
@@ -63,18 +64,18 @@ export default function Report() {
 
   return (
     <FormScreen>
-        <T variant="title">What's wrong with {params.name}?</T>
-        <T muted>{params.name} won't be told.{params.conversationId ? " Your phone will share the nearby messages with a moderator." : ""}</T>
+        <T variant="title">{t(`What's wrong with ${params.name}?`, `Quel est le problème avec ${params.name}?`)}</T>
+        <T muted>{t(`${params.name} won't be told.`, `${params.name} n'en sera pas informé.`)}{params.conversationId ? t(" Your phone will share the nearby messages with a moderator.", " Votre téléphone transmettra les messages voisins à un modérateur.") : ""}</T>
         <ChipRow>
           {REPORT_REASONS.map((value) => (
             <Chip key={value} label={REASON_LABELS[value]} selected={reason === value} onPress={() => setReason(value)} />
           ))}
         </ChipRow>
-        <Field label="Anything else we should know?" value={note} onChangeText={setNote} multiline maxLength={1000} style={styles.note} />
-        <Chip label={`Also block ${params.name}`} selected={alsoBlock} onPress={() => setAlsoBlock(!alsoBlock)} />
+        <Field label={t("Anything else we should know?", "Autre chose à nous dire?")} value={note} onChangeText={setNote} multiline maxLength={1000} style={styles.note} />
+        <Chip label={t(`Also block ${params.name}`, `Bloquer aussi ${params.name}`)} selected={alsoBlock} onPress={() => setAlsoBlock(!alsoBlock)} />
         {error ? <ErrorText>{error}</ErrorText> : null}
       <Button
-          label="Send report"
+          label={t("Send report", "Envoyer le signalement")}
           disabled={!reason || busy !== null}
           busy={busy === "report"}
           onPress={() =>
@@ -91,7 +92,7 @@ export default function Report() {
             })
           }
         />
-        <Button label={`Just block ${params.name}`} kind="danger" disabled={busy !== null} busy={busy === "block"} onPress={() => run("block", block)} />
+        <Button label={t(`Just block ${params.name}`, `Seulement bloquer ${params.name}`)} kind="danger" disabled={busy !== null} busy={busy === "block"} onPress={() => run("block", block)} />
     </FormScreen>
   );
 }

@@ -8,6 +8,7 @@ import { api } from "@/api";
 import { useAuth } from "@/auth";
 import { useTheme } from "@/theme";
 import { Button, Chip, ChipRow, ErrorText, Field, T } from "@/ui";
+import { t } from "@/i18n";
 
 const LOCATION_TIMEOUT_MS = 10_000;
 
@@ -69,15 +70,15 @@ export function CityPicker({
     try {
       const { granted } = await Location.requestForegroundPermissionsAsync();
       if (!granted) {
-        setLocationError("Location is off. Search instead.");
+        setLocationError(t("Location is off. Search instead.", "La localisation est désactivée. Cherchez plutôt."));
         return;
       }
       const coords = await currentCoordinates();
       const city = coords ? nearestCity(all, coords.latitude, coords.longitude) : null;
       if (city) chooseCity(city.id);
-      else setLocationError("Couldn't find your location. Search instead.");
+      else setLocationError(t("Couldn't find your location. Search instead.", "Emplacement introuvable. Cherchez plutôt."));
     } catch {
-      setLocationError("Couldn't find your location. Search instead.");
+      setLocationError(t("Couldn't find your location. Search instead.", "Emplacement introuvable. Cherchez plutôt."));
     } finally {
       setLocating(false);
     }
@@ -88,12 +89,12 @@ export function CityPicker({
   if (localities.isError) {
     return (
       <View style={styles.block}>
-        <ErrorText>Couldn't load cities. Check your connection.</ErrorText>
-        <Button label="Try again" kind="secondary" onPress={() => void localities.refetch()} />
+        <ErrorText>{t("Couldn't load cities. Check your connection.", "Impossible de charger les villes. Vérifiez votre connexion.")}</ErrorText>
+        <Button label={t("Try again", "Réessayer")} kind="secondary" onPress={() => void localities.refetch()} />
       </View>
     );
   }
-  if (!all) return <ActivityIndicator accessibilityLabel="Loading cities" />;
+  if (!all) return <ActivityIndicator accessibilityLabel={t("Loading cities", "Chargement des villes")} />;
 
   if (selected) {
     return (
@@ -106,12 +107,12 @@ export function CityPicker({
             </T>
             {selected.aliases.length > 0 ? (
               <T variant="small" muted>
-                Includes {selected.aliases.slice(0, 4).join(", ")}
+                {t("Includes", "Comprend")} {selected.aliases.slice(0, 4).join(", ")}
               </T>
             ) : null}
           </View>
           <Button
-            label="Change"
+            label={t("Change", "Changer")}
             kind="quiet"
             onPress={() => {
               touched.current = true;
@@ -122,7 +123,7 @@ export function CityPicker({
         </View>
         {campuses.length > 0 ? (
           <>
-            <T variant="heading">Are you on a campus?</T>
+            <T variant="heading">{t("Are you on a campus?", "Êtes-vous sur un campus?")}</T>
             <ChipRow>
               {campuses.map((campus) => (
                 <Chip key={campus.id} label={campus.name} selected={campusId === campus.id} onPress={() => {
@@ -140,24 +141,24 @@ export function CityPicker({
   return (
     <View style={styles.block}>
       <Field
-        label="Find your city"
+        label={t("Find your city", "Trouvez votre ville")}
         value={query}
         onChangeText={setQuery}
-        placeholder="City or town"
+        placeholder={t("City or town", "Ville ou municipalité")}
         autoCorrect={false}
         returnKeyType="search"
         trailing={
           locating ? (
-            <ActivityIndicator accessibilityLabel="Finding your location" color={theme.ink} />
+            <ActivityIndicator accessibilityLabel={t("Finding your location", "Recherche de votre emplacement")} color={theme.ink} />
           ) : (
-            <Pressable accessibilityRole="button" accessibilityLabel="Use my location" hitSlop={8} onPress={() => void fillFromLocation()} style={styles.locate}>
+            <Pressable accessibilityRole="button" accessibilityLabel={t("Use my location", "Utiliser mon emplacement")} hitSlop={8} onPress={() => void fillFromLocation()} style={styles.locate}>
               <Ionicons name="locate" size={24} color={theme.ink} />
             </Pressable>
           )
         }
       />
       {locationError ? <ErrorText>{locationError}</ErrorText> : null}
-      {query.trim() ? null : <T variant="heading">Major Canadian cities</T>}
+      {query.trim() ? null : <T variant="heading">{t("Major Canadian cities", "Grandes villes canadiennes")}</T>}
       {results.map((city) => {
         const matchedSuburb = query.trim() ? city.aliases.find((alias) => alias.toLowerCase().startsWith(query.trim().toLowerCase())) : undefined;
         return (
@@ -170,13 +171,13 @@ export function CityPicker({
           >
             <T variant="bodyBold">{city.name}</T>
             <T variant="small" muted>
-              {matchedSuburb ? `Includes ${matchedSuburb}. ` : ""}
+              {matchedSuburb ? t(`Includes ${matchedSuburb}. `, `Comprend ${matchedSuburb}. `) : ""}
               {describeCity(city)}
             </T>
           </Pressable>
         );
       })}
-      {query.trim() && results.length === 0 ? <T muted>Not listed. Try the nearest big city.</T> : null}
+      {query.trim() && results.length === 0 ? <T muted>{t("Not listed. Try the nearest big city.", "Absente de la liste. Essayez la grande ville la plus proche.")}</T> : null}
     </View>
   );
 }

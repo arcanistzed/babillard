@@ -2,6 +2,7 @@ import { ImageManipulator, SaveFormat } from "expo-image-manipulator";
 import * as ImagePicker from "expo-image-picker";
 import { Pressable, StyleSheet } from "react-native";
 import { Avatar, T } from "@/ui";
+import { t } from "@/i18n";
 
 const AVATAR_SIZE = 640;
 
@@ -19,9 +20,9 @@ export async function pickAndResizePhoto(): Promise<string | null> {
 
 export function PhotoPicker({ name, uri, onPress }: { name: string; uri: string | null; onPress: () => void }) {
   return (
-    <Pressable accessibilityRole="button" accessibilityLabel="Choose a photo" onPress={onPress} style={styles.row}>
+    <Pressable accessibilityRole="button" accessibilityLabel={t("Choose a photo", "Choisir une photo")} onPress={onPress} style={styles.row}>
       <Avatar name={name || "?"} url={uri} size={88} />
-      <T variant="bodyBold">{uri ? "Change photo" : "Choose a photo"}</T>
+      <T variant="bodyBold">{uri ? t("Change photo", "Changer la photo") : t("Choose a photo", "Choisir une photo")}</T>
     </Pressable>
   );
 }

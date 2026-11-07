@@ -14,6 +14,8 @@ export const users = sqliteTable(
     campusId: text("campus_id"),
     status: text("status", { enum: ["active", "banned", "deleted"] }).notNull().default("active"),
     onboardedAt: integer("onboarded_at"),
+    /** Picks the language of push notifications and emails. The app sets it from the phone's language. */
+    language: text("language", { enum: ["en", "fr"] }).notNull().default("en"),
     termsVersion: text("terms_version"),
     termsAcceptedAt: integer("terms_accepted_at"),
     /** Updated at most daily. Accounts unused for two years are removed. */
@@ -58,6 +60,8 @@ export const topics = sqliteTable(
     blurb: text("blurb").notNull().default(""),
     fieldTags: text("field_tags", { mode: "json" }).$type<string[]>().notNull(),
     openers: text("openers", { mode: "json" }).$type<string[]>().notNull(),
+    /** Seeded topics have a French version. Topics people suggest don't. */
+    fr: text("fr", { mode: "json" }).$type<{ title: string; blurb: string; openers: string[] }>(),
     status: text("status", { enum: ["seeded", "pending", "approved", "rejected"] }).notNull(),
     createdBy: text("created_by"),
     createdAt: integer("created_at").notNull(),
@@ -115,6 +119,7 @@ export const conversations = sqliteTable("conversations", {
   topicId: text("topic_id"),
   localityId: text("locality_id"),
   lastMessagePreview: text("last_message_preview"),
+  lastMessagePreviewFr: text("last_message_preview_fr"),
   lastMessageEnvelope: text("last_message_envelope", { mode: "json" }).$type<Envelope>(),
   lastMessageSenderId: text("last_message_sender_id"),
   lastMessageAt: integer("last_message_at"),

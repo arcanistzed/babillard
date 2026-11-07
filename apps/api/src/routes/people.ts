@@ -1,4 +1,5 @@
-import { topicPhrase, isMutualMatch, matchExpiresAt, matchOpenerMessage, orderedPair, peopleSwipeSchema, pickOpener, rankPeople, visibleLookingFor, type Field, type LookingFor, type PeopleSwipeResult, type PersonCard, type Role } from "@ideas-match/shared";
+import { topicPhrase, isMutualMatch, matchExpiresAt, matchOpenerMessage, orderedPair, peopleSwipeSchema, pickBilingualOpener, rankPeople, visibleLookingFor, type Field, type LookingFor, type PeopleSwipeResult, type PersonCard, type Role } from "@ideas-match/shared";
+import { requestLanguage } from "../lib/language";
 import { and, eq, sql } from "drizzle-orm";
 import { Hono } from "hono";
 import { getDb, schema, type Db } from "../db";
@@ -14,6 +15,7 @@ interface CandidateRow {
   user_id: string;
   topic_id: string;
   topic_title: string;
+  topic_fr: string | null;
   display_name: string;
   bio: string;
   role: string;
@@ -39,7 +41,7 @@ people.get("/", async (c) => {
   const user = c.get("user");
   const db = getDb(c.env);
   const { results } = await c.env.DB.prepare(
-    `SELECT theirs.user_id, mine.topic_id, t.title AS topic_title, p.display_name, p.bio, p.role, p.avatar_key,
+    `SELECT theirs.user_id, mine.topic_id, t.title AS topic_title, t.fr AS topic_fr, p.display_name, p.bio, p.role, p.avatar_key,
             p.fields, p.looking_for, u.verified_institution, u.campus_id, campus.name AS campus_name
      FROM topic_swipes mine
      JOIN topic_swipes theirs ON theirs.topic_id = mine.topic_id AND theirs.direction = 'right' AND theirs.user_id != mine.user_id
@@ -55,10 +57,12 @@ people.get("/", async (c) => {
     .bind(user.cityId, user.id, MAX_CANDIDATE_ROWS)
     .all<CandidateRow>();
 
+  const language = requestLanguage(c);
   const byUser = new Map<string, { row: CandidateRow; topics: { id: string; title: string }[] }>();
   for (const row of results) {
     const entry = byUser.get(row.user_id) ?? { row, topics: [] };
-    entry.topics.push({ id: row.topic_id, title: row.topic_title });
+    const french = language === "fr" && row.topic_fr ? (JSON.parse(row.topic_fr) as { title: string }) : null;
+    entry.topics.push({ id: row.topic_id, title: french?.title ?? row.topic_title });
     byUser.set(row.user_id, entry);
   }
 
@@ -134,11 +138,13 @@ async function createMatch(env: Env, db: Db, a: string, b: string, topicId: stri
 
   const [topic] = topicId ? await db.select().from(schema.topics).where(eq(schema.topics.id, topicId)) : [];
   const title = topic?.title ?? "the same ideas";
-  const opener = pickOpener(topic?.openers ?? []);
-  await env.CHAT_ROOM.getByName(conversationId).postSystem(conversationId, matchOpenerMessage(title, opener));
+  const titleFr = topic?.fr?.title ?? topic?.title ?? "les mêmes idées";
+  const opener = pickBilingualOpener(topic);
+  await env.CHAT_ROOM.getByName(conversationId).postSystem(conversationId, matchOpenerMessage(title, opener.en), { fr: matchOpenerMessage(titleFr, opener.fr, "fr") });
   await sendPush(env, [userA, userB], {
     title: "It's a match",
     body: `You both picked ${topicPhrase(title)}`,
+    fr: { title: "C'est un jumelage", body: `Vous avez tous les deux choisi ${topicPhrase(titleFr, "fr")}` },
     data: { screen: "chat", id: conversationId },
   });
   return conversationId;

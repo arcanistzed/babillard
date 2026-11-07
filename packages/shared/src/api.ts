@@ -143,6 +143,7 @@ export interface ChatMessage {
   senderId: string | null;
   /** Empty for people's messages, which are in `envelope`. Holds the text of messages the app wrote. */
   body: string;
+  bodyFr?: string;
   envelope?: Envelope;
   kind: "text" | "system" | "meetup";
   meetupId: string | null;

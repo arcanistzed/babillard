@@ -1,4 +1,3 @@
-import { VENUE_LABELS } from "@ideas-match/shared";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import * as Calendar from "expo-calendar/legacy";
 import { useLocalSearchParams } from "expo-router";
@@ -10,6 +9,7 @@ import { RsvpChips, stateLine, useMeetup } from "@/components/MeetupCard";
 import { describeWhen } from "@/format";
 import { useTheme } from "@/theme";
 import { Button, ErrorText, T } from "@/ui";
+import { t, venueLabel } from "@/i18n";
 
 export default function MeetupScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -24,19 +24,19 @@ export default function MeetupScreen() {
   const cancel = useMutation({ mutationFn: () => api.post(`/meetups/${id}/cancel`), onSuccess: invalidate, onError: (caught) => setError(friendlyError(caught)) });
 
   const meetup = query.data;
-  if (query.isError) return <View style={styles.body}><ErrorText>Couldn't load this meetup.</ErrorText></View>;
-  if (!meetup) return <ActivityIndicator accessibilityLabel="Loading meetup" size="large" style={styles.loading} />;
+  if (query.isError) return <View style={styles.body}><ErrorText>{t("Couldn't load this meetup.", "Impossible de charger cette rencontre.")}</ErrorText></View>;
+  if (!meetup) return <ActivityIndicator accessibilityLabel={t("Loading meetup", "Chargement de la rencontre")} size="large" style={styles.loading} />;
 
-  const place = meetup.venueNote || VENUE_LABELS[meetup.venueKind];
+  const place = meetup.venueNote || venueLabel(meetup.venueKind);
   const when = describeWhen(meetup.startsAt);
   const upcoming = meetup.state === "proposed" || meetup.state === "confirmed";
 
   async function addToCalendar() {
     try {
-      await Calendar.createEventInCalendarAsync({ title: "Ideas Match meetup", startDate: new Date(meetup!.startsAt), endDate: new Date(meetup!.endsAt), location: place, url: meetup!.shareUrl });
+      await Calendar.createEventInCalendarAsync({ title: t("Ideas Match meetup", "Rencontre Ideas Match"), startDate: new Date(meetup!.startsAt), endDate: new Date(meetup!.endsAt), location: place, url: meetup!.shareUrl });
     } catch {
       // No calendar app that takes this request. The calendar file still works.
-      await Linking.openURL(`${meetup!.shareUrl}.ics`).catch(() => setError("Couldn't open your calendar."));
+      await Linking.openURL(`${meetup!.shareUrl}.ics`).catch(() => setError(t("Couldn't open your calendar.", "Impossible d'ouvrir votre calendrier.")));
     }
   }
 
@@ -53,29 +53,29 @@ export default function MeetupScreen() {
 
       {meetup.checkinOpen ? (
         <View style={styles.checkin}>
-          <T variant="title">Did you meet?</T>
+          <T variant="title">{t("Did you meet?", "Vous êtes-vous rencontrés?")}</T>
           {meetup.myDidMeet === null ? (
             <View style={styles.row}>
-              <Button label="Yes, we met" onPress={() => didMeet.mutate(true)} style={styles.flex} busy={didMeet.isPending} />
-              <Button label="It didn't happen" kind="secondary" onPress={() => didMeet.mutate(false)} style={styles.flex} disabled={didMeet.isPending} />
+              <Button label={t("Yes, we met", "Oui")} onPress={() => didMeet.mutate(true)} style={styles.flex} busy={didMeet.isPending} />
+              <Button label={t("It didn't happen", "Ça n'a pas eu lieu")} kind="secondary" onPress={() => didMeet.mutate(false)} style={styles.flex} disabled={didMeet.isPending} />
             </View>
           ) : (
-            <T muted>{meetup.myDidMeet ? "Glad you met." : "Thanks for letting us know."}</T>
+            <T muted>{meetup.myDidMeet ? t("Glad you met.", "Tant mieux!") : t("Thanks for letting us know.", "Merci de nous l'avoir dit.")}</T>
           )}
         </View>
       ) : null}
 
       {upcoming ? (
         <View style={styles.actions}>
-          {meetup.state === "confirmed" ? <Button label="Add to calendar" onPress={addToCalendar} /> : null}
-          <Button label="Share the details" kind="secondary" onPress={() => void Share.share({ message: `Meetup ${when} at ${place}: ${meetup.shareUrl}` })} />
-          {meetup.proposedBy === me?.id ? <Button label="Cancel this meetup" kind="danger" onPress={() => cancel.mutate()} busy={cancel.isPending} /> : null}
+          {meetup.state === "confirmed" ? <Button label={t("Add to calendar", "Ajouter au calendrier")} onPress={addToCalendar} /> : null}
+          <Button label={t("Share the details", "Partager les détails")} kind="secondary" onPress={() => void Share.share({ message: t(`Meetup ${when} at ${place}: ${meetup.shareUrl}`, `Rencontre ${when}, ${place} : ${meetup.shareUrl}`) })} />
+          {meetup.proposedBy === me?.id ? <Button label={t("Cancel this meetup", "Annuler cette rencontre")} kind="danger" onPress={() => cancel.mutate()} busy={cancel.isPending} /> : null}
         </View>
       ) : null}
 
       {upcoming ? (
         <T variant="small" muted>
-          First time meeting? Choose a public place and tell a friend.
+          {t("First time meeting? Choose a public place and tell a friend.", "Première rencontre? Choisissez un lieu public et prévenez quelqu'un.")}
         </T>
       ) : null}
       {error ? <ErrorText>{error}</ErrorText> : null}

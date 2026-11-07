@@ -67,6 +67,6 @@ Ban the account, keep the evidence, and report it to Cybertip.ca, as the mandato
 
 ## Known gaps
 
-- The app's own screens are English only. The policy, terms, and Safety page are available in French, but Quebec's Charter also expects software to be available in French.
+- City and region names are English only, and topics people suggest appear as written.
 - A lawyer hasn't reviewed the French or English text.
 - The policy doesn't mention the right to complain to a privacy regulator. That was a deliberate choice, and the right exists either way. If someone complains to us, tell them about it, since PIPEDA expects that. Ask the lawyer whether the policy should say so too.

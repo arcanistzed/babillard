@@ -12,7 +12,16 @@
 "Which classic finding do you think holds up worst?",
 "Have you ever caught a nudge working on you?",
 "What would you run as a field experiment around here?"
+],
+"fr": {
+"title": "Économie comportementale",
+"blurb": "Pourquoi les gens n'agissent pas comme le prévoient les modèles.",
+"openers": [
+"Quel résultat classique résiste le moins bien, selon vous?",
+"Avez-vous déjà surpris un coup de pouce qui agissait sur vous?",
+"Quelle expérience de terrain mèneriez-vous ici?"
 ]
+}
 },
 {
 "id": "development-economics",
@@ -26,7 +35,15 @@
 "openers": [
 "Randomized trials or big-picture institutions: where do you start?",
 "Which country's path puzzles you most?"
+],
+"fr": {
+"title": "Économie du développement",
+"blurb": "Ce qui fait vraiment progresser les pays et les ménages pauvres.",
+"openers": [
+"Essais randomisés ou grandes institutions : par où commencez-vous?",
+"Quelle trajectoire de pays vous intrigue le plus?"
 ]
+}
 },
 {
 "id": "economic-history",
@@ -40,7 +57,15 @@
 "openers": [
 "Which period do you wish more economists studied?",
 "What's the best book you've read on why some places got rich?"
+],
+"fr": {
+"title": "Histoire économique",
+"blurb": "Révolutions industrielles, krachs et longue influence des institutions.",
+"openers": [
+"Quelle période aimeriez-vous voir étudiée par plus d'économistes?",
+"Quel est le meilleur livre que vous avez lu sur l'enrichissement de certaines régions?"
 ]
+}
 },
 {
 "id": "labor-markets-and-the-future-of-work",
@@ -54,7 +79,15 @@
 "openers": [
 "What's changed most about work in your field?",
 "Would you join a union if your job had one?"
+],
+"fr": {
+"title": "Marché du travail et avenir de l'emploi",
+"blurb": "Salaires, syndicats, petits boulots, et qui négocie avec qui.",
+"openers": [
+"Qu'est-ce qui a le plus changé dans le travail de votre domaine?",
+"Vous syndiqueriez-vous si votre emploi le permettait?"
 ]
+}
 },
 {
 "id": "game-theory-in-everyday-life",
@@ -68,7 +101,15 @@
 "openers": [
 "What's a real situation you've analyzed as a game?",
 "Where does the theory break down with actual people?"
+],
+"fr": {
+"title": "La théorie des jeux au quotidien",
+"blurb": "Enchères, bluff, et pourquoi les travaux de groupe tournent mal.",
+"openers": [
+"Quelle situation réelle avez-vous analysée comme un jeu?",
+"Où la théorie s'effondre-t-elle face à de vraies personnes?"
 ]
+}
 },
 {
 "id": "monetary-policy-and-central-banks",
@@ -82,7 +123,15 @@
 "openers": [
 "What do central banks get too much credit for?",
 "What would you ask a central banker over coffee?"
+],
+"fr": {
+"title": "Politique monétaire et banques centrales",
+"blurb": "Taux d'intérêt, inflation et pouvoir non élu.",
+"openers": [
+"Quel mérite accorde-t-on à tort aux banques centrales?",
+"Que demanderiez-vous à un banquier central autour d'un café?"
 ]
+}
 },
 {
 "id": "comparative-politics",
@@ -96,7 +145,15 @@
 "openers": [
 "Which two countries do you love comparing?",
 "What's a political system you think is underrated?"
+],
+"fr": {
+"title": "Politique comparée",
+"blurb": "Pourquoi des pays semblables finissent avec des gouvernements très différents.",
+"openers": [
+"Quels deux pays adorez-vous comparer?",
+"Quel système politique est sous-estimé, selon vous?"
 ]
+}
 },
 {
 "id": "democratic-backsliding",
@@ -110,7 +167,15 @@
 "openers": [
 "What's the earliest warning sign you'd watch for?",
 "Which recovery from backsliding do you find most hopeful?"
+],
+"fr": {
+"title": "Le recul démocratique",
+"blurb": "Comment les démocraties s'érodent, et ce qui ralentit ce recul.",
+"openers": [
+"Quel premier signe d'alerte surveilleriez-vous?",
+"Quel redressement vous donne le plus d'espoir?"
 ]
+}
 },
 {
 "id": "international-relations-theory",
@@ -124,7 +189,15 @@
 "openers": [
 "Which school of thought persuades you most this year?",
 "What event changed how you think about world politics?"
+],
+"fr": {
+"title": "Théorie des relations internationales",
+"blurb": "Réalistes, libéraux, et des débats qui survivent à toutes les guerres.",
+"openers": [
+"Quelle école de pensée vous convainc le plus cette année?",
+"Quel événement a changé votre regard sur la politique mondiale?"
 ]
+}
 },
 {
 "id": "electoral-systems-and-voting-reform",
@@ -138,7 +211,15 @@
 "openers": [
 "What's the voting method you'd actually defend?",
 "Has a voting reform ever really changed outcomes?"
+],
+"fr": {
+"title": "Modes de scrutin et réforme électorale",
+"blurb": "Vote préférentiel, proportionnelle, et qui est représenté.",
+"openers": [
+"Quel mode de scrutin défendriez-vous vraiment?",
+"Une réforme a-t-elle déjà vraiment changé les résultats?"
 ]
+}
 },
 {
 "id": "local-government-and-city-councils",
@@ -152,7 +233,15 @@
 "openers": [
 "Have you ever been to a council meeting?",
 "What local decision do you wish more people noticed?"
+],
+"fr": {
+"title": "Gouvernement local et conseils municipaux",
+"blurb": "Des réunions presque sans public qui façonnent le quotidien.",
+"openers": [
+"Avez-vous déjà assisté à un conseil municipal?",
+"Quelle décision locale aimeriez-vous voir davantage remarquée?"
 ]
+}
 },
 {
 "id": "social-movements",
@@ -166,7 +255,15 @@
 "openers": [
 "Which movement's strategy do you find most instructive?",
 "What makes a movement last past its first big moment?"
+],
+"fr": {
+"title": "Mouvements sociaux",
+"blurb": "Comment la contestation se transforme en changement, ou non.",
+"openers": [
+"Quelle stratégie de mouvement trouvez-vous la plus instructive?",
+"Qu'est-ce qui fait durer un mouvement après son premier grand moment?"
 ]
+}
 },
 {
 "id": "constitutional-law",
@@ -180,7 +277,15 @@
 "openers": [
 "Which ruling would you most like to reargue?",
 "How much should judges defer to legislatures?"
+],
+"fr": {
+"title": "Droit constitutionnel",
+"blurb": "Les droits, les tribunaux, et qui a le dernier mot.",
+"openers": [
+"Quelle décision aimeriez-vous le plus replaider?",
+"Jusqu'où les juges doivent-ils s'en remettre aux législateurs?"
 ]
+}
 },
 {
 "id": "international-law",
@@ -194,7 +299,15 @@
 "openers": [
 "Does international law constrain anyone powerful?",
 "Which tribunal's record interests you most?"
+],
+"fr": {
+"title": "Droit international",
+"blurb": "Traités, tribunaux et règles sans gendarme.",
+"openers": [
+"Le droit international contraint-il vraiment les puissants?",
+"Le bilan de quel tribunal vous intéresse le plus?"
 ]
+}
 },
 {
 "id": "law-and-technology",
@@ -208,7 +321,15 @@
 "openers": [
 "What legal question about technology feels most unsettled?",
 "Which law aged the worst?"
+],
+"fr": {
+"title": "Droit et technologie",
+"blurb": "Droit d'auteur, vie privée, et de vieilles lois face à de nouvelles machines.",
+"openers": [
+"Quelle question juridique sur la technologie reste la plus ouverte?",
+"Quelle loi a le plus mal vieilli?"
 ]
+}
 },
 {
 "id": "criminal-justice-research",
@@ -222,7 +343,15 @@
 "openers": [
 "Which finding surprised you most?",
 "What would you measure that nobody measures now?"
+],
+"fr": {
+"title": "Recherche en justice pénale",
+"blurb": "Police, peines, et ce que montrent les données.",
+"openers": [
+"Quel résultat vous a le plus surpris?",
+"Que mesureriez-vous que personne ne mesure aujourd'hui?"
 ]
+}
 },
 {
 "id": "philosophy-of-mind",
@@ -236,7 +365,15 @@
 "openers": [
 "Which position did you hold first and abandon?",
 "Could a machine ever settle this question for you?"
+],
+"fr": {
+"title": "Philosophie de l'esprit",
+"blurb": "La conscience, la perception, et l'effet que ça fait d'être quelque chose.",
+"openers": [
+"Quelle position avez-vous d'abord défendue, puis abandonnée?",
+"Une machine pourrait-elle trancher cette question pour vous?"
 ]
+}
 },
 {
 "id": "ethics-and-moral-philosophy",
@@ -249,7 +386,15 @@
 "openers": [
 "Which ethical view do you find hardest to live by?",
 "Is there a thought experiment you think is overrated?"
+],
+"fr": {
+"title": "Éthique et philosophie morale",
+"blurb": "Ce que nous nous devons les uns aux autres, avec rigueur.",
+"openers": [
+"Quelle position éthique trouvez-vous la plus difficile à vivre?",
+"Quelle expérience de pensée est surestimée, selon vous?"
 ]
+}
 },
 {
 "id": "political-philosophy",
@@ -263,7 +408,15 @@
 "openers": [
 "Rawls, Nozick, or someone else entirely?",
 "What's the strongest argument against your own view?"
+],
+"fr": {
+"title": "Philosophie politique",
+"blurb": "La justice, la liberté, et qui décide.",
+"openers": [
+"Rawls, Nozick, ou quelqu'un d'autre?",
+"Quel est l'argument le plus fort contre votre propre position?"
 ]
+}
 },
 {
 "id": "philosophy-of-science",
@@ -277,7 +430,15 @@
 "openers": [
 "Does Popper still hold up for you?",
 "Which scientific practice would you question first?"
+],
+"fr": {
+"title": "Philosophie des sciences",
+"blurb": "Ce qui fait une bonne théorie, et si la science peut le dire.",
+"openers": [
+"Popper tient-il encore la route pour vous?",
+"Quelle pratique scientifique remettriez-vous en question d'abord?"
 ]
+}
 },
 {
 "id": "existentialism",
@@ -291,7 +452,15 @@
 "openers": [
 "Who did you read first?",
 "Does any of it help on an ordinary Tuesday?"
+],
+"fr": {
+"title": "Existentialisme",
+"blurb": "Sartre, de Beauvoir, Camus, et comment vivre malgré tout.",
+"openers": [
+"Qui avez-vous lu en premier?",
+"Est-ce que ça aide un mardi ordinaire?"
 ]
+}
 },
 {
 "id": "effective-altruism-and-its-critics",
@@ -305,7 +474,15 @@
 "openers": [
 "What did the movement get right?",
 "Where do you get off the train?"
+],
+"fr": {
+"title": "L'altruisme efficace et ses critiques",
+"blurb": "Comment faire le plus de bien, et qui définit le bien.",
+"openers": [
+"Sur quoi le mouvement a-t-il eu raison?",
+"À quel moment le quittez-vous?"
 ]
+}
 },
 {
 "id": "ancient-philosophy",
@@ -319,7 +496,15 @@
 "openers": [
 "Which ancient thinker would you most like to argue with?",
 "Is modern Stoicism the real thing?"
+],
+"fr": {
+"title": "Philosophie antique",
+"blurb": "Platon, Aristote, les stoïciens, et pourquoi ils reviennent toujours.",
+"openers": [
+"Avec quel penseur antique aimeriez-vous le plus débattre?",
+"Le stoïcisme moderne est-il authentique?"
 ]
+}
 },
 {
 "id": "non-western-philosophy",
@@ -333,7 +518,15 @@
 "openers": [
 "Which tradition changed how you think?",
 "What should everyone read first?"
+],
+"fr": {
+"title": "Philosophies non occidentales",
+"blurb": "Traditions confucéennes, bouddhistes, islamiques et africaines.",
+"openers": [
+"Quelle tradition a changé votre façon de penser?",
+"Que tout le monde devrait-il lire d'abord?"
 ]
+}
 },
 {
 "id": "medieval-history",
@@ -346,7 +539,15 @@
 "openers": [
 "What's your favorite medieval myth to debunk?",
 "Which place and century would you visit?"
+],
+"fr": {
+"title": "Histoire médiévale",
+"blurb": "Bien plus étrange et plus connectée que le cliché.",
+"openers": [
+"Quel mythe médiéval préférez-vous démonter?",
+"Quel lieu et quel siècle visiteriez-vous?"
 ]
+}
 },
 {
 "id": "history-of-empire-and-colonialism",
@@ -360,7 +561,15 @@
 "openers": [
 "Which archive or book changed your view?",
 "How should a former empire teach this in schools?"
+],
+"fr": {
+"title": "Histoire des empires et du colonialisme",
+"blurb": "Comment les empires se sont construits, dirigés et racontés.",
+"openers": [
+"Quel fonds d'archives ou quel livre a changé votre regard?",
+"Comment un ancien empire devrait-il enseigner cela à l'école?"
 ]
+}
 },
 {
 "id": "oral-history-and-memory",
@@ -374,7 +583,15 @@
 "openers": [
 "Whose story would you most want to record?",
 "How far do you trust a remembered account?"
+],
+"fr": {
+"title": "Histoire orale et mémoire",
+"blurb": "Quels récits sont conservés, et comment la mémoire les déforme.",
+"openers": [
+"De qui aimeriez-vous le plus enregistrer l'histoire?",
+"Jusqu'où vous fiez-vous à un souvenir raconté?"
 ]
+}
 },
 {
 "id": "history-of-science",
@@ -388,7 +605,15 @@
 "openers": [
 "Which discovery has the most misleading popular story?",
 "Who deserves far more credit than they get?"
+],
+"fr": {
+"title": "Histoire des sciences",
+"blurb": "Comment le savoir s'est vraiment construit, erreurs comprises.",
+"openers": [
+"Quelle découverte a le récit populaire le plus trompeur?",
+"Qui mérite bien plus de reconnaissance?"
 ]
+}
 },
 {
 "id": "urban-history",
@@ -402,7 +627,15 @@
 "openers": [
 "What's the strangest thing about this city's past?",
 "Which neighborhood's story should more people know?"
+],
+"fr": {
+"title": "Histoire urbaine",
+"blurb": "Comment votre ville est devenue ce qu'elle est.",
+"openers": [
+"Quelle est la chose la plus étrange du passé de cette ville?",
+"Quel quartier a une histoire à mieux faire connaître?"
 ]
+}
 },
 {
 "id": "sociology-of-class",
@@ -416,7 +649,15 @@
 "openers": [
 "When did you first notice class in your own life?",
 "Is Bourdieu still the right lens?"
+],
+"fr": {
+"title": "Sociologie des classes sociales",
+"blurb": "Comment les classes fonctionnent aujourd'hui, y compris ce qu'on ne dit pas.",
+"openers": [
+"Quand avez-vous remarqué les classes sociales dans votre vie?",
+"Bourdieu reste-t-il la bonne grille de lecture?"
 ]
+}
 },
 {
 "id": "migration-and-diaspora",
@@ -430,7 +671,15 @@
 "openers": [
 "Does your family have a migration story?",
 "What do policy debates get wrong about migrants?"
+],
+"fr": {
+"title": "Migrations et diasporas",
+"blurb": "Pourquoi les gens partent, et ce qu'ils emportent.",
+"openers": [
+"Votre famille a-t-elle une histoire de migration?",
+"Sur quoi les débats politiques se trompent-ils au sujet des migrants?"
 ]
+}
 },
 {
 "id": "sociology-of-the-internet",
@@ -444,7 +693,15 @@
 "openers": [
 "Which online community taught you the most?",
 "Has the internet made you more or less lonely?"
+],
+"fr": {
+"title": "Sociologie d'Internet",
+"blurb": "Communautés en ligne, jeux de statut et formation des normes.",
+"openers": [
+"Quelle communauté en ligne vous a le plus appris?",
+"Internet vous a-t-il rendu plus ou moins seul?"
 ]
+}
 },
 {
 "id": "gender-studies",
@@ -458,7 +715,15 @@
 "openers": [
 "Which book reframed this for you?",
 "What question in this field do you think is unanswered?"
+],
+"fr": {
+"title": "Études de genre",
+"blurb": "Comment le genre façonne le travail, les soins, le droit et le quotidien.",
+"openers": [
+"Quel livre vous a fait voir les choses autrement?",
+"Quelle question reste sans réponse dans ce domaine?"
 ]
+}
 },
 {
 "id": "religion-in-public-life",
@@ -467,12 +732,21 @@
 "blurb": "Faith, secularism, and how they share a society.",
 "fieldTags": [
 "sociology",
-"politics"
+"politics",
+"religion"
 ],
 "openers": [
 "How did you grow up thinking about religion?",
 "Which country handles this best?"
+],
+"fr": {
+"title": "La religion dans la vie publique",
+"blurb": "Foi, laïcité, et comment elles partagent une société.",
+"openers": [
+"Quel rapport à la religion aviez-vous en grandissant?",
+"Quel pays gère cela le mieux?"
 ]
+}
 },
 {
 "id": "cognitive-psychology",
@@ -485,7 +759,15 @@
 "openers": [
 "Which illusion do you still fall for?",
 "What should everyone know about memory?"
+],
+"fr": {
+"title": "Psychologie cognitive",
+"blurb": "Attention, mémoire, et comment la pensée fonctionne vraiment.",
+"openers": [
+"À quelle illusion vous laissez-vous encore prendre?",
+"Que tout le monde devrait-il savoir sur la mémoire?"
 ]
+}
 },
 {
 "id": "replication-crisis",
@@ -499,7 +781,15 @@
 "openers": [
 "Which failed replication stung most?",
 "What would you change first about how studies get published?"
+],
+"fr": {
+"title": "La crise de la reproductibilité",
+"blurb": "Ce qui a survécu, ce qui est tombé, et comment faire mieux.",
+"openers": [
+"Quel échec de réplication vous a le plus marqué?",
+"Que changeriez-vous d'abord à la publication des études?"
 ]
+}
 },
 {
 "id": "developmental-psychology",
@@ -513,7 +803,15 @@
 "openers": [
 "Which finding changed how you see childhood?",
 "What do you think we get wrong about teenagers?"
+],
+"fr": {
+"title": "Psychologie du développement",
+"blurb": "Comment les enfants deviennent des personnes.",
+"openers": [
+"Quel résultat a changé votre regard sur l'enfance?",
+"Sur quoi se trompe-t-on au sujet des adolescents?"
 ]
+}
 },
 {
 "id": "social-psychology-of-belief",
@@ -527,7 +825,15 @@
 "openers": [
 "When did you last really change your mind?",
 "What actually persuades someone?"
+],
+"fr": {
+"title": "Psychologie sociale des croyances",
+"blurb": "Pourquoi on croit des choses, et pourquoi on change d'avis.",
+"openers": [
+"Quand avez-vous vraiment changé d'avis pour la dernière fois?",
+"Qu'est-ce qui persuade vraiment quelqu'un?"
 ]
+}
 },
 {
 "id": "psychology-of-loneliness-and-friendship",
@@ -541,7 +847,15 @@
 "openers": [
 "How have you made friends as an adult?",
 "What makes a friendship last for you?"
+],
+"fr": {
+"title": "Psychologie de la solitude et de l'amitié",
+"blurb": "Pourquoi se faire des amis devient plus difficile, et ce qui aide.",
+"openers": [
+"Comment vous êtes-vous fait des amis à l'âge adulte?",
+"Qu'est-ce qui fait durer une amitié, pour vous?"
 ]
+}
 },
 {
 "id": "clinical-psychology-and-therapy-research",
@@ -555,7 +869,15 @@
 "openers": [
 "Which approach do you think is over- or under-rated?",
 "How should we measure whether therapy worked?"
+],
+"fr": {
+"title": "Psychologie clinique et recherche sur la thérapie",
+"blurb": "Ce qui fonctionne en thérapie, et comment le savoir.",
+"openers": [
+"Quelle approche est surestimée ou sous-estimée, selon vous?",
+"Comment mesurer si une thérapie a fonctionné?"
 ]
+}
 },
 {
 "id": "the-nineteenth-century-novel",
@@ -569,7 +891,15 @@
 "openers": [
 "Tolstoy, Eliot, Dickens: who's your pick?",
 "Which long novel was worth every page?"
+],
+"fr": {
+"title": "Le roman du XIXe siècle",
+"blurb": "De gros livres, de grandes sociétés et de très longues phrases.",
+"openers": [
+"Tolstoï, Eliot, Dickens : qui choisissez-vous?",
+"Quel long roman valait chaque page?"
 ]
+}
 },
 {
 "id": "contemporary-fiction",
@@ -582,7 +912,15 @@
 "openers": [
 "What's the best novel you read this year?",
 "Who's a living writer people will still read in fifty years?"
+],
+"fr": {
+"title": "Fiction contemporaine",
+"blurb": "Ce qui s'écrit aujourd'hui, et pourquoi c'est important.",
+"openers": [
+"Quel est le meilleur roman que vous avez lu cette année?",
+"Quel auteur vivant lira-t-on encore dans cinquante ans?"
 ]
+}
 },
 {
 "id": "poetry",
@@ -596,7 +934,15 @@
 "openers": [
 "Which poem do you know by heart?",
 "Who got you into poetry?"
+],
+"fr": {
+"title": "Poésie",
+"blurb": "La lire, l'écrire, et débattre de son utilité.",
+"openers": [
+"Quel poème connaissez-vous par cœur?",
+"Qui vous a fait aimer la poésie?"
 ]
+}
 },
 {
 "id": "science-fiction-as-philosophy",
@@ -610,7 +956,15 @@
 "openers": [
 "Which novel changed how you think?",
 "Le Guin or Lem?"
+],
+"fr": {
+"title": "La science-fiction comme philosophie",
+"blurb": "Des expériences de pensée avec des vaisseaux spatiaux.",
+"openers": [
+"Quel roman a changé votre façon de penser?",
+"Le Guin ou Lem?"
 ]
+}
 },
 {
 "id": "translation-and-world-literature",
@@ -624,7 +978,15 @@
 "openers": [
 "Which translated book should everyone read?",
 "Have you compared two translations of the same book?"
+],
+"fr": {
+"title": "Traduction et littérature mondiale",
+"blurb": "Ce qui passe d'une langue à l'autre, et ce qui ne passe pas.",
+"openers": [
+"Quel livre traduit tout le monde devrait-il lire?",
+"Avez-vous déjà comparé deux traductions d'un même livre?"
 ]
+}
 },
 {
 "id": "literary-theory",
@@ -638,7 +1000,15 @@
 "openers": [
 "Which theorist do you actually find useful?",
 "Has theory ever ruined a book for you?"
+],
+"fr": {
+"title": "Théorie littéraire",
+"blurb": "Lire la lecture, et se demander si ça aide.",
+"openers": [
+"Quel théoricien trouvez-vous vraiment utile?",
+"La théorie vous a-t-elle déjà gâché un livre?"
 ]
+}
 },
 {
 "id": "great-books-reading-group",
@@ -652,7 +1022,15 @@
 "openers": [
 "What's the first book you'd pick for the group?",
 "How many pages a week is realistic for you?"
+],
+"fr": {
+"title": "Club de lecture des grands classiques",
+"blurb": "Lire lentement de vieux livres, avec d'autres.",
+"openers": [
+"Quel premier livre choisiriez-vous pour le groupe?",
+"Combien de pages par semaine est réaliste pour vous?"
 ]
+}
 },
 {
 "id": "sociolinguistics",
@@ -666,7 +1044,15 @@
 "openers": [
 "Do you speak differently with different people?",
 "What language change annoys you, and why does it?"
+],
+"fr": {
+"title": "Sociolinguistique",
+"blurb": "Comment l'accent, l'argot et le changement de registre disent qui nous sommes.",
+"openers": [
+"Parlez-vous différemment selon les personnes?",
+"Quel changement de la langue vous agace, et pourquoi?"
 ]
+}
 },
 {
 "id": "language-learning",
@@ -680,7 +1066,15 @@
 "openers": [
 "What are you learning right now?",
 "What method wasted the most of your time?"
+],
+"fr": {
+"title": "Apprendre une langue",
+"blurb": "Ce qui fonctionne vraiment pour apprendre une langue à l'âge adulte.",
+"openers": [
+"Qu'apprenez-vous en ce moment?",
+"Quelle méthode vous a fait perdre le plus de temps?"
 ]
+}
 },
 {
 "id": "endangered-languages",
@@ -689,12 +1083,21 @@
 "blurb": "Documentation, revival, and what's lost when a language goes.",
 "fieldTags": [
 "linguistics",
-"history"
+"history",
+"indigenous_studies"
 ],
 "openers": [
 "Which revival effort do you find most inspiring?",
 "What's lost when a language dies?"
+],
+"fr": {
+"title": "Langues menacées",
+"blurb": "Documentation, revitalisation, et ce qu'on perd quand une langue s'éteint.",
+"openers": [
+"Quel effort de revitalisation vous inspire le plus?",
+"Que perd-on quand une langue meurt?"
 ]
+}
 },
 {
 "id": "language-and-ai",
@@ -708,7 +1111,15 @@
 "openers": [
 "Do language models change linguistics at all?",
 "What would convince you a model understands?"
+],
+"fr": {
+"title": "Langage et IA",
+"blurb": "Ce que les grands modèles de langue nous apprennent sur le langage, ou non.",
+"openers": [
+"Les modèles de langue changent-ils quelque chose à la linguistique?",
+"Qu'est-ce qui vous convaincrait qu'un modèle comprend?"
 ]
+}
 },
 {
 "id": "architecture-and-the-built-environment",
@@ -722,7 +1133,15 @@
 "openers": [
 "Which building nearby do you love or hate?",
 "What would you build on the nearest empty lot?"
+],
+"fr": {
+"title": "Architecture et cadre bâti",
+"blurb": "Pourquoi les bâtiments ont cette allure, et l'effet qu'ils font de l'intérieur.",
+"openers": [
+"Quel bâtiment du coin aimez-vous ou détestez-vous?",
+"Que construiriez-vous sur le terrain vague le plus proche?"
 ]
+}
 },
 {
 "id": "contemporary-art",
@@ -735,7 +1154,15 @@
 "openers": [
 "What's the last show that stayed with you?",
 "Want to go see something and argue about it?"
+],
+"fr": {
+"title": "Art contemporain",
+"blurb": "Ce qu'il y a dans les galeries, et si c'est bon.",
+"openers": [
+"Quelle est la dernière exposition qui vous a marqué?",
+"Envie d'aller voir quelque chose et d'en débattre?"
 ]
+}
 },
 {
 "id": "film-as-an-art-form",
@@ -744,12 +1171,21 @@
 "blurb": "Slow cinema, auteurs, and what film can do that nothing else can.",
 "fieldTags": [
 "art",
-"literature"
+"literature",
+"music_film"
 ],
 "openers": [
 "Which film do you recommend to everyone?",
 "Which director do you think is overrated?"
+],
+"fr": {
+"title": "Le cinéma comme forme d'art",
+"blurb": "Cinéma lent, auteurs, et ce que seul le film peut faire.",
+"openers": [
+"Quel film recommandez-vous à tout le monde?",
+"Quel cinéaste est surestimé, selon vous?"
 ]
+}
 },
 {
 "id": "design-and-how-things-work",
@@ -763,7 +1199,15 @@
 "openers": [
 "What's a badly designed thing you use every day?",
 "What's the most elegant object you own?"
+],
+"fr": {
+"title": "Le design et le fonctionnement des choses",
+"blurb": "Objets du quotidien, interfaces, bonnes et mauvaises décisions.",
+"openers": [
+"Quel objet mal conçu utilisez-vous tous les jours?",
+"Quel est l'objet le plus élégant que vous possédez?"
 ]
+}
 },
 {
 "id": "music-theory-and-listening",
@@ -772,12 +1216,21 @@
 "blurb": "Why some music works, across traditions.",
 "fieldTags": [
 "art",
-"mathematics"
+"mathematics",
+"music_film"
 ],
 "openers": [
 "What piece would you walk someone through?",
 "Did learning theory change what you enjoy?"
+],
+"fr": {
+"title": "Théorie musicale et écoute",
+"blurb": "Pourquoi certaines musiques fonctionnent, toutes traditions confondues.",
+"openers": [
+"Quelle pièce aimeriez-vous expliquer à quelqu'un?",
+"La théorie a-t-elle changé ce que vous aimez?"
 ]
+}
 },
 {
 "id": "photography-and-visual-culture",
@@ -791,7 +1244,15 @@
 "openers": [
 "Which photograph do you think about most?",
 "Do you still trust photographs?"
+],
+"fr": {
+"title": "Photographie et culture visuelle",
+"blurb": "Les images, la vérité, et ce qu'on fait des caméras omniprésentes.",
+"openers": [
+"À quelle photo pensez-vous le plus souvent?",
+"Faites-vous encore confiance aux photos?"
 ]
+}
 },
 {
 "id": "evolutionary-biology",
@@ -804,7 +1265,15 @@
 "openers": [
 "What's your favorite strange adaptation?",
 "Which popular evolutionary story is wrong?"
+],
+"fr": {
+"title": "Biologie de l'évolution",
+"blurb": "La sélection, la dérive, et les choses étranges qu'elles produisent.",
+"openers": [
+"Quelle est votre adaptation étrange préférée?",
+"Quel récit évolutionniste populaire est faux?"
 ]
+}
 },
 {
 "id": "neuroscience",
@@ -818,7 +1287,15 @@
 "openers": [
 "What's the biggest open question for you?",
 "Which neuroscience claim do you distrust?"
+],
+"fr": {
+"title": "Neurosciences",
+"blurb": "Cerveaux, circuits, et ce qu'on sait vraiment.",
+"openers": [
+"Quelle est pour vous la plus grande question ouverte?",
+"De quelle affirmation en neurosciences vous méfiez-vous?"
 ]
+}
 },
 {
 "id": "genetics-and-crispr",
@@ -832,7 +1309,15 @@
 "openers": [
 "Where would you draw the line on editing?",
 "What application excites you most?"
+],
+"fr": {
+"title": "Génétique et CRISPR",
+"blurb": "Lire et modifier les génomes, et où s'arrêter.",
+"openers": [
+"Où traceriez-vous la limite de la modification génétique?",
+"Quelle application vous enthousiasme le plus?"
 ]
+}
 },
 {
 "id": "microbiome-research",
@@ -846,7 +1331,15 @@
 "openers": [
 "How much of the hype do you believe?",
 "What experiment would you want to see done?"
+],
+"fr": {
+"title": "Recherche sur le microbiome",
+"blurb": "Les organismes qui vivent sur vous, et leur importance.",
+"openers": [
+"Quelle part de l'engouement croyez-vous?",
+"Quelle expérience aimeriez-vous voir menée?"
 ]
+}
 },
 {
 "id": "ecology-and-biodiversity",
@@ -860,7 +1353,15 @@
 "openers": [
 "Which ecosystem do you know best?",
 "Which species do you wish people cared about?"
+],
+"fr": {
+"title": "Écologie et biodiversité",
+"blurb": "Comment les écosystèmes tiennent ensemble, et s'effondrent.",
+"openers": [
+"Quel écosystème connaissez-vous le mieux?",
+"Pour quelle espèce aimeriez-vous que les gens s'inquiètent davantage?"
 ]
+}
 },
 {
 "id": "animal-cognition",
@@ -874,7 +1375,15 @@
 "openers": [
 "Which animal study blew your mind?",
 "How would we ever know what an animal experiences?"
+],
+"fr": {
+"title": "Cognition animale",
+"blurb": "Ce que comprennent vraiment les corbeaux, les pieuvres et les chiens.",
+"openers": [
+"Quelle étude sur les animaux vous a épaté?",
+"Comment saurait-on ce qu'un animal ressent?"
 ]
+}
 },
 {
 "id": "origins-of-life",
@@ -888,7 +1397,15 @@
 "openers": [
 "Which hypothesis do you find most convincing?",
 "Would finding life elsewhere change much for you?"
+],
+"fr": {
+"title": "Origines de la vie",
+"blurb": "Comment la chimie est devenue biologie.",
+"openers": [
+"Quelle hypothèse trouvez-vous la plus convaincante?",
+"Découvrir la vie ailleurs changerait-il grand-chose pour vous?"
 ]
+}
 },
 {
 "id": "public-health",
@@ -902,7 +1419,15 @@
 "openers": [
 "What's the most underrated public health win?",
 "Which health policy would you change first?"
+],
+"fr": {
+"title": "Santé publique",
+"blurb": "Populations, prévention, et ce qui nous garde vraiment en vie.",
+"openers": [
+"Quelle est la réussite la plus sous-estimée en santé publique?",
+"Quelle politique de santé changeriez-vous d'abord?"
 ]
+}
 },
 {
 "id": "global-health-and-pandemics",
@@ -916,7 +1441,15 @@
 "openers": [
 "What should we have learned from COVID?",
 "Who's doing this work well?"
+],
+"fr": {
+"title": "Santé mondiale et pandémies",
+"blurb": "Ce qu'on a appris, et ce qu'on a déjà oublié.",
+"openers": [
+"Qu'aurait-on dû apprendre de la COVID?",
+"Qui fait bien ce travail?"
 ]
+}
 },
 {
 "id": "medical-ethics",
@@ -930,7 +1463,15 @@
 "openers": [
 "Which case do you keep coming back to?",
 "Who should decide when resources are scarce?"
+],
+"fr": {
+"title": "Éthique médicale",
+"blurb": "Consentement, rareté et décisions difficiles au chevet des patients.",
+"openers": [
+"À quel cas revenez-vous toujours?",
+"Qui devrait décider quand les ressources manquent?"
 ]
+}
 },
 {
 "id": "aging-and-longevity-science",
@@ -944,7 +1485,15 @@
 "openers": [
 "Which claim do you find most credible?",
 "Would you want to live to 150?"
+],
+"fr": {
+"title": "Science du vieillissement et de la longévité",
+"blurb": "Ce qu'on peut vraiment faire, et ce qui n'est que marketing.",
+"openers": [
+"Quelle affirmation trouvez-vous la plus crédible?",
+"Aimeriez-vous vivre jusqu'à 150 ans?"
 ]
+}
 },
 {
 "id": "mental-health-systems",
@@ -958,7 +1507,15 @@
 "openers": [
 "What would you change first?",
 "What does your community lack?"
+],
+"fr": {
+"title": "Systèmes de santé mentale",
+"blurb": "Accès, stigmatisation et organisation des soins.",
+"openers": [
+"Que changeriez-vous d'abord?",
+"Que manque-t-il à votre communauté?"
 ]
+}
 },
 {
 "id": "nutrition-science",
@@ -972,7 +1529,15 @@
 "openers": [
 "Which study design do you trust?",
 "What food advice did you stop believing?"
+],
+"fr": {
+"title": "Science de la nutrition",
+"blurb": "Pourquoi les conseils changent sans cesse.",
+"openers": [
+"À quel type d'étude faites-vous confiance?",
+"Quel conseil alimentaire avez-vous cessé de croire?"
 ]
+}
 },
 {
 "id": "quantum-mechanics-and-interpretation",
@@ -986,7 +1551,15 @@
 "openers": [
 "Which interpretation do you lean toward?",
 "Does the interpretation question even matter?"
+],
+"fr": {
+"title": "Mécanique quantique et interprétation",
+"blurb": "Ce que disent les maths, et ce que ça signifie.",
+"openers": [
+"Vers quelle interprétation penchez-vous?",
+"La question de l'interprétation a-t-elle même de l'importance?"
 ]
+}
 },
 {
 "id": "astrophysics-and-cosmology",
@@ -999,7 +1572,15 @@
 "openers": [
 "What's the biggest puzzle for you?",
 "What would you point a telescope at?"
+],
+"fr": {
+"title": "Astrophysique et cosmologie",
+"blurb": "Matière noire, univers primitif, et ce qu'on peut voir.",
+"openers": [
+"Quelle est pour vous la plus grande énigme?",
+"Vers quoi pointeriez-vous un télescope?"
 ]
+}
 },
 {
 "id": "climate-physics",
@@ -1013,7 +1594,15 @@
 "openers": [
 "Which uncertainty do you think matters most?",
 "How do you explain feedback loops to friends?"
+],
+"fr": {
+"title": "Physique du climat",
+"blurb": "Comment fonctionnent les modèles, et à quel point on est sûr.",
+"openers": [
+"Quelle incertitude compte le plus, selon vous?",
+"Comment expliquez-vous les rétroactions à vos amis?"
 ]
+}
 },
 {
 "id": "physics-for-non-physicists",
@@ -1027,7 +1616,15 @@
 "openers": [
 "What's a concept you finally understood recently?",
 "Which analogy do you think misleads people?"
+],
+"fr": {
+"title": "La physique pour les non-physiciens",
+"blurb": "De grandes idées sans les maths, ou avec un peu.",
+"openers": [
+"Quel concept avez-vous enfin compris récemment?",
+"Quelle analogie induit les gens en erreur, selon vous?"
 ]
+}
 },
 {
 "id": "materials-science",
@@ -1041,7 +1638,15 @@
 "openers": [
 "What material is the most underrated?",
 "Which breakthrough are you watching?"
+],
+"fr": {
+"title": "Science des matériaux",
+"blurb": "Ces matières qui décident discrètement du possible.",
+"openers": [
+"Quel matériau est le plus sous-estimé?",
+"Quelle percée surveillez-vous?"
 ]
+}
 },
 {
 "id": "green-chemistry",
@@ -1055,7 +1660,15 @@
 "openers": [
 "What's the worst everyday chemical process?",
 "Which fix looks closest to real?"
+],
+"fr": {
+"title": "Chimie verte",
+"blurb": "Fabriquer sans tout salir.",
+"openers": [
+"Quel est le pire procédé chimique du quotidien?",
+"Quelle solution semble la plus proche de la réalité?"
 ]
+}
 },
 {
 "id": "drug-discovery",
@@ -1069,7 +1682,15 @@
 "openers": [
 "Has AI changed this yet?",
 "Why do you think so many candidates fail?"
+],
+"fr": {
+"title": "Découverte de médicaments",
+"blurb": "Comment des molécules deviennent des médicaments, et pourquoi la plupart échouent.",
+"openers": [
+"L'IA a-t-elle déjà changé cela?",
+"Pourquoi tant de candidats échouent-ils, selon vous?"
 ]
+}
 },
 {
 "id": "foundations-of-mathematics",
@@ -1083,7 +1704,15 @@
 "openers": [
 "Do you think mathematical objects exist?",
 "Which paradox do you enjoy most?"
+],
+"fr": {
+"title": "Fondements des mathématiques",
+"blurb": "Ensembles, preuves, et ce sur quoi reposent les maths.",
+"openers": [
+"Les objets mathématiques existent-ils, selon vous?",
+"Quel paradoxe préférez-vous?"
 ]
+}
 },
 {
 "id": "statistics-and-causal-inference",
@@ -1097,7 +1726,15 @@
 "openers": [
 "What's the worst causal claim you've seen lately?",
 "Which method do you reach for first?"
+],
+"fr": {
+"title": "Statistique et inférence causale",
+"blurb": "Passer de la corrélation à ce qui permet d'agir.",
+"openers": [
+"Quelle est la pire affirmation causale vue récemment?",
+"Quelle méthode utilisez-vous d'abord?"
 ]
+}
 },
 {
 "id": "beautiful-proofs",
@@ -1110,7 +1747,15 @@
 "openers": [
 "What's your favorite proof?",
 "Which result felt like magic when you first saw it?"
+],
+"fr": {
+"title": "Belles démonstrations",
+"blurb": "Un club de maths détendu, pour le plaisir.",
+"openers": [
+"Quelle est votre démonstration préférée?",
+"Quel résultat vous a semblé magique la première fois?"
 ]
+}
 },
 {
 "id": "math-education",
@@ -1124,7 +1769,15 @@
 "openers": [
 "When did math click for you, or not?",
 "How would you teach fractions?"
+],
+"fr": {
+"title": "L'enseignement des maths",
+"blurb": "Pourquoi tant de gens décident qu'ils sont nuls en maths.",
+"openers": [
+"Quand les maths ont-elles fait « clic » pour vous, ou non?",
+"Comment enseigneriez-vous les fractions?"
 ]
+}
 },
 {
 "id": "machine-learning-research",
@@ -1138,7 +1791,15 @@
 "openers": [
 "Which recent paper stayed with you?",
 "What do you think is overhyped?"
+],
+"fr": {
+"title": "Recherche en apprentissage automatique",
+"blurb": "Ce qu'il y a vraiment de nouveau dans les articles.",
+"openers": [
+"Quel article récent vous a marqué?",
+"Qu'est-ce qui est surestimé, selon vous?"
 ]
+}
 },
 {
 "id": "ai-safety-and-governance",
@@ -1152,7 +1813,15 @@
 "openers": [
 "What worries you most, concretely?",
 "What regulation would you write first?"
+],
+"fr": {
+"title": "Sécurité et gouvernance de l'IA",
+"blurb": "Comment piloter des systèmes puissants, et qui devrait le faire.",
+"openers": [
+"Qu'est-ce qui vous inquiète le plus, concrètement?",
+"Quelle réglementation rédigeriez-vous d'abord?"
 ]
+}
 },
 {
 "id": "open-source-communities",
@@ -1166,7 +1835,15 @@
 "openers": [
 "What's your first contribution story?",
 "How should maintainers get paid?"
+],
+"fr": {
+"title": "Communautés du logiciel libre",
+"blurb": "Comment des bénévoles bâtissent l'infrastructure dont le monde dépend.",
+"openers": [
+"Comment s'est passée votre première contribution?",
+"Comment les responsables de projets devraient-ils être payés?"
 ]
+}
 },
 {
 "id": "privacy-and-surveillance",
@@ -1180,7 +1857,15 @@
 "openers": [
 "What did you change after learning how tracking works?",
 "Is privacy still winnable?"
+],
+"fr": {
+"title": "Vie privée et surveillance",
+"blurb": "Qui voit vos données, et ce qu'on en fait.",
+"openers": [
+"Qu'avez-vous changé en apprenant comment fonctionne le pistage?",
+"La vie privée peut-elle encore être gagnée?"
 ]
+}
 },
 {
 "id": "algorithms-and-complexity",
@@ -1194,7 +1879,15 @@
 "openers": [
 "What's the most elegant algorithm you know?",
 "What do you bet on P vs NP?"
+],
+"fr": {
+"title": "Algorithmes et complexité",
+"blurb": "Ce qui peut être calculé, et à quelle vitesse.",
+"openers": [
+"Quel est l'algorithme le plus élégant que vous connaissez?",
+"Quel est votre pari sur P contre NP?"
 ]
+}
 },
 {
 "id": "human-computer-interaction",
@@ -1208,7 +1901,15 @@
 "openers": [
 "Which interface changed how you behave?",
 "What study would you run on a popular app?"
+],
+"fr": {
+"title": "Interaction humain-machine",
+"blurb": "Comment les logiciels façonnent ce que font les gens.",
+"openers": [
+"Quelle interface a changé votre comportement?",
+"Quelle étude mèneriez-vous sur une application populaire?"
 ]
+}
 },
 {
 "id": "robotics",
@@ -1222,7 +1923,15 @@
 "openers": [
 "What's the hardest thing about the physical world?",
 "Which robot do you actually want at home?"
+],
+"fr": {
+"title": "Robotique",
+"blurb": "Des machines dans le vrai monde, désordonné.",
+"openers": [
+"Qu'est-ce qui est le plus difficile dans le monde physique?",
+"Quel robot voulez-vous vraiment chez vous?"
 ]
+}
 },
 {
 "id": "energy-systems",
@@ -1236,7 +1945,15 @@
 "openers": [
 "What's the real bottleneck right now?",
 "Nuclear, solar, or something else first?"
+],
+"fr": {
+"title": "Systèmes énergétiques",
+"blurb": "Réseaux, stockage et sortie des énergies fossiles.",
+"openers": [
+"Quel est le vrai goulot d'étranglement en ce moment?",
+"Nucléaire, solaire, ou autre chose d'abord?"
 ]
+}
 },
 {
 "id": "transit-engineering",
@@ -1250,7 +1967,15 @@
 "openers": [
 "Which system should we copy?",
 "What's your favorite transit line and why?"
+],
+"fr": {
+"title": "Ingénierie du transport en commun",
+"blurb": "Signalisation, matériel roulant, et pourquoi les trains sont en retard.",
+"openers": [
+"Quel réseau devrait-on imiter?",
+"Quelle est votre ligne préférée, et pourquoi?"
 ]
+}
 },
 {
 "id": "biomedical-engineering",
@@ -1264,7 +1989,15 @@
 "openers": [
 "Which device do you think will matter most?",
 "What's the hardest constraint in your view?"
+],
+"fr": {
+"title": "Génie biomédical",
+"blurb": "Appareils, implants, et concevoir pour le corps.",
+"openers": [
+"Quel appareil comptera le plus, selon vous?",
+"Quelle est la contrainte la plus difficile, selon vous?"
 ]
+}
 },
 {
 "id": "space-exploration",
@@ -1278,7 +2011,15 @@
 "openers": [
 "Which mission are you following?",
 "Robots or people?"
+],
+"fr": {
+"title": "Exploration spatiale",
+"blurb": "Fusées, missions, et si on devrait y aller.",
+"openers": [
+"Quelle mission suivez-vous?",
+"Des robots ou des humains?"
 ]
+}
 },
 {
 "id": "climate-adaptation",
@@ -1292,7 +2033,15 @@
 "openers": [
 "What will your city have to change first?",
 "Who pays when a place has to move?"
+],
+"fr": {
+"title": "Adaptation au climat",
+"blurb": "Vivre avec le réchauffement déjà enclenché.",
+"openers": [
+"Que votre ville devra-t-elle changer d'abord?",
+"Qui paie quand un lieu doit déménager?"
 ]
+}
 },
 {
 "id": "climate-activism-and-strategy",
@@ -1306,7 +2055,15 @@
 "openers": [
 "Have you taken part in any of it?",
 "Which tactic do you think is most misunderstood?"
+],
+"fr": {
+"title": "Militantisme et stratégie climatiques",
+"blurb": "Ce qui fait bouger les choses, et ce qui se retourne contre nous.",
+"openers": [
+"Y avez-vous déjà participé?",
+"Quelle tactique est la plus mal comprise, selon vous?"
 ]
+}
 },
 {
 "id": "conservation-in-practice",
@@ -1320,7 +2077,15 @@
 "openers": [
 "What project do you most admire?",
 "Should we bring back extinct species?"
+],
+"fr": {
+"title": "La conservation en pratique",
+"blurb": "Travail de terrain, réensauvagement et arbitrages difficiles.",
+"openers": [
+"Quel projet admirez-vous le plus?",
+"Faut-il ramener des espèces disparues?"
 ]
+}
 },
 {
 "id": "food-systems-and-agriculture",
@@ -1334,7 +2099,15 @@
 "openers": [
 "What would you change about how we farm?",
 "What local food project is worth visiting?"
+],
+"fr": {
+"title": "Systèmes alimentaires et agriculture",
+"blurb": "Comment on se nourrit, et à quel prix.",
+"openers": [
+"Que changeriez-vous à notre façon de cultiver?",
+"Quel projet alimentaire local vaut le détour?"
 ]
+}
 },
 {
 "id": "water-politics",
@@ -1348,7 +2121,15 @@
 "openers": [
 "Which water dispute should more people know about?",
 "Where's your water come from?"
+],
+"fr": {
+"title": "La politique de l'eau",
+"blurb": "Rivières, barrages, et qui obtient quoi.",
+"openers": [
+"Quel conflit sur l'eau devrait être mieux connu?",
+"D'où vient votre eau?"
 ]
+}
 },
 {
 "id": "pedagogy-and-how-people-learn",
@@ -1362,7 +2143,15 @@
 "openers": [
 "Who's the best teacher you ever had?",
 "What did they do differently?"
+],
+"fr": {
+"title": "Pédagogie et apprentissage",
+"blurb": "Ce qu'exige vraiment un bon enseignement.",
+"openers": [
+"Quel est le meilleur enseignant que vous avez eu?",
+"Que faisait-il de différent?"
 ]
+}
 },
 {
 "id": "higher-education",
@@ -1376,7 +2165,15 @@
 "openers": [
 "What would you change about your degree?",
 "Is the lecture dead?"
+],
+"fr": {
+"title": "Enseignement supérieur",
+"blurb": "À quoi servent les universités, et si elles y parviennent.",
+"openers": [
+"Que changeriez-vous à votre diplôme?",
+"Le cours magistral est-il mort?"
 ]
+}
 },
 {
 "id": "alternative-schools",
@@ -1389,7 +2186,15 @@
 "openers": [
 "What do you wish your school had done?",
 "Which approach has the best evidence?"
+],
+"fr": {
+"title": "Écoles alternatives",
+"blurb": "Montessori, école à la maison et autres expériences.",
+"openers": [
+"Qu'auriez-vous aimé que votre école fasse?",
+"Quelle approche a les meilleures données?"
 ]
+}
 },
 {
 "id": "education-and-technology",
@@ -1403,7 +2208,15 @@
 "openers": [
 "Has AI changed how you learn?",
 "What edtech failed in your experience?"
+],
+"fr": {
+"title": "Éducation et technologie",
+"blurb": "Ce que les logiciels ont vraiment changé en classe.",
+"openers": [
+"L'IA a-t-elle changé votre façon d'apprendre?",
+"Quelle technologie éducative a échoué, selon votre expérience?"
 ]
+}
 },
 {
 "id": "urban-planning",
@@ -1417,7 +2230,15 @@
 "openers": [
 "What would you rezone first?",
 "Which street here needs fixing most?"
+],
+"fr": {
+"title": "Urbanisme",
+"blurb": "Zonage, rues, et comment les villes se font.",
+"openers": [
+"Que changeriez-vous d'abord au zonage?",
+"Quelle rue d'ici a le plus besoin d'être réparée?"
 ]
+}
 },
 {
 "id": "walkable-cities",
@@ -1431,7 +2252,15 @@
 "openers": [
 "Where's the best walk in this city?",
 "Want to walk it and talk?"
+],
+"fr": {
+"title": "Villes marchables",
+"blurb": "Pourquoi certains lieux sont agréables à pied.",
+"openers": [
+"Quelle est la plus belle marche de cette ville?",
+"Envie de la faire en discutant?"
 ]
+}
 },
 {
 "id": "third-places-and-community-spaces",
@@ -1445,7 +2274,15 @@
 "openers": [
 "What's your favorite third place around here?",
 "Which ones have we lost?"
+],
+"fr": {
+"title": "Tiers-lieux et espaces communautaires",
+"blurb": "Bibliothèques, cafés et lieux où être sans trop dépenser.",
+"openers": [
+"Quel est votre tiers-lieu préféré dans le coin?",
+"Lesquels a-t-on perdus?"
 ]
+}
 },
 {
 "id": "thinking-in-public",
@@ -1459,7 +2296,15 @@
 "openers": [
 "Do you write in public?",
 "Which essayist do you read for pleasure?"
+],
+"fr": {
+"title": "Penser en public",
+"blurb": "Essais, blogues, et réfléchir à la vue de tous.",
+"openers": [
+"Écrivez-vous en public?",
+"Quel essayiste lisez-vous pour le plaisir?"
 ]
+}
 },
 {
 "id": "science-communication",
@@ -1473,7 +2318,15 @@
 "openers": [
 "Who does this best?",
 "What's the hardest thing you've tried to explain?"
+],
+"fr": {
+"title": "Vulgarisation scientifique",
+"blurb": "Expliquer des choses difficiles sans mentir.",
+"openers": [
+"Qui le fait le mieux?",
+"Quelle est la chose la plus difficile que vous avez tenté d'expliquer?"
 ]
+}
 },
 {
 "id": "research-methods-clinic",
@@ -1487,7 +2340,15 @@
 "openers": [
 "What are you working on right now?",
 "What part of your method worries you?"
+],
+"fr": {
+"title": "Atelier de méthodes de recherche",
+"blurb": "Apportez votre projet, obtenez un second regard.",
+"openers": [
+"Sur quoi travaillez-vous en ce moment?",
+"Quelle partie de votre méthode vous inquiète?"
 ]
+}
 },
 {
 "id": "finding-research-collaborators",
@@ -1501,7 +2362,15 @@
 "openers": [
 "What project needs another person?",
 "What skill are you looking for?"
+],
+"fr": {
+"title": "Trouver des collaborateurs de recherche",
+"blurb": "Rencontrer des gens avec qui mener un vrai projet.",
+"openers": [
+"Quel projet a besoin d'une autre personne?",
+"Quelle compétence cherchez-vous?"
 ]
+}
 },
 {
 "id": "getting-into-grad-school",
@@ -1514,7 +2383,15 @@
 "openers": [
 "Where are you in the process?",
 "What do you wish someone had told you?"
+],
+"fr": {
+"title": "Entrer aux études supérieures",
+"blurb": "Candidatures, directions de recherche, et s'il faut y aller.",
+"openers": [
+"Où en êtes-vous dans le processus?",
+"Qu'auriez-vous aimé qu'on vous dise?"
 ]
+}
 },
 {
 "id": "careers-outside-academia",
@@ -1528,7 +2405,15 @@
 "openers": [
 "What's pulling you away, or keeping you in?",
 "Who made a move you admire?"
+],
+"fr": {
+"title": "Carrières hors du milieu universitaire",
+"blurb": "Ce que font ensuite les docteurs et les chercheurs.",
+"openers": [
+"Qu'est-ce qui vous attire ailleurs, ou vous retient?",
+"Qui a fait un changement que vous admirez?"
 ]
+}
 },
 {
 "id": "nonprofit-and-civic-careers",
@@ -1542,7 +2427,15 @@
 "openers": [
 "What's your dream job in this space?",
 "What do you wish you knew before starting?"
+],
+"fr": {
+"title": "Carrières communautaires et civiques",
+"blurb": "Faire un travail utile et payer son loyer quand même.",
+"openers": [
+"Quel serait votre emploi de rêve dans ce milieu?",
+"Qu'auriez-vous aimé savoir avant de commencer?"
 ]
+}
 },
 {
 "id": "think-tanks-and-policy-careers",
@@ -1551,12 +2444,21 @@
 "blurb": "How research actually reaches decision-makers.",
 "fieldTags": [
 "politics",
-"economics"
+"economics",
+"public_policy"
 ],
 "openers": [
 "Have you seen research change a decision?",
 "Which organization do you respect?"
+],
+"fr": {
+"title": "Groupes de réflexion et carrières en politiques publiques",
+"blurb": "Comment la recherche atteint vraiment les décideurs.",
+"openers": [
+"Avez-vous vu la recherche changer une décision?",
+"Quelle organisation respectez-vous?"
 ]
+}
 },
 {
 "id": "science-and-policy",
@@ -1565,12 +2467,21 @@
 "blurb": "When evidence meets politics.",
 "fieldTags": [
 "politics",
-"medicine"
+"medicine",
+"public_policy"
 ],
 "openers": [
 "When did evidence actually win?",
 "Should scientists take political positions?"
+],
+"fr": {
+"title": "Science et politiques publiques",
+"blurb": "Quand les données rencontrent la politique.",
+"openers": [
+"Quand les données ont-elles vraiment gagné?",
+"Les scientifiques devraient-ils prendre position politiquement?"
 ]
+}
 },
 {
 "id": "journalism-and-the-news",
@@ -1579,12 +2490,21 @@
 "blurb": "How reporting works, and what's happening to it.",
 "fieldTags": [
 "politics",
-"sociology"
+"sociology",
+"media"
 ],
 "openers": [
 "Which outlet do you trust and why?",
 "What local story isn't being covered?"
+],
+"fr": {
+"title": "Le journalisme et l'actualité",
+"blurb": "Comment fonctionne le reportage, et ce qui lui arrive.",
+"openers": [
+"À quel média faites-vous confiance, et pourquoi?",
+"Quelle histoire locale n'est pas couverte?"
 ]
+}
 },
 {
 "id": "philosophy-of-technology",
@@ -1598,7 +2518,15 @@
 "openers": [
 "Which tool changed how you think?",
 "Is Heidegger any help here?"
+],
+"fr": {
+"title": "Philosophie de la technique",
+"blurb": "Ce que nos outils nous font.",
+"openers": [
+"Quel outil a changé votre façon de penser?",
+"Heidegger est-il d'un quelconque secours ici?"
 ]
+}
 },
 {
 "id": "economics-of-housing",
@@ -1612,7 +2540,15 @@
 "openers": [
 "What's your housing story in this city?",
 "What's the most misunderstood thing about rents?"
+],
+"fr": {
+"title": "Économie du logement",
+"blurb": "Pourquoi les loyers font ce qu'ils font.",
+"openers": [
+"Quelle est votre histoire de logement dans cette ville?",
+"Qu'est-ce qui est le plus mal compris au sujet des loyers?"
 ]
+}
 },
 {
 "id": "inequality-research",
@@ -1626,7 +2562,15 @@
 "openers": [
 "Which number surprised you most?",
 "What's the right measure?"
+],
+"fr": {
+"title": "Recherche sur les inégalités",
+"blurb": "Qui possède quoi, comment on le mesure, et ce qui en découle.",
+"openers": [
+"Quel chiffre vous a le plus surpris?",
+"Quelle est la bonne mesure?"
 ]
+}
 },
 {
 "id": "disability-studies",
@@ -1640,7 +2584,15 @@
 "openers": [
 "What changed your view on this?",
 "Which design choice do you wish more people noticed?"
+],
+"fr": {
+"title": "Études sur le handicap",
+"blurb": "Comment la société crée le handicap, et que faire.",
+"openers": [
+"Qu'est-ce qui a changé votre regard là-dessus?",
+"Quel choix de conception aimeriez-vous voir davantage remarqué?"
 ]
+}
 },
 {
 "id": "indigenous-knowledge-and-sovereignty",
@@ -1649,12 +2601,21 @@
 "blurb": "Land, law, and other ways of knowing.",
 "fieldTags": [
 "history",
-"law"
+"law",
+"indigenous_studies"
 ],
 "openers": [
 "Whose work should people read first?",
 "How does this show up where you live?"
+],
+"fr": {
+"title": "Savoirs et souveraineté autochtones",
+"blurb": "Le territoire, le droit et d'autres façons de savoir.",
+"openers": [
+"Quels travaux faudrait-il lire d'abord?",
+"Comment cela se manifeste-t-il là où vous habitez?"
 ]
+}
 },
 {
 "id": "geopolitics-of-technology",
@@ -1668,7 +2629,15 @@
 "openers": [
 "What dependency worries you most?",
 "Who's misreading this?"
+],
+"fr": {
+"title": "Géopolitique de la technologie",
+"blurb": "Puces, chaînes d'approvisionnement et concurrence entre États.",
+"openers": [
+"Quelle dépendance vous inquiète le plus?",
+"Qui se trompe dans son analyse?"
 ]
+}
 },
 {
 "id": "sleep-science",
@@ -1682,7 +2651,15 @@
 "openers": [
 "What actually improved your sleep?",
 "Which claim doesn't hold up?"
+],
+"fr": {
+"title": "Science du sommeil",
+"blurb": "Ce qu'on sait, et ce que les applications font semblant de savoir.",
+"openers": [
+"Qu'est-ce qui a vraiment amélioré votre sommeil?",
+"Quelle affirmation ne tient pas la route?"
 ]
+}
 },
 {
 "id": "philosophy-of-sport-and-play",
@@ -1696,7 +2673,15 @@
 "openers": [
 "What do you play?",
 "Is sport a good model for anything else?"
+],
+"fr": {
+"title": "Philosophie du sport et du jeu",
+"blurb": "Pourquoi les jeux nous importent autant.",
+"openers": [
+"À quoi jouez-vous?",
+"Le sport est-il un bon modèle pour autre chose?"
 ]
+}
 },
 {
 "id": "rhetoric-and-persuasion",
@@ -1710,7 +2695,15 @@
 "openers": [
 "Who's the best speaker you've heard?",
 "Which fallacy do you commit most?"
+],
+"fr": {
+"title": "Rhétorique et persuasion",
+"blurb": "Comment les arguments agissent sur de vraies personnes.",
+"openers": [
+"Quel est le meilleur orateur que vous avez entendu?",
+"Quel sophisme commettez-vous le plus?"
 ]
+}
 },
 {
 "id": "learning-to-debate",
@@ -1724,7 +2717,15 @@
 "openers": [
 "Have you ever debated competitively?",
 "What topic would you like to practice on?"
+],
+"fr": {
+"title": "Apprendre à débattre",
+"blurb": "S'exercer à bien argumenter avec des gens en désaccord.",
+"openers": [
+"Avez-vous déjà fait du débat en compétition?",
+"Sur quel sujet aimeriez-vous vous exercer?"
 ]
+}
 },
 {
 "id": "should-cities-abolish-single-family-zoning",
@@ -1738,7 +2739,15 @@
 "openers": [
 "What would it change on your own street?",
 "What's the best evidence you've seen either way?"
+],
+"fr": {
+"title": "Les villes devraient-elles abolir le zonage unifamilial?",
+"blurb": "Permettre plus de logements par terrain pourrait réduire les loyers. Cela pourrait aussi changer vite les quartiers.",
+"openers": [
+"Qu'est-ce que cela changerait dans votre rue?",
+"Quelles sont les meilleures données que vous avez vues, dans un sens ou l'autre?"
 ]
+}
 },
 {
 "id": "should-rent-control-be-expanded",
@@ -1752,7 +2761,15 @@
 "openers": [
 "Have you lived under rent control?",
 "Which city's approach do you find most convincing?"
+],
+"fr": {
+"title": "Faut-il étendre le contrôle des loyers?",
+"blurb": "Il protège les locataires aujourd'hui. Le débat porte sur ce qu'il coûte demain, et à qui.",
+"openers": [
+"Avez-vous vécu sous contrôle des loyers?",
+"L'approche de quelle ville vous convainc le plus?"
 ]
+}
 },
 {
 "id": "should-public-transit-be-free",
@@ -1766,7 +2783,15 @@
 "openers": [
 "Would free fares change how you get around?",
 "Service or price: which matters more?"
+],
+"fr": {
+"title": "Le transport en commun devrait-il être gratuit?",
+"blurb": "Le coût, l'achalandage, et si l'argent serait plus utile ailleurs.",
+"openers": [
+"La gratuité changerait-elle vos déplacements?",
+"Le service ou le prix : qu'est-ce qui compte le plus?"
 ]
+}
 },
 {
 "id": "should-cars-be-banned-from-city-centers",
@@ -1780,7 +2805,15 @@
 "openers": [
 "What would it mean for this city?",
 "Who should get exemptions?"
+],
+"fr": {
+"title": "Faut-il interdire les voitures dans les centres-villes?",
+"blurb": "Plus propre et plus calme, mais qui perd l'accès?",
+"openers": [
+"Qu'est-ce que cela signifierait pour cette ville?",
+"Qui devrait avoir une exemption?"
 ]
+}
 },
 {
 "id": "should-cities-charge-for-congestion",
@@ -1794,7 +2827,15 @@
 "openers": [
 "Has any city done it well?",
 "Who should the revenue go to?"
+],
+"fr": {
+"title": "Les villes devraient-elles imposer un péage de congestion?",
+"blurb": "Payer pour rouler au centre-ville : efficace ou injuste?",
+"openers": [
+"Une ville l'a-t-elle bien fait?",
+"À qui devraient aller les revenus?"
 ]
+}
 },
 {
 "id": "should-college-be-tuition-free",
@@ -1808,7 +2849,15 @@
 "openers": [
 "How did your own education get paid for?",
 "Would you target it by income?"
+],
+"fr": {
+"title": "Les études postsecondaires devraient-elles être gratuites?",
+"blurb": "Qui en profite, qui paie, et ce qu'il advient de la qualité.",
+"openers": [
+"Comment vos études ont-elles été payées?",
+"Le feriez-vous selon le revenu?"
 ]
+}
 },
 {
 "id": "should-student-debt-be-forgiven",
@@ -1822,7 +2871,15 @@
 "openers": [
 "How does this touch your life?",
 "What would you do instead?"
+],
+"fr": {
+"title": "Faut-il annuler les dettes d'études?",
+"blurb": "Un soulagement pour les emprunteurs, contre l'équité envers les autres.",
+"openers": [
+"Comment cela vous touche-t-il?",
+"Que feriez-vous à la place?"
 ]
+}
 },
 {
 "id": "should-universities-drop-legacy-admissions",
@@ -1836,7 +2893,15 @@
 "openers": [
 "Should donors get anything at all?",
 "Would you go further than this?"
+],
+"fr": {
+"title": "Les universités devraient-elles abandonner l'admission par filiation?",
+"blurb": "Liens familiaux, dons, et ce qu'exige l'équité.",
+"openers": [
+"Les donateurs devraient-ils obtenir quoi que ce soit?",
+"Iriez-vous plus loin?"
 ]
+}
 },
 {
 "id": "should-universities-use-standardized-tests",
@@ -1850,7 +2915,15 @@
 "openers": [
 "Did tests help or hurt you?",
 "What would you use instead?"
+],
+"fr": {
+"title": "Les universités devraient-elles utiliser des tests standardisés?",
+"blurb": "Les tests peuvent révéler le talent ou renforcer le privilège. Peut-être les deux.",
+"openers": [
+"Les tests vous ont-ils aidé ou nui?",
+"Qu'utiliseriez-vous à la place?"
 ]
+}
 },
 {
 "id": "should-phones-be-banned-in-schools",
@@ -1864,7 +2937,15 @@
 "openers": [
 "What was your school's rule?",
 "What would make a ban actually work?"
+],
+"fr": {
+"title": "Faut-il interdire les téléphones à l'école?",
+"blurb": "L'attention, la sécurité, et comment savoir si l'interdiction fonctionne.",
+"openers": [
+"Quelle était la règle dans votre école?",
+"Qu'est-ce qui ferait vraiment fonctionner une interdiction?"
 ]
+}
 },
 {
 "id": "should-ai-tools-be-allowed-in-university-assignments",
@@ -1878,7 +2959,15 @@
 "openers": [
 "How do you use AI in your own work?",
 "What should an assignment look like now?"
+],
+"fr": {
+"title": "Faut-il permettre l'IA dans les travaux universitaires?",
+"blurb": "Tricherie, compétence, ou nouvelle calculatrice.",
+"openers": [
+"Comment utilisez-vous l'IA dans votre travail?",
+"À quoi devrait ressembler un travail aujourd'hui?"
 ]
+}
 },
 {
 "id": "should-the-voting-age-be-lowered-to-16",
@@ -1892,7 +2981,15 @@
 "openers": [
 "What would you have done with a vote at 16?",
 "Where have they tried it?"
+],
+"fr": {
+"title": "Faut-il abaisser l'âge du vote à 16 ans?",
+"blurb": "Habitude civique, maturité, et qui a son mot à dire sur l'avenir.",
+"openers": [
+"Qu'auriez-vous fait d'un vote à 16 ans?",
+"Où l'a-t-on essayé?"
 ]
+}
 },
 {
 "id": "should-voting-be-mandatory",
@@ -1906,7 +3003,15 @@
 "openers": [
 "Would you support a fine for not voting?",
 "What's Australia's experience tell us?"
+],
+"fr": {
+"title": "Le vote devrait-il être obligatoire?",
+"blurb": "Plus de participation, mais que vaut un vote contraint?",
+"openers": [
+"Appuieriez-vous une amende pour ne pas avoir voté?",
+"Que nous apprend l'expérience de l'Australie?"
 ]
+}
 },
 {
 "id": "should-we-adopt-ranked-choice-voting",
@@ -1920,7 +3025,15 @@
 "openers": [
 "Have you ever voted this way?",
 "Does it really reduce polarization?"
+],
+"fr": {
+"title": "Faut-il adopter le vote préférentiel?",
+"blurb": "Plus de choix sur le bulletin, plus de complexité au dépouillement.",
+"openers": [
+"Avez-vous déjà voté ainsi?",
+"Réduit-il vraiment la polarisation?"
 ]
+}
 },
 {
 "id": "should-legislators-face-term-limits",
@@ -1934,7 +3047,15 @@
 "openers": [
 "What does the evidence show from US states?",
 "Would you apply it to judges too?"
+],
+"fr": {
+"title": "Faut-il limiter le nombre de mandats des élus?",
+"blurb": "Du sang neuf, ou plus de pouvoir aux lobbyistes et au personnel?",
+"openers": [
+"Que montrent les données des États américains?",
+"L'appliqueriez-vous aussi aux juges?"
 ]
+}
 },
 {
 "id": "should-citizens-assemblies-make-binding-decisions",
@@ -1943,12 +3064,21 @@
 "blurb": "Randomly chosen people, deliberating with experts.",
 "fieldTags": [
 "politics",
-"philosophy"
+"philosophy",
+"public_policy"
 ],
 "openers": [
 "Would you serve on one?",
 "What decision would you hand to one first?"
+],
+"fr": {
+"title": "Les assemblées citoyennes devraient-elles prendre des décisions contraignantes?",
+"blurb": "Des gens tirés au sort, qui délibèrent avec des experts.",
+"openers": [
+"Y siégeriez-vous?",
+"Quelle décision leur confieriez-vous en premier?"
 ]
+}
 },
 {
 "id": "should-private-money-be-banned-from-political-campaigns",
@@ -1962,7 +3092,15 @@
 "openers": [
 "Where would you draw the line?",
 "Who'd fill the vacuum?"
+],
+"fr": {
+"title": "Faut-il interdire l'argent privé dans les campagnes politiques?",
+"blurb": "Des voix égales ou une parole restreinte.",
+"openers": [
+"Où traceriez-vous la limite?",
+"Qui comblerait le vide?"
 ]
+}
 },
 {
 "id": "should-supreme-court-justices-have-term-limits",
@@ -1976,7 +3114,15 @@
 "openers": [
 "How long is the right term?",
 "Would it lower the temperature?"
+],
+"fr": {
+"title": "Les juges de la Cour suprême devraient-ils avoir un mandat limité?",
+"blurb": "La nomination à vie contre un renouvellement régulier.",
+"openers": [
+"Quelle serait la bonne durée?",
+"Cela calmerait-il le jeu?"
 ]
+}
 },
 {
 "id": "should-social-media-be-banned-for-under-16s",
@@ -1990,7 +3136,15 @@
 "openers": [
 "What age did you start, and would you change it?",
 "How would you enforce it?"
+],
+"fr": {
+"title": "Faut-il interdire les réseaux sociaux aux moins de 16 ans?",
+"blurb": "Protéger les jeunes, ou un geste impossible à appliquer?",
+"openers": [
+"À quel âge avez-vous commencé, et changeriez-vous cela?",
+"Comment l'appliqueriez-vous?"
 ]
+}
 },
 {
 "id": "should-platforms-be-liable-for-what-users-post",
@@ -1999,12 +3153,21 @@
 "blurb": "Accountability against open speech.",
 "fieldTags": [
 "law",
-"computer_science"
+"computer_science",
+"media"
 ],
 "openers": [
 "Which harm is worst under the current rules?",
 "Who gets hurt if platforms over-moderate?"
+],
+"fr": {
+"title": "Les plateformes devraient-elles répondre de ce que publient leurs utilisateurs?",
+"blurb": "La responsabilité contre la liberté de parole.",
+"openers": [
+"Quel préjudice est le pire sous les règles actuelles?",
+"Qui souffre si les plateformes modèrent trop?"
 ]
+}
 },
 {
 "id": "should-facial-recognition-be-banned-in-public-spaces",
@@ -2018,7 +3181,15 @@
 "openers": [
 "Would you accept it for serious crimes?",
 "Who decides what counts as serious?"
+],
+"fr": {
+"title": "Faut-il interdire la reconnaissance faciale dans l'espace public?",
+"blurb": "Outil de sécurité ou fin de l'anonymat.",
+"openers": [
+"L'accepteriez-vous pour les crimes graves?",
+"Qui décide de ce qui est grave?"
 ]
+}
 },
 {
 "id": "should-frontier-ai-development-be-licensed",
@@ -2032,7 +3203,15 @@
 "openers": [
 "Who should grant the license?",
 "What would you require?"
+],
+"fr": {
+"title": "Le développement de l'IA de pointe devrait-il exiger un permis?",
+"blurb": "Surveillance de la sécurité, ou rempart pour les acteurs en place.",
+"openers": [
+"Qui devrait accorder le permis?",
+"Qu'exigeriez-vous?"
 ]
+}
 },
 {
 "id": "should-ai-generated-work-be-copyrightable",
@@ -2046,7 +3225,15 @@
 "openers": [
 "Where would you draw the line on human input?",
 "How does this hit working artists?"
+],
+"fr": {
+"title": "Les œuvres générées par l'IA devraient-elles être protégées par le droit d'auteur?",
+"blurb": "À qui appartient ce que personne n'a vraiment créé?",
+"openers": [
+"Où traceriez-vous la limite de l'apport humain?",
+"Quel effet sur les artistes qui en vivent?"
 ]
+}
 },
 {
 "id": "should-we-introduce-a-universal-basic-income",
@@ -2055,12 +3242,21 @@
 "blurb": "Cash for everyone, no strings attached. What happens next?",
 "fieldTags": [
 "economics",
-"politics"
+"politics",
+"public_policy"
 ],
 "openers": [
 "Which pilot do you find most telling?",
 "How would you pay for it?"
+],
+"fr": {
+"title": "Faut-il instaurer un revenu de base universel?",
+"blurb": "De l'argent pour tout le monde, sans condition. Et ensuite?",
+"openers": [
+"Quel projet pilote trouvez-vous le plus révélateur?",
+"Comment le financeriez-vous?"
 ]
+}
 },
 {
 "id": "should-the-minimum-wage-be-much-higher",
@@ -2074,7 +3270,15 @@
 "openers": [
 "What's your first-job story?",
 "Should it vary by city?"
+],
+"fr": {
+"title": "Le salaire minimum devrait-il être beaucoup plus élevé?",
+"blurb": "Un salaire décent contre le risque de pertes d'emplois.",
+"openers": [
+"Comment s'est passé votre premier emploi?",
+"Devrait-il varier selon la ville?"
 ]
+}
 },
 {
 "id": "should-there-be-a-wealth-tax",
@@ -2088,7 +3292,15 @@
 "openers": [
 "Why did so many countries repeal it?",
 "What rate and threshold would you pick?"
+],
+"fr": {
+"title": "Faut-il un impôt sur la fortune?",
+"blurb": "Imposer ce que les gens possèdent, pas seulement ce qu'ils gagnent.",
+"openers": [
+"Pourquoi tant de pays l'ont-ils abrogé?",
+"Quels taux et seuil choisiriez-vous?"
 ]
+}
 },
 {
 "id": "should-a-four-day-work-week-become-standard",
@@ -2097,12 +3309,21 @@
 "blurb": "Same pay, fewer days, and what the trials found.",
 "fieldTags": [
 "economics",
-"sociology"
+"sociology",
+"business"
 ],
 "openers": [
 "Could your work fit into four days?",
 "Who gets left out?"
+],
+"fr": {
+"title": "La semaine de quatre jours devrait-elle devenir la norme?",
+"blurb": "Même salaire, moins de jours, et ce qu'ont montré les essais.",
+"openers": [
+"Votre travail tiendrait-il en quatre jours?",
+"Qui serait laissé pour compte?"
 ]
+}
 },
 {
 "id": "should-gig-workers-be-classified-as-employees",
@@ -2116,7 +3337,15 @@
 "openers": [
 "Have you done gig work?",
 "Is there a third category that works?"
+],
+"fr": {
+"title": "Les travailleurs à la demande devraient-ils être considérés comme des employés?",
+"blurb": "La souplesse contre la protection.",
+"openers": [
+"Avez-vous déjà fait ce genre de travail?",
+"Une troisième catégorie fonctionnerait-elle?"
 ]
+}
 },
 {
 "id": "should-unpaid-internships-be-banned",
@@ -2125,12 +3354,21 @@
 "blurb": "Opportunity for some, a barrier for many.",
 "fieldTags": [
 "economics",
-"education"
+"education",
+"business"
 ],
 "openers": [
 "Did you take one?",
 "What would replace them?"
+],
+"fr": {
+"title": "Faut-il interdire les stages non rémunérés?",
+"blurb": "Une chance pour certains, un obstacle pour beaucoup.",
+"openers": [
+"En avez-vous fait un?",
+"Qu'est-ce qui les remplacerait?"
 ]
+}
 },
 {
 "id": "should-inheritance-be-taxed-more-heavily",
@@ -2144,7 +3382,15 @@
 "openers": [
 "How much should someone be able to pass on?",
 "What about family homes and businesses?"
+],
+"fr": {
+"title": "Faut-il imposer davantage les héritages?",
+"blurb": "Mérite, famille et avantages accumulés.",
+"openers": [
+"Combien devrait-on pouvoir transmettre?",
+"Qu'en est-il des maisons et entreprises familiales?"
 ]
+}
 },
 {
 "id": "should-countries-phase-out-nuclear-power-or-build-more",
@@ -2158,7 +3404,15 @@
 "openers": [
 "How do you weigh waste against emissions?",
 "What's the real obstacle to building?"
+],
+"fr": {
+"title": "Faut-il sortir du nucléaire, ou construire davantage?",
+"blurb": "Faible en carbone, enjeux élevés, longs délais.",
+"openers": [
+"Comment pesez-vous les déchets contre les émissions?",
+"Quel est le vrai obstacle à la construction?"
 ]
+}
 },
 {
 "id": "should-carbon-be-taxed-at-the-consumer-level",
@@ -2172,7 +3426,15 @@
 "openers": [
 "Which design makes it fair?",
 "Why is it so politically toxic?"
+],
+"fr": {
+"title": "Faut-il taxer le carbone auprès des consommateurs?",
+"blurb": "Des prix qui changent les comportements, mais qui frappent certains plus durement.",
+"openers": [
+"Quelle conception la rend équitable?",
+"Pourquoi est-ce si toxique politiquement?"
 ]
+}
 },
 {
 "id": "should-meat-be-taxed-for-climate-reasons",
@@ -2186,7 +3448,15 @@
 "openers": [
 "Would it change what you eat?",
 "Is this the right lever?"
+],
+"fr": {
+"title": "Faut-il taxer la viande pour le climat?",
+"blurb": "Choix alimentaires, santé publique, et l'assiette de qui on réglemente.",
+"openers": [
+"Cela changerait-il ce que vous mangez?",
+"Est-ce le bon levier?"
 ]
+}
 },
 {
 "id": "should-geoengineering-research-be-funded",
@@ -2200,7 +3470,15 @@
 "openers": [
 "Who should get to decide to deploy it?",
 "Where's the line between research and doing it?"
+],
+"fr": {
+"title": "Faut-il financer la recherche en géo-ingénierie?",
+"blurb": "Police d'assurance ou risque moral.",
+"openers": [
+"Qui devrait décider de son déploiement?",
+"Où passe la limite entre rechercher et faire?"
 ]
+}
 },
 {
 "id": "should-new-oil-and-gas-projects-be-banned",
@@ -2214,7 +3492,15 @@
 "openers": [
 "What's the fairest transition for workers?",
 "How should poorer countries be treated?"
+],
+"fr": {
+"title": "Faut-il interdire les nouveaux projets pétroliers et gaziers?",
+"blurb": "Agir sur l'offre pour le climat, contre la sécurité énergétique.",
+"openers": [
+"Quelle est la transition la plus juste pour les travailleurs?",
+"Comment traiter les pays plus pauvres?"
 ]
+}
 },
 {
 "id": "should-climate-protest-that-disrupts-daily-life-be-protected",
@@ -2228,7 +3514,15 @@
 "openers": [
 "Which tactic crossed a line for you?",
 "Does disruption help or hurt the cause?"
+],
+"fr": {
+"title": "Les manifestations pour le climat qui perturbent le quotidien devraient-elles être protégées?",
+"blurb": "La désobéissance civile, la patience du public et la loi.",
+"openers": [
+"Quelle tactique a dépassé les bornes, selon vous?",
+"La perturbation aide-t-elle ou nuit-elle à la cause?"
 ]
+}
 },
 {
 "id": "should-physician-assisted-dying-be-legal",
@@ -2242,7 +3536,15 @@
 "openers": [
 "Which safeguards would you insist on?",
 "What have Canada and the Netherlands taught us?"
+],
+"fr": {
+"title": "L'aide médicale à mourir devrait-elle être légale?",
+"blurb": "Autonomie, garde-fous, et pressions sur les personnes vulnérables.",
+"openers": [
+"Sur quels garde-fous insisteriez-vous?",
+"Que nous ont appris le Canada et les Pays-Bas?"
 ]
+}
 },
 {
 "id": "should-healthcare-be-single-payer",
@@ -2256,7 +3558,15 @@
 "openers": [
 "What's your own experience with the system?",
 "Which country would you copy?"
+],
+"fr": {
+"title": "Les soins de santé devraient-ils relever d'un payeur unique?",
+"blurb": "Couverture, coût et temps d'attente.",
+"openers": [
+"Quelle est votre expérience du système?",
+"Quel pays imiteriez-vous?"
 ]
+}
 },
 {
 "id": "should-all-psychedelics-be-legal-for-medical-use",
@@ -2270,7 +3580,15 @@
 "openers": [
 "How strong do you think the evidence is?",
 "What should the guardrails be?"
+],
+"fr": {
+"title": "Tous les psychédéliques devraient-ils être légaux à usage médical?",
+"blurb": "Essais prometteurs, réglementation mince et stigmatisation de longue date.",
+"openers": [
+"Les données sont-elles solides, selon vous?",
+"Quels devraient être les garde-fous?"
 ]
+}
 },
 {
 "id": "should-drug-possession-be-decriminalized",
@@ -2284,7 +3602,15 @@
 "openers": [
 "What do you read in the Oregon and Portugal stories?",
 "What has to be in place first?"
+],
+"fr": {
+"title": "Faut-il décriminaliser la possession de drogues?",
+"blurb": "Traiter la dépendance comme une question de santé, pas comme un crime.",
+"openers": [
+"Que retenez-vous des cas de l'Oregon et du Portugal?",
+"Que faut-il mettre en place d'abord?"
 ]
+}
 },
 {
 "id": "should-vaccines-be-mandatory-for-school",
@@ -2298,7 +3624,15 @@
 "openers": [
 "Where would you allow exemptions?",
 "Do mandates backfire?"
+],
+"fr": {
+"title": "Les vaccins devraient-ils être obligatoires à l'école?",
+"blurb": "La protection collective contre le choix des parents.",
+"openers": [
+"Où permettriez-vous des exemptions?",
+"Les obligations se retournent-elles contre nous?"
 ]
+}
 },
 {
 "id": "should-human-embryo-editing-be-allowed",
@@ -2312,7 +3646,15 @@
 "openers": [
 "Is there a clear line between therapy and enhancement?",
 "Who should set the rules?"
+],
+"fr": {
+"title": "Faut-il permettre la modification d'embryons humains?",
+"blurb": "Prévenir la maladie, et où mène ce chemin.",
+"openers": [
+"Y a-t-il une limite claire entre soigner et améliorer?",
+"Qui devrait établir les règles?"
 ]
+}
 },
 {
 "id": "should-prisons-be-abolished",
@@ -2326,7 +3668,15 @@
 "openers": [
 "What does abolition mean to you?",
 "Which reform comes first?"
+],
+"fr": {
+"title": "Faut-il abolir les prisons?",
+"blurb": "Qu'est-ce qui les remplacerait, et qui assurerait la sécurité?",
+"openers": [
+"Que signifie l'abolition pour vous?",
+"Quelle réforme vient d'abord?"
 ]
+}
 },
 {
 "id": "should-police-budgets-be-shifted-to-social-services",
@@ -2340,7 +3690,15 @@
 "openers": [
 "Which cities have made this work?",
 "What would you move first?"
+],
+"fr": {
+"title": "Faut-il transférer des budgets de police vers les services sociaux?",
+"blurb": "Qui intervient lors d'une crise de santé mentale?",
+"openers": [
+"Quelles villes y sont parvenues?",
+"Que transféreriez-vous d'abord?"
 ]
+}
 },
 {
 "id": "should-immigration-be-significantly-increased",
@@ -2354,7 +3712,15 @@
 "openers": [
 "What's your own family's story here?",
 "Who should get priority?"
+],
+"fr": {
+"title": "Faut-il augmenter nettement l'immigration?",
+"blurb": "Marché du travail, identité et arguments moraux.",
+"openers": [
+"Quelle est l'histoire de votre famille à ce sujet?",
+"Qui devrait avoir la priorité?"
 ]
+}
 },
 {
 "id": "should-national-service-be-mandatory",
@@ -2368,7 +3734,15 @@
 "openers": [
 "Would you have done it?",
 "Which country's model is best?"
+],
+"fr": {
+"title": "Le service national devrait-il être obligatoire?",
+"blurb": "Une expérience civique commune, contre la liberté personnelle.",
+"openers": [
+"L'auriez-vous fait?",
+"Quel modèle national est le meilleur?"
 ]
+}
 },
 {
 "id": "should-stolen-colonial-artifacts-be-returned",
@@ -2377,12 +3751,21 @@
 "blurb": "Museums, restitution, and contested ownership.",
 "fieldTags": [
 "history",
-"law"
+"law",
+"indigenous_studies"
 ],
 "openers": [
 "Which case do you find hardest?",
 "What happens to the museums?"
+],
+"fr": {
+"title": "Faut-il restituer les objets volés à l'époque coloniale?",
+"blurb": "Musées, restitution et propriété contestée.",
+"openers": [
+"Quel cas trouvez-vous le plus difficile?",
+"Que deviendraient les musées?"
 ]
+}
 },
 {
 "id": "should-history-curricula-be-set-nationally",
@@ -2396,7 +3779,15 @@
 "openers": [
 "What did your school leave out?",
 "Who should write it?"
+],
+"fr": {
+"title": "Les programmes d'histoire devraient-ils être nationaux?",
+"blurb": "Un récit commun ou un contrôle local?",
+"openers": [
+"Qu'a omis votre école?",
+"Qui devrait les rédiger?"
 ]
+}
 },
 {
 "id": "should-monuments-to-controversial-figures-come-down",
@@ -2410,7 +3801,15 @@
 "openers": [
 "Is there one near you?",
 "What would you replace it with?"
+],
+"fr": {
+"title": "Faut-il retirer les monuments aux personnages controversés?",
+"blurb": "Mémoire, effacement et espace public.",
+"openers": [
+"Y en a-t-il un près de chez vous?",
+"Par quoi le remplaceriez-vous?"
 ]
+}
 },
 {
 "id": "should-academic-journals-be-free-to-read",
@@ -2424,7 +3823,15 @@
 "openers": [
 "Who should pay for peer review?",
 "How do you get papers now?"
+],
+"fr": {
+"title": "Les revues savantes devraient-elles être en accès libre?",
+"blurb": "Recherche financée par le public, accès payant privé.",
+"openers": [
+"Qui devrait payer l'évaluation par les pairs?",
+"Comment obtenez-vous les articles maintenant?"
 ]
+}
 },
 {
 "id": "should-peer-review-be-open-and-signed",
@@ -2438,7 +3845,15 @@
 "openers": [
 "Would you sign your reviews?",
 "What's the worst part of peer review now?"
+],
+"fr": {
+"title": "L'évaluation par les pairs devrait-elle être ouverte et signée?",
+"blurb": "La transparence contre les représailles.",
+"openers": [
+"Signeriez-vous vos évaluations?",
+"Quel est le pire aspect de l'évaluation actuelle?"
 ]
+}
 },
 {
 "id": "should-speakers-be-barred-from-campus-for-their-views",
@@ -2452,7 +3867,15 @@
 "openers": [
 "Where would you draw the line?",
 "Is there a speaker you'd have protested?"
+],
+"fr": {
+"title": "Faut-il interdire le campus à des conférenciers pour leurs opinions?",
+"blurb": "La liberté de recherche, la sécurité, et à qui s'adresse une université.",
+"openers": [
+"Où traceriez-vous la limite?",
+"Y a-t-il un conférencier contre lequel vous auriez manifesté?"
 ]
+}
 },
 {
 "id": "should-animal-testing-be-phased-out",
@@ -2466,7 +3889,15 @@
 "openers": [
 "What do researchers around you think?",
 "How close are the replacements?"
+],
+"fr": {
+"title": "Faut-il mettre fin progressivement aux essais sur les animaux?",
+"blurb": "Progrès médical, souffrance animale et solutions de rechange.",
+"openers": [
+"Qu'en pensent les chercheurs autour de vous?",
+"À quel point les solutions de rechange sont-elles proches?"
 ]
+}
 },
 {
 "id": "should-zoos-exist",
@@ -2480,7 +3911,15 @@
 "openers": [
 "Do you visit them?",
 "What's a good zoo, if there is one?"
+],
+"fr": {
+"title": "Les zoos devraient-ils exister?",
+"blurb": "Conservation et éducation contre captivité.",
+"openers": [
+"Y allez-vous?",
+"Qu'est-ce qu'un bon zoo, s'il en existe?"
 ]
+}
 },
 {
 "id": "should-countries-pay-reparations-for-slavery-and-colonialism",
@@ -2494,7 +3933,15 @@
 "openers": [
 "What form could it take?",
 "Who owes whom?"
+],
+"fr": {
+"title": "Les pays devraient-ils verser des réparations pour l'esclavage et le colonialisme?",
+"blurb": "Dettes historiques, et comment les régler.",
+"openers": [
+"Quelle forme cela pourrait-il prendre?",
+"Qui doit quoi à qui?"
 ]
+}
 },
 {
 "id": "should-billionaires-exist",
@@ -2508,7 +3955,15 @@
 "openers": [
 "Where would you put the ceiling, if anywhere?",
 "What would actually change?"
+],
+"fr": {
+"title": "Les milliardaires devraient-ils exister?",
+"blurb": "Récompense de la création, ou échec des politiques?",
+"openers": [
+"Où mettriez-vous le plafond, s'il y en a un?",
+"Qu'est-ce que cela changerait vraiment?"
 ]
+}
 },
 {
 "id": "should-companies-have-workers-on-their-boards",
@@ -2517,12 +3972,21 @@
 "blurb": "Codetermination in Germany, and elsewhere.",
 "fieldTags": [
 "economics",
-"politics"
+"politics",
+"business"
 ],
 "openers": [
 "Would it have changed any job you've had?",
 "What does the evidence show?"
+],
+"fr": {
+"title": "Les entreprises devraient-elles avoir des travailleurs à leur conseil?",
+"blurb": "La cogestion en Allemagne, et ailleurs.",
+"openers": [
+"Cela aurait-il changé un de vos emplois?",
+"Que montrent les données?"
 ]
+}
 },
 {
 "id": "should-public-libraries-be-funded-before-stadiums",
@@ -2536,7 +4000,15 @@
 "openers": [
 "What did your city last spend big on?",
 "What's the best library you've used?"
+],
+"fr": {
+"title": "Faut-il financer les bibliothèques avant les stades?",
+"blurb": "Priorités civiques, et qui les fixe.",
+"openers": [
+"Quelle a été la dernière grosse dépense de votre ville?",
+"Quelle est la meilleure bibliothèque que vous avez fréquentée?"
 ]
+}
 },
 {
 "id": "should-governments-regulate-ultra-processed-food",
@@ -2550,7 +4022,15 @@
 "openers": [
 "What would regulation look like?",
 "Is the category even well defined?"
+],
+"fr": {
+"title": "Les gouvernements devraient-ils réglementer les aliments ultra-transformés?",
+"blurb": "La santé publique contre le choix personnel.",
+"openers": [
+"À quoi ressemblerait la réglementation?",
+"La catégorie est-elle seulement bien définie?"
 ]
+}
 },
 {
 "id": "should-space-be-open-to-commercial-mining",
@@ -2564,7 +4044,15 @@
 "openers": [
 "Does the Outer Space Treaty still hold up?",
 "Who should benefit?"
+],
+"fr": {
+"title": "L'espace devrait-il être ouvert à l'exploitation minière commerciale?",
+"blurb": "À qui appartient ce qui se trouve là-haut?",
+"openers": [
+"Le Traité de l'espace tient-il encore?",
+"Qui devrait en profiter?"
 ]
+}
 },
 {
 "id": "should-local-news-be-publicly-funded",
@@ -2573,12 +4061,21 @@
 "blurb": "Saving reporting against government influence.",
 "fieldTags": [
 "politics",
-"economics"
+"economics",
+"media"
 ],
 "openers": [
 "Who covers your local council now?",
 "How would you keep it independent?"
+],
+"fr": {
+"title": "L'information locale devrait-elle être financée par l'État?",
+"blurb": "Sauver le reportage, contre l'influence du gouvernement.",
+"openers": [
+"Qui couvre votre conseil municipal aujourd'hui?",
+"Comment garderiez-vous son indépendance?"
 ]
+}
 },
 {
 "id": "should-public-servants-be-allowed-to-strike",
@@ -2592,7 +4089,15 @@
 "openers": [
 "Which services would you carve out?",
 "What happens when they can't?"
+],
+"fr": {
+"title": "Les fonctionnaires devraient-ils pouvoir faire la grève?",
+"blurb": "Les droits des travailleurs contre les services essentiels.",
+"openers": [
+"Quels services excluriez-vous?",
+"Que se passe-t-il s'ils ne le peuvent pas?"
 ]
+}
 },
 {
 "id": "should-high-skilled-migrants-be-prioritized",
@@ -2606,7 +4111,15 @@
 "openers": [
 "What's the effect back home?",
 "Do points systems work?"
+],
+"fr": {
+"title": "Faut-il donner la priorité aux immigrants hautement qualifiés?",
+"blurb": "Le gain économique contre la fuite des cerveaux et l'équité.",
+"openers": [
+"Quel est l'effet dans le pays d'origine?",
+"Les systèmes à points fonctionnent-ils?"
 ]
+}
 },
 {
 "id": "philosophy-of-language",
@@ -2620,7 +4133,15 @@
 "openers": [
 "Wittgenstein early or late?",
 "Which puzzle about meaning do you keep returning to?"
+],
+"fr": {
+"title": "Philosophie du langage",
+"blurb": "Ce que font les mots, et comment le sens se fixe.",
+"openers": [
+"Le premier ou le second Wittgenstein?",
+"À quelle énigme sur le sens revenez-vous sans cesse?"
 ]
+}
 },
 {
 "id": "network-science",
@@ -2634,7 +4155,15 @@
 "openers": [
 "What network do you wish you could map?",
 "Which model do you find most overused?"
+],
+"fr": {
+"title": "Science des réseaux",
+"blurb": "Pourquoi certaines idées, maladies et personnes se propagent.",
+"openers": [
+"Quel réseau aimeriez-vous cartographier?",
+"Quel modèle est trop utilisé, selon vous?"
 ]
+}
 },
 {
 "id": "health-economics",
@@ -2648,7 +4177,15 @@
 "openers": [
 "What's the strangest bill you've ever seen?",
 "Which incentive would you fix first?"
+],
+"fr": {
+"title": "Économie de la santé",
+"blurb": "Pourquoi les soins coûtent ce qu'ils coûtent.",
+"openers": [
+"Quelle est la facture la plus étrange que vous avez vue?",
+"Quel incitatif corrigeriez-vous d'abord?"
 ]
+}
 },
 {
 "id": "children-s-literature",
@@ -2662,7 +4199,15 @@
 "openers": [
 "Which childhood book holds up?",
 "What did you only notice as an adult?"
+],
+"fr": {
+"title": "Littérature jeunesse",
+"blurb": "Les livres qui nous ont faits, relus à l'âge adulte.",
+"openers": [
+"Quel livre de votre enfance tient encore la route?",
+"Qu'avez-vous seulement remarqué une fois adulte?"
 ]
+}
 },
 {
 "id": "museums-and-public-memory",
@@ -2676,7 +4221,15 @@
 "openers": [
 "Which museum changed how you see something?",
 "Want to go to one and compare notes?"
+],
+"fr": {
+"title": "Musées et mémoire collective",
+"blurb": "Qui met en scène le passé, et pour qui.",
+"openers": [
+"Quel musée a changé votre regard sur quelque chose?",
+"Envie d'y aller et de comparer vos impressions?"
 ]
+}
 },
 {
 "id": "astronomy-for-amateurs",
@@ -2690,7 +4243,15 @@
 "openers": [
 "What's the best thing you've seen with your own eyes?",
 "Where's the darkest sky near here?"
+],
+"fr": {
+"title": "Astronomie amateur",
+"blurb": "Télescopes, ciel noir, et lever les yeux exprès.",
+"openers": [
+"Quelle est la plus belle chose que vous avez vue de vos propres yeux?",
+"Où est le ciel le plus noir près d'ici?"
 ]
+}
 },
 {
 "id": "urban-ecology",
@@ -2704,7 +4265,15 @@
 "openers": [
 "What's the strangest wildlife you've seen around here?",
 "Which park here do you know best?"
+],
+"fr": {
+"title": "Écologie urbaine",
+"blurb": "Renards, arbres de rue, et la vie sauvage en ville.",
+"openers": [
+"Quel animal étrange avez-vous vu dans le coin?",
+"Quel parc d'ici connaissez-vous le mieux?"
 ]
+}
 },
 {
 "id": "philosophy-of-education",
@@ -2718,7 +4287,15 @@
 "openers": [
 "Dewey, Freire, or someone else?",
 "What do you wish school had been for?"
+],
+"fr": {
+"title": "Philosophie de l'éducation",
+"blurb": "À quoi sert vraiment l'école.",
+"openers": [
+"Dewey, Freire, ou quelqu'un d'autre?",
+"À quoi auriez-vous aimé que serve l'école?"
 ]
+}
 },
 {
 "id": "economics-of-attention",
@@ -2727,12 +4304,21 @@
 "blurb": "How apps, ads, and media compete for your time.",
 "fieldTags": [
 "economics",
-"psychology"
+"psychology",
+"media"
 ],
 "openers": [
 "What's taken more of your attention than you'd like?",
 "Should attention be regulated at all?"
+],
+"fr": {
+"title": "Économie de l'attention",
+"blurb": "Comment les applications, les publicités et les médias se disputent votre temps.",
+"openers": [
+"Qu'est-ce qui a pris plus de votre attention que vous ne le voudriez?",
+"Faut-il réglementer l'attention?"
 ]
+}
 },
 {
 "id": "should-universities-cap-international-student-numbers",
@@ -2746,7 +4332,15 @@
 "openers": [
 "Who benefits from the current numbers?",
 "What would a cap do to your campus?"
+],
+"fr": {
+"title": "Les universités devraient-elles plafonner le nombre d'étudiants internationaux?",
+"blurb": "Pressions sur le logement et le financement, contre l'ouverture.",
+"openers": [
+"Qui profite des chiffres actuels?",
+"Quel effet aurait un plafond sur votre campus?"
 ]
+}
 },
 {
 "id": "should-the-retirement-age-rise-with-life-expectancy",
@@ -2760,7 +4354,15 @@
 "openers": [
 "Should it depend on your job?",
 "What do you expect for your own generation?"
+],
+"fr": {
+"title": "L'âge de la retraite devrait-il suivre l'espérance de vie?",
+"blurb": "L'arithmétique budgétaire contre l'équité pour les travailleurs manuels.",
+"openers": [
+"Devrait-il dépendre de l'emploi?",
+"À quoi vous attendez-vous pour votre génération?"
 ]
+}
 },
 {
 "id": "should-organ-donation-be-opt-out-by-default",
@@ -2774,7 +4376,15 @@
 "openers": [
 "Have you registered?",
 "Does the default really change the numbers?"
+],
+"fr": {
+"title": "Le don d'organes devrait-il être automatique, sauf refus?",
+"blurb": "Plus d'organes, ou trop d'État sur votre corps?",
+"openers": [
+"Vous êtes-vous inscrit?",
+"Le choix par défaut change-t-il vraiment les chiffres?"
 ]
+}
 },
 {
 "id": "should-advertising-to-children-be-banned",
@@ -2788,7 +4398,15 @@
 "openers": [
 "Which ads got to you as a child?",
 "Where would you draw the age line?"
+],
+"fr": {
+"title": "Faut-il interdire la publicité destinée aux enfants?",
+"blurb": "Protéger les enfants, contre la parole commerciale.",
+"openers": [
+"Quelles publicités vous ont marqué enfant?",
+"Où traceriez-vous la limite d'âge?"
 ]
+}
 },
 {
 "id": "starting-a-business-as-a-student",
@@ -2875,28 +4493,6 @@
 "openers": [
 "Envers qui une entreprise a-t-elle le plus d'obligations?",
 "L'avez-vous déjà vu bien fait quelque part?"
-]
-}
-},
-{
-"id": "should-canada-have-a-four-day-work-week",
-"kind": "question",
-"title": "Should Canada have a four-day work week?",
-"blurb": "Same pay, fewer days.",
-"fieldTags": [
-"business",
-"sociology"
-],
-"openers": [
-"What would you do with the extra day?",
-"Which jobs couldn't make it work?"
-],
-"fr": {
-"title": "Le Canada devrait-il adopter la semaine de quatre jours?",
-"blurb": "Même salaire, moins de jours.",
-"openers": [
-"Que feriez-vous de la journée de plus?",
-"Quels emplois ne pourraient pas s'y adapter?"
 ]
 }
 },
@@ -2988,28 +4584,6 @@
 }
 },
 {
-"id": "should-public-money-fund-journalism",
-"kind": "question",
-"title": "Should public money fund journalism?",
-"blurb": "Independence against survival.",
-"fieldTags": [
-"media",
-"politics"
-],
-"openers": [
-"Can a publicly funded outlet stay independent?",
-"What would you fund first?"
-],
-"fr": {
-"title": "L'argent public doit-il financer le journalisme?",
-"blurb": "L'indépendance contre la survie.",
-"openers": [
-"Un média financé par l'État peut-il rester indépendant?",
-"Que financeriez-vous en premier?"
-]
-}
-},
-{
 "id": "how-a-bill-becomes-policy-that-works",
 "kind": "interest",
 "title": "How a bill becomes policy that works",
@@ -3072,28 +4646,6 @@
 "openers": [
 "Quelle question confieriez-vous à une assemblée citoyenne?",
 "Feriez-vous plus confiance à son résultat qu'à un vote?"
-]
-}
-},
-{
-"id": "should-canada-adopt-a-basic-income",
-"kind": "question",
-"title": "Should Canada adopt a basic income?",
-"blurb": "Replacing programs, or adding one.",
-"fieldTags": [
-"public_policy",
-"economics"
-],
-"openers": [
-"What would you stop funding to pay for it?",
-"What would you do differently if you had one?"
-],
-"fr": {
-"title": "Le Canada devrait-il adopter un revenu de base?",
-"blurb": "Remplacer des programmes, ou en ajouter un.",
-"openers": [
-"Que cesseriez-vous de financer pour le payer?",
-"Que feriez-vous autrement si vous en aviez un?"
 ]
 }
 },
@@ -3668,28 +5220,6 @@
 }
 },
 {
-"id": "should-museums-return-objects-to-where-they-came-from",
-"kind": "question",
-"title": "Should museums return objects to where they came from?",
-"blurb": "Repatriation and who owns the past.",
-"fieldTags": [
-"art",
-"history"
-],
-"openers": [
-"Is there an object you think should go home?",
-"What should a museum be, after that?"
-],
-"fr": {
-"title": "Les musées doivent-ils rendre les objets à leurs lieux d'origine?",
-"blurb": "Le rapatriement, et à qui appartient le passé.",
-"openers": [
-"Y a-t-il un objet qui devrait, selon vous, rentrer chez lui?",
-"Que devrait être un musée après cela?"
-]
-}
-},
-{
 "id": "how-bridges-and-buildings-fail",
 "kind": "interest",
 "title": "How bridges and buildings fail",
@@ -3730,28 +5260,6 @@
 "openers": [
 "Quelle est la dernière chose que vous avez réparée?",
 "Les entreprises devraient-elles être obligées de fabriquer des objets réparables?"
-]
-}
-},
-{
-"id": "should-canada-build-more-nuclear-power",
-"kind": "question",
-"title": "Should Canada build more nuclear power?",
-"blurb": "Clean, steady, expensive, and contested.",
-"fieldTags": [
-"engineering",
-"environment"
-],
-"openers": [
-"Would you live next to a small reactor?",
-"What's the real alternative?"
-],
-"fr": {
-"title": "Le Canada devrait-il construire plus de centrales nucléaires?",
-"blurb": "Propre, stable, coûteux et contesté.",
-"openers": [
-"Habiteriez-vous à côté d'un petit réacteur?",
-"Quelle est la vraie solution de rechange?"
 ]
 }
 },

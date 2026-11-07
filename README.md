@@ -132,6 +132,10 @@ The `/admin` pages live behind Cloudflare Access.
 - **History** records every action and who took it, using the email Access verified.
 - **Crashes** groups reports from the app by error message for 30 days. Stack traces from release builds are minified, so they show roughly where a crash happened, not the original line.
 
+## Languages
+
+The app is in English and French, and follows the phone's language. Text in the app uses `t("English", "Français")` from `apps/mobile/src/i18n.ts`, and it sends the language with each request. The server uses that to pick topic text, and to send push and email in each person's language. Each seeded topic carries its French in `seed/topics.json`. Topics people suggest show as written, and city names stay in English.
+
 ## Message encryption
 
 People's messages are end-to-end encrypted, so the server stores only ciphertext. The code is in `packages/shared/src/e2ee.ts`, built on the audited `@noble` libraries, which are pure JavaScript and run in Expo Go.

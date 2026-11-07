@@ -1,4 +1,5 @@
 import { didMeetSchema, isMeetupConfirmed, meetupProposalSchema, meetupResponseSchema, requiredYesCount, VENUE_LABELS, type ConversationKind, type MeetupSummary } from "@ideas-match/shared";
+import { venueNames } from "../lib/language";
 import { and, desc, eq, inArray, sql } from "drizzle-orm";
 import { Hono } from "hono";
 import { getDb, schema, type Db } from "../db";
@@ -68,8 +69,8 @@ function toSummary(env: Env, row: MeetupRow, responses: (typeof schema.meetupRes
 }
 
 /** Messages name the place only. The server doesn't know the reader's time zone, so the app's meetup card shows the time. */
-function venueName(meetup: Pick<MeetupRow, "venueKind" | "venueNote">): string {
-  return meetup.venueNote || VENUE_LABELS[meetup.venueKind];
+function venueName(meetup: Pick<MeetupRow, "venueKind" | "venueNote">) {
+  return venueNames(meetup);
 }
 
 async function loadMeetup(db: Db, id: string, userId: string) {
@@ -124,13 +125,14 @@ meetups.post("/", async (c) => {
 
   const [profile] = await db.select({ name: schema.profiles.displayName }).from(schema.profiles).where(eq(schema.profiles.userId, user.id));
   const name = profile?.name ?? "Someone";
-  await c.env.CHAT_ROOM.getByName(conversationId).postSystem(conversationId, `${name} proposed a meetup at ${venueName(meetup)}.`, {
+  await c.env.CHAT_ROOM.getByName(conversationId).postSystem(conversationId, `${name} proposed a meetup at ${venueName(meetup).en}.`, {
+    fr: `${profile?.name ?? "Quelqu'un"} a proposé une rencontre : ${venueName(meetup).fr}.`,
     kind: "meetup",
     meetupId: meetup.id,
   });
   const others = (await memberIds(db, conversationId)).filter((id) => id !== user.id);
   c.executionCtx.waitUntil(
-    sendPush(c.env, others, { title: `${name} wants to meet`, body: venueName(meetup), data: { screen: "meetup", id: meetup.id } }),
+    sendPush(c.env, others, { title: `${name} wants to meet`, body: venueName(meetup).en, fr: { title: `${profile?.name ?? "Quelqu'un"} veut vous rencontrer`, body: venueName(meetup).fr }, data: { screen: "meetup", id: meetup.id } }),
   );
   return c.json(await summaryFor(c.env, db, meetup, conversation.kind, user.id), 201);
 });
@@ -170,10 +172,10 @@ meetups.post("/:id/respond", async (c) => {
       .returning({ id: schema.meetups.id });
     if (confirmed.length > 0) {
       const where = venueName(meetup);
-      await stub.postSystem(meetup.conversationId, `It's on! Meetup confirmed at ${where}.`, { kind: "meetup", meetupId: meetup.id });
+      await stub.postSystem(meetup.conversationId, `It's on! Meetup confirmed at ${where.en}.`, { fr: `C'est confirmé! Rencontre : ${where.fr}.`, kind: "meetup", meetupId: meetup.id });
       console.log(JSON.stringify({ event: "meetup_confirmed", meetupId: meetup.id, conversationKind: conversation.kind }));
       c.executionCtx.waitUntil(
-        sendPush(c.env, await memberIds(db, meetup.conversationId), { title: "Your meetup is on", body: where, data: { screen: "meetup", id: meetup.id } }),
+        sendPush(c.env, await memberIds(db, meetup.conversationId), { title: "Your meetup is on", body: where.en, fr: { title: "Votre rencontre est confirmée", body: where.fr }, data: { screen: "meetup", id: meetup.id } }),
       );
     }
   }
@@ -210,7 +212,7 @@ meetups.post("/:id/cancel", async (c) => {
 
   await db.update(schema.meetups).set({ state: "cancelled" }).where(eq(schema.meetups.id, meetup.id));
   const stub = c.env.CHAT_ROOM.getByName(meetup.conversationId);
-  await stub.postSystem(meetup.conversationId, "The meetup was cancelled.", { kind: "meetup", meetupId: meetup.id });
+  await stub.postSystem(meetup.conversationId, "The meetup was cancelled.", { fr: "La rencontre a été annulée.", kind: "meetup", meetupId: meetup.id });
   await stub.notifyMeetupChanged(meetup.id);
   const [fresh] = await db.select().from(schema.meetups).where(eq(schema.meetups.id, meetup.id));
   return c.json(await summaryFor(c.env, db, fresh!, conversation.kind, user.id));

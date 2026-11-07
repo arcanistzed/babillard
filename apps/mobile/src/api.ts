@@ -1,3 +1,5 @@
+import { languageTag, t } from "./i18n";
+
 export const BASE_URL = process.env.EXPO_PUBLIC_API_URL ?? "http://10.0.2.2:8787";
 
 export class ApiError extends Error {
@@ -28,6 +30,7 @@ export async function request<T>(method: string, path: string, body?: unknown): 
       headers: {
         ...(body === undefined ? {} : { "content-type": "application/json" }),
         ...(sessionToken ? { authorization: `Bearer ${sessionToken}` } : {}),
+        "accept-language": languageTag,
       },
       ...(body === undefined ? {} : { body: JSON.stringify(body) }),
     });
@@ -68,20 +71,20 @@ export function openConversationSocket(conversationId: string): WebSocket {
 }
 
 export function friendlyError(error: unknown): string {
-  if (!(error instanceof ApiError)) return "Something went wrong. Try again.";
+  if (!(error instanceof ApiError)) return t("Something went wrong. Try again.", "Un problème est survenu. Réessayez.");
   const messages: Record<string, string> = {
-    network: "Can't reach Ideas Match. Check your connection and try again.",
-    invalid_or_expired: "That code didn't work. Check it, or ask for a new one.",
-    account_unavailable: "This account has been closed.",
-    under_age: "Ideas Match is for people 18 and over.",
-    email_unavailable: "We couldn't send your email just now. Try again in a minute.",
-    too_many_attempts: "Too many tries. Wait a minute and try again.",
-    too_many_submissions: "That's the limit for today. Suggest more tomorrow.",
-    too_many_reports: "That's the limit for today. If you're in danger, contact local emergency services.",
-    invalid_request: "Some of that isn't quite right. Check it and try again.",
-    conversation_closed: "This conversation has ended.",
-    starts_in_the_past: "That time has already passed. Pick another.",
-    upload_failed: "That photo didn't upload. Try a different one.",
+    network: t("Can't reach Ideas Match. Check your connection and try again.", "Impossible de joindre Ideas Match. Vérifiez votre connexion et réessayez."),
+    invalid_or_expired: t("That code didn't work. Check it, or ask for a new one.", "Ce code n'a pas fonctionné. Vérifiez-le ou demandez-en un nouveau."),
+    account_unavailable: t("This account has been closed.", "Ce compte a été fermé."),
+    under_age: t("Ideas Match is for people 18 and over.", "Ideas Match est réservé aux personnes de 18 ans et plus."),
+    email_unavailable: t("We couldn't send your email just now. Try again in a minute.", "Impossible d'envoyer le courriel pour le moment. Réessayez dans une minute."),
+    too_many_attempts: t("Too many tries. Wait a minute and try again.", "Trop d'essais. Attendez une minute et réessayez."),
+    too_many_submissions: t("That's the limit for today. Suggest more tomorrow.", "C'est la limite pour aujourd'hui. Suggérez-en d'autres demain."),
+    too_many_reports: t("That's the limit for today. If you're in danger, contact local emergency services.", "C'est la limite pour aujourd'hui. Si vous êtes en danger, appelez les services d'urgence."),
+    invalid_request: t("Some of that isn't quite right. Check it and try again.", "Quelque chose ne va pas. Vérifiez et réessayez."),
+    conversation_closed: t("This conversation has ended.", "Cette conversation est terminée."),
+    starts_in_the_past: t("That time has already passed. Pick another.", "Cette heure est déjà passée. Choisissez-en une autre."),
+    upload_failed: t("That photo didn't upload. Try a different one.", "Cette photo n'a pas pu être envoyée. Essayez-en une autre."),
   };
-  return messages[error.code] ?? "Something went wrong. Try again.";
+  return messages[error.code] ?? t("Something went wrong. Try again.", "Un problème est survenu. Réessayez.");
 }

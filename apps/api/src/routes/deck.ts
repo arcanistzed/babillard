@@ -1,4 +1,5 @@
 import { DECK_PAGE_SIZE, rankTopics, topicSwipeSchema, topicSubmissionSchema, type TopicCard, type TopicSwipeResult } from "@ideas-match/shared";
+import { localizeTopic, requestLanguage } from "../lib/language";
 import { and, eq, gt, inArray, isNull, or, sql } from "drizzle-orm";
 import { Hono } from "hono";
 import { getDb, schema } from "../db";
@@ -17,7 +18,7 @@ export function cohortName(topicId: string, cityId: string): string {
 /** Adds someone to a topic's cohort. Returns the group conversation they landed in, if any. */
 export async function joinCohort(
   env: Env,
-  args: { userId: string; cityId: string; topic: { id: string; kind: "interest" | "question"; title: string }; stance: "for" | "against" | "unsure" | null },
+  args: { userId: string; cityId: string; topic: { id: string; kind: "interest" | "question"; title: string; fr?: { title: string } | null }; stance: "for" | "against" | "unsure" | null },
 ): Promise<string | null> {
   const [city] = await getDb(env).select({ name: schema.localities.name }).from(schema.localities).where(eq(schema.localities.id, args.cityId));
   return env.COHORT.getByName(cohortName(args.topic.id, args.cityId)).join({
@@ -26,6 +27,7 @@ export async function joinCohort(
     topicId: args.topic.id,
     topicKind: args.topic.kind,
     topicTitle: args.topic.title,
+    topicTitleFr: args.topic.fr?.title ?? args.topic.title,
     cityId: args.cityId,
     cityName: city?.name ?? "your city",
   });
@@ -70,11 +72,12 @@ deck.get("/topics", async (c) => {
       { userFields: profile[0]?.fields ?? [], limit: Math.max(DECK_PAGE_SIZE - ownPending.length, 0) },
     ),
   ];
+  const language = requestLanguage(c);
   const cards: TopicCard[] = ranked.map((topic) => ({
     id: topic.id,
     kind: topic.kind,
-    title: topic.title,
-    blurb: topic.blurb,
+    title: localizeTopic(topic, language).title,
+    blurb: localizeTopic(topic, language).blurb,
     fieldTags: topic.fieldTags,
     nearbyCount: topic.cohortSize,
     pending: topic.status === "pending",

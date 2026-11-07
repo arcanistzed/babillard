@@ -1,4 +1,4 @@
-import { FIELDS, FIELD_LABELS, ROLES, ROLE_LABELS, type Me } from "@ideas-match/shared";
+import { FIELDS, ROLES, type Me } from "@ideas-match/shared";
 import { useQueryClient } from "@tanstack/react-query";
 import { router } from "expo-router";
 import { useCallback, useState } from "react";
@@ -8,6 +8,7 @@ import { useAuth } from "@/auth";
 import { CityPicker } from "@/components/CityPicker";
 import { LookingForPicker } from "@/components/LookingForPicker";
 import { Button, Chip, ChipRow, ErrorText, Field, KeyboardScreen, T, useBottomPadding } from "@/ui";
+import { fieldLabel, roleLabel, t } from "@/i18n";
 
 function toggle<T>(list: T[], value: T): T[] {
   return list.includes(value) ? list.filter((item) => item !== value) : [...list, value];
@@ -50,24 +51,24 @@ export default function ProfileEdit() {
   return (
     <KeyboardScreen style={styles.screen}>
       <ScrollView contentContainerStyle={styles.body} keyboardShouldPersistTaps="handled">
-        <Field label="Your first name" value={displayName} onChangeText={setDisplayName} maxLength={50} />
-        <Field label="A line about you" value={bio} onChangeText={setBio} multiline maxLength={500} style={styles.bio} />
-        <T variant="heading">What do you do?</T>
-        <ChipRow>{ROLES.map((value) => <Chip key={value} label={ROLE_LABELS[value]} selected={role === value} onPress={() => setRole(value)} />)}</ChipRow>
-        <T variant="heading">What are you looking for?</T>
+        <Field label={t("Your first name", "Votre prénom")} value={displayName} onChangeText={setDisplayName} maxLength={50} />
+        <Field label={t("A line about you", "Une phrase sur vous")} value={bio} onChangeText={setBio} multiline maxLength={500} style={styles.bio} />
+        <T variant="heading">{t("What do you do?", "Que faites-vous?")}</T>
+        <ChipRow>{ROLES.map((value) => <Chip key={value} label={roleLabel(value)} selected={role === value} onPress={() => setRole(value)} />)}</ChipRow>
+        <T variant="heading">{t("What are you looking for?", "Que recherchez-vous?")}</T>
         <LookingForPicker value={lookingFor} onChange={setLookingFor} />
-        <T variant="heading">Where can you meet people?</T>
+        <T variant="heading">{t("Where can you meet people?", "Où pouvez-vous rencontrer des gens?")}</T>
         <CityPicker cityId={cityId} campusId={campusId} onChange={setLocation} />
-        <T variant="heading">Fields you care about</T>
+        <T variant="heading">{t("Fields you care about", "Domaines qui vous intéressent")}</T>
         <ChipRow>
           {FIELDS.map((value) => (
-            <Chip key={value} label={FIELD_LABELS[value]} selected={fields.includes(value)} disabled={!fields.includes(value) && fields.length >= 8} onPress={() => setFields(toggle(fields, value))} />
+            <Chip key={value} label={fieldLabel(value)} selected={fields.includes(value)} disabled={!fields.includes(value) && fields.length >= 8} onPress={() => setFields(toggle(fields, value))} />
           ))}
         </ChipRow>
         {error ? <ErrorText>{error}</ErrorText> : null}
       </ScrollView>
       <View style={[styles.actions, { paddingBottom: bottomPadding }]}>
-        <Button label="Save changes" onPress={save} busy={busy} disabled={!displayName.trim() || fields.length === 0 || lookingFor.length === 0 || !cityId} />
+        <Button label={t("Save changes", "Enregistrer")} onPress={save} busy={busy} disabled={!displayName.trim() || fields.length === 0 || lookingFor.length === 0 || !cityId} />
       </View>
     </KeyboardScreen>
   );

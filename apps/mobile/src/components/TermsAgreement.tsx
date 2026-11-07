@@ -1,6 +1,7 @@
 import { Ionicons } from "@expo/vector-icons";
 import { Pressable, StyleSheet, View } from "react-native";
 import { haptics } from "@/haptics";
+import { t } from "@/i18n";
 import { openLegalPage } from "@/legal";
 import { fonts, useTheme } from "@/theme";
 import { T } from "@/ui";
@@ -13,7 +14,7 @@ export function TermsAgreement({ agreed, onChange }: { agreed: boolean; onChange
       <Pressable
         accessibilityRole="checkbox"
         accessibilityState={{ checked: agreed }}
-        accessibilityLabel="I'm 18 or older, and I agree to the Terms of use and Privacy policy"
+        accessibilityLabel={t("I'm 18 or older, and I agree to the Terms of use and Privacy policy", "J'ai 18 ans ou plus, et j'accepte les Conditions d'utilisation et la Politique de confidentialité")}
         hitSlop={8}
         onPress={() => {
           haptics.select();
@@ -23,15 +24,15 @@ export function TermsAgreement({ agreed, onChange }: { agreed: boolean; onChange
         <Ionicons name={agreed ? "checkbox" : "square-outline"} size={28} color={agreed ? theme.accent : theme.ink} />
       </Pressable>
       <T style={styles.text}>
-        I'm 18 or older, and I agree to the{" "}
+        {t("I'm 18 or older, and I agree to the", "J'ai 18 ans ou plus, et j'accepte les")}{" "}
         <T accessibilityRole="link" style={link} onPress={() => openLegalPage("terms")}>
-          Terms of use
+          {t("Terms of use", "Conditions d'utilisation")}
         </T>{" "}
-        and{" "}
+        {t("and", "et la")}{" "}
         <T accessibilityRole="link" style={link} onPress={() => openLegalPage("privacy")}>
-          Privacy policy
+          {t("Privacy policy", "Politique de confidentialité")}
         </T>
-        , including how my date of birth and other sensitive details are used.
+        {t(", including how my date of birth and other sensitive details are used.", ", y compris l'utilisation de ma date de naissance et d'autres renseignements sensibles.")}
       </T>
     </View>
   );

@@ -3,6 +3,7 @@ import * as Device from "expo-device";
 import * as Notifications from "expo-notifications";
 import { Platform } from "react-native";
 import { api } from "./api";
+import { t } from "./i18n";
 
 let registeredToken: string | null = null;
 
@@ -18,7 +19,7 @@ export async function registerForPush(): Promise<void> {
     if (!projectId) return;
 
     if (Platform.OS === "android") {
-      await Notifications.setNotificationChannelAsync("default", { name: "Matches and meetups", importance: Notifications.AndroidImportance.HIGH });
+      await Notifications.setNotificationChannelAsync("default", { name: t("Matches and meetups", "Jumelages et rencontres"), importance: Notifications.AndroidImportance.HIGH });
     }
     const existing = await Notifications.getPermissionsAsync();
     const status = existing.granted ? existing : await Notifications.requestPermissionsAsync();

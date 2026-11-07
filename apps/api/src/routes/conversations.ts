@@ -1,4 +1,5 @@
 import { sendMessageSchema, visibleLookingFor, type ChatMessage, type ConversationDetail, type InboxItem, type Stance } from "@ideas-match/shared";
+import { localizeTopic, requestLanguage } from "../lib/language";
 import { and, desc, eq, gt, inArray, or, sql } from "drizzle-orm";
 import { Hono } from "hono";
 import { z } from "zod";
@@ -36,7 +37,7 @@ conversations.get("/", async (c) => {
   const db = getDb(c.env);
 
   const rows = await db
-    .select({ conversation: schema.conversations, membership: members, match: schema.matches, topicTitle: schema.topics.title })
+    .select({ conversation: schema.conversations, membership: members, match: schema.matches, topicTitle: schema.topics.title, topicFr: schema.topics.fr })
     .from(members)
     .innerJoin(schema.conversations, eq(schema.conversations.id, members.conversationId))
     .leftJoin(schema.matches, eq(schema.matches.conversationId, schema.conversations.id))
@@ -63,7 +64,9 @@ conversations.get("/", async (c) => {
   const blockedIds = new Set(myBlocks.map((row) => row.id));
   const nextMeetup = new Map(meetups.map((row) => [row.conversationId, row.startsAt]));
 
-  const items: InboxItem[] = rows.map(({ conversation, membership, match, topicTitle }) => {
+  const language = requestLanguage(c);
+  const items: InboxItem[] = rows.map(({ conversation, membership, match, topicTitle: englishTitle, topicFr }) => {
+    const topicTitle = language === "fr" && topicFr ? topicFr.title : englishTitle;
     const roster = everyone.filter((entry) => entry.conversationId === conversation.id);
     const other = roster.find((entry) => entry.userId !== user.id);
     const isDirect = conversation.kind === "direct";
@@ -75,7 +78,7 @@ conversations.get("/", async (c) => {
       topicTitle,
       avatarUrl: isDirect ? avatarUrl(c.env, other?.avatarKey) : null,
       memberCount: roster.length,
-      lastMessagePreview: hidePreview ? null : conversation.lastMessagePreview,
+      lastMessagePreview: hidePreview ? null : language === "fr" ? (conversation.lastMessagePreviewFr ?? conversation.lastMessagePreview) : conversation.lastMessagePreview,
       lastMessageEnvelope: hidePreview ? null : conversation.lastMessageEnvelope,
       lastMessageSenderId: conversation.lastMessageSenderId,
       lastMessageAt: conversation.lastMessageAt,
@@ -104,6 +107,7 @@ conversations.get("/:id", async (c) => {
     conversation.topicId ? db.select().from(schema.topics).where(eq(schema.topics.id, conversation.topicId)) : Promise.resolve([]),
   ]);
   const topic = topicRows[0] ?? null;
+  const localized = topic && localizeTopic(topic, requestLanguage(c));
 
   let stanceSpread: Record<Stance, number> | null = null;
   if (conversation.kind === "group" && topic?.kind === "question") {
@@ -132,10 +136,10 @@ conversations.get("/:id", async (c) => {
   const detail: ConversationDetail = {
     id,
     kind: conversation.kind,
-    title: conversation.kind === "direct" ? (other?.displayName ?? "Former member") : (topic?.title ?? "Group"),
-    topic: topic ? { id: topic.id, title: topic.title, kind: topic.kind } : null,
+    title: conversation.kind === "direct" ? (other?.displayName ?? "Former member") : (localized?.title ?? "Group"),
+    topic: topic ? { id: topic.id, title: localized!.title, kind: topic.kind } : null,
     members: memberCards,
-    suggestedOpeners: conversation.lastUserMessageAt === null ? (topic?.openers ?? []) : [],
+    suggestedOpeners: conversation.lastUserMessageAt === null ? (localized?.openers ?? []) : [],
     stanceSpread,
     meetups: await meetupSummaries(c.env, db, conversation.id, conversation.kind, user.id),
     expiresAt: conversation.lastUserMessageAt === null ? expiresAt : null,
@@ -201,7 +205,7 @@ conversations.post("/:id/leave", async (c) => {
   const stub = c.env.CHAT_ROOM.getByName(id);
   await stub.kick(user.id);
   const [profile] = await db.select({ name: schema.profiles.displayName }).from(schema.profiles).where(eq(schema.profiles.userId, user.id));
-  await stub.postSystem(id, `${profile?.name ?? "Someone"} left the group.`);
+  await stub.postSystem(id, `${profile?.name ?? "Someone"} left the group.`, { fr: `${profile?.name ?? "Quelqu'un"} a quitté le groupe.` });
   return c.json({ ok: true });
 });
 

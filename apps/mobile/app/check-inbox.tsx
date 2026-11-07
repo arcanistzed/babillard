@@ -5,6 +5,7 @@ import { StyleSheet, View } from "react-native";
 import { api, friendlyError } from "@/api";
 import { useAuth } from "@/auth";
 import { Button, ErrorText, Field, T, KeyboardScreen } from "@/ui";
+import { t } from "@/i18n";
 
 export default function CheckInbox() {
   const { email, devCode } = useLocalSearchParams<{ email: string; devCode?: string }>();
@@ -30,7 +31,7 @@ export default function CheckInbox() {
     setError(null);
     try {
       await api.post("/auth/start", { email });
-      setNotice("We sent you another email.");
+      setNotice(t("We sent you another email.", "Nous vous avons envoyé un autre courriel."));
     } catch (caught) {
       setError(friendlyError(caught));
     }
@@ -39,12 +40,12 @@ export default function CheckInbox() {
   return (
     <KeyboardScreen style={styles.body}>
       <View style={styles.copy}>
-        <T variant="title">Check your email</T>
-        <T muted>We sent a code to {email}.</T>
-        <T muted>Not there? Check junk and quarantine.</T>
+        <T variant="title">{t("Check your email", "Vérifiez vos courriels")}</T>
+        <T muted>{t(`We sent a code to ${email}.`, `Nous avons envoyé un code à ${email}.`)}</T>
+        <T muted>{t("Not there? Check junk and quarantine.", "Rien reçu? Vérifiez les courriels indésirables et la quarantaine.")}</T>
       </View>
       <Field
-        label="Six-digit code"
+        label={t("Six-digit code", "Code à six chiffres")}
         value={code}
         onChangeText={(value) => {
           const digits = value.replace(/\D/g, "").slice(0, 6);
@@ -60,8 +61,8 @@ export default function CheckInbox() {
       />
       {error ? <ErrorText>{error}</ErrorText> : null}
       {notice ? <T muted>{notice}</T> : null}
-      <Button label="Sign in" onPress={() => verify(code)} busy={busy} disabled={code.length !== 6} />
-      <Button label="Send another email" kind="quiet" onPress={resend} />
+      <Button label={t("Sign in", "Se connecter")} onPress={() => verify(code)} busy={busy} disabled={code.length !== 6} />
+      <Button label={t("Send another email", "Envoyer un autre courriel")} kind="quiet" onPress={resend} />
       {__DEV__ && devCode ? (
         <T variant="small" muted>
           Development build. Your code is {devCode}.

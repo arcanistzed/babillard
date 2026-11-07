@@ -12,8 +12,11 @@ import { Flyer } from "@/components/Flyer";
 import { SwipeDeck, type SwipeDeckHandle, type SwipeDirection } from "@/components/SwipeDeck";
 import { inviteToApp, inviteToTopic } from "@/invite";
 import { Button, ErrorText, T } from "@/ui";
+import { t } from "@/i18n";
 
 const REFILL_AT = 5;
+const IN_LABEL = t("I'm in", "J'embarque");
+const PASS_LABEL = t("Pass", "Passer");
 
 export default function Deck() {
   const queryClient = useQueryClient();
@@ -79,14 +82,14 @@ export default function Deck() {
     <SafeAreaView edges={["top"]} style={styles.screen}>
       <View style={styles.header}>
         {swipeFailed ? (
-          <ErrorText>That didn't save, so it'll come back. Check your connection.</ErrorText>
+          <ErrorText>{t("That didn't save, so it'll come back. Check your connection.", "Ce choix n'a pas été enregistré et reviendra. Vérifiez votre connexion.")}</ErrorText>
         ) : nudge ? (
           <Animated.View key={nudge.topic.id} entering={FadeIn.duration(180)} exiting={FadeOut.duration(120)} style={styles.nudge}>
             <T variant="bodyBold" numberOfLines={2} style={styles.nudgeText}>
-              {nudge.topic.title} needs {nudge.needed} more for a group
+              {t(`${nudge.topic.title} needs ${nudge.needed} more for a group`, `${nudge.topic.title} : encore ${nudge.needed} pour former un groupe`)}
             </T>
             <Button
-              label="Invite"
+              label={t("Invite", "Inviter")}
               onPress={() => {
                 inviteToTopic(nudge.topic);
                 setNudge(null);
@@ -95,7 +98,7 @@ export default function Deck() {
           </Animated.View>
         ) : (
           <T variant="title" numberOfLines={2}>
-            What do you want to talk about?
+            {t("What do you want to talk about?", "De quoi voulez-vous parler?")}
           </T>
         )}
       </View>
@@ -103,20 +106,20 @@ export default function Deck() {
       <View style={styles.deck}>
         {empty ? (
           topics.isPending || topics.isFetching ? (
-            <ActivityIndicator accessibilityLabel="Loading topics" size="large" style={styles.center} />
+            <ActivityIndicator accessibilityLabel={t("Loading topics", "Chargement des sujets")} size="large" style={styles.center} />
           ) : (
             <View style={styles.center}>
               {topics.isError ? (
                 <>
-                  <ErrorText>Couldn't load topics. Check your connection.</ErrorText>
-                  <Button label="Try again" kind="secondary" onPress={() => topics.refetch()} />
+                  <ErrorText>{t("Couldn't load topics. Check your connection.", "Impossible de charger les sujets. Vérifiez votre connexion.")}</ErrorText>
+                  <Button label={t("Try again", "Réessayer")} kind="secondary" onPress={() => topics.refetch()} />
                 </>
               ) : (
                 <>
-                  <T variant="title">You've seen every topic</T>
-                  <Button label="Suggest a topic" onPress={() => router.push("/topic/new")} />
-                  <Button label="Invite a friend" kind="secondary" onPress={inviteToApp} />
-                  <Button label="See people" kind="quiet" onPress={() => router.navigate("/people")} />
+                  <T variant="title">{t("You've seen every topic", "Vous avez vu tous les sujets")}</T>
+                  <Button label={t("Suggest a topic", "Suggérer un sujet")} onPress={() => router.push("/topic/new")} />
+                  <Button label={t("Invite a friend", "Inviter quelqu'un")} kind="secondary" onPress={inviteToApp} />
+                  <Button label={t("See people", "Voir les personnes")} kind="quiet" onPress={() => router.navigate("/people")} />
                 </>
               )}
             </View>
@@ -127,9 +130,9 @@ export default function Deck() {
             items={cards}
             keyOf={(topic) => topic.id}
             onSwipe={onSwipe}
-            rightLabel="I'm in"
-            leftLabel="Pass"
-            describeCard={(topic) => `${topic.title}. ${topic.blurb}${topic.nearbyCount > 0 ? ` ${topic.nearbyCount} nearby.` : ""}`}
+            rightLabel={IN_LABEL}
+            leftLabel={PASS_LABEL}
+            describeCard={(topic) => `${topic.title}. ${topic.blurb}${topic.nearbyCount > 0 ? t(` ${topic.nearbyCount} nearby.`, ` ${topic.nearbyCount} à proximité.`) : ""}`}
             renderCard={(topic, isTop, pull) => <Flyer isTop={isTop} pull={pull} topic={topic} stance={stances[topic.id] ?? null} onStance={(stance) => setStances((current) => ({ ...current, [topic.id]: stance }))} />}
           />
         )}
@@ -137,16 +140,16 @@ export default function Deck() {
 
       {!empty ? (
         <View style={styles.controls}>
-          <DeckControls leftLabel="Pass" rightLabel="I'm in" onLeft={() => deck.current?.swipe("left")} onRight={() => deck.current?.swipe("right")} />
+          <DeckControls leftLabel={PASS_LABEL} rightLabel={IN_LABEL} onLeft={() => deck.current?.swipe("left")} onRight={() => deck.current?.swipe("right")} />
         </View>
       ) : null}
 
       {group ? (
         <Celebration
-          title="Your group is open"
+          title={t("Your group is open", "Votre groupe est ouvert")}
           body={group.title}
-          action="Open the group"
-          dismissLabel="Keep swiping"
+          action={t("Open the group", "Ouvrir le groupe")}
+          dismissLabel={t("Keep swiping", "Continuer")}
           onAction={() => {
             const id = group.id;
             setGroup(null);

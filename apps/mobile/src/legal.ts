@@ -1,5 +1,6 @@
 import { Linking } from "react-native";
 import { BASE_URL } from "./api";
+import { languageTag } from "./i18n";
 
 type LegalPage = "privacy" | "terms" | "safety";
 
@@ -9,8 +10,6 @@ const PATHS: Record<LegalPage, { en: string; fr: string }> = {
   safety: { en: "/safety", fr: "/securite" },
 };
 
-/** The app's screens are English, but the legal pages follow the phone's language. */
 export function openLegalPage(page: LegalPage): void {
-  const language = Intl.DateTimeFormat().resolvedOptions().locale.toLowerCase().startsWith("fr") ? "fr" : "en";
-  void Linking.openURL(`${BASE_URL}${PATHS[page][language]}`);
+  void Linking.openURL(`${BASE_URL}${PATHS[page][languageTag]}`);
 }

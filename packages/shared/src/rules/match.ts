@@ -11,14 +11,25 @@ export function pickOpener(openers: string[], random: () => number = Math.random
   return openers[Math.floor(random() * openers.length)] ?? openers[0]!;
 }
 
-/** Question topics are full sentences, so they need quoting to sit inside another sentence. */
-export function topicPhrase(topicTitle: string): string {
-  return topicTitle.endsWith("?") ? `\u201c${topicTitle}\u201d` : topicTitle;
+/** The same opener in both languages, since everyone in a chat sees the one message in their own language. */
+export function pickBilingualOpener(topic: { openers: string[]; fr?: { openers: string[] } | null } | undefined, random: () => number = Math.random): { en: string; fr: string } {
+  const openers = topic?.openers ?? [];
+  if (openers.length === 0) return { en: "What pulled you toward this topic?", fr: "Qu'est-ce qui vous attire dans ce sujet?" };
+  const index = Math.floor(random() * openers.length);
+  const en = openers[index] ?? openers[0]!;
+  return { en, fr: topic?.fr?.openers[index] ?? en };
 }
 
-export function matchOpenerMessage(topicTitle: string, opener: string): string {
+/** Question topics are full sentences, so they need quoting to sit inside another sentence. */
+export function topicPhrase(topicTitle: string, language: "en" | "fr" = "en"): string {
+  if (!topicTitle.endsWith("?")) return topicTitle;
+  return language === "fr" ? `\u00ab ${topicTitle} \u00bb` : `\u201c${topicTitle}\u201d`;
+}
+
+export function matchOpenerMessage(topicTitle: string, opener: string, language: "en" | "fr" = "en"): string {
   const stop = topicTitle.endsWith("?") ? "" : ".";
-  return `You both want to dig into ${topicPhrase(topicTitle)}${stop} ${opener}`;
+  const lead = language === "fr" ? "Vous voulez tous les deux explorer" : "You both want to dig into";
+  return `${lead} ${topicPhrase(topicTitle, language)}${stop} ${opener}`;
 }
 
 /** Starting points for a newly approved topic. A moderator can edit them before approving. */
