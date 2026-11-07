@@ -1,11 +1,15 @@
 import { orderedPair, reportSchema } from "@ideas-match/shared";
-import { and, eq, inArray } from "drizzle-orm";
+import { and, eq, gt, inArray, sql } from "drizzle-orm";
 import { Hono } from "hono";
 import { getDb, schema } from "../db";
 import { fail, parseJson } from "../lib/http";
+import { notifyAdminOfReport } from "../lib/moderation";
 import { newId } from "../lib/tokens";
 import { requireAuth, requireOnboarded } from "../middleware";
 import type { AppEnv } from "../types";
+
+const MAX_REPORTS_PER_DAY = 10;
+const DAY = 24 * 60 * 60 * 1000;
 
 const safety = new Hono<AppEnv>();
 safety.use("*", requireAuth, requireOnboarded);
@@ -18,6 +22,13 @@ safety.post("/reports", async (c) => {
   const [target] = await db.select({ id: schema.users.id }).from(schema.users).where(eq(schema.users.id, input.targetUserId));
   if (!target) throw fail(404, "person_not_found");
 
+  // Each report emails the admin, so this also keeps one person from flooding that inbox.
+  const [recent] = await db
+    .select({ count: sql<number>`count(*)` })
+    .from(schema.reports)
+    .where(and(eq(schema.reports.reporterId, user.id), gt(schema.reports.createdAt, Date.now() - DAY)));
+  if ((recent?.count ?? 0) >= MAX_REPORTS_PER_DAY) throw fail(429, "too_many_reports");
+
   await db.insert(schema.reports).values({
     id: newId(),
     reporterId: user.id,
@@ -28,6 +39,7 @@ safety.post("/reports", async (c) => {
     note: input.note,
     createdAt: Date.now(),
   });
+  c.executionCtx.waitUntil(notifyAdminOfReport(c.env, input.reason));
   return c.json({ ok: true }, 201);
 });
 

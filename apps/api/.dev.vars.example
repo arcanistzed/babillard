@@ -7,3 +7,5 @@ PUBLIC_ORIGIN=http://10.0.2.2:8787
 # Dev mode shows the sign-in code in the app and never calls SES, so these can stay as placeholders.
 SES_ACCESS_KEY_ID=not-used-in-dev-mode
 SES_SECRET_ACCESS_KEY=not-used-in-dev-mode
+# Where new report alerts go. Set with `wrangler secret put ADMIN_EMAIL` in production.
+ADMIN_EMAIL=admin@example.test

@@ -207,6 +207,16 @@ export class ChatRoom extends DurableObject<Env> {
     return cursor.toArray().map(toMessage).reverse();
   }
 
+  /** For moderators: the messages either side of a reported one, or the latest ones if none was named. */
+  around(messageId: string | null, each = 5): ChatMessage[] {
+    const sql = this.ctx.storage.sql;
+    const target = messageId ? sql.exec<MessageRow>("SELECT * FROM messages WHERE id = ?", messageId).toArray()[0] : undefined;
+    if (!target) return sql.exec<MessageRow>("SELECT * FROM messages ORDER BY seq DESC LIMIT ?", each * 2).toArray().map(toMessage).reverse();
+    const before = sql.exec<MessageRow>("SELECT * FROM messages WHERE seq < ? ORDER BY seq DESC LIMIT ?", target.seq, each).toArray().reverse();
+    const after = sql.exec<MessageRow>("SELECT * FROM messages WHERE seq > ? ORDER BY seq ASC LIMIT ?", target.seq, each).toArray();
+    return [...before, target, ...after].map(toMessage);
+  }
+
   getMessage(id: string): ChatMessage | null {
     const row = this.ctx.storage.sql.exec<MessageRow>("SELECT * FROM messages WHERE id = ?", id).toArray()[0];
     return row ? toMessage(row) : null;

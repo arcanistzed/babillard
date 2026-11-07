@@ -76,6 +76,7 @@ export function friendlyError(error: unknown): string {
     under_age: "Ideas Match is for people 18 and over.",
     email_unavailable: "We couldn't send your email just now. Try again in a minute.",
     too_many_submissions: "That's the limit for today. Suggest more tomorrow.",
+    too_many_reports: "That's the limit for today. If you're in danger, contact local emergency services.",
     invalid_request: "Some of that isn't quite right. Check it and try again.",
     conversation_closed: "This conversation has ended.",
     starts_in_the_past: "That time has already passed. Pick another.",

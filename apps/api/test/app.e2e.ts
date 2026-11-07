@@ -211,6 +211,8 @@ describe("production settings", () => {
     expect((await fetch(`${PROD}/admin`)).status).toBe(403);
     expect((await fetch(`${PROD}/admin/reports`, { headers: { "cf-access-jwt-assertion": "forged" } })).status).toBe(403);
     expect((await fetch(`${PROD}/admin/topics`, { method: "POST" })).status).toBe(403);
+    expect((await fetch(`${PROD}/admin/users`)).status).toBe(403);
+    expect((await fetch(`${PROD}/admin/users/anyone/unban`, { method: "POST" })).status).toBe(403);
   });
 });
 
@@ -859,13 +861,7 @@ describe("safety", () => {
 
     const reportId = /Reported Person[^]*?\/admin\/reports\/([0-9a-f-]+)"/.exec(queue)?.[1];
     expect(reportId).toBeTruthy();
-    const form = new URLSearchParams({ action: "banned" });
-    const ban = await fetch(`${BASE}/admin/reports/${reportId}`, {
-      method: "POST",
-      redirect: "manual",
-      headers: { "content-type": "application/x-www-form-urlencoded", origin: BASE },
-      body: form,
-    });
+    const ban = await adminPost(`/admin/reports/${reportId}`, { action: "banned", confirm: "yes" });
     expect(ban.status).toBe(302);
     expect(await status(target.get("/me"))).toBe(401);
 
@@ -879,6 +875,189 @@ describe("safety", () => {
       body: new URLSearchParams({ action: "rejected" }),
     });
     expect(response.status).toBe(403);
+  });
+});
+
+async function adminPost(path: string, fields: Record<string, string>) {
+  return fetch(`${BASE}${path}`, {
+    method: "POST",
+    redirect: "manual",
+    headers: { "content-type": "application/x-www-form-urlencoded", origin: BASE },
+    body: new URLSearchParams(fields),
+  });
+}
+
+const adminPage = async (path: string) => (await fetch(`${BASE}${path}`)).text();
+
+/** The id of the open report about this person, read from the page the way a moderator would see it. */
+async function openReportId(name: string): Promise<string> {
+  const queue = await adminPage("/admin/reports");
+  const article = queue.split("<article>").find((part) => part.includes(name));
+  const id = article && /action="\/admin\/reports\/([0-9a-f-]+)"/.exec(article)?.[1];
+  if (!id) throw new Error(`No open report about ${name}`);
+  return id;
+}
+
+describe("moderation", () => {
+  it("alerts the admin about a report, flags urgent ones, and keeps private details out of the email", async () => {
+    const before = sesRequests("admin@example.test").length;
+    const reporter = await person("toronto");
+    const target = await person("toronto", { displayName: "Secret Name" });
+    await reporter.post("/safety/reports", { targetUserId: target.id, reason: "safety", note: "private note text" });
+    const alerts = await waitFor(async () => sesRequests("admin@example.test"), (rows) => rows.length > before, "report alert");
+    const alert = alerts[alerts.length - 1]!;
+    expect(alert.body.Content.Simple.Subject.Data).toBe("[Urgent] New Ideas Match report: Feels unsafe");
+    const content = JSON.stringify(alert.body.Content);
+    expect(content).toContain("/admin/reports");
+    expect(content).not.toContain("Secret Name");
+    expect(content).not.toContain("private note text");
+    await adminPost(`/admin/reports/${await openReportId("Secret Name")}`, { action: "resolved" });
+  });
+
+  it("does not mark ordinary reports urgent", async () => {
+    const before = sesRequests("admin@example.test").length;
+    const reporter = await person("toronto");
+    const target = await person("toronto", { displayName: "Spammy Person" });
+    await reporter.post("/safety/reports", { targetUserId: target.id, reason: "spam" });
+    const alerts = await waitFor(async () => sesRequests("admin@example.test"), (rows) => rows.length > before, "report alert");
+    expect(alerts[alerts.length - 1]!.body.Content.Simple.Subject.Data).toBe("New Ideas Match report: Spam");
+    await adminPost(`/admin/reports/${await openReportId("Spammy Person")}`, { action: "resolved" });
+  });
+
+  it("limits how many reports one person can file in a day", async () => {
+    const reporter = await person("toronto");
+    const target = await person("toronto", { displayName: "Often Reported" });
+    for (let i = 0; i < 10; i += 1) await reporter.post("/safety/reports", { targetUserId: target.id, reason: "other" });
+    expect(await status(reporter.post("/safety/reports", { targetUserId: target.id, reason: "other" }))).toBe(429);
+    for (let i = 0; i < 10; i += 1) await adminPost(`/admin/reports/${await openReportId("Often Reported")}`, { action: "resolved" });
+  });
+
+  it("emails a warning, then closes the report as warned", async () => {
+    const reporter = await person("toronto");
+    const target = await createPerson(BASE, "warn-me@example.test", { displayName: "Warned Person", cityId: "toronto" });
+    await reporter.post("/safety/reports", { targetUserId: target.id, reason: "harassment" });
+    const response = await adminPost(`/admin/reports/${await openReportId("Warned Person")}`, { action: "warned" });
+    expect(response.status).toBe(302);
+    expect(response.headers.get("location")).toBe("/admin/reports");
+    const [warning] = sesRequests("warn-me@example.test");
+    expect(warning?.body.Content.Simple.Subject.Data).toBe("A note about your conduct on Ideas Match");
+    expect(await adminPage("/admin/reports")).not.toContain("Warned Person");
+    expect(await adminPage(`/admin/users/${target.id}`)).toContain("warned");
+  });
+
+  it("keeps the report open and says so when the warning can't be sent", async () => {
+    const reporter = await person("toronto");
+    const target = await createPerson(BASE, "ses-reject-warn@example.test", { displayName: "Undeliverable Person", cityId: "toronto" });
+    await reporter.post("/safety/reports", { targetUserId: target.id, reason: "harassment" });
+    const response = await adminPost(`/admin/reports/${await openReportId("Undeliverable Person")}`, { action: "warned" });
+    expect(response.headers.get("location")).toBe("/admin/reports?error=warning_failed");
+    const queue = await adminPage("/admin/reports?error=warning_failed");
+    expect(queue).toContain("the report is still open");
+    expect(queue).toContain("Undeliverable Person");
+    await adminPost(`/admin/reports/${await openReportId("Undeliverable Person")}`, { action: "resolved" });
+  });
+
+  it("shows who reported, earlier reports, and the messages around the reported one, escaped", async () => {
+    const reporter = await person("toronto", { displayName: "Careful Reporter" });
+    const target = await person("toronto", { displayName: "Context Person" });
+    const conversationId = await match(reporter, target, "statistics-and-causal-inference");
+    for (let i = 1; i <= 7; i += 1) await target.post(`/conversations/${conversationId}/messages`, { body: `before ${i}` });
+    const message = await target.post(`/conversations/${conversationId}/messages`, { body: "<b>the bad message</b>" });
+    await reporter.post(`/conversations/${conversationId}/messages`, { body: "after it" });
+
+    await reporter.post("/safety/reports", { targetUserId: target.id, reason: "spam" });
+    await adminPost(`/admin/reports/${await openReportId("Context Person")}`, { action: "resolved" });
+    await reporter.post("/safety/reports", { targetUserId: target.id, conversationId, messageId: message.id, reason: "harassment" });
+
+    const queue = await adminPage("/admin/reports");
+    const article = queue.split("<article>").find((part) => part.includes("Context Person"))!;
+    expect(article).toContain("Careful Reporter");
+    expect(article).toContain("1 earlier report");
+    expect(article).toContain("filed 2 reports");
+    expect(article).toContain('class="reported"');
+    expect(article).toContain("&lt;b&gt;the bad message&lt;/b&gt;");
+    expect(article).not.toContain("<b>the bad message</b>");
+    expect(article).toContain("after it");
+    expect(article).toContain("before 7");
+    expect(article).toContain("before 3");
+    expect(article).not.toContain("before 2");
+    await adminPost(`/admin/reports/${await openReportId("Context Person")}`, { action: "resolved" });
+  });
+
+  it("puts urgent reports first", async () => {
+    const reporter = await person("toronto");
+    const urgent = await person("toronto", { displayName: "Urgent Target" });
+    const ordinary = await person("toronto", { displayName: "Ordinary Target" });
+    await reporter.post("/safety/reports", { targetUserId: urgent.id, reason: "underage" });
+    await reporter.post("/safety/reports", { targetUserId: ordinary.id, reason: "spam" });
+    const queue = await adminPage("/admin/reports");
+    expect(queue.indexOf("Urgent Target")).toBeLessThan(queue.indexOf("Ordinary Target"));
+    await adminPost(`/admin/reports/${await openReportId("Urgent Target")}`, { action: "resolved" });
+    await adminPost(`/admin/reports/${await openReportId("Ordinary Target")}`, { action: "resolved" });
+  });
+
+  it("asks before banning from a report, and only bans once confirmed", async () => {
+    const reporter = await person("toronto");
+    const target = await person("toronto", { displayName: "Maybe Banned" });
+    await reporter.post("/safety/reports", { targetUserId: target.id, reason: "spam" });
+    const id = await openReportId("Maybe Banned");
+
+    const unconfirmed = await adminPost(`/admin/reports/${id}`, { action: "banned" });
+    expect(await unconfirmed.text()).toContain("Yes, ban Maybe Banned");
+    expect((await target.get("/me")).id).toBe(target.id);
+    expect(await adminPage("/admin/reports")).toContain("Maybe Banned");
+
+    await adminPost(`/admin/reports/${id}`, { action: "banned", confirm: "yes" });
+    expect(await status(target.get("/me"))).toBe(401);
+    expect(await adminPage("/admin/reports")).not.toContain("Maybe Banned");
+  });
+
+  it("undoes a ban, so the person can sign back in", async () => {
+    const target = await createPerson(BASE, "unban-me@example.test", { displayName: "Unbanned Person", cityId: "toronto" });
+    expect((await adminPost(`/admin/users/${target.id}/ban`, {})).status).toBe(200);
+    expect((await target.get("/me")).id).toBe(target.id);
+
+    await adminPost(`/admin/users/${target.id}/ban`, { confirm: "yes" });
+    expect(await status(target.get("/me"))).toBe(401);
+    expect(await status(new Client(BASE).signIn("unban-me@example.test"))).toBe(403);
+    expect(await adminPage(`/admin/users/${target.id}`)).toContain("Unban");
+
+    await adminPost(`/admin/users/${target.id}/unban`, {});
+    const back = await new Client(BASE).signIn("unban-me@example.test");
+    expect(back.id).toBe(target.id);
+    expect((await back.get("/me")).profile.displayName).toBe("Unbanned Person");
+  });
+
+  it("does not bring back a deleted account through unban", async () => {
+    const target = await person("toronto");
+    await target.delete("/me");
+    await adminPost(`/admin/users/${target.id}/unban`, {});
+    expect(await adminPage(`/admin/users/${target.id}`)).toContain("deleted");
+  });
+
+  it("finds people by name or email, treats wildcards literally, and escapes what it shows", async () => {
+    const target = await createPerson(BASE, "findable-person@example.test", { displayName: "<i>Zebra</i> Findable", cityId: "toronto" });
+    const byName = await adminPage("/admin/users?q=zebra");
+    expect(byName).toContain("findable-person@example.test");
+    expect(byName).toContain("&lt;i&gt;Zebra&lt;/i&gt;");
+    expect(byName).not.toContain("<i>Zebra</i>");
+    expect(await adminPage("/admin/users?q=FINDABLE-person")).toContain(target.id);
+    expect(await adminPage("/admin/users?q=nobody-has-this-name")).toContain("Nobody found");
+    const injected = await adminPage(`/admin/users?q=${encodeURIComponent('"><script>x</script>')}`);
+    expect(injected).not.toContain("<script>x");
+  });
+
+  it("rejects cross-site posts to the new actions", async () => {
+    const target = await person("toronto");
+    for (const path of [`/admin/users/${target.id}/ban`, `/admin/users/${target.id}/unban`]) {
+      const response = await fetch(`${BASE}${path}`, {
+        method: "POST",
+        headers: { "content-type": "application/x-www-form-urlencoded", origin: "https://evil.example" },
+        body: new URLSearchParams({ confirm: "yes" }),
+      });
+      expect(response.status).toBe(403);
+    }
+    expect((await target.get("/me")).id).toBe(target.id);
   });
 });
 
