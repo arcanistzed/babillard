@@ -2,9 +2,9 @@ import { VENUE_KINDS, VENUE_LABELS, suggestMeetupSlots, type MeetupSummary, type
 import { useQueryClient } from "@tanstack/react-query";
 import { router, useLocalSearchParams } from "expo-router";
 import { useMemo, useState } from "react";
-import { ScrollView, StyleSheet, View } from "react-native";
+import { StyleSheet, View } from "react-native";
 import { api, friendlyError } from "@/api";
-import { Button, Chip, ChipRow, ErrorText, Field, T, KeyboardScreen } from "@/ui";
+import { Button, Chip, ChipRow, ErrorText, Field, FormScreen, T } from "@/ui";
 
 /** Everything starts filled in, so proposing a meetup can be a single tap. */
 export default function NewMeetup() {
@@ -33,8 +33,7 @@ export default function NewMeetup() {
   }
 
   return (
-    <KeyboardScreen style={styles.screen}>
-      <ScrollView contentContainerStyle={styles.body} keyboardShouldPersistTaps="handled">
+    <FormScreen gap={22}>
         <View style={styles.section}>
           <T variant="heading">When?</T>
           <ChipRow>
@@ -56,17 +55,11 @@ export default function NewMeetup() {
           First time meeting? Choose a public place and tell a friend.
         </T>
         {error ? <ErrorText>{error}</ErrorText> : null}
-      </ScrollView>
-      <View style={styles.actions}>
-        <Button label="Propose this meetup" onPress={propose} busy={busy} />
-      </View>
-    </KeyboardScreen>
+      <Button label="Propose this meetup" onPress={propose} busy={busy} />
+    </FormScreen>
   );
 }
 
 const styles = StyleSheet.create({
-  screen: { flex: 1 },
-  body: { padding: 20, gap: 22 },
   section: { gap: 10 },
-  actions: { padding: 20 },
 });

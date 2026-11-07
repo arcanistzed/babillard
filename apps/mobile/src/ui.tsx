@@ -1,9 +1,14 @@
-import { ActivityIndicator, Keyboard, KeyboardAvoidingView, Pressable, StyleSheet, Text, TextInput, View, type PressableProps, type StyleProp, type TextInputProps, type TextProps, type TextStyle, type ViewStyle } from "react-native";
+import { ActivityIndicator, Keyboard, KeyboardAvoidingView, Pressable, ScrollView, StyleSheet, Text, TextInput, View, type PressableProps, type StyleProp, type TextInputProps, type TextProps, type TextStyle, type ViewStyle } from "react-native";
 import { HeaderHeightContext } from "expo-router/react-navigation";
 import { useContext, useEffect, useState, type ReactNode } from "react";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Image } from "expo-image";
+import Animated, { useAnimatedStyle, useSharedValue, withSequence, withSpring, withTiming } from "react-native-reanimated";
+import { haptics } from "./haptics";
 import { fonts, useTheme } from "./theme";
+
+const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
+const SETTLE = { damping: 14, stiffness: 320, mass: 0.6 };
 
 type Variant = "display" | "title" | "heading" | "body" | "bodyBold" | "small";
 
@@ -18,7 +23,8 @@ const VARIANTS: Record<Variant, TextStyle> = {
 
 export function T({ variant = "body", muted, style, ...props }: TextProps & { variant?: Variant; muted?: boolean }) {
   const theme = useTheme();
-  return <Text {...props} style={[VARIANTS[variant], { color: muted ? theme.muted : theme.ink }, style]} />;
+  const isHeader = variant === "display" || variant === "title" || variant === "heading";
+  return <Text accessibilityRole={isHeader ? "header" : undefined} {...props} style={[VARIANTS[variant], { color: muted ? theme.muted : theme.ink }, style]} />;
 }
 
 interface ButtonProps extends Omit<PressableProps, "style" | "children"> {
@@ -28,8 +34,10 @@ interface ButtonProps extends Omit<PressableProps, "style" | "children"> {
   style?: StyleProp<ViewStyle>;
 }
 
-export function Button({ label, kind = "primary", busy, disabled, style, ...props }: ButtonProps) {
+export function Button({ label, kind = "primary", busy, disabled, style, onPressIn, onPressOut, ...props }: ButtonProps) {
   const theme = useTheme();
+  const scale = useSharedValue(1);
+  const pressStyle = useAnimatedStyle(() => ({ transform: [{ scale: scale.value }] }));
   const colors = {
     primary: { bg: theme.accent, fg: theme.onAccent, border: theme.accent },
     secondary: { bg: "transparent", fg: theme.ink, border: theme.ink },
@@ -38,31 +46,48 @@ export function Button({ label, kind = "primary", busy, disabled, style, ...prop
   }[kind];
   const inactive = disabled || busy;
   return (
-    <Pressable
+    <AnimatedPressable
       accessibilityRole="button"
       accessibilityState={{ disabled: !!inactive, busy: !!busy }}
       disabled={inactive}
+      onPressIn={(event) => {
+        scale.value = withTiming(0.97, { duration: 80 });
+        onPressIn?.(event);
+      }}
+      onPressOut={(event) => {
+        scale.value = withSpring(1, SETTLE);
+        onPressOut?.(event);
+      }}
       {...props}
-      style={({ pressed }) => [styles.button, { backgroundColor: colors.bg, borderColor: colors.border, opacity: inactive ? 0.5 : pressed ? 0.8 : 1 }, style]}
+      style={[styles.button, { backgroundColor: colors.bg, borderColor: colors.border, opacity: inactive ? 0.5 : 1 }, pressStyle, style]}
     >
       {busy ? <ActivityIndicator color={colors.fg} /> : <Text style={[VARIANTS.bodyBold, { color: colors.fg }]}>{label}</Text>}
-    </Pressable>
+    </AnimatedPressable>
   );
 }
 
 export function Chip({ label, selected, onPress, disabled }: { label: string; selected?: boolean; onPress?: () => void; disabled?: boolean }) {
   const theme = useTheme();
+  const scale = useSharedValue(1);
+  const popStyle = useAnimatedStyle(() => ({ transform: [{ scale: scale.value }] }));
   return (
-    <Pressable
+    <AnimatedPressable
       accessibilityRole={onPress ? "checkbox" : "text"}
       accessibilityState={{ checked: !!selected, disabled: !!disabled }}
-      onPress={onPress}
+      onPress={
+        onPress &&
+        (() => {
+          haptics.select();
+          scale.value = withSequence(withTiming(1.06, { duration: 70 }), withSpring(1, SETTLE));
+          onPress();
+        })
+      }
       disabled={disabled || !onPress}
       hitSlop={4}
-      style={[styles.chip, { borderColor: selected ? theme.ink : theme.line, backgroundColor: selected ? theme.ink : "transparent" }]}
+      style={[styles.chip, { borderColor: selected ? theme.ink : theme.line, backgroundColor: selected ? theme.ink : "transparent", opacity: disabled ? 0.45 : 1 }, popStyle]}
     >
       <Text style={[VARIANTS.small, { fontFamily: fonts.bodyBold, color: selected ? theme.paper : theme.ink }]}>{label}</Text>
-    </Pressable>
+    </AnimatedPressable>
   );
 }
 
@@ -113,7 +138,7 @@ export function Avatar({ name, url, size = 44, tint }: { name: string; url?: str
 
 const styles = StyleSheet.create({
   button: { minHeight: 52, paddingHorizontal: 20, borderRadius: 14, borderWidth: 2, alignItems: "center", justifyContent: "center" },
-  chip: { minHeight: 36, paddingHorizontal: 13, justifyContent: "center", borderRadius: 18, borderWidth: 1.5 },
+  chip: { minHeight: 36, paddingHorizontal: 13, alignSelf: "flex-start", justifyContent: "center", borderRadius: 18, borderWidth: 1.5 },
   chipRow: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
   field: { gap: 6 },
   inputWithTrailing: { paddingRight: 52 },
@@ -136,9 +161,19 @@ export function KeyboardScreen({ children, style }: { children: ReactNode; style
   );
 }
 
-/** Height of the safe area below content, dropped while the keyboard is up since the keyboard already covers it. */
-export function useBottomPadding(minimum = 8): number {
+/** A form whose submit button sits right after its fields, clear of the Android navigation bar. */
+export function FormScreen({ children, gap = 16 }: { children: ReactNode; gap?: number }) {
   const insets = useSafeAreaInsets();
+  return (
+    <KeyboardScreen>
+      <ScrollView contentContainerStyle={{ padding: 20, paddingBottom: 20 + insets.bottom, gap }} keyboardShouldPersistTaps="handled">
+        {children}
+      </ScrollView>
+    </KeyboardScreen>
+  );
+}
+
+export function useKeyboardOpen(): boolean {
   const [keyboardOpen, setKeyboardOpen] = useState(false);
   useEffect(() => {
     const show = Keyboard.addListener("keyboardDidShow", () => setKeyboardOpen(true));
@@ -148,5 +183,12 @@ export function useBottomPadding(minimum = 8): number {
       hide.remove();
     };
   }, []);
+  return keyboardOpen;
+}
+
+/** Height of the safe area below content, dropped while the keyboard is up since the keyboard already covers it. */
+export function useBottomPadding(minimum = 8): number {
+  const insets = useSafeAreaInsets();
+  const keyboardOpen = useKeyboardOpen();
   return keyboardOpen ? minimum : Math.max(insets.bottom, minimum);
 }

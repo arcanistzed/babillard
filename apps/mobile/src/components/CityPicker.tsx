@@ -3,7 +3,7 @@ import { campusForDomain, describeCity, nearestCity, searchCities, type Locality
 import { useQuery } from "@tanstack/react-query";
 import * as Location from "expo-location";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { ActivityIndicator, Pressable, StyleSheet, View } from "react-native";
+import { ActivityIndicator, Keyboard, Pressable, StyleSheet, View } from "react-native";
 import { api } from "@/api";
 import { useAuth } from "@/auth";
 import { useTheme } from "@/theme";
@@ -58,6 +58,7 @@ export function CityPicker({
 
   function chooseCity(id: string) {
     touched.current = true;
+    Keyboard.dismiss();
     onChange(id, emailCampus?.parentId === id ? emailCampus.id : null);
   }
 
@@ -142,7 +143,7 @@ export function CityPicker({
         label="Find your city"
         value={query}
         onChangeText={setQuery}
-        placeholder="Ottawa"
+        placeholder="City or town"
         autoCorrect={false}
         returnKeyType="search"
         trailing={

@@ -6,16 +6,35 @@ import type { PushData } from "@ideas-match/shared";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { useFonts } from "expo-font";
 import * as Notifications from "expo-notifications";
-import { Stack, router, useSegments } from "expo-router";
+import { Stack, router, useSegments, type ErrorBoundaryProps } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
 import { StatusBar } from "expo-status-bar";
 import { useEffect } from "react";
-import { useColorScheme } from "react-native";
+import { StyleSheet, useColorScheme, View } from "react-native";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { AuthProvider, useAuth } from "@/auth";
+import { installCrashReporter, reportCrash } from "@/crashReporter";
 import { fonts, useTheme } from "@/theme";
+import { Button, T } from "@/ui";
 
 void SplashScreen.preventAutoHideAsync();
+installCrashReporter();
+
+/** expo-router shows this in place of any screen that throws while rendering. */
+export function ErrorBoundary({ error, retry }: ErrorBoundaryProps) {
+  const theme = useTheme();
+  useEffect(() => {
+    reportCrash(error, true);
+    void SplashScreen.hideAsync();
+  }, [error]);
+  return (
+    <View style={[styles.crash, { backgroundColor: theme.paper }]}>
+      <StatusBar style="auto" />
+      <T variant="title">Something went wrong</T>
+      <Button label="Try again" onPress={() => void retry()} />
+    </View>
+  );
+}
 
 const queryClient = new QueryClient({
   defaultOptions: { queries: { retry: 1, staleTime: 10_000 } },
@@ -93,6 +112,10 @@ function Navigator() {
     </Stack>
   );
 }
+
+const styles = StyleSheet.create({
+  crash: { flex: 1, padding: 24, gap: 16, justifyContent: "center" },
+});
 
 export default function RootLayout() {
   const scheme = useColorScheme();

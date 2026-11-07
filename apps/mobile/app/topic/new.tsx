@@ -2,9 +2,9 @@ import { FIELDS, FIELD_LABELS, type Field as FieldName } from "@ideas-match/shar
 import { useQueryClient } from "@tanstack/react-query";
 import { router } from "expo-router";
 import { useState } from "react";
-import { ScrollView, StyleSheet, View } from "react-native";
+import { StyleSheet } from "react-native";
 import { api, friendlyError } from "@/api";
-import { Button, Chip, ChipRow, ErrorText, Field, T, KeyboardScreen } from "@/ui";
+import { Button, Chip, ChipRow, ErrorText, Field, FormScreen, T } from "@/ui";
 
 export default function NewTopic() {
   const queryClient = useQueryClient();
@@ -29,8 +29,7 @@ export default function NewTopic() {
   }
 
   return (
-    <KeyboardScreen style={styles.screen}>
-      <ScrollView contentContainerStyle={styles.body} keyboardShouldPersistTaps="handled">
+    <FormScreen>
         <ChipRow>
           <Chip label="An interest" selected={kind === "interest"} onPress={() => setKind("interest")} />
           <Chip label="A question to debate" selected={kind === "question"} onPress={() => setKind("question")} />
@@ -59,17 +58,11 @@ export default function NewTopic() {
           })}
         </ChipRow>
         {error ? <ErrorText>{error}</ErrorText> : null}
-      </ScrollView>
-      <View style={styles.actions}>
-        <Button label="Suggest this topic" onPress={submit} busy={busy} disabled={title.trim().length < 4 || fieldTags.length === 0} />
-      </View>
-    </KeyboardScreen>
+      <Button label="Suggest this topic" onPress={submit} busy={busy} disabled={title.trim().length < 4 || fieldTags.length === 0} />
+    </FormScreen>
   );
 }
 
 const styles = StyleSheet.create({
-  screen: { flex: 1 },
-  body: { padding: 20, gap: 16 },
   blurb: { minHeight: 72, textAlignVertical: "top" },
-  actions: { padding: 20 },
 });

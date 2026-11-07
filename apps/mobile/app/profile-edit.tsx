@@ -7,7 +7,7 @@ import { api, friendlyError } from "@/api";
 import { useAuth } from "@/auth";
 import { CityPicker } from "@/components/CityPicker";
 import { LookingForPicker } from "@/components/LookingForPicker";
-import { Button, Chip, ChipRow, ErrorText, Field, T, KeyboardScreen } from "@/ui";
+import { Button, Chip, ChipRow, ErrorText, Field, KeyboardScreen, T, useBottomPadding } from "@/ui";
 
 function toggle<T>(list: T[], value: T): T[] {
   return list.includes(value) ? list.filter((item) => item !== value) : [...list, value];
@@ -16,6 +16,7 @@ function toggle<T>(list: T[], value: T): T[] {
 export default function ProfileEdit() {
   const { me, setMe } = useAuth();
   const queryClient = useQueryClient();
+  const bottomPadding = useBottomPadding(12);
   const profile = me?.profile;
   const [displayName, setDisplayName] = useState(profile?.displayName ?? "");
   const [bio, setBio] = useState(profile?.bio ?? "");
@@ -36,8 +37,7 @@ export default function ProfileEdit() {
     setBusy(true);
     setError(null);
     try {
-      await api.put<Me>("/me/profile", { displayName: displayName.trim(), bio: bio.trim(), role, fields, lookingFor });
-      setMe(await api.put<Me>("/me/location", { cityId, campusId }));
+      setMe(await api.put<Me>("/me/profile", { displayName: displayName.trim(), bio: bio.trim(), role, fields, lookingFor, cityId, campusId }));
       await queryClient.invalidateQueries({ queryKey: ["people"] });
       await queryClient.invalidateQueries({ queryKey: ["topics"] });
       router.back();
@@ -66,7 +66,7 @@ export default function ProfileEdit() {
         </ChipRow>
         {error ? <ErrorText>{error}</ErrorText> : null}
       </ScrollView>
-      <View style={styles.actions}>
+      <View style={[styles.actions, { paddingBottom: bottomPadding }]}>
         <Button label="Save changes" onPress={save} busy={busy} disabled={!displayName.trim() || fields.length === 0 || lookingFor.length === 0 || !cityId} />
       </View>
     </KeyboardScreen>
@@ -77,5 +77,5 @@ const styles = StyleSheet.create({
   screen: { flex: 1 },
   body: { padding: 20, gap: 14 },
   bio: { minHeight: 96, textAlignVertical: "top" },
-  actions: { padding: 20 },
+  actions: { paddingHorizontal: 20, paddingTop: 12 },
 });

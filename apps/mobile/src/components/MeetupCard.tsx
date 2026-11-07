@@ -4,6 +4,7 @@ import { router } from "expo-router";
 import { Pressable, StyleSheet, View } from "react-native";
 import { api } from "@/api";
 import { describeWhen } from "@/format";
+import { haptics } from "@/haptics";
 import { fonts, useTheme } from "@/theme";
 import { Chip, ChipRow, T } from "@/ui";
 
@@ -16,7 +17,7 @@ export function stateLine(meetup: MeetupSummary): string {
     case "done":
       return "This meetup has passed";
     default:
-      return `${meetup.yesCount} of ${meetup.requiredYes} yeses needed`;
+      return `${meetup.yesCount} yes so far, ${meetup.requiredYes} needed`;
   }
 }
 
@@ -26,6 +27,8 @@ export function useMeetup(id: string) {
   const respond = useMutation({
     mutationFn: (response: "yes" | "no" | "maybe") => api.post<MeetupSummary>(`/meetups/${id}/respond`, { response }),
     onSuccess: (meetup) => {
+      const before = queryClient.getQueryData<MeetupSummary>(["meetup", id]);
+      if (meetup.state === "confirmed" && before?.state !== "confirmed") haptics.celebrate();
       queryClient.setQueryData(["meetup", id], meetup);
       void queryClient.invalidateQueries({ queryKey: ["inbox"] });
     },

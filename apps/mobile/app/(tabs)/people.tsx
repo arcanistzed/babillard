@@ -8,6 +8,7 @@ import { api } from "@/api";
 import { Celebration } from "@/components/Celebration";
 import { DeckControls } from "@/components/DeckControls";
 import { SwipeDeck, type SwipeDeckHandle, type SwipeDirection } from "@/components/SwipeDeck";
+import { inviteToApp } from "@/invite";
 import { fonts, useTheme } from "@/theme";
 import { Avatar, Button, Chip, ChipRow, ErrorText, T } from "@/ui";
 
@@ -73,6 +74,7 @@ export default function People() {
   const deck = useRef<SwipeDeckHandle>(null);
   const [cards, setCards] = useState<PersonCard[]>([]);
   const [match, setMatch] = useState<{ conversationId: string; name: string } | null>(null);
+  const [swipeFailed, setSwipeFailed] = useState(false);
   const swiped = useRef(new Set<string>());
   const people = useQuery({ queryKey: ["people"], queryFn: () => api.get<PersonCard[]>("/people"), staleTime: 0 });
 
@@ -97,6 +99,7 @@ export default function People() {
   const onSwipe = useCallback(
     (person: PersonCard, direction: SwipeDirection) => {
       swiped.current.add(person.id);
+      setSwipeFailed(false);
       setCards((current) => current.filter((card) => card.id !== person.id));
       void api
         .post<PeopleSwipeResult>(`/people/${person.id}/swipe`, { direction })
@@ -107,7 +110,10 @@ export default function People() {
           }
         })
         .catch(() => {
+          // They go back in the deck, right behind the card now on top.
           swiped.current.delete(person.id);
+          setCards((current) => (current.some((card) => card.id === person.id) ? current : [...current.slice(0, 1), person, ...current.slice(1)]));
+          setSwipeFailed(true);
         });
     },
     [queryClient],
@@ -118,7 +124,7 @@ export default function People() {
   return (
     <SafeAreaView edges={["top"]} style={styles.screen}>
       <View style={styles.header}>
-        <T variant="title">People who picked your topics</T>
+        {swipeFailed ? <ErrorText>That didn't save, so they'll come back. Check your connection.</ErrorText> : <T variant="title" numberOfLines={2}>People who picked your topics</T>}
       </View>
 
       <View style={styles.deck}>
@@ -135,7 +141,8 @@ export default function People() {
               ) : (
                 <>
                   <T variant="title">Nobody new right now</T>
-                  <Button label="Pick more topics" onPress={() => router.navigate("/deck")} />
+                  <Button label="Invite a friend" onPress={inviteToApp} />
+                  <Button label="Pick more topics" kind="secondary" onPress={() => router.navigate("/deck")} />
                 </>
               )}
             </View>
@@ -180,7 +187,7 @@ export default function People() {
 
 const styles = StyleSheet.create({
   screen: { flex: 1 },
-  header: { paddingHorizontal: 20, paddingTop: 10, paddingBottom: 12 },
+  header: { paddingHorizontal: 20, paddingTop: 10, paddingBottom: 12, minHeight: 84, justifyContent: "center" },
   deck: { flex: 1, marginHorizontal: 16 },
   center: { flex: 1, justifyContent: "center", gap: 12 },
   controls: { paddingHorizontal: 16, paddingVertical: 12 },

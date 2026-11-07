@@ -2,7 +2,7 @@ import * as Haptics from "expo-haptics";
 import { forwardRef, useCallback, useEffect, useImperativeHandle, useRef, type ReactNode } from "react";
 import { StyleSheet, Text, useWindowDimensions, View } from "react-native";
 import { GestureDetector, usePanGesture } from "react-native-gesture-handler";
-import Animated, { Extrapolation, interpolate, useAnimatedStyle, useReducedMotion, useSharedValue, withSpring, withTiming, type SharedValue } from "react-native-reanimated";
+import Animated, { Extrapolation, interpolate, useAnimatedStyle, useDerivedValue, useReducedMotion, useSharedValue, withSpring, withTiming, type SharedValue } from "react-native-reanimated";
 import { scheduleOnRN } from "react-native-worklets";
 import { fonts } from "@/theme";
 
@@ -15,7 +15,8 @@ export interface SwipeDeckHandle {
 interface SwipeDeckProps<T> {
   items: T[];
   keyOf: (item: T) => string;
-  renderCard: (item: T, isTop: boolean) => ReactNode;
+  /** `pull` runs from 0 to 1 as the card is dragged right toward its threshold. */
+  renderCard: (item: T, isTop: boolean, pull: SharedValue<number>) => ReactNode;
   describeCard: (item: T) => string;
   onSwipe: (item: T, direction: SwipeDirection) => void;
   rightLabel: string;
@@ -43,7 +44,7 @@ function DeckCard<T>({
   register: (fn: ((direction: SwipeDirection) => void) | null) => void;
   rightLabel: string;
   leftLabel: string;
-  renderCard: (item: T, isTop: boolean) => ReactNode;
+  renderCard: (item: T, isTop: boolean, pull: SharedValue<number>) => ReactNode;
   describeCard: (item: T) => string;
   onDone: (direction: SwipeDirection) => void;
 }) {
@@ -54,6 +55,7 @@ function DeckCard<T>({
   const translateX = useSharedValue(0);
   const translateY = useSharedValue(0);
   const passedThreshold = useSharedValue(false);
+  const pull = useDerivedValue(() => Math.max(Math.min(translateX.value / threshold, 1), 0));
 
   const tick = useCallback(() => void Haptics.selectionAsync().catch(() => undefined), []);
 
@@ -131,7 +133,7 @@ function DeckCard<T>({
         }
         onAccessibilityAction={(event) => fling(event.nativeEvent.actionName === "activate" ? "right" : "left")}
       >
-        {renderCard(item, isTop)}
+        {renderCard(item, isTop, pull)}
         <Animated.View pointerEvents="none" style={[styles.stamp, styles.stampRight, rightStamp]}>
           <Text style={styles.stampText}>{rightLabel}</Text>
         </Animated.View>

@@ -1,4 +1,4 @@
-const BASE_URL = process.env.EXPO_PUBLIC_API_URL ?? "http://10.0.2.2:8787";
+export const BASE_URL = process.env.EXPO_PUBLIC_API_URL ?? "http://10.0.2.2:8787";
 
 export class ApiError extends Error {
   constructor(
@@ -75,6 +75,7 @@ export function friendlyError(error: unknown): string {
     account_unavailable: "This account has been closed.",
     under_age: "Ideas Match is for people 18 and over.",
     email_unavailable: "We couldn't send your email just now. Try again in a minute.",
+    too_many_attempts: "Too many tries. Wait a minute and try again.",
     too_many_submissions: "That's the limit for today. Suggest more tomorrow.",
     too_many_reports: "That's the limit for today. If you're in danger, contact local emergency services.",
     invalid_request: "Some of that isn't quite right. Check it and try again.",
