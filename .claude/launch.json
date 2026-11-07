@@ -54,6 +54,15 @@
         "cd apps/mobile && EXPO_PUBLIC_API_URL=https://ideas-match-api.ideas-match.workers.dev ../../node_modules/.bin/expo start --go --port 8083"
       ],
       "port": 8083
+    },
+    {
+      "name": "expo-go-emulator",
+      "runtimeExecutable": "bash",
+      "runtimeArgs": [
+        "-c",
+        "cd apps/mobile && EXPO_PUBLIC_API_URL=http://10.0.2.2:8787 ../../node_modules/.bin/expo start --go --port 8083"
+      ],
+      "port": 8083
     }
   ]
 }

@@ -4,21 +4,21 @@ A mobile app where people find each other through the ideas they want to talk ab
 
 People swipe on a deck of topics: research areas, books, methods, and policy questions. Four people in one city picking the same topic opens a group chat automatically. People who share a topic also see each other as cards, and a mutual swipe opens a one-on-one chat with a conversation starter already in it. Any chat can propose a meetup in one tap.
 
-The number that matters is meetups that actually happened, shown at the top of the `/admin` page.
+What we measure is how many meetups actually happened, shown at the top of the `/admin` page.
 
 ## How it's built
 
 | Path | What it is |
 |---|---|
 | `apps/mobile` | Expo and React Native app with expo-router, Reanimated, and Gesture Handler |
-| `apps/api` | Cloudflare Worker with Hono and Drizzle on D1, two Durable Objects, and R2, sending email through Amazon SES |
+| `apps/api` | Cloudflare Worker with Hono and Drizzle on D1, two Durable Objects, and R2. It sends email through Amazon SES and push through Expo |
 | `packages/shared` | Matching rules, request schemas, and response types used by both |
 
 The rules that decide who sees whom and who gets grouped are plain functions in `packages/shared/src/rules`.
 
 - **`ChatRoom`** is one Durable Object per conversation. It holds the message log and the WebSockets.
 - **`Cohort`** is one Durable Object per topic and city. It forms groups one join at a time, so simultaneous swipes can't split a group.
-- **A cron sweep** every five minutes (`apps/api/src/cron.ts`) handles match nudges and expiry, meetup reminders, and did-you-meet check-ins.
+- **A cron sweep** runs every five minutes (`apps/api/src/cron.ts`). It sends match nudges and expires silent matches, sends meetup reminders and did-you-meet check-ins, and removes old sign-in codes, sessions, and crash reports.
 
 ## Run it locally
 
@@ -28,7 +28,7 @@ You need Node 24. This repo pins pnpm through `packageManager`. If `pnpm` on you
 pnpm install
 ```
 
-Set up the API. This creates a local database and loads 200 topics and 16 localities.
+Set up the API. This creates a local database and loads the topics and cities.
 
 ```bash
 cp apps/api/.dev.vars.example apps/api/.dev.vars
@@ -46,43 +46,44 @@ pnpm --filter @ideas-match/api seed:local
 pnpm --filter @ideas-match/api dev
 ```
 
-With that running, add 30 fake people in another terminal. It prints emails you can sign in with.
+With that running, add 30 fake people from another terminal. It prints emails you can sign in with.
 
 ```bash
 pnpm --filter @ideas-match/api seed:dev
 ```
 
-Run the app. It needs a development build, because Expo Go can't do Universal Links.
+To start over, stop the server and delete `apps/api/.wrangler/state` completely. Deleting only the database leaves the Durable Objects behind, and they'll still remember conversations and cohorts that no longer exist.
 
-```bash
-cp apps/mobile/.env.example apps/mobile/.env
-```
+Now run the app, either way:
 
-```bash
-pnpm --filter @ideas-match/mobile android
-```
+- **Expo Go** is the quickest. It can't receive push notifications or open sign-in links, but the six-digit code works. Run `cd apps/mobile && npx expo start --go`, and pick the version of Expo Go that matches SDK 58.
+- **A development build** does everything, and takes longer the first time. Run `cp apps/mobile/.env.example apps/mobile/.env`, then `pnpm --filter @ideas-match/mobile android`. React Native on Android needs JDK 17 or 21, so point `JAVA_HOME` at one if your default is newer. iOS needs a Mac.
 
-The API URL in `.env` is right for an Android emulator. For a physical phone, use your computer's LAN address in both `apps/mobile/.env` and `PUBLIC_ORIGIN` in `.dev.vars`. In development, the check-your-inbox screen shows the sign-in code and no email is sent.
-
-React Native on Android needs JDK 17 or 21. Point `JAVA_HOME` at one if your default is newer. iOS builds need a Mac: `pnpm --filter @ideas-match/mobile ios`.
+The default API URL works on an Android emulator. For a physical phone, use your computer's LAN address in both `apps/mobile/.env` and `PUBLIC_ORIGIN` in `.dev.vars`. In development, the check-your-inbox screen shows the sign-in code and no email goes out.
 
 ## Share a build
 
-Android testers don't need the development setup. This makes an APK and a link to share:
+Android testers don't need any of the setup above. This makes an APK and a link to share:
 
 ```bash
 cd apps/mobile && npx eas-cli build --platform android --profile preview
 ```
 
+EAS removes its copy after about two weeks, so invite pages serve the APK from R2 at `/download/android`. After each new build, download the APK and upload it:
+
+```bash
+cd apps/api && npx wrangler r2 object put ideas-match-avatars/releases/ideas-match.apk --file <path-to-apk> --remote
+```
+
 ### iPhone testing without an Apple Developer account
 
-Expo Go runs the app on a real iPhone with no developer account. Start the server below, then scan its QR code with the iPhone camera:
+Expo Go runs the app on a real iPhone. Start the server below, then scan its QR code with the iPhone camera:
 
 ```bash
 cd apps/mobile && EXPO_PUBLIC_API_URL=https://ideas-match-api.ideas-match.workers.dev npx expo start --go
 ```
 
-The phone must be on the same network as this computer. Add `--tunnel` if it isn't. Expo Go only loads the SDK version it supports, so update the project if it reports a mismatch. Push notifications and sign-in links can't be tested this way.
+The phone must be on the same network as this computer. Add `--tunnel` if it isn't. Push notifications and sign-in links don't work this way. This project was tested with Expo Go 58.0.7 on iOS.
 
 For the iOS Simulator on a Mac, this build also needs no Apple account:
 
@@ -103,10 +104,14 @@ pnpm typecheck
 ```
 
 ```bash
+pnpm lint
+```
+
+```bash
 pnpm --filter @ideas-match/api test:e2e
 ```
 
-The end-to-end suite starts two real local Workers with throwaway databases. One runs in dev mode, and one has production settings, so it can check the protections dev mode turns off. It drives sign-in, swiping, matching, chat over WebSocket, group formation under concurrent load, meetups, the cron sweep, moderation, and account deletion.
+The end-to-end suite starts two local Workers with throwaway databases. One runs in dev mode. The other has production settings, so it can check the protections dev mode turns off, such as sign-in rate limits and the locked admin pages. It covers sign-in, swiping, matching, chat over WebSocket, group formation under concurrent load, meetups, the cron sweep, moderation, crash reports, and account deletion. On a busy machine, raise `--testTimeout` before you blame the code. GitHub Actions runs all of these on every push to `main` and on pull requests.
 
 To run the cron sweep by hand against a dev server:
 
@@ -116,11 +121,76 @@ curl "http://localhost:8787/__scheduled?cron=*/5+*+*+*+*"
 
 To test timed jobs without waiting days, set `NUDGE_AFTER_MS`, `MATCH_EXPIRY_MS`, `MEETUP_REMINDER_LEAD_MS`, and `MEETUP_CHECKIN_DELAY_MS` in `.dev.vars`.
 
-## Before the first deploy
+## Moderation
 
-Replace the `ideasmatch.example` placeholders in `apps/api/wrangler.jsonc` and `apps/mobile/eas.json`, then work through these.
+The `/admin` pages live behind Cloudflare Access.
 
-1. **Create the resources.** Put the printed database id in `wrangler.jsonc`.
+- **Overview** shows meetups that happened and the current queues.
+- **Reports** is the queue. Safety and underage reports go first and also email `ADMIN_EMAIL` right away. A report shows only the messages the reporter's phone shared. The server deletes closed reports and moderation history after two years.
+- **Topics** lets a moderator fix the wording, kind, fields, and conversation openers of a suggestion before approving it.
+- **People** finds an account by name or email, with its report history and a ban button.
+- **History** records every action and who took it, using the email Access verified.
+- **Crashes** groups reports from the app by error message for 30 days. Stack traces from release builds are minified, so they show roughly where a crash happened, not the original line.
+
+## Message encryption
+
+People's messages are end-to-end encrypted, so the server stores only ciphertext. The code is in `packages/shared/src/e2ee.ts`, built on the audited `@noble` libraries, which are pure JavaScript and run in Expo Go.
+
+Each phone creates an X25519 key pair at sign-in. The private key stays in `expo-secure-store`, and the public key goes to the server. To send, the phone encrypts the text with XChaCha20-Poly1305 under a fresh random key, then encrypts that key once for every current device in the chat. The server rejects a message that leaves out a current device, and the phone then fetches the latest list and tries again. Each message is bound to its chat and sender, so the server can't move it elsewhere or credit it to someone else.
+
+What this changes elsewhere:
+
+- **Previews and push.** The server can't write a preview, so the phone decrypts the latest message for the inbox. Push notifications say only who wrote and "New message", because push services can read them.
+- **Reports.** The reporter's phone reveals the keys for the reported message and its neighbours. The server decrypts the stored ciphertext with those keys, which proves the text is what was sent, and keeps that text with the report. Nothing else in the chat becomes readable.
+- **New phones.** A new phone, or a reinstall, can read messages from then on and shows older ones as unreadable. There is no key backup.
+- **Groups.** Someone who joins reads from then on. Someone who leaves stops being included.
+
+Not encrypted: messages the app writes itself (such as "Sam proposed a meetup"), meetup times and places (the server sends reminders and share pages from them), profiles, and swipes.
+
+Known limits:
+
+- **No forward secrecy.** Keys don't ratchet, so someone who extracts a phone's private key can read everything that phone could read. A double ratchet would fix this at the cost of much more state, especially in groups.
+- **The server hands out public keys.** A malicious server could add a device of its own. The security code under About this chat changes when that happens, but only if people compare it.
+- **Metadata stays visible:** who talks to whom, and when.
+
+Plain text stored before encryption is removed the first time each chat wakes up.
+
+## Abuse limits
+
+Each one is a value in `apps/api/wrangler.jsonc`.
+
+| Limit | Value | What happens past it |
+|---|---|---|
+| Sign-in requests per network | 10 per minute | The app asks the person to wait a minute |
+| Code checks per network | 30 per minute | Same |
+| Crash reports per network | 20 per minute | Reports are dropped |
+| Sign-in emails, everyone combined | `LOGIN_EMAIL_HOURLY_CAP`, 500 per hour | Sign-in fails and logs `login_email_cap_reached`. Raise it as real traffic grows |
+
+There are also per-address limits on sign-in email, and daily limits on reports and topic suggestions. Dev mode skips the sign-in limits, because the seed script signs in many people at once.
+
+## Deploy
+
+The Worker runs on the dedicated Ideas Match Cloudflare account. Use its `wrangler` profile, and check `npx wrangler whoami` first if you have other accounts.
+
+For a normal release, apply new migrations, then deploy:
+
+```bash
+pnpm --filter @ideas-match/api db:migrate:remote
+```
+
+```bash
+pnpm --filter @ideas-match/api deploy
+```
+
+When topics or cities change, run `pnpm --filter @ideas-match/api seed:sql`, then load the result. It's safe to run again, and it moves people out of any city that was merged into another.
+
+```bash
+cd apps/api && npx wrangler d1 execute ideas-match --remote --file seed/seed.sql
+```
+
+### Setting it up from nothing
+
+1. **Create the resources.** Put the printed database ID in `wrangler.jsonc`.
 
    ```bash
    npx wrangler d1 create ideas-match
@@ -130,13 +200,17 @@ Replace the `ideasmatch.example` placeholders in `apps/api/wrangler.jsonc` and `
    npx wrangler r2 bucket create ideas-match-avatars
    ```
 
-2. **Set the sign-in secret.** Use a long random value.
+2. **Set the secrets.** `AUTH_SECRET` is a long random value, and `ADMIN_EMAIL` receives report alerts.
 
    ```bash
    npx wrangler secret put AUTH_SECRET
    ```
 
-3. **Set up sign-in email with Amazon SES.** Verify a domain in SES in a region with production access. Set `EMAIL_FROM` to an address on that domain and `SES_REGION` to that region. Then create an IAM user that can only call `ses:SendEmail` from that address, and store its keys as secrets.
+   ```bash
+   npx wrangler secret put ADMIN_EMAIL
+   ```
+
+3. **Set up sign-in email with Amazon SES.** Verify a domain in a region with production access. Set `EMAIL_FROM` to an address on that domain and `SES_REGION` to that region. Create an IAM user that can only call `ses:SendEmail` from that address, and store its keys as secrets.
 
    ```bash
    npx wrangler secret put SES_ACCESS_KEY_ID
@@ -146,37 +220,26 @@ Replace the `ideasmatch.example` placeholders in `apps/api/wrangler.jsonc` and `
    npx wrangler secret put SES_SECRET_ACCESS_KEY
    ```
 
-4. **Protect the admin pages.** Create a self-hosted Cloudflare Access application with a public hostname destination of `<your-worker-host>/admin`, then set `ACCESS_TEAM_DOMAIN` and `ACCESS_AUD` (the AUD tag is under the application's Additional settings). Until both are set, admin pages return 403 for everyone. Don't use a Workers destination or "Protect this Worker": it locks the whole API, and the app stops working.
+4. **Protect the admin pages.** Create a self-hosted Cloudflare Access application with a public hostname destination of `<your-worker-host>/admin`, then set `ACCESS_TEAM_DOMAIN` and `ACCESS_AUD` (the AUD tag is under the application's Additional settings). Until both are set, admin pages return 403 for everyone. Don't use a Workers destination or "Protect this Worker", because that locks the whole API and the app stops working.
 
-5. **Apply the database and deploy.**
+5. **Migrate, deploy, and seed** as described above.
 
-   ```bash
-   pnpm --filter @ideas-match/api db:migrate:remote
-   ```
+6. **Set up the app builds.** The EAS project ID is in `apps/mobile/app.config.ts`. Android push needs a Firebase project, with `google-services.json` in `apps/mobile` and an FCM V1 key uploaded through `eas credentials`. iOS push needs an Apple Developer account.
 
-   ```bash
-   pnpm --filter @ideas-match/api deploy
-   ```
-
-   Load the topics into the remote database too:
-
-   ```bash
-   npx wrangler d1 execute ideas-match --remote --file apps/api/seed/seed.sql
-   ```
-
-6. **Set up the app builds.** Run `eas init`, and set `EAS_PROJECT_ID` so push tokens can be issued. Android push also needs Firebase credentials, and iOS needs an Apple Developer account.
-
-7. **Turn on sign-in links.** Set `APPLE_APP_ID` (team id and bundle id) and `ANDROID_CERT_SHA256` so Universal Links and App Links verify. Until then, the six-digit code still works.
+7. **Turn on sign-in links.** Set `APPLE_APP_ID` (team ID and bundle ID) and `ANDROID_CERT_SHA256` so Universal Links and App Links verify. Until then, emails still carry the six-digit code.
 
 ## Decisions worth knowing
 
-- **Cities come from a fixed list, not free text.** Matching needs one shared ID per city, or "Ottawa" and "ottawa on" would never meet. Places inside a metro area share its row, so people in Aylmer, Gatineau, and Ottawa end up together. Canada uses a radius per metro. Elsewhere, a place under 1 million people merges into a city at least twice its size within 20 km in the same country. City data comes from [GeoNames](https://www.geonames.org/) under [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/), filtered to cities over 300,000 people, or over 30,000 in Canada.
-
+- **Cities come from a fixed list, not free text.** Matching needs one shared ID per city, or "Ottawa" and "ottawa on" would never meet. Places inside a metro area share its row, so people in Aylmer, Gatineau, and Ottawa end up together. Canada uses a radius per metro. Elsewhere, a place under 1 million people merges into a city at least twice its size within 20 km in the same country. The list has 1,778 cities from [GeoNames](https://www.geonames.org/), under [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/), filtered to cities over 300,000 people, or over 30,000 in Canada.
+- **Location stays on the phone.** The location button finds the nearest city on the device and sends only that city.
+- **Moving city carries your picks.** Your right-swiped topics join the cohorts in the new city, so you can land in a group there. The topics you already joined stay yours, and existing chats stay open.
 - **Stance never decides who meets whom.** People gather around topics. A question's stance only feeds the group's overall spread, and later the policy consultation export.
-- **"More than friends" is private unless mutual.** Every response showing someone's chips goes through `visibleLookingFor`.
+- **"Open to dating" is private unless mutual.** Every response showing someone's chips goes through `visibleLookingFor`.
 - **18 and over.** Date of birth is checked at onboarding, nothing is stored for anyone younger, and it can't be edited afterward.
 - **Share pages hide names.** A meetup link shows the plan and uses an unguessable token, since venue and time can be sensitive.
+- **Messages are end-to-end encrypted.** See [Message encryption](#message-encryption) for what that covers and what it doesn't.
+- **Crash reports carry no identity.** The endpoint is open, because a crash can happen before sign-in, and it takes no user ID.
 
 ## Not built yet
 
-The policy consultation export comes next. Stances are already being collected, so it's reporting on data the app already has. Also deferred: a web client, institution-only communities, GPS location, and a public events feed.
+The policy consultation export comes next. Stances are already being collected, so it's reporting on data the app already has. Also deferred: a web client, institution-only communities, and a public events feed.
