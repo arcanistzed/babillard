@@ -66,6 +66,32 @@ The API URL in `.env` is right for an Android emulator. For a physical phone, us
 
 React Native on Android needs JDK 17 or 21. Point `JAVA_HOME` at one if your default is newer. iOS builds need a Mac: `pnpm --filter @ideas-match/mobile ios`.
 
+## Share a build
+
+Android testers don't need the development setup. This makes an APK and a link to share:
+
+```bash
+cd apps/mobile && npx eas-cli build --platform android --profile preview
+```
+
+### iPhone testing without an Apple Developer account
+
+Expo Go runs the app on a real iPhone with no developer account. Start the server below, then scan its QR code with the iPhone camera:
+
+```bash
+cd apps/mobile && EXPO_PUBLIC_API_URL=https://ideas-match-api.ideas-match.workers.dev npx expo start --go
+```
+
+The phone must be on the same network as this computer. Add `--tunnel` if it isn't. Expo Go only loads the SDK version it supports, so update the project if it reports a mismatch. Push notifications and sign-in links can't be tested this way.
+
+For the iOS Simulator on a Mac, this build also needs no Apple account:
+
+```bash
+cd apps/mobile && npx eas-cli build --platform ios --profile ios-simulator
+```
+
+TestFlight and the App Store need the Apple Developer Program.
+
 ## Test it
 
 ```bash

@@ -7,6 +7,7 @@ const isRealHost = !["localhost", "10.0.2.2", "127.0.0.1"].includes(apiHost);
 const config: ExpoConfig = {
   name: "Ideas Match",
   slug: "ideas-match",
+  owner: "arcanistzed",
   version: "0.1.0",
   orientation: "portrait",
   scheme: "ideasmatch",
@@ -15,6 +16,8 @@ const config: ExpoConfig = {
   ios: {
     bundleIdentifier: "app.ideasmatch",
     supportsTablet: false,
+    // Standard HTTPS only, so TestFlight doesn't ask about export compliance on every build.
+    config: { usesNonExemptEncryption: false },
     ...(isRealHost ? { associatedDomains: [`applinks:${apiHost}`] } : {}),
   },
   android: {
@@ -37,16 +40,15 @@ const config: ExpoConfig = {
   plugins: [
     "expo-router",
     ["expo-splash-screen", { image: "./assets/splash.png", imageWidth: 200, backgroundColor: "#FF5FAE" }],
-    "expo-secure-store",
+    ["expo-secure-store", { faceIDPermission: false }],
     "expo-font",
     "expo-notifications",
-    ["expo-calendar", { calendarPermission: "Ideas Match adds meetups you confirm to your calendar." }],
-    ["expo-image-picker", { photosPermission: "Ideas Match uses a photo you choose for your profile." }],
-    ["expo-location", { locationWhenInUsePermission: "Ideas Match uses your location once to suggest your city. It stays on your phone." }],
+    ["expo-calendar", { calendarPermission: "Ideas Match adds meetups you confirm to your calendar.", remindersPermission: false }],
+    ["expo-image-picker", { photosPermission: "Ideas Match uses a photo you choose for your profile.", cameraPermission: false, microphonePermission: false }],
+    ["expo-location", { locationWhenInUsePermission: "Ideas Match uses your location once to suggest your city. It stays on your phone.", locationAlwaysAndWhenInUsePermission: false, locationAlwaysPermission: false }],
   ],
   extra: {
-    // Set this to your EAS project id so push tokens can be issued.
-    eas: { projectId: process.env.EAS_PROJECT_ID },
+    eas: { projectId: "54672913-5065-4a88-8789-a29ffcb13a89" },
   },
 };
 
