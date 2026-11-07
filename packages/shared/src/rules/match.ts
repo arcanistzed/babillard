@@ -20,3 +20,10 @@ export function matchOpenerMessage(topicTitle: string, opener: string): string {
   const stop = topicTitle.endsWith("?") ? "" : ".";
   return `You both want to dig into ${topicPhrase(topicTitle)}${stop} ${opener}`;
 }
+
+/** Starting points for a newly approved topic. A moderator can edit them before approving. */
+export function defaultOpeners(kind: "interest" | "question", title: string): string[] {
+  return kind === "question"
+    ? ["Where do you land on this, and why?", "What would change your mind?"]
+    : [`What got you interested in ${title}?`, "What should I read or look at first?"];
+}

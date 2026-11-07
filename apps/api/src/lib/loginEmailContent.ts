@@ -4,13 +4,17 @@ export interface LoginEmail {
   html: string;
 }
 
+export function canLinkInEmail(url: string): boolean {
+  return !new URL(url).hostname.endsWith(".workers.dev");
+}
+
 /**
  * Mail filters treat workers.dev links as a phishing signal, and Microsoft 365
  * sent our sign-in email to junk with one in it. The link only goes in once the
  * API is on its own domain. The code alone is enough to sign in.
  */
 export function loginEmailContent(code: string, link: string): LoginEmail {
-  const includeLink = !new URL(link).hostname.endsWith(".workers.dev");
+  const includeLink = canLinkInEmail(link);
   const expiry = includeLink ? "Both expire" : "It expires";
   const notice = `${expiry} in 15 minutes. If you didn't ask for this, you can ignore it.`;
   return {

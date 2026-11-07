@@ -1,6 +1,7 @@
 import { authStartSchema, authVerifySchema, institutionDomain } from "@ideas-match/shared";
 import { and, desc, eq, gt, isNull, sql } from "drizzle-orm";
 import { Hono } from "hono";
+import { createMiddleware } from "hono/factory";
 import { html } from "hono/html";
 import { getDb, schema } from "../db";
 import { isDevMode } from "../lib/config";
@@ -11,6 +12,7 @@ import { requireAuth } from "../middleware";
 import type { AppEnv } from "../types";
 import { loadMe } from "./me";
 
+const HOUR = 60 * 60 * 1000;
 const LINK_TTL_MS = 15 * 60 * 1000;
 const SESSION_TTL_MS = 90 * 24 * 60 * 60 * 1000;
 const MAX_LINKS_PER_WINDOW = 3;
@@ -22,7 +24,18 @@ function codeHash(secret: string, email: string, code: string): Promise<string> 
   return hmacHex(secret, `${email}:${code}`);
 }
 
-auth.post("/start", async (c) => {
+/** Slows one network hammering sign-in. Dev mode and the seed script sign in many people at once. */
+const limitByIp = (binding: "SIGN_IN_START_LIMIT" | "SIGN_IN_VERIFY_LIMIT") =>
+  createMiddleware<AppEnv>(async (c, next) => {
+    if (!isDevMode(c.env)) {
+      const key = c.req.header("cf-connecting-ip") ?? "unknown";
+      const { success } = await c.env[binding].limit({ key });
+      if (!success) throw fail(429, "too_many_attempts");
+    }
+    await next();
+  });
+
+auth.post("/start", limitByIp("SIGN_IN_START_LIMIT"), async (c) => {
   const { email } = await parseJson(c, authStartSchema);
   const db = getDb(c.env);
   const now = Date.now();
@@ -33,6 +46,15 @@ auth.post("/start", async (c) => {
     .where(and(eq(schema.magicLinks.email, email), gt(schema.magicLinks.createdAt, now - LINK_TTL_MS)));
   // Answering the same way keeps this from becoming a way to probe or flood an address.
   if (!isDevMode(c.env) && (recent?.count ?? 0) >= MAX_LINKS_PER_WINDOW) return c.json({ ok: true });
+
+  // The last line of defence if someone spreads requests across many networks: it protects the bill and sender reputation.
+  if (!isDevMode(c.env)) {
+    const [hour] = await db.select({ count: sql<number>`count(*)` }).from(schema.magicLinks).where(gt(schema.magicLinks.createdAt, now - HOUR));
+    if ((hour?.count ?? 0) >= Number(c.env.LOGIN_EMAIL_HOURLY_CAP)) {
+      console.error(JSON.stringify({ event: "login_email_cap_reached", cap: c.env.LOGIN_EMAIL_HOURLY_CAP }));
+      throw fail(503, "email_unavailable");
+    }
+  }
 
   const token = randomToken();
   const code = randomCode();
@@ -56,7 +78,7 @@ auth.post("/start", async (c) => {
   return c.json({ ok: true });
 });
 
-auth.post("/verify", async (c) => {
+auth.post("/verify", limitByIp("SIGN_IN_VERIFY_LIMIT"), async (c) => {
   const input = await parseJson(c, authVerifySchema);
   const db = getDb(c.env);
   const now = Date.now();

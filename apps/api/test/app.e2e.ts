@@ -4,12 +4,14 @@ import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
 import { ApiError, Client, createPerson, type PersonSeed } from "../scripts/api-client.ts";
-import { loginEmailContent } from "../src/lib/loginEmailContent.ts";
-import { nearestCity, searchCities, type Locality } from "@ideas-match/shared";
+import { canLinkInEmail, loginEmailContent } from "../src/lib/loginEmailContent.ts";
+import { randomBytes } from "node:crypto";
+import { generateDeviceKey, nearestCity, openMessage, sealMessage, searchCities, type Locality } from "@ideas-match/shared";
 
 const apiDir = join(dirname(fileURLToPath(import.meta.url)), "..");
 const BASE = "http://localhost:8799";
 const PROD = "http://localhost:8798";
+const DEV_DB = ".wrangler/e2e/dev";
 
 let counter = 0;
 async function person(cityId: string, overrides: Partial<PersonSeed> = {}): Promise<Client & { email: string }> {
@@ -68,6 +70,17 @@ async function sweep(): Promise<void> {
   const response = await fetch(`${BASE}/__scheduled?cron=*/5+*+*+*+*`);
   expect(response.status).toBe(200);
   await sleep(500);
+}
+
+/** A message only its sender can read, for sends the server should refuse before it looks at who can read it. */
+function sealedAlone(sender: Client, conversationId: string) {
+  return { envelope: sealMessage({ text: "refused", conversationId, senderId: sender.id, sender: sender.device, readers: [sender.device.publicKey], random: randomBytes }) };
+}
+
+/** What the report screen sends: the keys for the reported message and its neighbours. */
+async function evidenceNear(reporter: Client, conversationId: string, messageId: string) {
+  const nearby = await reporter.read(conversationId, `?around=${messageId}`);
+  return nearby.filter((message) => message.contentKey).map((message) => ({ messageId: message.id, contentKey: message.contentKey }));
 }
 
 async function match(a: Client, b: Client, topicId: string): Promise<string> {
@@ -207,6 +220,17 @@ describe("production settings", () => {
     expect(log).not.toMatch(/is your Ideas Match code/);
   });
 
+  it("slows one network requesting codes for many different addresses", async () => {
+    const statuses: number[] = [];
+    for (let i = 0; i < 12; i += 1) {
+      const response = await fetch(`${PROD}/auth/start`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ email: `limited-${i}@example.test` }) });
+      statuses.push(response.status);
+    }
+    expect(statuses).toContain(429);
+    expect(statuses.lastIndexOf(200)).toBeLessThan(statuses.indexOf(429));
+    expect(sesRequests("limited-11@example.test")).toHaveLength(0);
+  });
+
   it("closes admin pages when Access is not configured", async () => {
     expect((await fetch(`${PROD}/admin`)).status).toBe(403);
     expect((await fetch(`${PROD}/admin/reports`, { headers: { "cf-access-jwt-assertion": "forged" } })).status).toBe(403);
@@ -226,6 +250,11 @@ describe("sign-in email content", () => {
       expect(body).not.toContain("token=");
       expect(body).not.toContain("Both expire");
     }
+  });
+
+  it("only allows links on the API's own domain", () => {
+    expect(canLinkInEmail("https://ideas-match-api.ideas-match.workers.dev/admin/reports")).toBe(false);
+    expect(canLinkInEmail("https://api.example.org/admin/reports")).toBe(true);
   });
 
   it("includes the link on the API's own domain", () => {
@@ -332,6 +361,25 @@ describe("onboarding", () => {
     expect(await status(mover.put("/me/location", { cityId: "toronto", campusId: "mit" }))).toBe(400);
     expect(await status(mover.put("/me/location", { cityId: "harvard", campusId: null }))).toBe(400);
     expect((await mover.get("/me")).cityId).toBe("toronto");
+
+    const groupTopic = "game-theory-in-everyday-life";
+    const carried = await person("boston");
+    await carried.post(`/deck/topics/${groupTopic}/swipe`, { direction: "right" });
+    const locals = await Promise.all(Array.from({ length: 3 }, () => person("toronto")));
+    for (const client of locals) await client.post(`/deck/topics/${groupTopic}/swipe`, { direction: "right" });
+    await carried.put("/me/location", { cityId: "toronto", campusId: null });
+    const inbox = await waitFor(() => carried.get("/conversations"), (rows: any[]) => rows.some((row) => row.kind === "group"), "group after moving city");
+    expect(inbox.find((row: any) => row.kind === "group").memberCount).toBe(4);
+
+    const saver = await person("boston");
+    const saved = await saver.put("/me/profile", { displayName: "Moved Together", bio: "", role: "other", fields: ["law"], lookingFor: ["friends"], cityId: "toronto", campusId: "u-of-t" });
+    expect(saved.profile.displayName).toBe("Moved Together");
+    expect(saved.cityId).toBe("toronto");
+    expect(saved.campusId).toBe("u-of-t");
+    expect(await status(saver.put("/me/profile", { displayName: "Half Saved", bio: "", role: "other", fields: ["law"], lookingFor: ["friends"], cityId: "not-a-city" }))).toBe(400);
+    expect((await saver.get("/me")).profile.displayName).toBe("Moved Together");
+    const profileOnly = await saver.put("/me/profile", { displayName: "Stayed Put", bio: "", role: "other", fields: ["law"], lookingFor: ["friends"] });
+    expect(profileOnly.cityId).toBe("toronto");
 
     const unfinished = await new Client(BASE).signIn("no-location@example.test");
     expect(await status(unfinished.put("/me/location", { cityId: "toronto", campusId: null }))).toBe(403);
@@ -478,10 +526,12 @@ describe("chat", () => {
     const conversationId = await match(a, b, "sociolinguistics");
     const [socketA, socketB] = await Promise.all([openSocket(a, conversationId), openSocket(b, conversationId)]);
 
-    socketA.socket.send(JSON.stringify({ type: "send", body: "hello from a", clientId: "c1" }));
-    await waitFor(async () => socketB.events, (events) => events.some((e) => e.message?.body === "hello from a"), "b receiving");
-    socketB.socket.send(JSON.stringify({ type: "send", body: "hello from b" }));
-    await waitFor(async () => socketA.events, (events) => events.some((e) => e.message?.body === "hello from b"), "a receiving");
+    const received = (events: any[], from: Client, reader: Client, text: string) =>
+      events.some((e) => e.message?.envelope && openMessage({ envelope: e.message.envelope, conversationId, senderId: from.id, me: reader.device })?.text === text);
+    socketA.socket.send(JSON.stringify({ type: "send", envelope: await a.seal(conversationId, "hello from a"), clientId: "c1" }));
+    await waitFor(async () => socketB.events, (events) => received(events, a, b, "hello from a"), "b receiving");
+    socketB.socket.send(JSON.stringify({ type: "send", envelope: await b.seal(conversationId, "hello from b") }));
+    await waitFor(async () => socketA.events, (events) => received(events, b, a, "hello from b"), "a receiving");
 
     await sleep(300);
     expect(pushLog().filter((push) => push.title === "Sender" && push.data.id === conversationId)).toHaveLength(0);
@@ -489,12 +539,77 @@ describe("chat", () => {
     socketB.socket.close();
   });
 
+  it("never gives the server or push services the text of a message", async () => {
+    const a = await person("new-york", { displayName: "Secret Keeper" });
+    const b = await person("new-york");
+    const conversationId = await match(a, b, "sociolinguistics");
+    await a.say(conversationId, "my private words");
+
+    const raw = await b.get(`/conversations/${conversationId}/messages`);
+    const text = raw.find((message: any) => message.kind === "text");
+    expect(text.body).toBe("");
+    expect(JSON.stringify(raw)).not.toContain("my private words");
+    expect(JSON.stringify(await b.get("/conversations"))).not.toContain("my private words");
+    const pushed = await waitFor(async () => pushLog().filter((push) => push.title === "Secret Keeper"), (rows) => rows.length > 0, "the push");
+    expect(pushed[0]!.body).toBe("New message");
+    expect((await b.read(conversationId)).some((message) => message.body === "my private words")).toBe(true);
+  });
+
+  it("refuses plain text, and a message some devices couldn't read", async () => {
+    const a = await person("new-york");
+    const b = await person("new-york");
+    const conversationId = await match(a, b, "sociolinguistics");
+    expect(await status(a.post(`/conversations/${conversationId}/messages`, { body: "plain text" }))).toBe(400);
+
+    const sealedEarlier = await a.seal(conversationId, "for the old list");
+    const secondPhone = generateDeviceKey(randomBytes);
+    await b.post("/me/device-key", { publicKey: secondPhone.publicKey });
+    expect(await status(a.post(`/conversations/${conversationId}/messages`, { envelope: sealedEarlier }))).toBe(409);
+
+    await a.say(conversationId, "for both phones");
+    const opened = (await b.get(`/conversations/${conversationId}/messages`)).filter((message: any) => message.envelope).map((message: any) => openMessage({ envelope: message.envelope, conversationId, senderId: a.id, me: secondPhone })?.text);
+    expect(opened).toEqual(["for both phones"]);
+
+    const stranger = await person("new-york");
+    expect(await status(stranger.post("/me/device-key", { publicKey: secondPhone.publicKey }))).toBe(409);
+    const fromUnknownDevice = sealMessage({ text: "spoofed", conversationId, senderId: a.id, sender: generateDeviceKey(randomBytes), readers: [a.device.publicKey, b.device.publicKey, secondPhone.publicKey], random: randomBytes });
+    expect(await status(a.post(`/conversations/${conversationId}/messages`, { envelope: fromUnknownDevice }))).toBe(409);
+  });
+
+  it("can't show a new phone older messages, and lets it read new ones", async () => {
+    const a = await person("new-york");
+    const b = await person("new-york");
+    const conversationId = await match(a, b, "sociolinguistics");
+    await a.say(conversationId, "before the new phone");
+    const newPhone = await new Client(BASE).signIn(b.email);
+    await a.say(conversationId, "after the new phone");
+    const seen = await newPhone.read(conversationId);
+    expect(seen.find((message) => message.envelope && message.unreadable)).toBeTruthy();
+    expect(seen.some((message) => message.body === "before the new phone")).toBe(false);
+    expect(seen.some((message) => message.body === "after the new phone")).toBe(true);
+  });
+
+  it("retires the oldest key after five phones, so its owner stops receiving there", async () => {
+    const a = await person("new-york");
+    const b = await person("new-york");
+    const conversationId = await match(a, b, "sociolinguistics");
+    const phones = Array.from({ length: 6 }, () => generateDeviceKey(randomBytes));
+    for (const phone of phones) {
+      await b.post("/me/device-key", { publicKey: phone.publicKey });
+      await sleep(5);
+    }
+    const member = (await a.get(`/conversations/${conversationId}`)).members.find((row: any) => row.id === b.id);
+    expect(member.deviceKeys).toHaveLength(5);
+    expect(member.retiredDeviceKeys).toHaveLength(2);
+    expect(member.deviceKeys).toContain(phones[5]!.publicKey);
+  });
+
   it("does not store a retried message twice", async () => {
     const a = await person("new-york");
     const b = await person("new-york");
     const conversationId = await match(a, b, "language-learning");
-    await a.post(`/conversations/${conversationId}/messages`, { body: "once", clientId: "retry-1" });
-    await a.post(`/conversations/${conversationId}/messages`, { body: "once", clientId: "retry-1" });
+    await a.say(conversationId, "once", "retry-1");
+    await a.say(conversationId, "once", "retry-1");
     const texts = (await b.get(`/conversations/${conversationId}/messages`)).filter((m: any) => m.kind === "text");
     expect(texts).toHaveLength(1);
   });
@@ -503,7 +618,7 @@ describe("chat", () => {
     const a = await person("new-york", { displayName: "Offline Sender" });
     const b = await person("new-york");
     const conversationId = await match(a, b, "endangered-languages");
-    await a.post(`/conversations/${conversationId}/messages`, { body: "are you there" });
+    await a.say(conversationId, "are you there");
 
     const pushes = await waitFor(
       async () => pushLog().filter((push) => push.title === "Offline Sender"),
@@ -514,7 +629,8 @@ describe("chat", () => {
 
     const item = (await b.get("/conversations")).find((c: any) => c.id === conversationId);
     expect(item.unreadCount).toBe(1);
-    expect(item.lastMessagePreview).toBe("are you there");
+    expect(item.lastMessagePreview).toBeNull();
+    expect(openMessage({ envelope: item.lastMessageEnvelope, conversationId, senderId: a.id, me: b.device })?.text).toBe("are you there");
     expect(item.expiresAt).toBeNull();
 
     await b.post(`/conversations/${conversationId}/read`);
@@ -528,7 +644,7 @@ describe("chat", () => {
     const conversationId = await match(a, b, "language-and-ai");
     expect(await status(stranger.get(`/conversations/${conversationId}`))).toBe(404);
     expect(await status(stranger.get(`/conversations/${conversationId}/messages`))).toBe(404);
-    expect(await status(stranger.post(`/conversations/${conversationId}/messages`, { body: "hi" }))).toBe(403);
+    expect(await status(stranger.post(`/conversations/${conversationId}/messages`, sealedAlone(stranger, conversationId)))).toBe(403);
     await expect(openSocket(stranger, conversationId)).rejects.toThrow();
   });
 
@@ -536,7 +652,7 @@ describe("chat", () => {
     const a = await person("new-york");
     const b = await person("new-york");
     const conversationId = await match(a, b, "translation-and-world-literature");
-    for (let i = 0; i < 3; i += 1) await a.post(`/conversations/${conversationId}/messages`, { body: `m${i}` });
+    for (let i = 0; i < 3; i += 1) await a.say(conversationId, `m${i}`);
     const all = await a.get(`/conversations/${conversationId}/messages`);
     const older = await a.get(`/conversations/${conversationId}/messages?before=${all[all.length - 1].seq}`);
     expect(older.length).toBe(all.length - 1);
@@ -654,7 +770,7 @@ describe("automatic groups", () => {
     expect(await status(people[0]!.get(`/conversations/${groupId}`))).toBe(404);
     const detail = await people[1]!.get(`/conversations/${groupId}`);
     expect(detail.members).toHaveLength(3);
-    expect(await status(people[0]!.post(`/conversations/${groupId}/messages`, { body: "still here?" }))).toBe(403);
+    expect(await status(people[0]!.post(`/conversations/${groupId!}/messages`, sealedAlone(people[0]!, groupId!)))).toBe(403);
   });
 });
 
@@ -797,7 +913,7 @@ describe("silent matches", () => {
     await sleep(2000);
     await sweep();
     await waitFor(() => a.get("/conversations"), (rows: any[]) => !rows.some((row) => row.id === conversationId), "expiry");
-    expect(await status(a.post(`/conversations/${conversationId}/messages`, { body: "too late" }))).toBe(403);
+    expect(await status(a.post(`/conversations/${conversationId}/messages`, sealedAlone(a, conversationId)))).toBe(403);
     expect(await status(a.get(`/conversations/${conversationId}`))).toBe(410);
   });
 
@@ -805,7 +921,7 @@ describe("silent matches", () => {
     const a = await person("new-york");
     const b = await person("new-york");
     const conversationId = await match(a, b, "animal-cognition");
-    await a.post(`/conversations/${conversationId}/messages`, { body: "hi" });
+    await a.say(conversationId, "hi");
     await sleep(4300);
     await sweep();
     await sleep(500);
@@ -821,7 +937,7 @@ describe("safety", () => {
     await a.post(`/safety/blocks/${b.id}`);
     expect((await a.get("/conversations")).map((row: any) => row.id)).not.toContain(conversationId);
     expect((await b.get("/conversations")).map((row: any) => row.id)).not.toContain(conversationId);
-    expect(await status(b.post(`/conversations/${conversationId}/messages`, { body: "hello?" }))).toBe(403);
+    expect(await status(b.post(`/conversations/${conversationId}/messages`, sealedAlone(b, conversationId)))).toBe(403);
 
     const c = await person("new-york");
     const d = await person("new-york");
@@ -840,10 +956,10 @@ describe("safety", () => {
     for (const client of people) groupId = (await client.post("/deck/topics/open-source-communities/swipe", { direction: "right" })).groupConversationId ?? groupId;
     const [a, b, c] = people;
     await a!.post(`/safety/blocks/${b!.id}`);
-    await b!.post(`/conversations/${groupId}/messages`, { body: "visible to some" });
+    await b!.say(groupId!, "visible to some");
 
-    expect((await a!.get(`/conversations/${groupId}/messages`)).some((m: any) => m.body === "visible to some")).toBe(false);
-    expect((await c!.get(`/conversations/${groupId}/messages`)).some((m: any) => m.body === "visible to some")).toBe(true);
+    expect((await a!.read(groupId!)).some((m: any) => m.body === "visible to some")).toBe(false);
+    expect((await c!.read(groupId!)).some((m: any) => m.body === "visible to some")).toBe(true);
     expect((await a!.get("/conversations")).find((row: any) => row.id === groupId).unreadCount).toBe(0);
   });
 
@@ -851,8 +967,8 @@ describe("safety", () => {
     const reporter = await person("new-york");
     const target = await person("new-york", { displayName: "Reported Person" });
     const conversationId = await match(reporter, target, "microbiome-research");
-    const message = await target.post(`/conversations/${conversationId}/messages`, { body: "<b>rude message</b>" });
-    await reporter.post("/safety/reports", { targetUserId: target.id, conversationId, messageId: message.id, reason: "harassment", note: "Please look" });
+    const message = await target.say(conversationId, "<b>rude message</b>");
+    await reporter.post("/safety/reports", { targetUserId: target.id, conversationId, messageId: message.id, reason: "harassment", note: "Please look", evidence: await evidenceNear(reporter, conversationId, message.id) });
 
     const queue = await (await fetch(`${BASE}/admin/reports`)).text();
     expect(queue).toContain("Reported Person");
@@ -961,13 +1077,13 @@ describe("moderation", () => {
     const reporter = await person("toronto", { displayName: "Careful Reporter" });
     const target = await person("toronto", { displayName: "Context Person" });
     const conversationId = await match(reporter, target, "statistics-and-causal-inference");
-    for (let i = 1; i <= 7; i += 1) await target.post(`/conversations/${conversationId}/messages`, { body: `before ${i}` });
-    const message = await target.post(`/conversations/${conversationId}/messages`, { body: "<b>the bad message</b>" });
-    await reporter.post(`/conversations/${conversationId}/messages`, { body: "after it" });
+    for (let i = 1; i <= 7; i += 1) await target.say(conversationId, `before ${i}`);
+    const message = await target.say(conversationId, "<b>the bad message</b>");
+    await reporter.say(conversationId, "after it");
 
     await reporter.post("/safety/reports", { targetUserId: target.id, reason: "spam" });
     await adminPost(`/admin/reports/${await openReportId("Context Person")}`, { action: "resolved" });
-    await reporter.post("/safety/reports", { targetUserId: target.id, conversationId, messageId: message.id, reason: "harassment" });
+    await reporter.post("/safety/reports", { targetUserId: target.id, conversationId, messageId: message.id, reason: "harassment", evidence: await evidenceNear(reporter, conversationId, message.id) });
 
     const queue = await adminPage("/admin/reports");
     const article = queue.split("<article>").find((part) => part.includes("Context Person"))!;
@@ -982,6 +1098,22 @@ describe("moderation", () => {
     expect(article).toContain("before 3");
     expect(article).not.toContain("before 2");
     await adminPost(`/admin/reports/${await openReportId("Context Person")}`, { action: "resolved" });
+  });
+
+  it("only shows moderators text that matches what was stored", async () => {
+    const reporter = await person("toronto");
+    const target = await person("toronto", { displayName: "Framed Person" });
+    const conversationId = await match(reporter, target, "statistics-and-causal-inference");
+    const real = await target.say(conversationId, "what they really said");
+    const otherKey = (await target.say(conversationId, "a different message"), (await reporter.read(conversationId)).at(-1).contentKey);
+    await reporter.post("/safety/reports", { targetUserId: target.id, conversationId, messageId: real.id, reason: "spam", evidence: [{ messageId: real.id, contentKey: otherKey }] });
+    const article = (await adminPage("/admin/reports")).split("<article>").find((part) => part.includes("Framed Person"))!;
+    expect(article).not.toContain("what they really said");
+    expect(article).not.toContain("a different message");
+    await adminPost(`/admin/reports/${await openReportId("Framed Person")}`, { action: "resolved" });
+
+    const outsider = await person("toronto");
+    expect(await status(outsider.post("/safety/reports", { targetUserId: target.id, conversationId, messageId: real.id, reason: "spam", evidence: [{ messageId: real.id, contentKey: otherKey }] }))).toBe(404);
   });
 
   it("puts urgent reports first", async () => {
@@ -1047,6 +1179,42 @@ describe("moderation", () => {
     expect(injected).not.toContain("<script>x");
   });
 
+  it("records who did what in the history", async () => {
+    const reporter = await person("toronto");
+    const target = await person("toronto", { displayName: "History Person" });
+    await reporter.post("/safety/reports", { targetUserId: target.id, reason: "spam" });
+    await adminPost(`/admin/reports/${await openReportId("History Person")}`, { action: "resolved" });
+    await adminPost(`/admin/users/${target.id}/ban`, { confirm: "yes" });
+    await adminPost(`/admin/users/${target.id}/unban`, {});
+    const history = await adminPage("/admin/history");
+    expect(history).toContain("local development");
+    expect(history).toContain("resolved");
+    expect(history).toContain("unbanned");
+    expect(history).toContain(`/admin/users/${target.id}`);
+  });
+
+  it("removes closed reports and moderation history after two years, and keeps open reports", async () => {
+    const reporter = await person("toronto");
+    const closed = await person("toronto", { displayName: "Old Closed Case" });
+    const open = await person("toronto", { displayName: "Old Open Case" });
+    await reporter.post("/safety/reports", { targetUserId: closed.id, reason: "spam" });
+    await reporter.post("/safety/reports", { targetUserId: open.id, reason: "spam" });
+    await adminPost(`/admin/reports/${await openReportId("Old Closed Case")}`, { action: "resolved" });
+    expect(await adminPage("/admin/history")).toContain("Reason: spam");
+
+    const threeYearsAgo = Date.now() - 3 * 365 * 24 * 60 * 60 * 1000;
+    execFileSync(
+      join(apiDir, "../../node_modules/.bin/wrangler"),
+      ["d1", "execute", "ideas-match", "--local", "--persist-to", DEV_DB, "--command", `UPDATE reports SET created_at = ${threeYearsAgo}, resolved_at = CASE WHEN resolved_at IS NULL THEN NULL ELSE ${threeYearsAgo} END WHERE target_user_id IN ('${closed.id}', '${open.id}'); UPDATE moderation_log SET created_at = ${threeYearsAgo} WHERE detail LIKE '%Reason: spam%';`],
+      { cwd: apiDir, stdio: "pipe", env: { ...process.env, CI: "true", WRANGLER_SEND_METRICS: "false" } },
+    );
+    await sweep();
+
+    expect(await adminPage(`/admin/users/${closed.id}`)).not.toContain("Reason: spam");
+    expect((await adminPage("/admin/reports"))).toContain("Old Open Case");
+    expect((await adminPage("/admin/history"))).not.toContain("Reason: spam");
+  }, 60_000);
+
   it("rejects cross-site posts to the new actions", async () => {
     const target = await person("toronto");
     for (const path of [`/admin/users/${target.id}/ban`, `/admin/users/${target.id}/unban`]) {
@@ -1105,6 +1273,25 @@ describe("submitted topics", () => {
     }
   });
 
+  it("lets a moderator edit a suggestion and set its openers before approving", async () => {
+    const submitter = await person("new-york");
+    const { id } = await submitter.post("/deck/topics", { kind: "interest", title: "Birdwatchng in citys", fieldTags: ["biology"] });
+    const reviewPage = await adminPage("/admin/topics");
+    expect(reviewPage).toContain("What got you interested in Birdwatchng in citys?");
+
+    expect((await adminPost(`/admin/topics/${id}`, { action: "approved", title: "Birdwatching in cities", blurb: "Urban species", kind: "interest", fieldTags: "environment", openers: "" })).headers.get("location")).toBe("/admin/topics?error=invalid");
+
+    await adminPost(`/admin/topics/${id}`, { action: "approved", title: "Birdwatching in cities", blurb: "Urban species", kind: "interest", fieldTags: "environment", openers: "Seen anything good lately?\nWhere do you go?" });
+    const a = await person("new-york");
+    const b = await person("new-york");
+    const conversationId = await match(a, b, id);
+    const detail = await a.get(`/conversations/${conversationId}`);
+    expect(detail.topic.title).toBe("Birdwatching in cities");
+    expect(detail.suggestedOpeners).toEqual(["Seen anything good lately?", "Where do you go?"]);
+    const history = await adminPage("/admin/history");
+    expect(history).toContain("Birdwatching in cities (edited title, blurb, fields)");
+  });
+
   it("limits submissions per day", async () => {
     const client = await person("san-francisco");
     for (let i = 0; i < 5; i += 1) await client.post("/deck/topics", { kind: "interest", title: `Topic number ${i}`, fieldTags: ["art"] });
@@ -1149,28 +1336,65 @@ describe("profile and account", () => {
     const a = await person("new-york");
     const b = await person("new-york");
     const conversationId = await match(a, b, "aging-and-longevity-science");
-    await a.post(`/conversations/${conversationId}/messages`, { body: "delete me" });
+    await a.say(conversationId, "delete me");
 
     const group = await Promise.all(Array.from({ length: 3 }, () => person("new-york")));
     let groupId: string | null = null;
     for (const client of [a, ...group]) groupId = (await client.post("/deck/topics/nutrition-science/swipe", { direction: "right" })).groupConversationId ?? groupId;
-    await a.post(`/conversations/${groupId}/messages`, { body: "delete me too" });
-    expect((await group[0]!.get(`/conversations/${groupId}/messages`)).some((m: any) => m.body === "delete me too")).toBe(true);
+    await a.say(groupId!, "delete me too");
+    expect((await group[0]!.read(groupId!)).some((m: any) => m.body === "delete me too")).toBe(true);
 
     await a.delete("/me");
     expect(await status(a.get("/me"))).toBe(401);
     expect((await b.get("/conversations")).map((row: any) => row.id)).not.toContain(conversationId);
 
-    const remaining = await group[0]!.get(`/conversations/${groupId}/messages`);
+    const remaining = await group[0]!.read(groupId!);
     expect(remaining.some((m: any) => m.body === "delete me too")).toBe(false);
     expect((await group[0]!.get(`/conversations/${groupId}`)).members).toHaveLength(3);
     const inbox = (await group[0]!.get("/conversations")).find((row: any) => row.id === groupId);
     expect(inbox.lastMessagePreview).toBeNull();
 
+    // App messages named them too, and those stay for the people still in the chat.
+    const vanishing = await person("new-york", { displayName: "Vanishing" });
+    const stayers = await Promise.all(Array.from({ length: 3 }, () => person("new-york")));
+    let chat: string | null = null;
+    for (const client of [vanishing, ...stayers]) chat = (await client.post("/deck/topics/nutrition-science/swipe", { direction: "right" })).groupConversationId ?? chat;
+    await vanishing.post(`/meetups?conversationId=${chat}`, { startsAt: Date.now() + 3_600_000, endsAt: Date.now() + 7_200_000, venueKind: "cafe", venueNote: "" });
+    expect((await stayers[0]!.get(`/conversations/${chat}/messages`)).some((m: any) => m.body.startsWith("Vanishing proposed"))).toBe(true);
+    await vanishing.delete("/me");
+    const left = await stayers[0]!.get(`/conversations/${chat}/messages`);
+    expect(left.some((m: any) => m.body.includes("Vanishing"))).toBe(false);
+    expect(left.some((m: any) => m.body.startsWith("Someone proposed a meetup"))).toBe(true);
+    expect((await stayers[0]!.get("/conversations")).find((row: any) => row.id === chat).lastMessagePreview ?? "").not.toContain("Vanishing");
+
     // The same email can start over as a brand new person.
     const again = await new Client(BASE).signIn(a.email);
     expect(again.id).not.toBe(a.id);
     expect((await again.get("/me")).onboarded).toBe(false);
+  });
+});
+
+describe("crash reports and public pages", () => {
+  it("accepts a crash report without a session and shows it to moderators, grouped and escaped", async () => {
+    const report = { message: "<b>TypeError</b> in deck", stack: "at Deck (deck.tsx:1)", fatal: true, platform: "android", appVersion: "0.1.0" };
+    for (let i = 0; i < 2; i += 1) expect(await status(new Client(BASE).post("/client-errors", report))).toBe(200);
+    const page = await adminPage("/admin/crashes");
+    expect(page).toContain("&lt;b&gt;TypeError&lt;/b&gt; in deck");
+    expect(page).not.toContain("<b>TypeError</b>");
+    expect(page).toContain("2 times");
+  });
+
+  it("rejects oversized crash reports", async () => {
+    expect(await status(new Client(BASE).post("/client-errors", { message: "x".repeat(1001) }))).toBe(400);
+  });
+
+  it("sends security headers and offers the app on invite pages", async () => {
+    const response = await fetch(`${BASE}/invite`);
+    expect(response.headers.get("x-frame-options")).toBeTruthy();
+    expect(response.headers.get("x-content-type-options")).toBe("nosniff");
+    expect(await response.text()).toContain("Get the Android app");
+    expect(await (await fetch(`${BASE}/t/poetry`)).text()).toContain("Get the Android app");
+    expect((await fetch(`${BASE}/download/android`)).status).toBe(404);
   });
 });
 

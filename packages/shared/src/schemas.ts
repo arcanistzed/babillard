@@ -29,6 +29,11 @@ export const locationSchema = z.object({
   campusId: z.string().min(1).nullable().default(null),
 });
 
+export const profileSaveSchema = profileSchema.extend({
+  cityId: z.string().min(1).optional(),
+  campusId: z.string().min(1).nullable().optional(),
+});
+
 export const topicSwipeSchema = z.object({
   direction: z.enum(["right", "left"]),
   stance: z.enum(STANCES).nullable().default(null),
@@ -36,8 +41,24 @@ export const topicSwipeSchema = z.object({
 
 export const peopleSwipeSchema = z.object({ direction: z.enum(["right", "left"]) });
 
+const publicKeySchema = z.string().regex(/^[A-Za-z0-9_-]{43}$/);
+const encodedSchema = z.string().regex(/^[A-Za-z0-9_-]+$/);
+
+export const deviceKeySchema = z.object({ publicKey: publicKeySchema });
+
+/** 4,000 characters of the longest UTF-8, base64 encoded, and 8 members with 5 devices each. */
+export const envelopeSchema = z.object({
+  v: z.literal(1),
+  from: publicKeySchema,
+  nonce: encodedSchema.max(40),
+  ciphertext: encodedSchema.max(22000),
+  keys: z
+    .record(publicKeySchema, z.object({ nonce: encodedSchema.max(40), key: encodedSchema.max(80) }))
+    .refine((keys) => Object.keys(keys).length <= 40),
+});
+
 export const sendMessageSchema = z.object({
-  body: z.string().trim().min(1).max(4000),
+  envelope: envelopeSchema,
   clientId: z.string().max(64).optional(),
 });
 
@@ -59,6 +80,8 @@ export const reportSchema = z.object({
   messageId: z.string().min(1).optional(),
   reason: z.enum(REPORT_REASONS),
   note: z.string().trim().max(1000).default(""),
+  /** Message keys from the reporter's phone. The server checks each against the stored message. */
+  evidence: z.array(z.object({ messageId: z.string().min(1).max(64), contentKey: encodedSchema.max(60) })).max(20).default([]),
 });
 
 export const topicSubmissionSchema = z.object({
@@ -66,6 +89,14 @@ export const topicSubmissionSchema = z.object({
   title: z.string().trim().min(4).max(120),
   blurb: z.string().trim().max(400).default(""),
   fieldTags: z.array(z.enum(FIELDS)).min(1).max(4),
+});
+
+export const clientErrorSchema = z.object({
+  message: z.string().max(1000),
+  stack: z.string().max(8000).default(""),
+  fatal: z.boolean().default(false),
+  platform: z.string().max(20).default(""),
+  appVersion: z.string().max(40).default(""),
 });
 
 export const pushTokenSchema = z.object({

@@ -1,3 +1,4 @@
+import { webcrypto } from "node:crypto";
 import { describe, expect, it } from "vitest";
 import {
   DEFAULT_JOB_OFFSETS as OFFSETS,
@@ -25,6 +26,15 @@ import {
   scoreTopic,
   visibleLookingFor,
   campusForDomain,
+  deviceKeyFromSecret,
+  fromBase64,
+  generateDeviceKey,
+  openMessage,
+  openWithContentKey,
+  sealMessage,
+  securityCode,
+  toBase64,
+  defaultOpeners,
   nearestCity,
   searchCities,
   type Locality,
@@ -298,11 +308,11 @@ describe("suggestMeetupSlots", () => {
 
   it("names today and tomorrow, and skips anything too soon", () => {
     const labels = suggestMeetupSlots(wednesday).map((slot) => slot.label);
-    expect(labels[0]).toBe("Today lunch");
+    expect(labels[0]).toBe("Lunch today");
     expect(labels).toContain("Tomorrow evening");
     const lateMorning = suggestMeetupSlots(new Date(2026, 10, 4, 11, 30)).map((slot) => slot.label);
-    expect(lateMorning).not.toContain("Today lunch");
-    expect(lateMorning[0]).toBe("Today evening");
+    expect(lateMorning).not.toContain("Lunch today");
+    expect(lateMorning[0]).toBe("This evening");
   });
 
   it("always includes the weekend", () => {
@@ -416,5 +426,77 @@ describe("campusForDomain", () => {
     expect(campusForDomain("notuottawa.ca")).toBeNull();
     expect(campusForDomain(null)).toBeNull();
     expect(campusForDomain(undefined)).toBeNull();
+  });
+});
+
+describe("defaultOpeners", () => {
+  it("names the topic for interests, and asks for a view on questions", () => {
+    expect(defaultOpeners("interest", "Poetry")[0]).toContain("Poetry");
+    expect(defaultOpeners("question", "Should zoos exist?")[0]).toBe("Where do you land on this, and why?");
+  });
+});
+
+describe("end-to-end encryption", () => {
+  const random = (length: number) => webcrypto.getRandomValues(new Uint8Array(length));
+  const [alice, bob, carol] = [generateDeviceKey(random), generateDeviceKey(random), generateDeviceKey(random)];
+  const context = { conversationId: "chat-1", senderId: "alice" };
+  const seal = (text: string, readers = [alice.publicKey, bob.publicKey]) => sealMessage({ text, ...context, sender: alice, readers, random });
+
+  it("lets every reader open a message, including the sender's own device", () => {
+    const envelope = seal("Bonjour, ça va? 🙂");
+    expect(openMessage({ envelope, ...context, me: bob })?.text).toBe("Bonjour, ça va? 🙂");
+    expect(openMessage({ envelope, ...context, me: alice })?.text).toBe("Bonjour, ça va? 🙂");
+    expect(JSON.stringify(envelope)).not.toContain("Bonjour");
+  });
+
+  it("gives someone who isn't a reader nothing", () => {
+    expect(openMessage({ envelope: seal("private"), ...context, me: carol })).toBeNull();
+  });
+
+  it("uses a fresh key and nonce for each message", () => {
+    const [first, second] = [seal("same"), seal("same")];
+    expect(first.ciphertext).not.toBe(second.ciphertext);
+    expect(openMessage({ envelope: first, ...context, me: bob })?.contentKey).not.toBe(openMessage({ envelope: second, ...context, me: bob })?.contentKey);
+  });
+
+  it("refuses a message moved to another chat or credited to someone else", () => {
+    const envelope = seal("moved");
+    expect(openMessage({ envelope, conversationId: "chat-2", senderId: "alice", me: bob })).toBeNull();
+    expect(openMessage({ envelope, conversationId: "chat-1", senderId: "carol", me: bob })).toBeNull();
+  });
+
+  it("refuses an altered message, and a key the sender isn't known to have", () => {
+    const envelope = seal("original");
+    const altered = { ...envelope, ciphertext: `${envelope.ciphertext.startsWith("A") ? "B" : "A"}${envelope.ciphertext.slice(1)}` };
+    expect(openMessage({ envelope: altered, ...context, me: bob })).toBeNull();
+    expect(openMessage({ envelope, ...context, me: bob, senderKeys: [carol.publicKey] })).toBeNull();
+    expect(openMessage({ envelope, ...context, me: bob, senderKeys: [alice.publicKey] })?.text).toBe("original");
+  });
+
+  it("lets a message key prove that one message's text, and only that one", () => {
+    const [reported, other] = [seal("the bad one"), seal("something else")];
+    const { contentKey } = openMessage({ envelope: reported, ...context, me: bob })!;
+    expect(openWithContentKey(reported, context.conversationId, context.senderId, contentKey)).toBe("the bad one");
+    expect(openWithContentKey(other, context.conversationId, context.senderId, contentKey)).toBeNull();
+  });
+
+  it("keeps a device's key working when reloaded from storage", () => {
+    const restored = deviceKeyFromSecret(fromBase64(toBase64(bob.secretKey)));
+    expect(restored.publicKey).toBe(bob.publicKey);
+    expect(openMessage({ envelope: seal("after restart"), ...context, me: restored })?.text).toBe("after restart");
+  });
+
+  it("round-trips base64 at every padding length", () => {
+    for (const length of [0, 1, 2, 3, 4, 31, 32, 33]) {
+      const bytes = random(length);
+      expect([...fromBase64(toBase64(bytes))]).toEqual([...bytes]);
+    }
+  });
+
+  it("gives the same security code whatever the order, and a new one when a device changes", () => {
+    const code = securityCode([alice.publicKey, bob.publicKey]);
+    expect(securityCode([bob.publicKey, alice.publicKey])).toBe(code);
+    expect(securityCode([alice.publicKey, bob.publicKey, carol.publicKey])).not.toBe(code);
+    expect(code).toMatch(/^\d{5} \d{5} \d{5} \d{5}$/);
   });
 });

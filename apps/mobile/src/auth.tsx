@@ -3,6 +3,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import * as SecureStore from "expo-secure-store";
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
 import { api, setSessionToken, setUnauthorizedHandler } from "./api";
+import { deleteDeviceKey, ensureDeviceKey, forgetLoadedKey } from "./e2ee";
 import { registerForPush, unregisterPush } from "./push";
 
 const TOKEN_KEY = "ideas-match.session";
@@ -15,6 +16,7 @@ interface AuthState {
   refresh: () => Promise<void>;
   signOut: () => Promise<void>;
   forgetSession: () => Promise<void>;
+  forgetDevice: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthState | null>(null);
@@ -28,6 +30,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setSessionToken(null);
     setMe(null);
     queryClient.clear();
+    forgetLoadedKey();
     await SecureStore.deleteItemAsync(TOKEN_KEY);
   }, [queryClient]);
 
@@ -55,12 +58,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (me?.onboarded) void registerForPush();
   }, [me?.onboarded]);
 
+  // Registered early, so people can write to this phone before it has opened a chat.
+  useEffect(() => {
+    if (me?.id) void ensureDeviceKey(me.id).catch(() => undefined);
+  }, [me?.id]);
+
   const value = useMemo<AuthState>(
     () => ({
       ready,
       me,
       setMe,
       forgetSession,
+      forgetDevice: async () => {
+        if (me) await deleteDeviceKey(me.id);
+      },
       completeSignIn: async (token, nextMe) => {
         setSessionToken(token);
         await SecureStore.setItemAsync(TOKEN_KEY, token);

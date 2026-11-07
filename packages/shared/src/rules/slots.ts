@@ -33,12 +33,13 @@ export function suggestMeetupSlots(now: Date = new Date(), count = 6): MeetupSlo
     const day = new Date(now.getFullYear(), now.getMonth(), now.getDate() + offset);
     const weekday = day.getDay();
     const isWeekend = weekday === 0 || weekday === 6;
-    const name = offset === 0 ? "Today" : offset === 1 ? "Tomorrow" : DAY_NAMES[weekday];
+    const name = offset === 1 ? "Tomorrow" : DAY_NAMES[weekday];
 
     for (const window of isWeekend ? WEEKEND_WINDOWS : WINDOWS) {
       const start = at(day, window.hour).getTime();
       if (start < earliest) continue;
-      slots.push({ label: `${name} ${window.label}`, startsAt: start, endsAt: start + SLOT_MS });
+      const label = offset > 0 ? `${name} ${window.label}` : window.label === "lunch" ? "Lunch today" : `This ${window.label}`;
+      slots.push({ label, startsAt: start, endsAt: start + SLOT_MS });
     }
   }
 

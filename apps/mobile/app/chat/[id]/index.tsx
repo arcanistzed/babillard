@@ -4,13 +4,18 @@ import { useQuery } from "@tanstack/react-query";
 import { router, Stack, useLocalSearchParams } from "expo-router";
 import { useCallback, useMemo, useState } from "react";
 import { ActivityIndicator, Alert, FlatList, Pressable, ScrollView, StyleSheet, TextInput, View } from "react-native";
+import Animated, { FadeInUp } from "react-native-reanimated";
 import { api } from "@/api";
 import { useAuth } from "@/auth";
 import { MeetupCard } from "@/components/MeetupCard";
 import { messageTime, timeLeft } from "@/format";
+import { haptics } from "@/haptics";
 import { fonts, useTheme } from "@/theme";
 import { Chip, KeyboardScreen, T, useBottomPadding } from "@/ui";
 import { useChat, type LocalMessage } from "@/useChat";
+
+const SAME_RUN_MS = 5 * 60 * 1000;
+const UNREADABLE = "Sent before you signed in on this phone";
 
 export default function Chat() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -24,8 +29,10 @@ export default function Chat() {
     if (router.canGoBack()) router.back();
     else router.replace("/inbox");
   }, []);
-  const { messages, loaded, send, loadOlder } = useChat(id, onRemoved);
+  const { messages, loaded, send, loadOlder } = useChat(id, me?.id, onRemoved);
 
+  // Only messages that arrive while the chat is open slide in. History just appears.
+  const [openedAt] = useState(() => Date.now());
   const detail = conversation.data;
   const names = useMemo(() => new Map(detail?.members.map((member) => [member.id, member.displayName]) ?? []), [detail]);
   const hasOwnMessage = messages.some((message) => message.kind === "text");
@@ -44,6 +51,7 @@ export default function Chat() {
     const body = text.trim();
     if (!body || !me) return;
     send(body, me.id);
+    haptics.tap();
     setDraft("");
   }
 
@@ -56,7 +64,7 @@ export default function Chat() {
     ]);
   }
 
-  function renderMessage({ item }: { item: LocalMessage }) {
+  function renderMessage({ item, index }: { item: LocalMessage; index: number }) {
     if (item.kind === "meetup" && item.meetupId) return <MeetupCard id={item.meetupId} />;
     if (item.kind === "system") {
       return (
@@ -69,27 +77,43 @@ export default function Chat() {
     }
     const mine = item.senderId === me?.id;
     const name = item.senderId ? (names.get(item.senderId) ?? "Former member") : "";
+    // The list is newest first. A time goes under the last message of each run from one person.
+    const next = reversed[index - 1];
+    const endsRun = !next || next.senderId !== item.senderId || next.kind !== "text" || next.createdAt - item.createdAt > SAME_RUN_MS;
     return (
-      <Pressable
-        onLongPress={() => onLongPress(item)}
-        onPress={item.failed && me ? () => send(item.body, me.id, item.clientId) : undefined}
-        accessibilityLabel={`${mine ? "You" : name}: ${item.body}. ${item.failed ? "Not sent. Tap to retry." : messageTime(item.createdAt)}`}
-        style={[styles.bubbleRow, mine ? styles.bubbleRowMine : null]}
-      >
-        <View style={[styles.bubble, mine ? { backgroundColor: theme.ink } : { backgroundColor: theme.surface, borderColor: theme.line, borderWidth: 1 }, item.pending && !item.failed ? styles.pending : null]}>
-          {!mine && detail?.kind === "group" ? (
-            <T variant="small" style={{ fontFamily: fonts.bodyBold }}>
-              {name}
+      // An inverted list flips its cells, so entering "from above" shows as rising from the composer.
+      <Animated.View entering={item.createdAt >= openedAt ? FadeInUp.duration(180) : undefined}>
+        <Pressable
+          onLongPress={() => onLongPress(item)}
+          onPress={item.failed && me ? () => send(item.body, me.id, item.clientId) : undefined}
+          accessibilityLabel={`${mine ? "You" : name}: ${item.unreadable ? UNREADABLE : item.body}. ${item.failed ? "Not sent. Tap to retry." : messageTime(item.createdAt)}`}
+          style={[styles.bubbleRow, mine ? styles.bubbleRowMine : null]}
+        >
+          <View style={[styles.bubble, mine ? { backgroundColor: theme.ink } : { backgroundColor: theme.surface, borderColor: theme.line, borderWidth: 1 }, item.pending && !item.failed ? styles.pending : null]}>
+            {!mine && detail?.kind === "group" ? (
+              <T variant="small" style={{ fontFamily: fonts.bodyBold }}>
+                {name}
+              </T>
+            ) : null}
+            {item.unreadable ? (
+            <T variant="small" style={[styles.unreadable, mine ? { color: theme.paper } : { color: theme.muted }]}>
+              {UNREADABLE}
+            </T>
+          ) : (
+            <T style={mine ? { color: theme.paper } : undefined}>{item.body}</T>
+          )}
+          </View>
+          {item.failed ? (
+            <T variant="small" style={{ color: theme.danger }}>
+              Not sent. Tap to retry.
+            </T>
+          ) : endsRun && !item.pending ? (
+            <T variant="small" muted style={styles.time}>
+              {messageTime(item.createdAt)}
             </T>
           ) : null}
-          <T style={mine ? { color: theme.paper } : undefined}>{item.body}</T>
-        </View>
-        {item.failed ? (
-          <T variant="small" style={{ color: theme.danger }}>
-            Not sent. Tap to retry.
-          </T>
-        ) : null}
-      </Pressable>
+        </Pressable>
+      </Animated.View>
     );
   }
 
@@ -122,7 +146,7 @@ export default function Chat() {
         <FlatList
           inverted
           data={reversed}
-          keyExtractor={(item) => item.id}
+          keyExtractor={(item) => item.clientId ?? item.id}
           renderItem={renderMessage}
           onEndReached={() => void loadOlder().catch(() => undefined)}
           onEndReachedThreshold={0.3}
@@ -180,6 +204,8 @@ const styles = StyleSheet.create({
   bubbleRowMine: { alignItems: "flex-end" },
   bubble: { maxWidth: "82%", borderRadius: 16, paddingHorizontal: 14, paddingVertical: 8 },
   pending: { opacity: 0.6 },
+  unreadable: { fontStyle: "italic" },
+  time: { fontSize: 12, lineHeight: 16, marginTop: 2, marginHorizontal: 4 },
   composerArea: { borderTopWidth: StyleSheet.hairlineWidth, paddingTop: 8 },
   openers: { gap: 8, paddingHorizontal: 12, paddingBottom: 8 },
   composer: { flexDirection: "row", alignItems: "flex-end", gap: 8, paddingHorizontal: 10 },

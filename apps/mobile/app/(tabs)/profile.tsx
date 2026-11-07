@@ -1,17 +1,18 @@
 import { LOOKING_FOR_LABELS, ROLE_LABELS } from "@ideas-match/shared";
 import { router } from "expo-router";
 import { useState } from "react";
-import { Alert, Pressable, ScrollView, Share, StyleSheet, View } from "react-native";
+import { Alert, Pressable, ScrollView, StyleSheet, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { api, friendlyError, uploadAvatar } from "@/api";
 import { useAuth } from "@/auth";
 import { useLocalities } from "@/components/CityPicker";
 import { pickAndResizePhoto } from "@/components/PhotoPicker";
+import { inviteToApp } from "@/invite";
 import { fonts, useTheme } from "@/theme";
 import { Avatar, Button, Chip, ChipRow, ErrorText, T } from "@/ui";
 
 export default function Profile() {
-  const { me, refresh, signOut, forgetSession } = useAuth();
+  const { me, refresh, signOut, forgetSession, forgetDevice } = useAuth();
   const theme = useTheme();
   const [error, setError] = useState<string | null>(null);
   const localities = useLocalities();
@@ -42,6 +43,7 @@ export default function Profile() {
         onPress: async () => {
           try {
             await api.delete("/me");
+            await forgetDevice();
             await forgetSession();
           } catch (caught) {
             setError(friendlyError(caught));
@@ -77,16 +79,13 @@ export default function Profile() {
         {error ? <ErrorText>{error}</ErrorText> : null}
 
         <View style={styles.actions}>
+          <Button label="Invite a friend" onPress={inviteToApp} />
           <Button label="Edit profile" kind="secondary" onPress={() => router.push("/profile-edit")} />
           <Button label="Suggest a topic" kind="secondary" onPress={() => router.push("/topic/new")} />
-          <Button label="Invite a friend" kind="secondary" onPress={() => void Share.share({ message: `Come talk ideas with me on Ideas Match: ${process.env.EXPO_PUBLIC_API_URL}/invite` })} />
           <Button label="Blocked people" kind="quiet" onPress={() => router.push("/blocked")} />
           <Button label="Sign out" kind="quiet" onPress={signOut} />
           <Button label="Delete account" kind="danger" onPress={confirmDelete} />
         </View>
-        <T variant="small" muted>
-          City data from GeoNames, CC BY 4.0.
-        </T>
       </ScrollView>
     </SafeAreaView>
   );

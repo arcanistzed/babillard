@@ -1,6 +1,7 @@
 export * from "./constants";
 export * from "./schemas";
 export * from "./api";
+export * from "./e2ee";
 export * from "./rules/rankTopics";
 export * from "./rules/rankPeople";
 export * from "./rules/match";

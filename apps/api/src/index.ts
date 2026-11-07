@@ -1,8 +1,10 @@
 import { Hono } from "hono";
 import { HTTPException } from "hono/http-exception";
+import { secureHeaders } from "hono/secure-headers";
 import { runSweep } from "./cron";
 import admin from "./routes/admin";
 import auth from "./routes/auth";
+import clientErrors from "./routes/clientErrors";
 import conversations from "./routes/conversations";
 import deck from "./routes/deck";
 import me from "./routes/me";
@@ -23,6 +25,11 @@ app.onError((error, c) => {
   return c.json({ error: "internal_error" }, 500);
 });
 
+// The app loads avatars natively, and cross-origin rules don't apply to it.
+const addSecureHeaders = secureHeaders({ crossOriginResourcePolicy: false });
+// A WebSocket upgrade response has immutable headers, so setting any would throw.
+app.use((c, next) => (c.req.header("upgrade")?.toLowerCase() === "websocket" ? next() : addSecureHeaders(c, next)));
+
 app.route("/", publicRoutes);
 app.route("/auth", auth);
 app.route("/me", me);
@@ -32,6 +39,7 @@ app.route("/conversations", conversations);
 app.route("/meetups", meetups);
 app.route("/safety", safety);
 app.route("/admin", admin);
+app.route("/client-errors", clientErrors);
 
 export default {
   fetch: app.fetch,

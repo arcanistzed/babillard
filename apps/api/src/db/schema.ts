@@ -1,3 +1,4 @@
+import type { Envelope, ReportEvidence } from "@ideas-match/shared";
 import { index, integer, primaryKey, real, sqliteTable, text, uniqueIndex } from "drizzle-orm/sqlite-core";
 import type { Field, LookingFor, Role, Stance, VenueKind } from "@ideas-match/shared";
 
@@ -109,6 +110,7 @@ export const conversations = sqliteTable("conversations", {
   topicId: text("topic_id"),
   localityId: text("locality_id"),
   lastMessagePreview: text("last_message_preview"),
+  lastMessageEnvelope: text("last_message_envelope", { mode: "json" }).$type<Envelope>(),
   lastMessageSenderId: text("last_message_sender_id"),
   lastMessageAt: integer("last_message_at"),
   lastUserMessageAt: integer("last_user_message_at"),
@@ -172,6 +174,8 @@ export const reports = sqliteTable(
     createdAt: integer("created_at").notNull(),
     resolvedAt: integer("resolved_at"),
     action: text("action", { enum: ["resolved", "warned", "banned"] }),
+    /** Messages the reporter chose to reveal, each checked against the stored ciphertext. */
+    evidence: text("evidence", { mode: "json" }).$type<ReportEvidence[]>(),
   },
   (t) => [index("reports_open_idx").on(t.resolvedAt, t.createdAt)],
 );
@@ -219,5 +223,48 @@ export const magicLinks = sqliteTable(
     usedAt: integer("used_at"),
     createdAt: integer("created_at").notNull(),
   },
-  (t) => [index("magic_links_email_idx").on(t.email, t.createdAt)],
+  (t) => [index("magic_links_email_idx").on(t.email, t.createdAt), index("magic_links_created_idx").on(t.createdAt)],
+);
+
+/** What moderators did, and who did it. Rows are never updated or removed. */
+export const moderationLog = sqliteTable(
+  "moderation_log",
+  {
+    id: text("id").primaryKey(),
+    actor: text("actor").notNull(),
+    action: text("action").notNull(),
+    targetType: text("target_type", { enum: ["report", "user", "topic"] }).notNull(),
+    targetId: text("target_id").notNull(),
+    detail: text("detail").notNull().default(""),
+    createdAt: integer("created_at").notNull(),
+  },
+  (t) => [index("moderation_log_created_idx").on(t.createdAt), index("moderation_log_target_idx").on(t.targetType, t.targetId)],
+);
+
+/** JavaScript crashes reported by the app. Holds no user ID, and the cron sweep removes rows after 30 days. */
+export const clientErrors = sqliteTable(
+  "client_errors",
+  {
+    id: text("id").primaryKey(),
+    message: text("message").notNull(),
+    stack: text("stack").notNull().default(""),
+    fatal: integer("fatal", { mode: "boolean" }).notNull().default(false),
+    platform: text("platform").notNull().default(""),
+    appVersion: text("app_version").notNull().default(""),
+    createdAt: integer("created_at").notNull(),
+  },
+  (t) => [index("client_errors_created_idx").on(t.createdAt)],
+);
+
+/** A phone's public key. The private half never leaves the phone. */
+export const deviceKeys = sqliteTable(
+  "device_keys",
+  {
+    publicKey: text("public_key").primaryKey(),
+    userId: text("user_id").notNull(),
+    createdAt: integer("created_at").notNull(),
+    /** Retired keys get no new messages, but stay known so older messages can still be attributed. */
+    retiredAt: integer("retired_at"),
+  },
+  (t) => [index("device_keys_user_idx").on(t.userId)],
 );

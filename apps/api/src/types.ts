@@ -8,5 +8,6 @@ export interface AppEnv {
   Variables: {
     user: UserRow;
     sessionId: string;
+    adminEmail: string;
   };
 }

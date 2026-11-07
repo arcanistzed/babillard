@@ -1,3 +1,4 @@
+import type { Envelope } from "./e2ee";
 import type { Field, LookingFor, Role, Stance, VenueKind } from "./constants";
 
 /** Response shapes shared by the Worker and the app. */
@@ -75,7 +76,10 @@ export interface InboxItem {
   topicTitle: string | null;
   avatarUrl: string | null;
   memberCount: number;
+  /** Only ever set for messages the app wrote itself. People's messages arrive in lastMessageEnvelope. */
   lastMessagePreview: string | null;
+  lastMessageEnvelope: Envelope | null;
+  lastMessageSenderId: string | null;
   lastMessageAt: number | null;
   unreadCount: number;
   expiresAt: number | null;
@@ -86,6 +90,9 @@ export interface ConversationMember {
   id: string;
   displayName: string;
   avatarUrl: string | null;
+  /** Devices that can read new messages. */
+  deviceKeys: string[];
+  retiredDeviceKeys: string[];
 }
 
 export interface MeetupSummary {
@@ -120,12 +127,21 @@ export interface ConversationDetail {
   muted: boolean;
 }
 
+export interface ReportEvidence {
+  id: string;
+  senderId: string;
+  body: string;
+  createdAt: number;
+}
+
 export interface ChatMessage {
   /** Per-conversation order. Pass as `before` to page back through history. */
   seq: number;
   id: string;
   senderId: string | null;
+  /** Empty for people's messages, which are in `envelope`. Holds the text of messages the app wrote. */
   body: string;
+  envelope?: Envelope;
   kind: "text" | "system" | "meetup";
   meetupId: string | null;
   createdAt: number;
@@ -135,11 +151,11 @@ export interface ChatMessage {
 export type ServerSocketEvent =
   | { type: "message"; message: ChatMessage }
   | { type: "meetup"; meetup: { id: string } }
-  | { type: "error"; error: string };
+  | { type: "error"; error: string; clientId?: string };
 
 export interface ClientSocketEvent {
   type: "send";
-  body: string;
+  envelope: Envelope;
   clientId?: string;
 }
 

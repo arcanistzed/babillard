@@ -1,11 +1,12 @@
-import { isAdult, locationSchema, onboardingSchema, profileSchema, pushTokenSchema, type Locality, type Me } from "@ideas-match/shared";
-import { and, desc, eq, inArray, or } from "drizzle-orm";
+import { deviceKeySchema, isAdult, locationSchema, onboardingSchema, profileSaveSchema, pushTokenSchema, type Locality, type Me } from "@ideas-match/shared";
+import { and, desc, eq, inArray, isNull, or, sql } from "drizzle-orm";
 import { Hono } from "hono";
 import { getDb, schema } from "../db";
 import { avatarUrl } from "../lib/config";
 import { fail, parseJson } from "../lib/http";
 import { newId } from "../lib/tokens";
 import { requireAuth } from "../middleware";
+import { joinCohort } from "./deck";
 import type { AppEnv, UserRow } from "../types";
 
 const MAX_AVATAR_BYTES = 2 * 1024 * 1024;
@@ -55,12 +56,57 @@ function imageExtension(bytes: Uint8Array): string | null {
   return null;
 }
 
+const MAX_TOPICS_CARRIED_TO_NEW_CITY = 100;
+
+/** Someone's picks follow them, so they count toward groups in the new city. */
+async function rejoinCohorts(env: Env, userId: string, cityId: string): Promise<void> {
+  const db = getDb(env);
+  const picks = await db
+    .select({ topic: schema.topics, stance: schema.topicSwipes.stance })
+    .from(schema.topicSwipes)
+    .innerJoin(schema.topics, eq(schema.topics.id, schema.topicSwipes.topicId))
+    .where(and(eq(schema.topicSwipes.userId, userId), eq(schema.topicSwipes.direction, "right"), inArray(schema.topics.status, ["seeded", "approved"])))
+    .orderBy(desc(schema.topicSwipes.createdAt))
+    .limit(MAX_TOPICS_CARRIED_TO_NEW_CITY);
+  for (const { topic, stance } of picks) {
+    try {
+      await joinCohort(env, { userId, cityId, topic, stance });
+    } catch (error) {
+      console.error(JSON.stringify({ event: "cohort_rejoin_failed", topicId: topic.id, error: String(error) }));
+    }
+  }
+}
+
 const CONTENT_TYPES: Record<string, string> = { jpg: "image/jpeg", png: "image/png", webp: "image/webp" };
 
 const me = new Hono<AppEnv>();
 me.use("*", requireAuth);
 
 me.get("/", async (c) => c.json(await loadMe(c.env, c.get("user"))));
+
+const MAX_DEVICES_PER_PERSON = 5;
+
+/** Called by each phone with its public key. A new key means new phones can read new messages, not old ones. */
+me.post("/device-key", async (c) => {
+  const user = c.get("user");
+  const { publicKey } = await parseJson(c, deviceKeySchema);
+  const db = getDb(c.env);
+  const [existing] = await db.select().from(schema.deviceKeys).where(eq(schema.deviceKeys.publicKey, publicKey));
+  if (existing && existing.userId !== user.id) throw fail(409, "key_in_use");
+  const now = Date.now();
+  await db
+    .insert(schema.deviceKeys)
+    .values({ publicKey, userId: user.id, createdAt: now })
+    .onConflictDoUpdate({ target: schema.deviceKeys.publicKey, set: { retiredAt: null, createdAt: now } });
+  const active = await db
+    .select({ publicKey: schema.deviceKeys.publicKey })
+    .from(schema.deviceKeys)
+    .where(and(eq(schema.deviceKeys.userId, user.id), isNull(schema.deviceKeys.retiredAt)))
+    .orderBy(desc(schema.deviceKeys.createdAt));
+  const surplus = active.slice(MAX_DEVICES_PER_PERSON).map((row) => row.publicKey);
+  if (surplus.length) await db.update(schema.deviceKeys).set({ retiredAt: now }).where(inArray(schema.deviceKeys.publicKey, surplus));
+  return c.json({ ok: true });
+});
 
 me.get("/localities", async (c) => {
   const rows: Locality[] = await getDb(c.env).select().from(schema.localities).orderBy(desc(schema.localities.population));
@@ -86,15 +132,23 @@ me.put("/onboarding", async (c) => {
   return c.json(await loadMe(c.env, updated!));
 });
 
+/** Saves the edit-profile form in one transaction, so a failure can't leave it half saved. */
 me.put("/profile", async (c) => {
   const user = c.get("user");
   if (!user.onboardedAt) throw fail(403, "onboarding_required");
-  const input = await parseJson(c, profileSchema);
-  await getDb(c.env).update(schema.profiles).set(input).where(eq(schema.profiles.userId, user.id));
-  return c.json(await loadMe(c.env, user));
+  const { cityId, campusId, ...profile } = await parseJson(c, profileSaveSchema);
+  const db = getDb(c.env);
+  const location = cityId ? { cityId, campusId: campusId ?? null } : null;
+  if (location) await requireLocation(db, location.cityId, location.campusId);
+  await db.batch([
+    db.update(schema.profiles).set(profile).where(eq(schema.profiles.userId, user.id)),
+    db.update(schema.users).set(location ?? { cityId: user.cityId, campusId: user.campusId }).where(eq(schema.users.id, user.id)),
+  ]);
+  if (location && user.cityId !== location.cityId) c.executionCtx.waitUntil(rejoinCohorts(c.env, user.id, location.cityId));
+  return c.json(await loadMe(c.env, { ...user, ...location }));
 });
 
-/** People move, or may have picked somewhere close before their city was listed. */
+/** People move. Builds before the combined save above still call this, so it stays until those are gone. */
 me.put("/location", async (c) => {
   const user = c.get("user");
   if (!user.onboardedAt) throw fail(403, "onboarding_required");
@@ -102,6 +156,7 @@ me.put("/location", async (c) => {
   const db = getDb(c.env);
   await requireLocation(db, input.cityId, input.campusId);
   const [updated] = await db.update(schema.users).set({ cityId: input.cityId, campusId: input.campusId }).where(eq(schema.users.id, user.id)).returning();
+  if (user.cityId !== input.cityId) c.executionCtx.waitUntil(rejoinCohorts(c.env, user.id, input.cityId));
   return c.json(await loadMe(c.env, updated!));
 });
 
@@ -151,12 +206,17 @@ me.delete("/", async (c) => {
     .select({ id: schema.conversationMembers.conversationId })
     .from(schema.conversationMembers)
     .where(eq(schema.conversationMembers.userId, id));
-  await Promise.all(memberships.map((row) => c.env.CHAT_ROOM.getByName(row.id).eraseUser(id)));
+  const [profile] = await db.select({ key: schema.profiles.avatarKey, name: schema.profiles.displayName }).from(schema.profiles).where(eq(schema.profiles.userId, id));
+  await Promise.all(memberships.map((row) => c.env.CHAT_ROOM.getByName(row.id).eraseUser(id, profile?.name ?? null)));
 
-  const [profile] = await db.select({ key: schema.profiles.avatarKey }).from(schema.profiles).where(eq(schema.profiles.userId, id));
   if (profile?.key) await c.env.AVATARS.delete(profile.key);
 
   const conversationIds = memberships.map((row) => row.id);
+  const namePrefix = profile ? `${profile.name} ` : null;
+  const previewNamesDeletedUser = or(
+    eq(schema.conversations.lastMessageSenderId, id),
+    namePrefix ? and(isNull(schema.conversations.lastMessageSenderId), sql`substr(${schema.conversations.lastMessagePreview}, 1, ${[...namePrefix].length}) = ${namePrefix}`) : undefined,
+  );
   await db.batch([
     db.update(schema.matches).set({ state: "closed" }).where(or(eq(schema.matches.userA, id), eq(schema.matches.userB, id))),
     db.delete(schema.conversationMembers).where(eq(schema.conversationMembers.userId, id)),
@@ -165,6 +225,7 @@ me.delete("/", async (c) => {
     db.delete(schema.blocks).where(or(eq(schema.blocks.blockerId, id), eq(schema.blocks.blockedId, id))),
     db.delete(schema.meetupResponses).where(eq(schema.meetupResponses.userId, id)),
     db.delete(schema.pushTokens).where(eq(schema.pushTokens.userId, id)),
+    db.delete(schema.deviceKeys).where(eq(schema.deviceKeys.userId, id)),
     db.delete(schema.sessions).where(eq(schema.sessions.userId, id)),
     db.delete(schema.profiles).where(eq(schema.profiles.userId, id)),
     db
@@ -172,7 +233,7 @@ me.delete("/", async (c) => {
       .set({ status: "deleted", email: `deleted-${id}@deleted.invalid`, dob: null, institutionDomain: null, verifiedInstitution: false, cityId: null, campusId: null })
       .where(eq(schema.users.id, id)),
     ...(conversationIds.length
-      ? [db.update(schema.conversations).set({ lastMessagePreview: null, lastMessageSenderId: null }).where(and(inArray(schema.conversations.id, conversationIds), eq(schema.conversations.lastMessageSenderId, id)))]
+      ? [db.update(schema.conversations).set({ lastMessagePreview: null, lastMessageEnvelope: null, lastMessageSenderId: null }).where(and(inArray(schema.conversations.id, conversationIds), previewNamesDeletedUser))]
       : []),
   ]);
   return c.json({ ok: true });

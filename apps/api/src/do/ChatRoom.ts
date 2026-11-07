@@ -1,6 +1,6 @@
 import { DurableObject } from "cloudflare:workers";
-import { sendMessageSchema, type ChatMessage, type ServerSocketEvent } from "@ideas-match/shared";
-import { and, eq, inArray, ne, notInArray, sql } from "drizzle-orm";
+import { sendMessageSchema, type ChatMessage, type Envelope, type ServerSocketEvent } from "@ideas-match/shared";
+import { and, eq, inArray, isNull, ne, notInArray, sql } from "drizzle-orm";
 import { getDb, schema } from "../db";
 import { newId } from "../lib/tokens";
 import { sendPush } from "../lib/push";
@@ -26,12 +26,15 @@ export class SendRejected extends Error {}
 const PREVIEW_LENGTH = 120;
 const HISTORY_LIMIT = 50;
 
+/** People's messages are stored as encrypted envelopes in `body`. The server can't read them. */
 function toMessage(row: MessageRow): ChatMessage {
+  const isEncrypted = row.kind === "text";
   return {
     seq: row.seq,
     id: row.id,
     senderId: row.sender_id,
-    body: row.body,
+    body: isEncrypted ? "" : row.body,
+    ...(isEncrypted ? { envelope: JSON.parse(row.body) as Envelope } : {}),
     kind: row.kind as ChatMessage["kind"],
     meetupId: row.meetup_id,
     createdAt: row.created_at,
@@ -57,6 +60,11 @@ export class ChatRoom extends DurableObject<Env> {
         );
         CREATE UNIQUE INDEX IF NOT EXISTS messages_client_idx ON messages (sender_id, client_id) WHERE client_id IS NOT NULL;
       `);
+      // Messages from before encryption were plain text, and shouldn't sit readable on the server.
+      if (!this.ctx.storage.kv.get("plaintext_removed")) {
+        this.ctx.storage.sql.exec(`DELETE FROM messages WHERE kind = 'text' AND body NOT LIKE '{"v":1,%'`);
+        this.ctx.storage.kv.put("plaintext_removed", true);
+      }
     });
   }
 
@@ -78,15 +86,17 @@ export class ChatRoom extends DurableObject<Env> {
 
   override async webSocketMessage(socket: WebSocket, raw: string | ArrayBuffer): Promise<void> {
     const { userId, conversationId } = socket.deserializeAttachment() as SocketAttachment;
+    let clientId: string | undefined;
     try {
       const payload: unknown = JSON.parse(typeof raw === "string" ? raw : new TextDecoder().decode(raw));
       const parsed = sendMessageSchema.safeParse(payload);
       if (!parsed.success) throw new SendRejected("Invalid message");
-      await this.postUserMessage(conversationId, userId, parsed.data.body, parsed.data.clientId);
+      clientId = parsed.data.clientId;
+      await this.postUserMessage(conversationId, userId, parsed.data.envelope, clientId);
     } catch (error) {
       const message = error instanceof SendRejected ? error.message : "Could not send";
       if (!(error instanceof SendRejected)) console.error(JSON.stringify({ event: "chat_send_error", error: String(error) }));
-      socket.send(JSON.stringify({ type: "error", error: message } satisfies ServerSocketEvent));
+      socket.send(JSON.stringify({ type: "error", error: message, ...(clientId ? { clientId } : {}) } satisfies ServerSocketEvent));
     }
   }
 
@@ -98,7 +108,7 @@ export class ChatRoom extends DurableObject<Env> {
     }
   }
 
-  async postUserMessage(conversationId: string, senderId: string, body: string, clientId?: string): Promise<ChatMessage> {
+  async postUserMessage(conversationId: string, senderId: string, envelope: Envelope, clientId?: string): Promise<ChatMessage> {
     if (clientId) {
       const existing = this.ctx.storage.sql
         .exec<MessageRow>("SELECT * FROM messages WHERE sender_id = ? AND client_id = ?", senderId, clientId)
@@ -120,6 +130,14 @@ export class ChatRoom extends DurableObject<Env> {
     if (!sender || sender.status !== "active") throw new SendRejected("You are not in this conversation");
     if (matchRows[0] && matchRows[0].state !== "active") throw new SendRejected("This conversation is closed");
 
+    // Everyone's current devices must be able to read this. If not, the sender's phone has an old list.
+    const devices = await db
+      .select({ userId: schema.deviceKeys.userId, publicKey: schema.deviceKeys.publicKey })
+      .from(schema.deviceKeys)
+      .where(and(inArray(schema.deviceKeys.userId, members.map((member) => member.userId)), isNull(schema.deviceKeys.retiredAt)));
+    if (!devices.some((device) => device.userId === senderId && device.publicKey === envelope.from)) throw new SendRejected("unknown_device");
+    if (devices.some((device) => !(device.publicKey in envelope.keys))) throw new SendRejected("stale_keys");
+
     const otherIds = members.filter((member) => member.userId !== senderId).map((member) => member.userId);
     const blockers = otherIds.length
       ? await db
@@ -129,7 +147,7 @@ export class ChatRoom extends DurableObject<Env> {
       : [];
     const blockerIds = blockers.map((row) => row.id);
 
-    const message = this.insert({ senderId, body, kind: "text", meetupId: null, clientId: clientId ?? null });
+    const message = this.insert({ senderId, body: JSON.stringify(envelope), kind: "text", meetupId: null, clientId: clientId ?? null });
     this.broadcast({ type: "message", message }, new Set(blockerIds));
 
     const now = message.createdAt;
@@ -137,7 +155,8 @@ export class ChatRoom extends DurableObject<Env> {
       db
         .update(schema.conversations)
         .set({
-          lastMessagePreview: body.slice(0, PREVIEW_LENGTH),
+          lastMessagePreview: null,
+          lastMessageEnvelope: envelope,
           lastMessageSenderId: senderId,
           lastMessageAt: now,
           lastUserMessageAt: now,
@@ -166,8 +185,9 @@ export class ChatRoom extends DurableObject<Env> {
         .where(eq(schema.profiles.userId, senderId));
       this.ctx.waitUntil(
         sendPush(this.env, recipients, {
-          title: profile?.name ?? "New message",
-          body: body.slice(0, PREVIEW_LENGTH),
+          title: profile?.name ?? "Ideas Match",
+          // Push services can read this, so it never holds the message itself.
+          body: "New message",
           data: { screen: "chat", id: conversationId },
         }),
       );
@@ -176,9 +196,9 @@ export class ChatRoom extends DurableObject<Env> {
   }
 
   /** RPC entry point. Custom error classes do not survive RPC, so rejections come back as data. */
-  async trySend(conversationId: string, senderId: string, body: string, clientId?: string): Promise<{ ok: true; message: ChatMessage } | { ok: false; error: string }> {
+  async trySend(conversationId: string, senderId: string, envelope: Envelope, clientId?: string): Promise<{ ok: true; message: ChatMessage } | { ok: false; error: string }> {
     try {
-      return { ok: true, message: await this.postUserMessage(conversationId, senderId, body, clientId) };
+      return { ok: true, message: await this.postUserMessage(conversationId, senderId, envelope, clientId) };
     } catch (error) {
       if (error instanceof SendRejected) return { ok: false, error: error.message };
       throw error;
@@ -192,7 +212,7 @@ export class ChatRoom extends DurableObject<Env> {
     const db = getDb(this.env);
     await db
       .update(schema.conversations)
-      .set({ lastMessagePreview: body.slice(0, PREVIEW_LENGTH), lastMessageSenderId: null, lastMessageAt: message.createdAt })
+      .set({ lastMessagePreview: body.slice(0, PREVIEW_LENGTH), lastMessageEnvelope: null, lastMessageSenderId: null, lastMessageAt: message.createdAt })
       .where(eq(schema.conversations.id, conversationId));
     return message;
   }
@@ -207,7 +227,7 @@ export class ChatRoom extends DurableObject<Env> {
     return cursor.toArray().map(toMessage).reverse();
   }
 
-  /** For moderators: the messages either side of a reported one, or the latest ones if none was named. */
+  /** For the reporter's phone: the messages either side of a reported one, or the latest ones if none was named. */
   around(messageId: string | null, each = 5): ChatMessage[] {
     const sql = this.ctx.storage.sql;
     const target = messageId ? sql.exec<MessageRow>("SELECT * FROM messages WHERE id = ?", messageId).toArray()[0] : undefined;
@@ -217,9 +237,8 @@ export class ChatRoom extends DurableObject<Env> {
     return [...before, target, ...after].map(toMessage);
   }
 
-  getMessage(id: string): ChatMessage | null {
-    const row = this.ctx.storage.sql.exec<MessageRow>("SELECT * FROM messages WHERE id = ?", id).toArray()[0];
-    return row ? toMessage(row) : null;
+  getMessages(ids: string[]): ChatMessage[] {
+    return ids.flatMap((id) => this.ctx.storage.sql.exec<MessageRow>("SELECT * FROM messages WHERE id = ?", id).toArray().map(toMessage));
   }
 
   /** Tells open sockets that a meetup changed, so clients refetch it. */
@@ -238,9 +257,17 @@ export class ChatRoom extends DurableObject<Env> {
     }
   }
 
-  /** Permanently removes one user's messages when they delete their account. */
-  eraseUser(userId: string): void {
+  /**
+   * Permanently removes one user's messages when they delete their account.
+   * App messages like "Sam proposed a meetup" have no sender, so a deleted person's name is removed from them by matching it.
+   */
+  eraseUser(userId: string, displayName: string | null): void {
     this.ctx.storage.sql.exec("DELETE FROM messages WHERE sender_id = ?", userId);
+    if (displayName) {
+      // SQLite counts characters where JavaScript counts UTF-16 units, so an emoji in a name needs the spread.
+      const prefixLength = [...displayName].length + 1;
+      this.ctx.storage.sql.exec("UPDATE messages SET body = 'Someone ' || substr(body, ?) WHERE sender_id IS NULL AND substr(body, 1, ?) = ?", prefixLength + 1, prefixLength, `${displayName} `);
+    }
     this.kick(userId);
   }
 

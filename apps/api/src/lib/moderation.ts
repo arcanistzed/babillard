@@ -1,6 +1,7 @@
 import { eq } from "drizzle-orm";
 import { schema, type Db } from "../db";
 import { sendEmail } from "./email";
+import { newId } from "./tokens";
 
 export const REASON_LABELS: Record<string, string> = {
   harassment: "Harassment",
@@ -58,3 +59,7 @@ export async function banUser(env: Env, db: Db, userId: string): Promise<void> {
   await Promise.all(memberships.map((row) => env.CHAT_ROOM.getByName(row.id).kick(userId)));
 }
 
+
+export async function logModeration(db: Db, actor: string, action: string, targetType: "report" | "user" | "topic", targetId: string, detail = ""): Promise<void> {
+  await db.insert(schema.moderationLog).values({ id: newId(), actor, action, targetType, targetId, detail, createdAt: Date.now() });
+}

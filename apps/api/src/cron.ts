@@ -1,5 +1,5 @@
 import { isCheckinDue, isMatchExpired, isNudgeDue, isProposalStale, isReminderDue, pickOpener } from "@ideas-match/shared";
-import { and, eq, inArray, isNull, lte } from "drizzle-orm";
+import { and, eq, inArray, isNull, lt, lte } from "drizzle-orm";
 import { getDb, schema, type Db } from "./db";
 import { jobOffsets } from "./lib/config";
 import { sendPush } from "./lib/push";
@@ -9,7 +9,7 @@ const SWEEP_BATCH = 200;
 /** Every time-based job lives here. Each step claims a row before notifying, so a retry cannot double-send. */
 export async function runSweep(env: Env, now = Date.now()): Promise<void> {
   const db = getDb(env);
-  const jobs = { nudgeMatches, expireMatches, remindMeetups, checkInMeetups, cancelStaleProposals };
+  const jobs = { nudgeMatches, expireMatches, remindMeetups, checkInMeetups, cancelStaleProposals, removeOldRecords };
   for (const [name, job] of Object.entries(jobs)) {
     try {
       const handled = await job(env, db, now);
@@ -137,4 +137,19 @@ async function cancelStaleProposals(_env: Env, db: Db, now: number): Promise<num
   if (stale.length === 0) return 0;
   await db.update(schema.meetups).set({ state: "cancelled" }).where(inArray(schema.meetups.id, stale.map((meetup) => meetup.id)));
   return stale.length;
+}
+
+const DAY_MS = 24 * 60 * 60 * 1000;
+const MODERATION_RETENTION_MS = 730 * DAY_MS;
+
+async function removeOldRecords(_env: Env, db: Db, now: number): Promise<number> {
+  const results = await db.batch([
+    db.delete(schema.magicLinks).where(lt(schema.magicLinks.createdAt, now - DAY_MS)).returning({ id: schema.magicLinks.id }),
+    db.delete(schema.sessions).where(lt(schema.sessions.expiresAt, now)).returning({ id: schema.sessions.id }),
+    db.delete(schema.clientErrors).where(lt(schema.clientErrors.createdAt, now - 30 * DAY_MS)).returning({ id: schema.clientErrors.id }),
+    // An open report stays until someone handles it, however old it gets.
+    db.delete(schema.reports).where(lt(schema.reports.resolvedAt, now - MODERATION_RETENTION_MS)).returning({ id: schema.reports.id }),
+    db.delete(schema.moderationLog).where(lt(schema.moderationLog.createdAt, now - MODERATION_RETENTION_MS)).returning({ id: schema.moderationLog.id }),
+  ]);
+  return results.reduce((total, rows) => total + rows.length, 0);
 }

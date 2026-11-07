@@ -1,4 +1,4 @@
-import { orderedPair, reportSchema } from "@ideas-match/shared";
+import { openWithContentKey, orderedPair, reportSchema, type ReportEvidence } from "@ideas-match/shared";
 import { and, eq, gt, inArray, sql } from "drizzle-orm";
 import { Hono } from "hono";
 import { getDb, schema } from "../db";
@@ -29,6 +29,25 @@ safety.post("/reports", async (c) => {
     .where(and(eq(schema.reports.reporterId, user.id), gt(schema.reports.createdAt, Date.now() - DAY)));
   if ((recent?.count ?? 0) >= MAX_REPORTS_PER_DAY) throw fail(429, "too_many_reports");
 
+  // The reporter's phone supplies the keys, and the stored ciphertext proves the text is what was really sent.
+  const evidence: ReportEvidence[] = [];
+  if (input.conversationId && input.evidence.length) {
+    const conversationId = input.conversationId;
+    const [member] = await db
+      .select({ id: schema.conversationMembers.userId })
+      .from(schema.conversationMembers)
+      .where(and(eq(schema.conversationMembers.conversationId, conversationId), eq(schema.conversationMembers.userId, user.id)));
+    if (!member) throw fail(404, "conversation_not_found");
+    const stored = await c.env.CHAT_ROOM.getByName(conversationId).getMessages(input.evidence.map((item) => item.messageId));
+    for (const item of input.evidence) {
+      const message = stored.find((row) => row.id === item.messageId);
+      if (!message?.envelope || !message.senderId) continue;
+      const body = openWithContentKey(message.envelope, conversationId, message.senderId, item.contentKey);
+      if (body !== null) evidence.push({ id: message.id, senderId: message.senderId, body, createdAt: message.createdAt });
+    }
+    evidence.sort((a, b) => a.createdAt - b.createdAt);
+  }
+
   await db.insert(schema.reports).values({
     id: newId(),
     reporterId: user.id,
@@ -37,6 +56,7 @@ safety.post("/reports", async (c) => {
     messageId: input.messageId ?? null,
     reason: input.reason,
     note: input.note,
+    evidence,
     createdAt: Date.now(),
   });
   c.executionCtx.waitUntil(notifyAdminOfReport(c.env, input.reason));

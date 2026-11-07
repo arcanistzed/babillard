@@ -22,6 +22,20 @@
       "when": 1793965782920,
       "tag": "0002_right_chimera",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "6",
+      "when": 1794028721064,
+      "tag": "0003_light_hedge_knight",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "6",
+      "when": 1794032849391,
+      "tag": "0004_flowery_raider",
+      "breakpoints": true
     }
   ]
 }

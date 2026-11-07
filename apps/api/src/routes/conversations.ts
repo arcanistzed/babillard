@@ -76,6 +76,8 @@ conversations.get("/", async (c) => {
       avatarUrl: isDirect ? avatarUrl(c.env, other?.avatarKey) : null,
       memberCount: roster.length,
       lastMessagePreview: hidePreview ? null : conversation.lastMessagePreview,
+      lastMessageEnvelope: hidePreview ? null : conversation.lastMessageEnvelope,
+      lastMessageSenderId: conversation.lastMessageSenderId,
       lastMessageAt: conversation.lastMessageAt,
       unreadCount: membership.unreadCount,
       // The countdown only matters while nobody has written anything.
@@ -114,7 +116,18 @@ conversations.get("/:id", async (c) => {
     for (const row of rows) if (row.stance) stanceSpread[row.stance] = row.count;
   }
 
-  const memberCards = roster.map((member) => ({ id: member.id, displayName: member.displayName, avatarUrl: avatarUrl(c.env, member.avatarKey) }));
+  const devices = await db
+    .select({ userId: schema.deviceKeys.userId, publicKey: schema.deviceKeys.publicKey, retiredAt: schema.deviceKeys.retiredAt })
+    .from(schema.deviceKeys)
+    .where(inArray(schema.deviceKeys.userId, roster.map((member) => member.id)));
+  const keysOf = (userId: string, retired: boolean) => devices.filter((device) => device.userId === userId && (device.retiredAt !== null) === retired).map((device) => device.publicKey);
+  const memberCards = roster.map((member) => ({
+    id: member.id,
+    displayName: member.displayName,
+    avatarUrl: avatarUrl(c.env, member.avatarKey),
+    deviceKeys: keysOf(member.id, false),
+    retiredDeviceKeys: keysOf(member.id, true),
+  }));
   const other = conversation.kind === "direct" ? memberCards.find((member) => member.id !== user.id) : undefined;
   const detail: ConversationDetail = {
     id,
@@ -140,7 +153,9 @@ conversations.get("/:id/messages", async (c) => {
 
   const beforeParam = Number(c.req.query("before"));
   const before = Number.isInteger(beforeParam) && beforeParam > 0 ? beforeParam : undefined;
-  const history: ChatMessage[] = await c.env.CHAT_ROOM.getByName(id).history(before);
+  const stub = c.env.CHAT_ROOM.getByName(id);
+  const around = c.req.query("around");
+  const history: ChatMessage[] = around !== undefined ? await stub.around(around || null) : await stub.history(before);
 
   const blocked = await db.select({ id: schema.blocks.blockedId }).from(schema.blocks).where(eq(schema.blocks.blockerId, user.id));
   const blockedIds = new Set(blocked.map((row) => row.id));
@@ -151,8 +166,8 @@ conversations.post("/:id/messages", async (c) => {
   const user = c.get("user");
   const id = c.req.param("id");
   const input = await parseJson(c, sendMessageSchema);
-  const result = await c.env.CHAT_ROOM.getByName(id).trySend(id, user.id, input.body, input.clientId);
-  if (!result.ok) throw fail(403, result.error);
+  const result = await c.env.CHAT_ROOM.getByName(id).trySend(id, user.id, input.envelope, input.clientId);
+  if (!result.ok) throw fail(result.error === "stale_keys" || result.error === "unknown_device" ? 409 : 403, result.error);
   return c.json(result.message, 201);
 });
 

@@ -1,10 +1,12 @@
-import { REPORT_REASONS, type ReportReason } from "@ideas-match/shared";
+import { REPORT_REASONS, type ChatMessage, type ReportReason } from "@ideas-match/shared";
 import { useQueryClient } from "@tanstack/react-query";
 import { router, useLocalSearchParams } from "expo-router";
 import { useState } from "react";
-import { ScrollView, StyleSheet, View } from "react-native";
+import { StyleSheet } from "react-native";
 import { api, friendlyError } from "@/api";
-import { Button, Chip, ChipRow, ErrorText, Field, T, KeyboardScreen } from "@/ui";
+import { useAuth } from "@/auth";
+import { ensureDeviceKey, readMessage } from "@/e2ee";
+import { Button, Chip, ChipRow, ErrorText, Field, FormScreen, T } from "@/ui";
 
 const REASON_LABELS: Record<ReportReason, string> = {
   harassment: "Harassment",
@@ -18,6 +20,7 @@ const REASON_LABELS: Record<ReportReason, string> = {
 export default function Report() {
   const params = useLocalSearchParams<{ targetUserId: string; name: string; conversationId?: string; messageId?: string }>();
   const queryClient = useQueryClient();
+  const { me } = useAuth();
   const [reason, setReason] = useState<ReportReason | null>(null);
   const [note, setNote] = useState("");
   const [alsoBlock, setAlsoBlock] = useState(true);
@@ -27,6 +30,21 @@ export default function Report() {
   async function block() {
     await api.post(`/safety/blocks/${params.targetUserId}`);
     await Promise.all([queryClient.invalidateQueries({ queryKey: ["people"] }), queryClient.invalidateQueries({ queryKey: ["inbox"] })]);
+  }
+
+  /** The server can't read messages, so this phone reveals the keys for the reported one and its neighbours. */
+  async function collectEvidence() {
+    if (!params.conversationId || !me) return [];
+    try {
+      const key = await ensureDeviceKey(me.id);
+      const nearby = await api.get<ChatMessage[]>(`/conversations/${params.conversationId}/messages?around=${params.messageId ?? ""}`);
+      return nearby.flatMap((message) => {
+        const { contentKey } = readMessage(message, params.conversationId!, key);
+        return contentKey ? [{ messageId: message.id, contentKey }] : [];
+      });
+    } catch {
+      return [];
+    }
   }
 
   async function run(kind: "report" | "block", action: () => Promise<void>) {
@@ -43,10 +61,9 @@ export default function Report() {
   }
 
   return (
-    <KeyboardScreen style={styles.screen}>
-      <ScrollView contentContainerStyle={styles.body} keyboardShouldPersistTaps="handled">
+    <FormScreen>
         <T variant="title">What's wrong with {params.name}?</T>
-        <T muted>{params.name} won't be told. A moderator may read this chat.</T>
+        <T muted>{params.name} won't be told.{params.conversationId ? " Your phone will share the nearby messages with a moderator." : ""}</T>
         <ChipRow>
           {REPORT_REASONS.map((value) => (
             <Chip key={value} label={REASON_LABELS[value]} selected={reason === value} onPress={() => setReason(value)} />
@@ -55,9 +72,7 @@ export default function Report() {
         <Field label="Anything else we should know?" value={note} onChangeText={setNote} multiline maxLength={1000} style={styles.note} />
         <Chip label={`Also block ${params.name}`} selected={alsoBlock} onPress={() => setAlsoBlock(!alsoBlock)} />
         {error ? <ErrorText>{error}</ErrorText> : null}
-      </ScrollView>
-      <View style={styles.actions}>
-        <Button
+      <Button
           label="Send report"
           disabled={!reason || busy !== null}
           busy={busy === "report"}
@@ -67,6 +82,7 @@ export default function Report() {
                 targetUserId: params.targetUserId,
                 reason,
                 note: note.trim(),
+                evidence: await collectEvidence(),
                 ...(params.conversationId ? { conversationId: params.conversationId } : {}),
                 ...(params.messageId ? { messageId: params.messageId } : {}),
               });
@@ -75,14 +91,10 @@ export default function Report() {
           }
         />
         <Button label={`Just block ${params.name}`} kind="danger" disabled={busy !== null} busy={busy === "block"} onPress={() => run("block", block)} />
-      </View>
-    </KeyboardScreen>
+    </FormScreen>
   );
 }
 
 const styles = StyleSheet.create({
-  screen: { flex: 1 },
-  body: { padding: 20, gap: 16 },
   note: { minHeight: 88, textAlignVertical: "top" },
-  actions: { padding: 20, gap: 10 },
 });

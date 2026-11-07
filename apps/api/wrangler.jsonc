@@ -28,6 +28,11 @@
     ]
   },
   "migrations": [{ "tag": "v1", "new_sqlite_classes": ["ChatRoom", "Cohort"] }],
+  "ratelimits": [
+    { "name": "SIGN_IN_START_LIMIT", "namespace_id": "1001", "simple": { "limit": 10, "period": 60 } },
+    { "name": "SIGN_IN_VERIFY_LIMIT", "namespace_id": "1002", "simple": { "limit": 30, "period": 60 } },
+    { "name": "CLIENT_ERROR_LIMIT", "namespace_id": "1003", "simple": { "limit": 20, "period": 60 } }
+  ],
   "triggers": { "crons": ["*/5 * * * *"] },
   "vars": {
     "PUBLIC_ORIGIN": "https://ideas-match-api.ideas-match.workers.dev",
@@ -36,6 +41,7 @@
     "SES_REGION": "ca-central-1",
     "SES_ENDPOINT": "",
     "PUSH_MODE": "expo",
+    "LOGIN_EMAIL_HOURLY_CAP": "500",
     "DEV_MODE": "false",
     "ACCESS_TEAM_DOMAIN": "plain-lab-430e.cloudflareaccess.com",
     "ACCESS_AUD": "1a85a5c256e7112a4102ae7618d91089b6b4ab5f3c266222fec7c38e5d4a8bf7",

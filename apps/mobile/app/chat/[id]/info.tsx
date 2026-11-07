@@ -1,10 +1,11 @@
-import type { ConversationDetail, Stance } from "@ideas-match/shared";
+import { securityCode, type ConversationDetail, type Stance } from "@ideas-match/shared";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { router, useLocalSearchParams } from "expo-router";
 import { Alert, Pressable, ScrollView, StyleSheet, Switch, View } from "react-native";
 import { api } from "@/api";
 import { useAuth } from "@/auth";
-import { useTheme } from "@/theme";
+import { inviteToTopic } from "@/invite";
+import { fonts, useTheme } from "@/theme";
 import { Avatar, Button, T } from "@/ui";
 
 const STANCE_LABELS: Record<Stance, string> = { for: "For", against: "Against", unsure: "Not sure" };
@@ -78,17 +79,29 @@ export default function ChatInfo() {
         })}
       </View>
 
+      <View style={styles.section}>
+        <T variant="heading">Security code</T>
+        <T style={styles.code} selectable>
+          {securityCode(detail.members.flatMap((member) => member.deviceKeys))}
+        </T>
+        <T variant="small" muted>
+          Messages here are end-to-end encrypted. Compare this code when you meet. If it matches, only the people in this chat can read them.
+        </T>
+      </View>
+
       <View style={styles.setting}>
         <T variant="bodyBold">Mute notifications</T>
         <Switch accessibilityLabel="Mute notifications" value={detail.muted} onValueChange={(value) => mute.mutate(value)} />
       </View>
 
+      {detail.kind === "group" && detail.topic ? <Button label="Invite someone to this topic" kind="secondary" onPress={() => inviteToTopic(detail.topic!)} /> : null}
       {detail.kind === "group" ? <Button label="Leave group" kind="danger" onPress={confirmLeave} /> : null}
     </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
+  code: { fontFamily: fonts.bodyBold, fontSize: 18, letterSpacing: 1 },
   body: { padding: 20, gap: 22 },
   section: { gap: 8 },
   bar: { flexDirection: "row", height: 14, borderRadius: 7, overflow: "hidden" },

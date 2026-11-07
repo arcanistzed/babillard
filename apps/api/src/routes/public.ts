@@ -6,6 +6,12 @@ import { getDb, schema } from "../db";
 import { buildIcs } from "../lib/ics";
 import type { AppEnv } from "../types";
 
+const ANDROID_APK_KEY = "releases/ideas-match.apk";
+
+function getApp() {
+  return html`<p><a class="button" href="/download/android">Get the Android app</a></p><p class="muted">iPhone is coming soon.</p>`;
+}
+
 function page(title: string, body: unknown) {
   return html`<!doctype html>
     <html lang="en">
@@ -51,6 +57,15 @@ publicRoutes.get("/.well-known/assetlinks.json", (c) =>
   ),
 );
 
+// Served from R2 because EAS removes its own copy of a build after about two weeks, and invite links need to keep working.
+publicRoutes.get("/download/android", async (c) => {
+  const apk = await c.env.AVATARS.get(ANDROID_APK_KEY);
+  if (!apk) return c.notFound();
+  return new Response(apk.body, {
+    headers: { "content-type": "application/vnd.android.package-archive", "content-disposition": 'attachment; filename="ideas-match.apk"', "content-length": String(apk.size) },
+  });
+});
+
 publicRoutes.get("/avatars/:key", async (c) => {
   const object = await c.env.AVATARS.get(c.req.param("key"));
   if (!object) return c.notFound();
@@ -62,7 +77,7 @@ publicRoutes.get("/avatars/:key", async (c) => {
 });
 
 publicRoutes.get("/invite", (c) =>
-  c.html(page("Join Ideas Match", html`<h1>Someone wants to talk ideas with you</h1><p>Swipe on the topics you care about, match with people nearby, and meet up.</p>`)),
+  c.html(page("Join Ideas Match", html`<h1>Someone wants to talk ideas with you</h1><p>Swipe on the topics you care about, match with people nearby, and meet up.</p>${getApp()}`)),
 );
 
 publicRoutes.get("/t/:id", async (c) => {
@@ -72,7 +87,7 @@ publicRoutes.get("/t/:id", async (c) => {
     .from(schema.topics)
     .where(and(eq(schema.topics.id, c.req.param("id")), inArray(schema.topics.status, ["seeded", "approved"])));
   if (!topic) return c.notFound();
-  return c.html(page(topic.title, html`<h1>${topic.title}</h1><p>${topic.blurb}</p><p><a class="button" href="ideasmatch://deck">Open in the app</a></p>`));
+  return c.html(page(topic.title, html`<h1>${topic.title}</h1><p>${topic.blurb}</p>${getApp()}`));
 });
 
 /** Reachable only through an unguessable token. Shows the plan, never who's going. */
