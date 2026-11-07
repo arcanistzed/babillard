@@ -85,7 +85,7 @@ Reports made about you stay for the period above, so that deleting an account ca
 
 ## Your rights
 
-You can ask for a copy of your information, ask us to correct or delete it, and ask how the app's ranking affected what you saw. You can withdraw consent at any time by deleting your account. You can change most of it yourself under Edit profile. Write to privacy@danielthorp.com for anything else, and we'll answer within 30 days. If you're not satisfied, you can complain to the Office of the Privacy Commissioner of Canada, or to the Commission d'accès à l'information if you live in Quebec.
+You can ask for a copy of your information, ask us to correct or delete it, and ask how the app's ranking affected what you saw. You can withdraw consent at any time by deleting your account. You can change most of it yourself under Edit profile. Write to privacy@danielthorp.com for anything else, and we'll answer within 30 days.
 
 ## Age
 
@@ -272,7 +272,7 @@ Les signalements vous concernant sont conservés pendant la période indiquée c
 
 ## Vos droits
 
-Vous pouvez demander une copie de vos renseignements, demander de les corriger ou de les supprimer, et demander comment le classement de l'application a influencé ce que vous avez vu. Vous pouvez retirer votre consentement à tout moment en supprimant votre compte. Vous pouvez modifier la plupart de ces renseignements vous-même dans Modifier le profil. Pour le reste, écrivez à privacy@danielthorp.com. Nous répondrons dans un délai de 30 jours. Si vous n'êtes pas satisfait, vous pouvez porter plainte auprès du Commissariat à la protection de la vie privée du Canada, ou de la Commission d'accès à l'information si vous habitez au Québec.
+Vous pouvez demander une copie de vos renseignements, demander de les corriger ou de les supprimer, et demander comment le classement de l'application a influencé ce que vous avez vu. Vous pouvez retirer votre consentement à tout moment en supprimant votre compte. Vous pouvez modifier la plupart de ces renseignements vous-même dans Modifier le profil. Pour le reste, écrivez à privacy@danielthorp.com. Nous répondrons dans un délai de 30 jours.
 
 ## Âge
 
