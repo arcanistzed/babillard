@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "1074931593219",
+    "project_id": "ideas-match-bdc52",
+    "storage_bucket": "ideas-match-bdc52.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1074931593219:android:ffff5782c089ae48031e36",
+        "android_client_info": {
+          "package_name": "app.ideasmatch"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBhpv3ehK_Trolmq0NxFMKE1Jk890bpmEU"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

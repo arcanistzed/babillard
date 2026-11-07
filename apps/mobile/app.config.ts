@@ -23,6 +23,7 @@ const config: ExpoConfig = {
   android: {
     package: "app.ideasmatch",
     softwareKeyboardLayoutMode: "resize",
+    googleServicesFile: "./google-services.json",
     adaptiveIcon: { foregroundImage: "./assets/adaptive-icon.png", backgroundColor: "#FF5FAE" },
     ...(isRealHost
       ? {
