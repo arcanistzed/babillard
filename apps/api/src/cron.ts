@@ -1,5 +1,7 @@
 import { isCheckinDue, isMatchExpired, isNudgeDue, isProposalStale, isReminderDue, pickOpener } from "@ideas-match/shared";
-import { and, eq, inArray, isNull, lt, lte } from "drizzle-orm";
+import { deleteAccount } from "./lib/accounts";
+import { sendEmail } from "./lib/email";
+import { and, eq, inArray, isNotNull, isNull, lt, lte, sql } from "drizzle-orm";
 import { getDb, schema, type Db } from "./db";
 import { jobOffsets } from "./lib/config";
 import { sendPush } from "./lib/push";
@@ -9,7 +11,7 @@ const SWEEP_BATCH = 200;
 /** Every time-based job lives here. Each step claims a row before notifying, so a retry cannot double-send. */
 export async function runSweep(env: Env, now = Date.now()): Promise<void> {
   const db = getDb(env);
-  const jobs = { nudgeMatches, expireMatches, remindMeetups, checkInMeetups, cancelStaleProposals, removeOldRecords };
+  const jobs = { nudgeMatches, expireMatches, remindMeetups, checkInMeetups, cancelStaleProposals, removeOldRecords, warnInactiveAccounts, deleteInactiveAccounts };
   for (const [name, job] of Object.entries(jobs)) {
     try {
       const handled = await job(env, db, now);
@@ -152,4 +154,35 @@ async function removeOldRecords(_env: Env, db: Db, now: number): Promise<number>
     db.delete(schema.moderationLog).where(lt(schema.moderationLog.createdAt, now - MODERATION_RETENTION_MS)).returning({ id: schema.moderationLog.id }),
   ]);
   return results.reduce((total, rows) => total + rows.length, 0);
+}
+
+const INACTIVE_AFTER_MS = 730 * DAY_MS;
+const INACTIVITY_NOTICE_MS = 30 * DAY_MS;
+// Small batches keep a sweep short. Anything left waits for the next one, five minutes later.
+const INACTIVITY_BATCH = 25;
+
+const lastUsed = sql`coalesce(${schema.users.lastActiveAt}, ${schema.users.createdAt})`;
+
+async function warnInactiveAccounts(env: Env, db: Db, now: number): Promise<number> {
+  const due = await db
+    .select({ id: schema.users.id, email: schema.users.email })
+    .from(schema.users)
+    .where(and(eq(schema.users.status, "active"), isNull(schema.users.inactivityWarnedAt), lt(lastUsed, now - INACTIVE_AFTER_MS + INACTIVITY_NOTICE_MS)))
+    .limit(INACTIVITY_BATCH);
+  for (const user of due) {
+    const text = "You haven't used Ideas Match in almost two years, so we'll delete your account and your information in 30 days. To keep your account, open the app and sign in.";
+    await sendEmail(env, { to: user.email, subject: "Your Ideas Match account will be deleted in 30 days", text, html: `<p>${text}</p>` });
+    await db.update(schema.users).set({ inactivityWarnedAt: now }).where(eq(schema.users.id, user.id));
+  }
+  return due.length;
+}
+
+async function deleteInactiveAccounts(env: Env, db: Db, now: number): Promise<number> {
+  const due = await db
+    .select({ id: schema.users.id })
+    .from(schema.users)
+    .where(and(eq(schema.users.status, "active"), isNotNull(schema.users.inactivityWarnedAt), lt(schema.users.inactivityWarnedAt, now - INACTIVITY_NOTICE_MS), lt(lastUsed, now - INACTIVE_AFTER_MS)))
+    .limit(INACTIVITY_BATCH);
+  for (const user of due) await deleteAccount(env, user.id);
+  return due.length;
 }

@@ -14,9 +14,14 @@ export const users = sqliteTable(
     campusId: text("campus_id"),
     status: text("status", { enum: ["active", "banned", "deleted"] }).notNull().default("active"),
     onboardedAt: integer("onboarded_at"),
+    termsVersion: text("terms_version"),
+    termsAcceptedAt: integer("terms_accepted_at"),
+    /** Updated at most daily. Accounts unused for two years are removed. */
+    lastActiveAt: integer("last_active_at"),
+    inactivityWarnedAt: integer("inactivity_warned_at"),
     createdAt: integer("created_at").notNull(),
   },
-  (t) => [index("users_city_idx").on(t.cityId, t.status)],
+  (t) => [index("users_city_idx").on(t.cityId, t.status), index("users_activity_idx").on(t.status, t.lastActiveAt)],
 );
 
 export const profiles = sqliteTable("profiles", {

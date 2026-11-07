@@ -13,6 +13,7 @@ const REASON_LABELS: Record<ReportReason, string> = {
   spam: "Spam",
   fake_profile: "Fake profile",
   underage: "May be under 18",
+  intimate_images: "Intimate images",
   safety: "I feel unsafe",
   other: "Something else",
 };

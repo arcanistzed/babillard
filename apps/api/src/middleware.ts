@@ -5,6 +5,8 @@ import { fail } from "./lib/http";
 import { sha256Hex } from "./lib/tokens";
 import type { AppEnv } from "./types";
 
+const ACTIVITY_RESOLUTION_MS = 24 * 60 * 60 * 1000;
+
 export const requireAuth = createMiddleware<AppEnv>(async (c, next) => {
   const header = c.req.header("authorization");
   const token = header?.startsWith("Bearer ") ? header.slice(7) : null;
@@ -18,6 +20,11 @@ export const requireAuth = createMiddleware<AppEnv>(async (c, next) => {
     .innerJoin(schema.users, eq(schema.users.id, schema.sessions.userId))
     .where(and(eq(schema.sessions.id, sessionId), gt(schema.sessions.expiresAt, Date.now())));
   if (!row || row.user.status !== "active") throw fail(401, "unauthorized");
+
+  const now = Date.now();
+  if (now - (row.user.lastActiveAt ?? 0) > ACTIVITY_RESOLUTION_MS) {
+    c.executionCtx.waitUntil(db.update(schema.users).set({ lastActiveAt: now, inactivityWarnedAt: null }).where(eq(schema.users.id, row.user.id)));
+  }
 
   c.set("user", row.user);
   c.set("sessionId", sessionId);

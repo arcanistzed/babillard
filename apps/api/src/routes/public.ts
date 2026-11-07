@@ -1,8 +1,9 @@
 import { VENUE_LABELS } from "@ideas-match/shared";
 import { and, eq, inArray } from "drizzle-orm";
 import { Hono } from "hono";
-import { html } from "hono/html";
+import { html, raw } from "hono/html";
 import { getDb, schema } from "../db";
+import { LEGAL_PATHS, LEGAL_TEXT, type Language, type LegalPage } from "../legal/content";
 import { buildIcs } from "../lib/ics";
 import type { AppEnv } from "../types";
 
@@ -12,9 +13,37 @@ function getApp() {
   return html`<p><a class="button" href="/download/android">Get the Android app</a></p><p class="muted">iPhone is coming soon.</p>`;
 }
 
-function page(title: string, body: unknown) {
+const escapeHtml = (text: string) => text.replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;").replaceAll('"', "&quot;");
+
+/** The small part of Markdown the legal text uses: headings, bullets, bold, and paragraphs. */
+function renderLegal(text: string): string {
+  const inline = (line: string) => escapeHtml(line).replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>");
+  return text
+    .split("\n\n")
+    .map((block) => {
+      if (block.startsWith("# ")) return `<h1>${inline(block.slice(2))}</h1>`;
+      if (block.startsWith("## ")) return `<h2>${inline(block.slice(3))}</h2>`;
+      if (block.startsWith("- ")) return `<ul>${block.split("\n").map((item) => `<li>${inline(item.slice(2))}</li>`).join("")}</ul>`;
+      return `<p>${inline(block)}</p>`;
+    })
+    .join("\n");
+}
+
+function legalPage(pageName: LegalPage, language: Language) {
+  const other: Language = language === "en" ? "fr" : "en";
+  const text = LEGAL_TEXT[pageName][language];
+  const title = text.split("\n")[0]!.slice(2);
+  const links = (Object.keys(LEGAL_PATHS) as LegalPage[]).map((name) => {
+    const heading = LEGAL_TEXT[name][language].split("\n")[0]!.slice(2);
+    return `<a href="${LEGAL_PATHS[name][language]}">${escapeHtml(heading)}</a>`;
+  });
+  const switcher = `<a href="${LEGAL_PATHS[pageName][other]}" lang="${other}">${other === "fr" ? "Français" : "English"}</a>`;
+  return page(title, html`<p>${raw(switcher)}</p>${raw(renderLegal(text))}<p class="muted">${raw(links.join(" · "))}</p>`, language);
+}
+
+function page(title: string, body: unknown, language: Language = "en") {
   return html`<!doctype html>
-    <html lang="en">
+    <html lang="${language}">
       <head>
         <meta charset="utf-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
@@ -31,7 +60,7 @@ function page(title: string, body: unknown) {
       </head>
       <body>
         ${body}
-        <p class="muted">Ideas Match is where people find each other through what they want to talk about, then meet in person.</p>
+        <p class="muted">${language === "fr" ? "Ideas Match aide les gens à se trouver grâce à ce dont ils veulent parler, puis à se rencontrer en personne." : "Ideas Match is where people find each other through what they want to talk about, then meet in person."}</p>
       </body>
     </html>`;
 }
@@ -75,6 +104,12 @@ publicRoutes.get("/avatars/:key", async (c) => {
   headers.set("x-content-type-options", "nosniff");
   return new Response(object.body, { headers });
 });
+
+for (const pageName of Object.keys(LEGAL_PATHS) as LegalPage[]) {
+  for (const language of ["en", "fr"] as const) {
+    publicRoutes.get(LEGAL_PATHS[pageName][language], (c) => c.html(legalPage(pageName, language)));
+  }
+}
 
 publicRoutes.get("/invite", (c) =>
   c.html(page("Join Ideas Match", html`<h1>Someone wants to talk ideas with you</h1><p>Swipe on the topics you care about, match with people nearby, and meet up.</p>${getApp()}`)),

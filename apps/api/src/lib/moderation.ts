@@ -8,11 +8,12 @@ export const REASON_LABELS: Record<string, string> = {
   spam: "Spam",
   fake_profile: "Fake profile",
   underage: "May be under 18",
+  intimate_images: "Intimate images shared without consent",
   safety: "Feels unsafe",
   other: "Something else",
 };
 
-const URGENT_REASONS = new Set(["underage", "safety"]);
+const URGENT_REASONS = new Set(["underage", "intimate_images", "safety"]);
 
 export function isUrgentReason(reason: string): boolean {
   return URGENT_REASONS.has(reason);

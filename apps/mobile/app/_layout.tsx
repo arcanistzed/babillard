@@ -55,7 +55,9 @@ function useRouteGuard() {
       if (!inSignedOutRoute) router.replace("/sign-in");
     } else if (!me.onboarded) {
       if (first !== "onboard") router.replace("/onboard");
-    } else if (inSignedOutRoute || first === "onboard" || first === undefined) {
+    } else if (!me.termsAccepted) {
+      if (first !== "agree") router.replace("/agree");
+    } else if (inSignedOutRoute || first === "onboard" || first === "agree" || first === undefined) {
       router.replace("/deck");
     }
   }, [ready, me, segments]);
@@ -99,6 +101,7 @@ function Navigator() {
       <Stack.Screen name="check-inbox" options={{ title: "" }} />
       <Stack.Screen name="auth/link" options={{ headerShown: false }} />
       <Stack.Screen name="onboard" options={{ headerShown: false }} />
+      <Stack.Screen name="agree" options={{ headerShown: false }} />
       <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
       <Stack.Screen name="chat/[id]/index" options={{ title: "" }} />
       <Stack.Screen name="chat/[id]/info" options={{ title: "About this chat" }} />

@@ -36,6 +36,13 @@
       "when": 1794032849391,
       "tag": "0004_flowery_raider",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "6",
+      "when": 1794034943072,
+      "tag": "0005_petite_junta",
+      "breakpoints": true
     }
   ]
 }

@@ -6,6 +6,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { api, friendlyError, uploadAvatar } from "@/api";
 import { useAuth } from "@/auth";
 import { CityPicker } from "@/components/CityPicker";
+import { TermsAgreement } from "@/components/TermsAgreement";
 import { LookingForPicker } from "@/components/LookingForPicker";
 import { PhotoPicker, pickAndResizePhoto } from "@/components/PhotoPicker";
 import { useTheme } from "@/theme";
@@ -38,6 +39,7 @@ export default function Onboard() {
   const [step, setStep] = useState(0);
   const [goingBack, setGoingBack] = useState(false);
   const keyboardOpen = useKeyboardOpen();
+  const [agreed, setAgreed] = useState(false);
   const [displayName, setDisplayName] = useState("");
   const [dob, setDob] = useState("");
   const [role, setRole] = useState<Role | null>(null);
@@ -65,7 +67,7 @@ export default function Onboard() {
   const dobComplete = /^\d{4}-\d{2}-\d{2}$/.test(dob);
   const dobError = dobComplete && !isAdult(dob) ? "Ideas Match is for people 18 and over." : null;
   const canContinue = [
-    displayName.trim().length > 0 && dobComplete && !dobError,
+    displayName.trim().length > 0 && dobComplete && !dobError && agreed,
     role !== null && fields.length > 0,
     lookingFor.length > 0,
     cityId !== null,
@@ -76,7 +78,7 @@ export default function Onboard() {
     setBusy(true);
     setError(null);
     try {
-      const me = await api.put<Me>("/me/onboarding", { displayName: displayName.trim(), bio: bio.trim(), role, fields, lookingFor, dob, cityId, campusId });
+      const me = await api.put<Me>("/me/onboarding", { acceptedTerms: agreed, displayName: displayName.trim(), bio: bio.trim(), role, fields, lookingFor, dob, cityId, campusId });
       if (photoUri) await uploadAvatar(photoUri).catch(() => undefined);
       setMe(photoUri ? await api.get<Me>("/me") : me);
     } catch (caught) {
@@ -105,8 +107,9 @@ export default function Onboard() {
                   error={dobError}
                 />
                 <T variant="small" muted>
-                  You must be 18 or older. This stays private.
+                  Your date of birth stays private.
                 </T>
+                <TermsAgreement agreed={agreed} onChange={setAgreed} />
               </>
             ) : null}
 

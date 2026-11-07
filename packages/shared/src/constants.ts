@@ -115,5 +115,8 @@ export const VENUE_LABELS: Record<VenueKind, string> = {
   other: "Somewhere else",
 };
 
-export const REPORT_REASONS = ["harassment", "spam", "fake_profile", "underage", "safety", "other"] as const;
+export const REPORT_REASONS = ["harassment", "spam", "fake_profile", "underage", "intimate_images", "safety", "other"] as const;
 export type ReportReason = (typeof REPORT_REASONS)[number];
+
+/** Bump this when the terms or policy change enough that people must agree again. */
+export const LEGAL_VERSION = "2026-11-07";

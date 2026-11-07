@@ -1,7 +1,8 @@
-import { deviceKeySchema, isAdult, locationSchema, onboardingSchema, profileSaveSchema, pushTokenSchema, type Locality, type Me } from "@ideas-match/shared";
-import { and, desc, eq, inArray, isNull, or, sql } from "drizzle-orm";
+import { deviceKeySchema, isAdult, LEGAL_VERSION, locationSchema, onboardingSchema, profileSaveSchema, pushTokenSchema, type Locality, type Me } from "@ideas-match/shared";
+import { and, desc, eq, inArray, isNull } from "drizzle-orm";
 import { Hono } from "hono";
 import { getDb, schema } from "../db";
+import { deleteAccount } from "../lib/accounts";
 import { avatarUrl } from "../lib/config";
 import { fail, parseJson } from "../lib/http";
 import { newId } from "../lib/tokens";
@@ -33,6 +34,7 @@ export async function loadMe(env: Env, user: UserRow): Promise<Me> {
     verifiedInstitution: user.verifiedInstitution,
     institutionDomain: user.institutionDomain,
     onboarded: user.onboardedAt !== null,
+    termsAccepted: user.termsVersion === LEGAL_VERSION,
     cityId: user.cityId,
     campusId: user.campusId,
     profile: profile
@@ -113,6 +115,13 @@ me.get("/localities", async (c) => {
   return c.json(rows);
 });
 
+me.post("/accept-terms", async (c) => {
+  const user = c.get("user");
+  const accepted = { termsVersion: LEGAL_VERSION, termsAcceptedAt: Date.now() };
+  await getDb(c.env).update(schema.users).set(accepted).where(eq(schema.users.id, user.id));
+  return c.json(await loadMe(c.env, { ...user, ...accepted }));
+});
+
 me.put("/onboarding", async (c) => {
   const user = c.get("user");
   if (user.onboardedAt) throw fail(409, "already_onboarded");
@@ -126,7 +135,7 @@ me.put("/onboarding", async (c) => {
   const profile = { displayName: input.displayName, bio: input.bio, role: input.role, fields: input.fields, lookingFor: input.lookingFor };
   await db.batch([
     db.insert(schema.profiles).values({ userId: user.id, ...profile }).onConflictDoUpdate({ target: schema.profiles.userId, set: profile }),
-    db.update(schema.users).set({ dob: input.dob, cityId: city.id, campusId: input.campusId, onboardedAt: Date.now() }).where(eq(schema.users.id, user.id)),
+    db.update(schema.users).set({ dob: input.dob, cityId: city.id, campusId: input.campusId, onboardedAt: Date.now(), termsVersion: LEGAL_VERSION, termsAcceptedAt: Date.now() }).where(eq(schema.users.id, user.id)),
   ]);
   const [updated] = await db.select().from(schema.users).where(eq(schema.users.id, user.id));
   return c.json(await loadMe(c.env, updated!));
@@ -198,44 +207,7 @@ me.delete("/push-token", async (c) => {
 
 /** App Store and Play policy both require in-app account deletion. Reports are kept for moderation history. */
 me.delete("/", async (c) => {
-  const user = c.get("user");
-  const db = getDb(c.env);
-  const id = user.id;
-
-  const memberships = await db
-    .select({ id: schema.conversationMembers.conversationId })
-    .from(schema.conversationMembers)
-    .where(eq(schema.conversationMembers.userId, id));
-  const [profile] = await db.select({ key: schema.profiles.avatarKey, name: schema.profiles.displayName }).from(schema.profiles).where(eq(schema.profiles.userId, id));
-  await Promise.all(memberships.map((row) => c.env.CHAT_ROOM.getByName(row.id).eraseUser(id, profile?.name ?? null)));
-
-  if (profile?.key) await c.env.AVATARS.delete(profile.key);
-
-  const conversationIds = memberships.map((row) => row.id);
-  const namePrefix = profile ? `${profile.name} ` : null;
-  const previewNamesDeletedUser = or(
-    eq(schema.conversations.lastMessageSenderId, id),
-    namePrefix ? and(isNull(schema.conversations.lastMessageSenderId), sql`substr(${schema.conversations.lastMessagePreview}, 1, ${[...namePrefix].length}) = ${namePrefix}`) : undefined,
-  );
-  await db.batch([
-    db.update(schema.matches).set({ state: "closed" }).where(or(eq(schema.matches.userA, id), eq(schema.matches.userB, id))),
-    db.delete(schema.conversationMembers).where(eq(schema.conversationMembers.userId, id)),
-    db.delete(schema.topicSwipes).where(eq(schema.topicSwipes.userId, id)),
-    db.delete(schema.peopleSwipes).where(or(eq(schema.peopleSwipes.fromUser, id), eq(schema.peopleSwipes.toUser, id))),
-    db.delete(schema.blocks).where(or(eq(schema.blocks.blockerId, id), eq(schema.blocks.blockedId, id))),
-    db.delete(schema.meetupResponses).where(eq(schema.meetupResponses.userId, id)),
-    db.delete(schema.pushTokens).where(eq(schema.pushTokens.userId, id)),
-    db.delete(schema.deviceKeys).where(eq(schema.deviceKeys.userId, id)),
-    db.delete(schema.sessions).where(eq(schema.sessions.userId, id)),
-    db.delete(schema.profiles).where(eq(schema.profiles.userId, id)),
-    db
-      .update(schema.users)
-      .set({ status: "deleted", email: `deleted-${id}@deleted.invalid`, dob: null, institutionDomain: null, verifiedInstitution: false, cityId: null, campusId: null })
-      .where(eq(schema.users.id, id)),
-    ...(conversationIds.length
-      ? [db.update(schema.conversations).set({ lastMessagePreview: null, lastMessageEnvelope: null, lastMessageSenderId: null }).where(and(inArray(schema.conversations.id, conversationIds), previewNamesDeletedUser))]
-      : []),
-  ]);
+  await deleteAccount(c.env, c.get("user").id);
   return c.json({ ok: true });
 });
 

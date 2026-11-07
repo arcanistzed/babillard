@@ -8,8 +8,15 @@ import { useAuth } from "@/auth";
 import { useLocalities } from "@/components/CityPicker";
 import { pickAndResizePhoto } from "@/components/PhotoPicker";
 import { inviteToApp } from "@/invite";
+import { openLegalPage } from "@/legal";
 import { fonts, useTheme } from "@/theme";
 import { Avatar, Button, Chip, ChipRow, ErrorText, T } from "@/ui";
+
+const LEGAL_LINKS = [
+  ["Privacy policy", "privacy"],
+  ["Terms of use", "terms"],
+  ["Safety", "safety"],
+] as const;
 
 export default function Profile() {
   const { me, refresh, signOut, forgetSession, forgetDevice } = useAuth();
@@ -86,6 +93,15 @@ export default function Profile() {
           <Button label="Sign out" kind="quiet" onPress={signOut} />
           <Button label="Delete account" kind="danger" onPress={confirmDelete} />
         </View>
+        <View style={styles.legal}>
+          {LEGAL_LINKS.map(([label, page]) => (
+            <Pressable key={page} accessibilityRole="link" hitSlop={8} onPress={() => openLegalPage(page)}>
+              <T variant="small" muted>
+                {label}
+              </T>
+            </Pressable>
+          ))}
+        </View>
       </ScrollView>
     </SafeAreaView>
   );
@@ -98,4 +114,5 @@ const styles = StyleSheet.create({
   identityText: { flex: 1, gap: 1 },
   section: { gap: 8 },
   actions: { gap: 10 },
+  legal: { flexDirection: "row", flexWrap: "wrap", justifyContent: "center", gap: 18, paddingVertical: 6 },
 });

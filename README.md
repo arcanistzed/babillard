@@ -155,6 +155,12 @@ Known limits:
 
 Plain text stored before encryption is removed the first time each chat wakes up.
 
+## Privacy and safety
+
+The policy, terms, and Safety page are public at `/privacy`, `/terms`, and `/safety`, and in French at `/confidentialite`, `/conditions`, and `/securite`. Their text is in `apps/api/src/legal/content.ts`. When a change needs people to agree again, bump `LEGAL_VERSION` in `packages/shared/src/constants.ts`, and the app will ask them on next launch.
+
+[docs/compliance.md](docs/compliance.md) records how the app lines up with PIPEDA, Quebec law, CASL, and Bills C-34 and C-36, plus what to do after a breach, and the known gaps.
+
 ## Abuse limits
 
 Each one is a value in `apps/api/wrangler.jsonc`.

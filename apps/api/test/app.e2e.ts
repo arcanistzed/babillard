@@ -316,7 +316,7 @@ describe("onboarding", () => {
   it("turns away under-18s and stores nothing", async () => {
     const client = await new Client(BASE).signIn("minor@example.test");
     const year = new Date().getUTCFullYear() - 17;
-    expect(await status(client.put("/me/onboarding", { ...profile, dob: `${year}-01-01` }))).toBe(403);
+    expect(await status(client.put("/me/onboarding", { acceptedTerms: true, ...profile, dob: `${year}-01-01` }))).toBe(403);
     const me = await client.get("/me");
     expect(me.onboarded).toBe(false);
     expect(me.profile).toBeNull();
@@ -380,6 +380,11 @@ describe("onboarding", () => {
     expect((await saver.get("/me")).profile.displayName).toBe("Moved Together");
     const profileOnly = await saver.put("/me/profile", { displayName: "Stayed Put", bio: "", role: "other", fields: ["law"], lookingFor: ["friends"] });
     expect(profileOnly.cityId).toBe("toronto");
+
+    const noConsent = await new Client(BASE).signIn("no-consent@example.test");
+    const onboarding = { displayName: "No Consent", bio: "", role: "other", fields: ["law"], lookingFor: ["friends"], dob: "1999-01-01", cityId: "toronto", campusId: null };
+    expect(await status(noConsent.put("/me/onboarding", onboarding))).toBe(400);
+    expect((await noConsent.put("/me/onboarding", { ...onboarding, acceptedTerms: true })).termsAccepted).toBe(true);
 
     const unfinished = await new Client(BASE).signIn("no-location@example.test");
     expect(await status(unfinished.put("/me/location", { cityId: "toronto", campusId: null }))).toBe(403);
@@ -1215,6 +1220,26 @@ describe("moderation", () => {
     expect((await adminPage("/admin/history"))).not.toContain("Reason: spam");
   }, 60_000);
 
+  it("warns about, then deletes, an account unused for two years, unless its owner comes back", async () => {
+    const wrangler = (command: string) =>
+      execFileSync(join(apiDir, "../../node_modules/.bin/wrangler"), ["d1", "execute", "ideas-match", "--local", "--persist-to", DEV_DB, "--command", command], { cwd: apiDir, stdio: "pipe", env: { ...process.env, CI: "true", WRANGLER_SEND_METRICS: "false" } });
+    const day = 24 * 60 * 60 * 1000;
+    const longAgo = Date.now() - 800 * day;
+    const leaving = await person("toronto", { displayName: "Long Gone" });
+    const returning = await person("toronto", { displayName: "Came Back" });
+    wrangler(`UPDATE users SET last_active_at = ${longAgo}, created_at = ${longAgo} WHERE id IN ('${leaving.id}', '${returning.id}')`);
+    await sweep();
+    expect(await adminPage(`/admin/users/${leaving.id}`)).toContain("Long Gone");
+
+    wrangler(`UPDATE users SET inactivity_warned_at = ${Date.now() - 31 * day}, last_active_at = ${longAgo} WHERE id IN ('${leaving.id}', '${returning.id}')`);
+    await returning.get("/me");
+    await sleep(300);
+    await sweep();
+    expect(await status(leaving.get("/me"))).toBe(401);
+    expect(await adminPage(`/admin/users/${leaving.id}`)).toContain("deleted");
+    expect((await returning.get("/me")).profile.displayName).toBe("Came Back");
+  }, 90_000);
+
   it("rejects cross-site posts to the new actions", async () => {
     const target = await person("toronto");
     for (const path of [`/admin/users/${target.id}/ban`, `/admin/users/${target.id}/unban`]) {
@@ -1382,6 +1407,19 @@ describe("crash reports and public pages", () => {
     expect(page).toContain("&lt;b&gt;TypeError&lt;/b&gt; in deck");
     expect(page).not.toContain("<b>TypeError</b>");
     expect(page).toContain("2 times");
+  });
+
+  it("publishes the policy, terms, and safety page in English and French, and escapes nothing into markup", async () => {
+    for (const [path, title, lang] of [["/privacy", "Privacy policy", "en"], ["/terms", "Terms of use", "en"], ["/safety", "Safety standards", "en"], ["/confidentialite", "Politique de confidentialité", "fr"], ["/conditions", "Conditions d'utilisation", "fr"], ["/securite", "Normes de sécurité", "fr"]] as const) {
+      const response = await fetch(`${BASE}${path}`);
+      expect(response.status).toBe(200);
+      const page = await response.text();
+      expect(page).toContain(`<html lang="${lang}">`);
+      expect(page).toContain(`<h1>${title}</h1>`);
+      expect(page).not.toContain("**");
+      expect(page).not.toContain("[contact address]");
+    }
+    expect(await (await fetch(`${BASE}/terms`)).text()).toContain("<strong>If you live in Quebec");
   });
 
   it("rejects oversized crash reports", async () => {

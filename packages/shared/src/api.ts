@@ -9,6 +9,8 @@ export interface Me {
   verifiedInstitution: boolean;
   institutionDomain: string | null;
   onboarded: boolean;
+  /** False when someone hasn't agreed to the current terms and privacy policy. */
+  termsAccepted: boolean;
   cityId: string | null;
   campusId: string | null;
   profile: {

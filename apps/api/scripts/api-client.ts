@@ -105,6 +105,7 @@ export async function createPerson(baseUrl: string, email: string, seed: PersonS
   const client = new Client(baseUrl);
   await client.signIn(email);
   await client.put("/me/onboarding", {
+    acceptedTerms: true,
     displayName: seed.displayName,
     bio: seed.bio ?? "",
     role: seed.role ?? "grad",
