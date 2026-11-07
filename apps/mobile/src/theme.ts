@@ -62,6 +62,12 @@ const FLYER_INKS: Record<string, { bg: string; fg: string }> = {
   environment: { bg: "#74C43C", fg: DARK_INK },
   education: { bg: "#FFD95C", fg: DARK_INK },
   urbanism: { bg: "#C93410", fg: WHITE },
+  business: { bg: "#8A5A00", fg: WHITE },
+  media: { bg: "#FFB3C7", fg: DARK_INK },
+  public_policy: { bg: "#3C2A9E", fg: WHITE },
+  religion: { bg: "#5C3317", fg: WHITE },
+  indigenous_studies: { bg: "#7A2E0E", fg: WHITE },
+  music_film: { bg: "#2A0F45", fg: WHITE },
 };
 
 const FALLBACK_INK = { bg: "#FF5FAE", fg: DARK_INK };

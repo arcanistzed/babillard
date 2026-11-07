@@ -26,6 +26,9 @@ import {
   scoreTopic,
   visibleLookingFor,
   campusForDomain,
+  meetupDays,
+  meetupSlotAt,
+  meetupTimes,
   deviceKeyFromSecret,
   fromBase64,
   generateDeviceKey,
@@ -498,5 +501,34 @@ describe("end-to-end encryption", () => {
     expect(securityCode([bob.publicKey, alice.publicKey])).toBe(code);
     expect(securityCode([alice.publicKey, bob.publicKey, carol.publicKey])).not.toBe(code);
     expect(code).toMatch(/^\d{5} \d{5} \d{5} \d{5}$/);
+  });
+});
+
+describe("picking a custom meetup time", () => {
+  const now = new Date(2026, 10, 7, 13, 10);
+
+  it("offers three weeks of days, starting today", () => {
+    const days = meetupDays(now);
+    expect(days).toHaveLength(21);
+    expect(days[0]!.getDate()).toBe(7);
+    expect(days[20]!.getDate()).toBe(27);
+  });
+
+  it("skips times less than an hour away today, and offers the whole day tomorrow", () => {
+    const today = meetupTimes(meetupDays(now)[0]!, now);
+    expect(today[0]!.getHours()).toBe(14);
+    expect(today[0]!.getMinutes()).toBe(30);
+    const tomorrow = meetupTimes(meetupDays(now)[1]!, now);
+    expect(tomorrow[0]!.getHours()).toBe(7);
+    expect(tomorrow.at(-1)!.getHours()).toBe(22);
+  });
+
+  it("offers nothing on a day that's already over", () => {
+    expect(meetupTimes(meetupDays(now)[0]!, new Date(2026, 10, 7, 22, 30))).toEqual([]);
+  });
+
+  it("makes a two-hour slot", () => {
+    const { startsAt, endsAt } = meetupSlotAt(new Date(2026, 10, 8, 18));
+    expect(endsAt - startsAt).toBe(2 * 60 * 60 * 1000);
   });
 });

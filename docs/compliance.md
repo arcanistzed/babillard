@@ -36,7 +36,7 @@ Regulated services are defined by a user count that regulations will set, or by 
 |---|---|---|
 | Keep people under 16 off social media, using age checks | 18 and over, by date of birth at sign-up | A self-declared date of birth wouldn't count as an age check. Add age assurance if the app becomes regulated |
 | Ways to block people and flag harmful content | Both are in the app | Nothing |
-| Remove child sexual abuse material and intimate images shared without consent within 24 hours, with a chance to respond and ask for reconsideration | Dedicated urgent report reasons, a 24-hour target, and a written route to reconsideration | Those reports can name images in profile photos. Add a photo removal action to the admin pages |
+| Remove child sexual abuse material and intimate images shared without consent within 24 hours, with a chance to respond and ask for reconsideration | Dedicated urgent report reasons, a 24-hour target, photo removal for moderators, and a written route to reconsideration | Nothing |
 | Published user guidelines and a designated contact | The terms and the Safety page | Nothing |
 | A public digital safety plan | The Safety page covers the basics | Write the full plan if the app becomes regulated |
 | Label synthetic media | The app has no AI generation, and photos are profile pictures only | Nothing |
@@ -70,4 +70,3 @@ Ban the account, keep the evidence, and report it to Cybertip.ca, as the mandato
 - The app's own screens are English only. The policy, terms, and Safety page are available in French, but Quebec's Charter also expects software to be available in French.
 - A lawyer hasn't reviewed the French or English text.
 - The policy doesn't mention the right to complain to a privacy regulator. That was a deliberate choice, and the right exists either way. If someone complains to us, tell them about it, since PIPEDA expects that. Ask the lawyer whether the policy should say so too.
-- Moderators have no way to remove a single profile photo. They can only ban the account.

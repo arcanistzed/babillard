@@ -75,6 +75,12 @@ export const FIELDS = [
   "environment",
   "education",
   "urbanism",
+  "business",
+  "media",
+  "public_policy",
+  "religion",
+  "indigenous_studies",
+  "music_film",
 ] as const;
 export type Field = (typeof FIELDS)[number];
 
@@ -99,6 +105,12 @@ export const FIELD_LABELS: Record<Field, string> = {
   environment: "Environment & climate",
   education: "Education",
   urbanism: "Cities & urbanism",
+  business: "Business",
+  media: "Media & journalism",
+  public_policy: "Public policy",
+  religion: "Religion",
+  indigenous_studies: "Indigenous studies",
+  music_film: "Music & film",
 };
 
 export const STANCES = ["for", "against", "unsure"] as const;

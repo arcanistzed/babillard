@@ -8,6 +8,7 @@ import { verifyWithJwks } from "hono/utils/jwt/jwt";
 import { getDb, schema } from "../db";
 import { isDevMode } from "../lib/config";
 import { fail } from "../lib/http";
+import { avatarUrl } from "../lib/config";
 import { banUser, isUrgentReason, logModeration, REASON_LABELS, sendConductWarning } from "../lib/moderation";
 import { sendPush } from "../lib/push";
 import type { AppEnv } from "../types";
@@ -318,6 +319,11 @@ admin.get("/users/:id", async (c) => {
           : row.user.status === "banned"
             ? html`<form method="post" action="/admin/users/${id}/unban"><button>Unban</button></form>`
             : ""}
+        ${row.profile?.avatarKey
+          ? html`<h2>Photo</h2>
+              <p><img src="${avatarUrl(c.env, row.profile.avatarKey) ?? ""}" alt="" width="160" /></p>
+              <form method="post" action="/admin/users/${id}/remove-photo"><button>Remove photo</button></form>`
+          : ""}
         <h2>Reports about them</h2>
         ${reports.length
           ? html`<table>
@@ -337,6 +343,19 @@ admin.get("/users/:id", async (c) => {
           : html`<p>None.</p>`}`,
     ),
   );
+});
+
+admin.post("/users/:id/remove-photo", async (c) => {
+  const db = getDb(c.env);
+  const id = c.req.param("id");
+  const [profile] = await db.select({ key: schema.profiles.avatarKey }).from(schema.profiles).where(eq(schema.profiles.userId, id));
+  if (!profile) throw fail(404, "person_not_found");
+  if (profile.key) {
+    await c.env.AVATARS.delete(profile.key);
+    await db.update(schema.profiles).set({ avatarKey: null }).where(eq(schema.profiles.userId, id));
+    await logModeration(db, c.get("adminEmail"), "removed photo", "user", id);
+  }
+  return c.redirect(`/admin/users/${id}`);
 });
 
 admin.post("/users/:id/ban", async (c) => {

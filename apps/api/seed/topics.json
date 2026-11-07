@@ -1,202 +1,3845 @@
 [
-  {"id": "behavioral-economics", "kind": "interest", "title": "Behavioral economics", "blurb": "Why people don't act like the models say they should.", "fieldTags": ["economics", "psychology"], "openers": ["Which classic finding do you think holds up worst?", "Have you ever caught a nudge working on you?", "What would you run as a field experiment around here?"]},
-  {"id": "development-economics", "kind": "interest", "title": "Development economics", "blurb": "What actually moves poor countries and households forward.", "fieldTags": ["economics", "politics"], "openers": ["Randomized trials or big-picture institutions: where do you start?", "Which country's path puzzles you most?"]},
-  {"id": "economic-history", "kind": "interest", "title": "Economic history", "blurb": "Industrial revolutions, crashes, and the long shadow of institutions.", "fieldTags": ["economics", "history"], "openers": ["Which period do you wish more economists studied?", "What's the best book you've read on why some places got rich?"]},
-  {"id": "labor-markets-and-the-future-of-work", "kind": "interest", "title": "Labor markets and the future of work", "blurb": "Wages, unions, gig work, and who bargains with whom.", "fieldTags": ["economics", "sociology"], "openers": ["What's changed most about work in your field?", "Would you join a union if your job had one?"]},
-  {"id": "game-theory-in-everyday-life", "kind": "interest", "title": "Game theory in everyday life", "blurb": "Auctions, bluffing, and why group projects go wrong.", "fieldTags": ["economics", "mathematics"], "openers": ["What's a real situation you've analyzed as a game?", "Where does the theory break down with actual people?"]},
-  {"id": "monetary-policy-and-central-banks", "kind": "interest", "title": "Monetary policy and central banks", "blurb": "Interest rates, inflation, and unelected power.", "fieldTags": ["economics", "politics"], "openers": ["What do central banks get too much credit for?", "What would you ask a central banker over coffee?"]},
-  {"id": "comparative-politics", "kind": "interest", "title": "Comparative politics", "blurb": "Why similar countries end up with very different governments.", "fieldTags": ["politics", "history"], "openers": ["Which two countries do you love comparing?", "What's a political system you think is underrated?"]},
-  {"id": "democratic-backsliding", "kind": "interest", "title": "Democratic backsliding", "blurb": "How democracies erode, and what slows it down.", "fieldTags": ["politics", "law"], "openers": ["What's the earliest warning sign you'd watch for?", "Which recovery from backsliding do you find most hopeful?"]},
-  {"id": "international-relations-theory", "kind": "interest", "title": "International relations theory", "blurb": "Realists, liberals, and arguments that outlast any one war.", "fieldTags": ["politics", "history"], "openers": ["Which school of thought persuades you most this year?", "What event changed how you think about world politics?"]},
-  {"id": "electoral-systems-and-voting-reform", "kind": "interest", "title": "Electoral systems and voting reform", "blurb": "Ranked ballots, proportional seats, and who gets represented.", "fieldTags": ["politics", "mathematics"], "openers": ["What's the voting method you'd actually defend?", "Has a voting reform ever really changed outcomes?"]},
-  {"id": "local-government-and-city-councils", "kind": "interest", "title": "Local government and city councils", "blurb": "The meetings almost nobody attends that shape daily life.", "fieldTags": ["politics", "urbanism"], "openers": ["Have you ever been to a council meeting?", "What local decision do you wish more people noticed?"]},
-  {"id": "social-movements", "kind": "interest", "title": "Social movements", "blurb": "How protest turns into change, or doesn't.", "fieldTags": ["politics", "sociology"], "openers": ["Which movement's strategy do you find most instructive?", "What makes a movement last past its first big moment?"]},
-  {"id": "constitutional-law", "kind": "interest", "title": "Constitutional law", "blurb": "Rights, courts, and who gets the last word.", "fieldTags": ["law", "politics"], "openers": ["Which ruling would you most like to reargue?", "How much should judges defer to legislatures?"]},
-  {"id": "international-law", "kind": "interest", "title": "International law", "blurb": "Treaties, tribunals, and rules without an enforcer.", "fieldTags": ["law", "politics"], "openers": ["Does international law constrain anyone powerful?", "Which tribunal's record interests you most?"]},
-  {"id": "law-and-technology", "kind": "interest", "title": "Law and technology", "blurb": "Copyright, privacy, and old statutes meeting new machines.", "fieldTags": ["law", "computer_science"], "openers": ["What legal question about technology feels most unsettled?", "Which law aged the worst?"]},
-  {"id": "criminal-justice-research", "kind": "interest", "title": "Criminal justice research", "blurb": "Policing, sentencing, and what the evidence shows.", "fieldTags": ["law", "sociology"], "openers": ["Which finding surprised you most?", "What would you measure that nobody measures now?"]},
-  {"id": "philosophy-of-mind", "kind": "interest", "title": "Philosophy of mind", "blurb": "Consciousness, perception, and what it's like to be anything.", "fieldTags": ["philosophy", "psychology"], "openers": ["Which position did you hold first and abandon?", "Could a machine ever settle this question for you?"]},
-  {"id": "ethics-and-moral-philosophy", "kind": "interest", "title": "Ethics and moral philosophy", "blurb": "What we owe each other, argued carefully.", "fieldTags": ["philosophy"], "openers": ["Which ethical view do you find hardest to live by?", "Is there a thought experiment you think is overrated?"]},
-  {"id": "political-philosophy", "kind": "interest", "title": "Political philosophy", "blurb": "Justice, liberty, and who gets to decide.", "fieldTags": ["philosophy", "politics"], "openers": ["Rawls, Nozick, or someone else entirely?", "What's the strongest argument against your own view?"]},
-  {"id": "philosophy-of-science", "kind": "interest", "title": "Philosophy of science", "blurb": "What makes a theory good, and whether science can tell.", "fieldTags": ["philosophy", "physics"], "openers": ["Does Popper still hold up for you?", "Which scientific practice would you question first?"]},
-  {"id": "existentialism", "kind": "interest", "title": "Existentialism", "blurb": "Sartre, de Beauvoir, Camus, and how to live anyway.", "fieldTags": ["philosophy", "literature"], "openers": ["Who did you read first?", "Does any of it help on an ordinary Tuesday?"]},
-  {"id": "effective-altruism-and-its-critics", "kind": "interest", "title": "Effective altruism and its critics", "blurb": "How to do the most good, and who gets to define good.", "fieldTags": ["philosophy", "economics"], "openers": ["What did the movement get right?", "Where do you get off the train?"]},
-  {"id": "ancient-philosophy", "kind": "interest", "title": "Ancient philosophy", "blurb": "Plato, Aristotle, the Stoics, and why they keep coming back.", "fieldTags": ["philosophy", "history"], "openers": ["Which ancient thinker would you most like to argue with?", "Is modern Stoicism the real thing?"]},
-  {"id": "non-western-philosophy", "kind": "interest", "title": "Non-Western philosophy", "blurb": "Confucian, Buddhist, Islamic, and African traditions of thought.", "fieldTags": ["philosophy", "history"], "openers": ["Which tradition changed how you think?", "What should everyone read first?"]},
-  {"id": "medieval-history", "kind": "interest", "title": "Medieval history", "blurb": "Far stranger and more connected than the stereotype.", "fieldTags": ["history"], "openers": ["What's your favorite medieval myth to debunk?", "Which place and century would you visit?"]},
-  {"id": "history-of-empire-and-colonialism", "kind": "interest", "title": "History of empire and colonialism", "blurb": "How empires were built, run, and remembered.", "fieldTags": ["history", "politics"], "openers": ["Which archive or book changed your view?", "How should a former empire teach this in schools?"]},
-  {"id": "oral-history-and-memory", "kind": "interest", "title": "Oral history and memory", "blurb": "Whose stories get recorded, and how memory bends them.", "fieldTags": ["history", "sociology"], "openers": ["Whose story would you most want to record?", "How far do you trust a remembered account?"]},
-  {"id": "history-of-science", "kind": "interest", "title": "History of science", "blurb": "How knowledge actually got made, mistakes included.", "fieldTags": ["history", "physics"], "openers": ["Which discovery has the most misleading popular story?", "Who deserves far more credit than they get?"]},
-  {"id": "urban-history", "kind": "interest", "title": "Urban history", "blurb": "How the city you live in came to look the way it does.", "fieldTags": ["history", "urbanism"], "openers": ["What's the strangest thing about this city's past?", "Which neighborhood's story should more people know?"]},
-  {"id": "sociology-of-class", "kind": "interest", "title": "Sociology of class", "blurb": "How class works now, including the parts nobody says aloud.", "fieldTags": ["sociology", "economics"], "openers": ["When did you first notice class in your own life?", "Is Bourdieu still the right lens?"]},
-  {"id": "migration-and-diaspora", "kind": "interest", "title": "Migration and diaspora", "blurb": "Why people move, and what they carry with them.", "fieldTags": ["sociology", "politics"], "openers": ["Does your family have a migration story?", "What do policy debates get wrong about migrants?"]},
-  {"id": "sociology-of-the-internet", "kind": "interest", "title": "Sociology of the internet", "blurb": "Online communities, status games, and how norms form.", "fieldTags": ["sociology", "computer_science"], "openers": ["Which online community taught you the most?", "Has the internet made you more or less lonely?"]},
-  {"id": "gender-studies", "kind": "interest", "title": "Gender studies", "blurb": "How gender shapes work, care, law, and everyday life.", "fieldTags": ["sociology", "philosophy"], "openers": ["Which book reframed this for you?", "What question in this field do you think is unanswered?"]},
-  {"id": "religion-in-public-life", "kind": "interest", "title": "Religion in public life", "blurb": "Faith, secularism, and how they share a society.", "fieldTags": ["sociology", "politics"], "openers": ["How did you grow up thinking about religion?", "Which country handles this best?"]},
-  {"id": "cognitive-psychology", "kind": "interest", "title": "Cognitive psychology", "blurb": "Attention, memory, and how thinking actually happens.", "fieldTags": ["psychology"], "openers": ["Which illusion do you still fall for?", "What should everyone know about memory?"]},
-  {"id": "replication-crisis", "kind": "interest", "title": "Replication crisis", "blurb": "What survived, what didn't, and how to do better.", "fieldTags": ["psychology", "mathematics"], "openers": ["Which failed replication stung most?", "What would you change first about how studies get published?"]},
-  {"id": "developmental-psychology", "kind": "interest", "title": "Developmental psychology", "blurb": "How children become people.", "fieldTags": ["psychology", "education"], "openers": ["Which finding changed how you see childhood?", "What do you think we get wrong about teenagers?"]},
-  {"id": "social-psychology-of-belief", "kind": "interest", "title": "Social psychology of belief", "blurb": "Why people believe things, and why they change their minds.", "fieldTags": ["psychology", "sociology"], "openers": ["When did you last really change your mind?", "What actually persuades someone?"]},
-  {"id": "psychology-of-loneliness-and-friendship", "kind": "interest", "title": "Psychology of loneliness and friendship", "blurb": "Why making friends gets harder, and what helps.", "fieldTags": ["psychology", "sociology"], "openers": ["How have you made friends as an adult?", "What makes a friendship last for you?"]},
-  {"id": "clinical-psychology-and-therapy-research", "kind": "interest", "title": "Clinical psychology and therapy research", "blurb": "What works in therapy, and how anyone can tell.", "fieldTags": ["psychology", "medicine"], "openers": ["Which approach do you think is over- or under-rated?", "How should we measure whether therapy worked?"]},
-  {"id": "the-nineteenth-century-novel", "kind": "interest", "title": "The nineteenth-century novel", "blurb": "Big books, big societies, and very long sentences.", "fieldTags": ["literature", "history"], "openers": ["Tolstoy, Eliot, Dickens: who's your pick?", "Which long novel was worth every page?"]},
-  {"id": "contemporary-fiction", "kind": "interest", "title": "Contemporary fiction", "blurb": "What's being written now and why it matters.", "fieldTags": ["literature"], "openers": ["What's the best novel you read this year?", "Who's a living writer people will still read in fifty years?"]},
-  {"id": "poetry", "kind": "interest", "title": "Poetry", "blurb": "Reading it, writing it, and arguing about what it's for.", "fieldTags": ["literature", "art"], "openers": ["Which poem do you know by heart?", "Who got you into poetry?"]},
-  {"id": "science-fiction-as-philosophy", "kind": "interest", "title": "Science fiction as philosophy", "blurb": "Thought experiments with spaceships.", "fieldTags": ["literature", "philosophy"], "openers": ["Which novel changed how you think?", "Le Guin or Lem?"]},
-  {"id": "translation-and-world-literature", "kind": "interest", "title": "Translation and world literature", "blurb": "What crosses between languages, and what can't.", "fieldTags": ["literature", "linguistics"], "openers": ["Which translated book should everyone read?", "Have you compared two translations of the same book?"]},
-  {"id": "literary-theory", "kind": "interest", "title": "Literary theory", "blurb": "Reading the reading, and whether it helps.", "fieldTags": ["literature", "philosophy"], "openers": ["Which theorist do you actually find useful?", "Has theory ever ruined a book for you?"]},
-  {"id": "great-books-reading-group", "kind": "interest", "title": "Great books reading group", "blurb": "Slow reading of old books with other people.", "fieldTags": ["literature", "philosophy"], "openers": ["What's the first book you'd pick for the group?", "How many pages a week is realistic for you?"]},
-  {"id": "sociolinguistics", "kind": "interest", "title": "Sociolinguistics", "blurb": "How accent, slang, and code-switching mark who we are.", "fieldTags": ["linguistics", "sociology"], "openers": ["Do you speak differently with different people?", "What language change annoys you, and why does it?"]},
-  {"id": "language-learning", "kind": "interest", "title": "Language learning", "blurb": "What actually works for learning a language as an adult.", "fieldTags": ["linguistics", "education"], "openers": ["What are you learning right now?", "What method wasted the most of your time?"]},
-  {"id": "endangered-languages", "kind": "interest", "title": "Endangered languages", "blurb": "Documentation, revival, and what's lost when a language goes.", "fieldTags": ["linguistics", "history"], "openers": ["Which revival effort do you find most inspiring?", "What's lost when a language dies?"]},
-  {"id": "language-and-ai", "kind": "interest", "title": "Language and AI", "blurb": "What large language models do and don't tell us about language.", "fieldTags": ["linguistics", "computer_science"], "openers": ["Do language models change linguistics at all?", "What would convince you a model understands?"]},
-  {"id": "architecture-and-the-built-environment", "kind": "interest", "title": "Architecture and the built environment", "blurb": "Why buildings look the way they do, and how they feel inside.", "fieldTags": ["art", "urbanism"], "openers": ["Which building nearby do you love or hate?", "What would you build on the nearest empty lot?"]},
-  {"id": "contemporary-art", "kind": "interest", "title": "Contemporary art", "blurb": "What's in the galleries, and whether it's any good.", "fieldTags": ["art"], "openers": ["What's the last show that stayed with you?", "Want to go see something and argue about it?"]},
-  {"id": "film-as-an-art-form", "kind": "interest", "title": "Film as an art form", "blurb": "Slow cinema, auteurs, and what film can do that nothing else can.", "fieldTags": ["art", "literature"], "openers": ["Which film do you recommend to everyone?", "Which director do you think is overrated?"]},
-  {"id": "design-and-how-things-work", "kind": "interest", "title": "Design and how things work", "blurb": "Everyday objects, interfaces, and good and bad decisions.", "fieldTags": ["art", "engineering"], "openers": ["What's a badly designed thing you use every day?", "What's the most elegant object you own?"]},
-  {"id": "music-theory-and-listening", "kind": "interest", "title": "Music theory and listening", "blurb": "Why some music works, across traditions.", "fieldTags": ["art", "mathematics"], "openers": ["What piece would you walk someone through?", "Did learning theory change what you enjoy?"]},
-  {"id": "photography-and-visual-culture", "kind": "interest", "title": "Photography and visual culture", "blurb": "Images, truth, and what we do with cameras everywhere.", "fieldTags": ["art", "sociology"], "openers": ["Which photograph do you think about most?", "Do you still trust photographs?"]},
-  {"id": "evolutionary-biology", "kind": "interest", "title": "Evolutionary biology", "blurb": "Selection, drift, and the weird things it produces.", "fieldTags": ["biology"], "openers": ["What's your favorite strange adaptation?", "Which popular evolutionary story is wrong?"]},
-  {"id": "neuroscience", "kind": "interest", "title": "Neuroscience", "blurb": "Brains, circuits, and how much we really know.", "fieldTags": ["biology", "psychology"], "openers": ["What's the biggest open question for you?", "Which neuroscience claim do you distrust?"]},
-  {"id": "genetics-and-crispr", "kind": "interest", "title": "Genetics and CRISPR", "blurb": "Reading and editing genomes, and where to stop.", "fieldTags": ["biology", "medicine"], "openers": ["Where would you draw the line on editing?", "What application excites you most?"]},
-  {"id": "microbiome-research", "kind": "interest", "title": "Microbiome research", "blurb": "The organisms living on you, and how much they matter.", "fieldTags": ["biology", "medicine"], "openers": ["How much of the hype do you believe?", "What experiment would you want to see done?"]},
-  {"id": "ecology-and-biodiversity", "kind": "interest", "title": "Ecology and biodiversity", "blurb": "How ecosystems hold together and fall apart.", "fieldTags": ["biology", "environment"], "openers": ["Which ecosystem do you know best?", "Which species do you wish people cared about?"]},
-  {"id": "animal-cognition", "kind": "interest", "title": "Animal cognition", "blurb": "What crows, octopuses, and dogs actually understand.", "fieldTags": ["biology", "psychology"], "openers": ["Which animal study blew your mind?", "How would we ever know what an animal experiences?"]},
-  {"id": "origins-of-life", "kind": "interest", "title": "Origins of life", "blurb": "How chemistry turned into biology.", "fieldTags": ["biology", "chemistry"], "openers": ["Which hypothesis do you find most convincing?", "Would finding life elsewhere change much for you?"]},
-  {"id": "public-health", "kind": "interest", "title": "Public health", "blurb": "Populations, prevention, and what actually keeps people alive.", "fieldTags": ["medicine", "politics"], "openers": ["What's the most underrated public health win?", "Which health policy would you change first?"]},
-  {"id": "global-health-and-pandemics", "kind": "interest", "title": "Global health and pandemics", "blurb": "What we learned, and what we've already forgotten.", "fieldTags": ["medicine", "politics"], "openers": ["What should we have learned from COVID?", "Who's doing this work well?"]},
-  {"id": "medical-ethics", "kind": "interest", "title": "Medical ethics", "blurb": "Consent, scarcity, and hard calls at the bedside.", "fieldTags": ["medicine", "philosophy"], "openers": ["Which case do you keep coming back to?", "Who should decide when resources are scarce?"]},
-  {"id": "aging-and-longevity-science", "kind": "interest", "title": "Aging and longevity science", "blurb": "What can actually be done, and what's just marketing.", "fieldTags": ["medicine", "biology"], "openers": ["Which claim do you find most credible?", "Would you want to live to 150?"]},
-  {"id": "mental-health-systems", "kind": "interest", "title": "Mental health systems", "blurb": "Access, stigma, and how care gets organized.", "fieldTags": ["medicine", "psychology"], "openers": ["What would you change first?", "What does your community lack?"]},
-  {"id": "nutrition-science", "kind": "interest", "title": "Nutrition science", "blurb": "Why the advice keeps changing.", "fieldTags": ["medicine", "biology"], "openers": ["Which study design do you trust?", "What food advice did you stop believing?"]},
-  {"id": "quantum-mechanics-and-interpretation", "kind": "interest", "title": "Quantum mechanics and interpretation", "blurb": "What the math says, and what it means.", "fieldTags": ["physics", "philosophy"], "openers": ["Which interpretation do you lean toward?", "Does the interpretation question even matter?"]},
-  {"id": "astrophysics-and-cosmology", "kind": "interest", "title": "Astrophysics and cosmology", "blurb": "Dark matter, the early universe, and what we can see.", "fieldTags": ["physics"], "openers": ["What's the biggest puzzle for you?", "What would you point a telescope at?"]},
-  {"id": "climate-physics", "kind": "interest", "title": "Climate physics", "blurb": "How the models work and how sure we are.", "fieldTags": ["physics", "environment"], "openers": ["Which uncertainty do you think matters most?", "How do you explain feedback loops to friends?"]},
-  {"id": "physics-for-non-physicists", "kind": "interest", "title": "Physics for non-physicists", "blurb": "Big ideas without the math, or with a little.", "fieldTags": ["physics", "education"], "openers": ["What's a concept you finally understood recently?", "Which analogy do you think misleads people?"]},
-  {"id": "materials-science", "kind": "interest", "title": "Materials science", "blurb": "The stuff that quietly decides what's possible.", "fieldTags": ["chemistry", "engineering"], "openers": ["What material is the most underrated?", "Which breakthrough are you watching?"]},
-  {"id": "green-chemistry", "kind": "interest", "title": "Green chemistry", "blurb": "Making things without making a mess.", "fieldTags": ["chemistry", "environment"], "openers": ["What's the worst everyday chemical process?", "Which fix looks closest to real?"]},
-  {"id": "drug-discovery", "kind": "interest", "title": "Drug discovery", "blurb": "How molecules become medicines, and why most don't.", "fieldTags": ["chemistry", "medicine"], "openers": ["Has AI changed this yet?", "Why do you think so many candidates fail?"]},
-  {"id": "foundations-of-mathematics", "kind": "interest", "title": "Foundations of mathematics", "blurb": "Sets, proofs, and what math rests on.", "fieldTags": ["mathematics", "philosophy"], "openers": ["Do you think mathematical objects exist?", "Which paradox do you enjoy most?"]},
-  {"id": "statistics-and-causal-inference", "kind": "interest", "title": "Statistics and causal inference", "blurb": "Getting from correlation to something you can act on.", "fieldTags": ["mathematics", "economics"], "openers": ["What's the worst causal claim you've seen lately?", "Which method do you reach for first?"]},
-  {"id": "beautiful-proofs", "kind": "interest", "title": "Beautiful proofs", "blurb": "A casual math club for the pleasure of it.", "fieldTags": ["mathematics"], "openers": ["What's your favorite proof?", "Which result felt like magic when you first saw it?"]},
-  {"id": "math-education", "kind": "interest", "title": "Math education", "blurb": "Why so many people decide they're bad at math.", "fieldTags": ["mathematics", "education"], "openers": ["When did math click for you, or not?", "How would you teach fractions?"]},
-  {"id": "machine-learning-research", "kind": "interest", "title": "Machine learning research", "blurb": "What's actually new in the papers.", "fieldTags": ["computer_science", "mathematics"], "openers": ["Which recent paper stayed with you?", "What do you think is overhyped?"]},
-  {"id": "ai-safety-and-governance", "kind": "interest", "title": "AI safety and governance", "blurb": "How to steer powerful systems, and who should.", "fieldTags": ["computer_science", "politics"], "openers": ["What worries you most, concretely?", "What regulation would you write first?"]},
-  {"id": "open-source-communities", "kind": "interest", "title": "Open source communities", "blurb": "How volunteers build infrastructure the world relies on.", "fieldTags": ["computer_science", "sociology"], "openers": ["What's your first contribution story?", "How should maintainers get paid?"]},
-  {"id": "privacy-and-surveillance", "kind": "interest", "title": "Privacy and surveillance", "blurb": "Who sees your data, and what they do with it.", "fieldTags": ["computer_science", "law"], "openers": ["What did you change after learning how tracking works?", "Is privacy still winnable?"]},
-  {"id": "algorithms-and-complexity", "kind": "interest", "title": "Algorithms and complexity", "blurb": "What can be computed, and how fast.", "fieldTags": ["computer_science", "mathematics"], "openers": ["What's the most elegant algorithm you know?", "What do you bet on P vs NP?"]},
-  {"id": "human-computer-interaction", "kind": "interest", "title": "Human-computer interaction", "blurb": "How software shapes what people do.", "fieldTags": ["computer_science", "psychology"], "openers": ["Which interface changed how you behave?", "What study would you run on a popular app?"]},
-  {"id": "robotics", "kind": "interest", "title": "Robotics", "blurb": "Machines in the messy real world.", "fieldTags": ["engineering", "computer_science"], "openers": ["What's the hardest thing about the physical world?", "Which robot do you actually want at home?"]},
-  {"id": "energy-systems", "kind": "interest", "title": "Energy systems", "blurb": "Grids, storage, and getting off fossil fuels.", "fieldTags": ["engineering", "environment"], "openers": ["What's the real bottleneck right now?", "Nuclear, solar, or something else first?"]},
-  {"id": "transit-engineering", "kind": "interest", "title": "Transit engineering", "blurb": "Signals, rolling stock, and why trains run late.", "fieldTags": ["engineering", "urbanism"], "openers": ["Which system should we copy?", "What's your favorite transit line and why?"]},
-  {"id": "biomedical-engineering", "kind": "interest", "title": "Biomedical engineering", "blurb": "Devices, implants, and building for bodies.", "fieldTags": ["engineering", "medicine"], "openers": ["Which device do you think will matter most?", "What's the hardest constraint in your view?"]},
-  {"id": "space-exploration", "kind": "interest", "title": "Space exploration", "blurb": "Rockets, missions, and whether we should go.", "fieldTags": ["engineering", "physics"], "openers": ["Which mission are you following?", "Robots or people?"]},
-  {"id": "climate-adaptation", "kind": "interest", "title": "Climate adaptation", "blurb": "Living with the warming that's already locked in.", "fieldTags": ["environment", "urbanism"], "openers": ["What will your city have to change first?", "Who pays when a place has to move?"]},
-  {"id": "climate-activism-and-strategy", "kind": "interest", "title": "Climate activism and strategy", "blurb": "What works for pushing change, and what backfires.", "fieldTags": ["environment", "politics"], "openers": ["Have you taken part in any of it?", "Which tactic do you think is most misunderstood?"]},
-  {"id": "conservation-in-practice", "kind": "interest", "title": "Conservation in practice", "blurb": "Fieldwork, rewilding, and hard tradeoffs.", "fieldTags": ["environment", "biology"], "openers": ["What project do you most admire?", "Should we bring back extinct species?"]},
-  {"id": "food-systems-and-agriculture", "kind": "interest", "title": "Food systems and agriculture", "blurb": "How we feed ourselves, and at what cost.", "fieldTags": ["environment", "economics"], "openers": ["What would you change about how we farm?", "What local food project is worth visiting?"]},
-  {"id": "water-politics", "kind": "interest", "title": "Water politics", "blurb": "Rivers, dams, and who gets what.", "fieldTags": ["environment", "politics"], "openers": ["Which water dispute should more people know about?", "Where's your water come from?"]},
-  {"id": "pedagogy-and-how-people-learn", "kind": "interest", "title": "Pedagogy and how people learn", "blurb": "What good teaching actually involves.", "fieldTags": ["education", "psychology"], "openers": ["Who's the best teacher you ever had?", "What did they do differently?"]},
-  {"id": "higher-education", "kind": "interest", "title": "Higher education", "blurb": "What universities are for, and whether they're doing it.", "fieldTags": ["education", "sociology"], "openers": ["What would you change about your degree?", "Is the lecture dead?"]},
-  {"id": "alternative-schools", "kind": "interest", "title": "Alternative schools", "blurb": "Montessori, unschooling, and other experiments.", "fieldTags": ["education"], "openers": ["What do you wish your school had done?", "Which approach has the best evidence?"]},
-  {"id": "education-and-technology", "kind": "interest", "title": "Education and technology", "blurb": "What software in classrooms has really changed.", "fieldTags": ["education", "computer_science"], "openers": ["Has AI changed how you learn?", "What edtech failed in your experience?"]},
-  {"id": "urban-planning", "kind": "interest", "title": "Urban planning", "blurb": "Zoning, streets, and how cities get made.", "fieldTags": ["urbanism", "politics"], "openers": ["What would you rezone first?", "Which street here needs fixing most?"]},
-  {"id": "walkable-cities", "kind": "interest", "title": "Walkable cities", "blurb": "Why some places are pleasant to be in on foot.", "fieldTags": ["urbanism", "environment"], "openers": ["Where's the best walk in this city?", "Want to walk it and talk?"]},
-  {"id": "third-places-and-community-spaces", "kind": "interest", "title": "Third places and community spaces", "blurb": "Libraries, cafés, and places to be without buying much.", "fieldTags": ["urbanism", "sociology"], "openers": ["What's your favorite third place around here?", "Which ones have we lost?"]},
-  {"id": "thinking-in-public", "kind": "interest", "title": "Thinking in public", "blurb": "Essays, blogs, and working out ideas where people can see them.", "fieldTags": ["philosophy", "literature"], "openers": ["Do you write in public?", "Which essayist do you read for pleasure?"]},
-  {"id": "science-communication", "kind": "interest", "title": "Science communication", "blurb": "Explaining hard things without lying.", "fieldTags": ["education", "physics"], "openers": ["Who does this best?", "What's the hardest thing you've tried to explain?"]},
-  {"id": "research-methods-clinic", "kind": "interest", "title": "Research methods clinic", "blurb": "Bring your project, get a second pair of eyes.", "fieldTags": ["sociology", "mathematics"], "openers": ["What are you working on right now?", "What part of your method worries you?"]},
-  {"id": "finding-research-collaborators", "kind": "interest", "title": "Finding research collaborators", "blurb": "Meet people to work on a real project with.", "fieldTags": ["education", "sociology"], "openers": ["What project needs another person?", "What skill are you looking for?"]},
-  {"id": "getting-into-grad-school", "kind": "interest", "title": "Getting into grad school", "blurb": "Applications, advisors, and whether to go at all.", "fieldTags": ["education"], "openers": ["Where are you in the process?", "What do you wish someone had told you?"]},
-  {"id": "careers-outside-academia", "kind": "interest", "title": "Careers outside academia", "blurb": "What PhDs and researchers do next.", "fieldTags": ["education", "economics"], "openers": ["What's pulling you away, or keeping you in?", "Who made a move you admire?"]},
-  {"id": "nonprofit-and-civic-careers", "kind": "interest", "title": "Nonprofit and civic careers", "blurb": "Doing useful work and still paying rent.", "fieldTags": ["politics", "economics"], "openers": ["What's your dream job in this space?", "What do you wish you knew before starting?"]},
-  {"id": "think-tanks-and-policy-careers", "kind": "interest", "title": "Think tanks and policy careers", "blurb": "How research actually reaches decision-makers.", "fieldTags": ["politics", "economics"], "openers": ["Have you seen research change a decision?", "Which organization do you respect?"]},
-  {"id": "science-and-policy", "kind": "interest", "title": "Science and policy", "blurb": "When evidence meets politics.", "fieldTags": ["politics", "medicine"], "openers": ["When did evidence actually win?", "Should scientists take political positions?"]},
-  {"id": "journalism-and-the-news", "kind": "interest", "title": "Journalism and the news", "blurb": "How reporting works, and what's happening to it.", "fieldTags": ["politics", "sociology"], "openers": ["Which outlet do you trust and why?", "What local story isn't being covered?"]},
-  {"id": "philosophy-of-technology", "kind": "interest", "title": "Philosophy of technology", "blurb": "What our tools are doing to us.", "fieldTags": ["philosophy", "computer_science"], "openers": ["Which tool changed how you think?", "Is Heidegger any help here?"]},
-  {"id": "economics-of-housing", "kind": "interest", "title": "Economics of housing", "blurb": "Why rents do what they do.", "fieldTags": ["economics", "urbanism"], "openers": ["What's your housing story in this city?", "What's the most misunderstood thing about rents?"]},
-  {"id": "inequality-research", "kind": "interest", "title": "Inequality research", "blurb": "Who has what, how we measure it, and what follows.", "fieldTags": ["economics", "sociology"], "openers": ["Which number surprised you most?", "What's the right measure?"]},
-  {"id": "disability-studies", "kind": "interest", "title": "Disability studies", "blurb": "How society makes disability, and what to do about it.", "fieldTags": ["sociology", "medicine"], "openers": ["What changed your view on this?", "Which design choice do you wish more people noticed?"]},
-  {"id": "indigenous-knowledge-and-sovereignty", "kind": "interest", "title": "Indigenous knowledge and sovereignty", "blurb": "Land, law, and other ways of knowing.", "fieldTags": ["history", "law"], "openers": ["Whose work should people read first?", "How does this show up where you live?"]},
-  {"id": "geopolitics-of-technology", "kind": "interest", "title": "Geopolitics of technology", "blurb": "Chips, supply chains, and competition between states.", "fieldTags": ["politics", "computer_science"], "openers": ["What dependency worries you most?", "Who's misreading this?"]},
-  {"id": "sleep-science", "kind": "interest", "title": "Sleep science", "blurb": "What we know, and what the apps pretend to know.", "fieldTags": ["medicine", "psychology"], "openers": ["What actually improved your sleep?", "Which claim doesn't hold up?"]},
-  {"id": "philosophy-of-sport-and-play", "kind": "interest", "title": "Philosophy of sport and play", "blurb": "Why we care so much about games.", "fieldTags": ["philosophy", "sociology"], "openers": ["What do you play?", "Is sport a good model for anything else?"]},
-  {"id": "rhetoric-and-persuasion", "kind": "interest", "title": "Rhetoric and persuasion", "blurb": "How arguments work on real people.", "fieldTags": ["linguistics", "politics"], "openers": ["Who's the best speaker you've heard?", "Which fallacy do you commit most?"]},
-  {"id": "learning-to-debate", "kind": "interest", "title": "Learning to debate", "blurb": "Practice arguing well with people who disagree.", "fieldTags": ["politics", "philosophy"], "openers": ["Have you ever debated competitively?", "What topic would you like to practice on?"]},
-  {"id": "should-cities-abolish-single-family-zoning", "kind": "question", "title": "Should cities abolish single-family zoning?", "blurb": "Allowing more homes on every lot could cut rents. It could also change neighborhoods quickly.", "fieldTags": ["urbanism", "economics"], "openers": ["What would it change on your own street?", "What's the best evidence you've seen either way?"]},
-  {"id": "should-rent-control-be-expanded", "kind": "question", "title": "Should rent control be expanded?", "blurb": "It protects tenants today. The argument is over who it costs tomorrow.", "fieldTags": ["economics", "urbanism"], "openers": ["Have you lived under rent control?", "Which city's approach do you find most convincing?"]},
-  {"id": "should-public-transit-be-free", "kind": "question", "title": "Should public transit be free?", "blurb": "Cost, ridership, and whether the money would do more elsewhere.", "fieldTags": ["urbanism", "economics"], "openers": ["Would free fares change how you get around?", "Service or price: which matters more?"]},
-  {"id": "should-cars-be-banned-from-city-centers", "kind": "question", "title": "Should cars be banned from city centers?", "blurb": "Cleaner and quieter, but who loses access?", "fieldTags": ["urbanism", "environment"], "openers": ["What would it mean for this city?", "Who should get exemptions?"]},
-  {"id": "should-cities-charge-for-congestion", "kind": "question", "title": "Should cities charge for congestion?", "blurb": "Paying to drive downtown: efficient or unfair?", "fieldTags": ["urbanism", "economics"], "openers": ["Has any city done it well?", "Who should the revenue go to?"]},
-  {"id": "should-college-be-tuition-free", "kind": "question", "title": "Should college be tuition-free?", "blurb": "Who benefits, who pays, and what happens to quality.", "fieldTags": ["education", "economics"], "openers": ["How did your own education get paid for?", "Would you target it by income?"]},
-  {"id": "should-student-debt-be-forgiven", "kind": "question", "title": "Should student debt be forgiven?", "blurb": "Relief for borrowers against fairness to everyone else.", "fieldTags": ["education", "economics"], "openers": ["How does this touch your life?", "What would you do instead?"]},
-  {"id": "should-universities-drop-legacy-admissions", "kind": "question", "title": "Should universities drop legacy admissions?", "blurb": "Family connections, donations, and what fairness requires.", "fieldTags": ["education", "politics"], "openers": ["Should donors get anything at all?", "Would you go further than this?"]},
-  {"id": "should-universities-use-standardized-tests", "kind": "question", "title": "Should universities use standardized tests?", "blurb": "Tests may flag talent or reinforce privilege. Possibly both.", "fieldTags": ["education", "sociology"], "openers": ["Did tests help or hurt you?", "What would you use instead?"]},
-  {"id": "should-phones-be-banned-in-schools", "kind": "question", "title": "Should phones be banned in schools?", "blurb": "Attention, safety, and how to tell if bans work.", "fieldTags": ["education", "psychology"], "openers": ["What was your school's rule?", "What would make a ban actually work?"]},
-  {"id": "should-ai-tools-be-allowed-in-university-assignments", "kind": "question", "title": "Should AI tools be allowed in university assignments?", "blurb": "Cheating, skill, or the new calculator.", "fieldTags": ["education", "computer_science"], "openers": ["How do you use AI in your own work?", "What should an assignment look like now?"]},
-  {"id": "should-the-voting-age-be-lowered-to-16", "kind": "question", "title": "Should the voting age be lowered to 16?", "blurb": "Civic habit, maturity, and who gets a say in the future.", "fieldTags": ["politics", "education"], "openers": ["What would you have done with a vote at 16?", "Where have they tried it?"]},
-  {"id": "should-voting-be-mandatory", "kind": "question", "title": "Should voting be mandatory?", "blurb": "Higher turnout, but is an unwilling vote worth much?", "fieldTags": ["politics", "philosophy"], "openers": ["Would you support a fine for not voting?", "What's Australia's experience tell us?"]},
-  {"id": "should-we-adopt-ranked-choice-voting", "kind": "question", "title": "Should we adopt ranked-choice voting?", "blurb": "More choice on the ballot, more complexity in the count.", "fieldTags": ["politics", "mathematics"], "openers": ["Have you ever voted this way?", "Does it really reduce polarization?"]},
-  {"id": "should-legislators-face-term-limits", "kind": "question", "title": "Should legislators face term limits?", "blurb": "Fresh blood or more power to lobbyists and staff?", "fieldTags": ["politics", "law"], "openers": ["What does the evidence show from US states?", "Would you apply it to judges too?"]},
-  {"id": "should-citizens-assemblies-make-binding-decisions", "kind": "question", "title": "Should citizens' assemblies make binding decisions?", "blurb": "Randomly chosen people, deliberating with experts.", "fieldTags": ["politics", "philosophy"], "openers": ["Would you serve on one?", "What decision would you hand to one first?"]},
-  {"id": "should-private-money-be-banned-from-political-campaigns", "kind": "question", "title": "Should private money be banned from political campaigns?", "blurb": "Equal voices or restricted speech.", "fieldTags": ["politics", "law"], "openers": ["Where would you draw the line?", "Who'd fill the vacuum?"]},
-  {"id": "should-supreme-court-justices-have-term-limits", "kind": "question", "title": "Should supreme court justices have term limits?", "blurb": "Lifetime tenure against regular turnover.", "fieldTags": ["law", "politics"], "openers": ["How long is the right term?", "Would it lower the temperature?"]},
-  {"id": "should-social-media-be-banned-for-under-16s", "kind": "question", "title": "Should social media be banned for under-16s?", "blurb": "Protecting kids, or an unworkable gesture?", "fieldTags": ["politics", "psychology"], "openers": ["What age did you start, and would you change it?", "How would you enforce it?"]},
-  {"id": "should-platforms-be-liable-for-what-users-post", "kind": "question", "title": "Should platforms be liable for what users post?", "blurb": "Accountability against open speech.", "fieldTags": ["law", "computer_science"], "openers": ["Which harm is worst under the current rules?", "Who gets hurt if platforms over-moderate?"]},
-  {"id": "should-facial-recognition-be-banned-in-public-spaces", "kind": "question", "title": "Should facial recognition be banned in public spaces?", "blurb": "Security tool or end of anonymity.", "fieldTags": ["law", "computer_science"], "openers": ["Would you accept it for serious crimes?", "Who decides what counts as serious?"]},
-  {"id": "should-frontier-ai-development-be-licensed", "kind": "question", "title": "Should frontier AI development be licensed?", "blurb": "Safety oversight, or a moat for incumbents.", "fieldTags": ["computer_science", "politics"], "openers": ["Who should grant the license?", "What would you require?"]},
-  {"id": "should-ai-generated-work-be-copyrightable", "kind": "question", "title": "Should AI-generated work be copyrightable?", "blurb": "Who owns output nobody quite authored?", "fieldTags": ["law", "art"], "openers": ["Where would you draw the line on human input?", "How does this hit working artists?"]},
-  {"id": "should-we-introduce-a-universal-basic-income", "kind": "question", "title": "Should we introduce a universal basic income?", "blurb": "Cash for everyone, no strings attached. What happens next?", "fieldTags": ["economics", "politics"], "openers": ["Which pilot do you find most telling?", "How would you pay for it?"]},
-  {"id": "should-the-minimum-wage-be-much-higher", "kind": "question", "title": "Should the minimum wage be much higher?", "blurb": "Living wages against the risk of lost jobs.", "fieldTags": ["economics", "politics"], "openers": ["What's your first-job story?", "Should it vary by city?"]},
-  {"id": "should-there-be-a-wealth-tax", "kind": "question", "title": "Should there be a wealth tax?", "blurb": "Taxing what people own, not just what they earn.", "fieldTags": ["economics", "politics"], "openers": ["Why did so many countries repeal it?", "What rate and threshold would you pick?"]},
-  {"id": "should-a-four-day-work-week-become-standard", "kind": "question", "title": "Should a four-day work week become standard?", "blurb": "Same pay, fewer days, and what the trials found.", "fieldTags": ["economics", "sociology"], "openers": ["Could your work fit into four days?", "Who gets left out?"]},
-  {"id": "should-gig-workers-be-classified-as-employees", "kind": "question", "title": "Should gig workers be classified as employees?", "blurb": "Flexibility against protection.", "fieldTags": ["economics", "law"], "openers": ["Have you done gig work?", "Is there a third category that works?"]},
-  {"id": "should-unpaid-internships-be-banned", "kind": "question", "title": "Should unpaid internships be banned?", "blurb": "Opportunity for some, a barrier for many.", "fieldTags": ["economics", "education"], "openers": ["Did you take one?", "What would replace them?"]},
-  {"id": "should-inheritance-be-taxed-more-heavily", "kind": "question", "title": "Should inheritance be taxed more heavily?", "blurb": "Merit, family, and accumulated advantage.", "fieldTags": ["economics", "philosophy"], "openers": ["How much should someone be able to pass on?", "What about family homes and businesses?"]},
-  {"id": "should-countries-phase-out-nuclear-power-or-build-more", "kind": "question", "title": "Should countries phase out nuclear power, or build more?", "blurb": "Low carbon, high stakes, long timelines.", "fieldTags": ["environment", "engineering"], "openers": ["How do you weigh waste against emissions?", "What's the real obstacle to building?"]},
-  {"id": "should-carbon-be-taxed-at-the-consumer-level", "kind": "question", "title": "Should carbon be taxed at the consumer level?", "blurb": "Prices that change behavior but hit some harder.", "fieldTags": ["environment", "economics"], "openers": ["Which design makes it fair?", "Why is it so politically toxic?"]},
-  {"id": "should-meat-be-taxed-for-climate-reasons", "kind": "question", "title": "Should meat be taxed for climate reasons?", "blurb": "Food choices, public health, and whose diet gets regulated.", "fieldTags": ["environment", "medicine"], "openers": ["Would it change what you eat?", "Is this the right lever?"]},
-  {"id": "should-geoengineering-research-be-funded", "kind": "question", "title": "Should geoengineering research be funded?", "blurb": "Insurance policy or moral hazard.", "fieldTags": ["environment", "physics"], "openers": ["Who should get to decide to deploy it?", "Where's the line between research and doing it?"]},
-  {"id": "should-new-oil-and-gas-projects-be-banned", "kind": "question", "title": "Should new oil and gas projects be banned?", "blurb": "Supply-side climate policy against energy security.", "fieldTags": ["environment", "politics"], "openers": ["What's the fairest transition for workers?", "How should poorer countries be treated?"]},
-  {"id": "should-climate-protest-that-disrupts-daily-life-be-protected", "kind": "question", "title": "Should climate protest that disrupts daily life be protected?", "blurb": "Civil disobedience, public patience, and the law.", "fieldTags": ["environment", "law"], "openers": ["Which tactic crossed a line for you?", "Does disruption help or hurt the cause?"]},
-  {"id": "should-physician-assisted-dying-be-legal", "kind": "question", "title": "Should physician-assisted dying be legal?", "blurb": "Autonomy, safeguards, and pressure on the vulnerable.", "fieldTags": ["medicine", "philosophy"], "openers": ["Which safeguards would you insist on?", "What have Canada and the Netherlands taught us?"]},
-  {"id": "should-healthcare-be-single-payer", "kind": "question", "title": "Should healthcare be single-payer?", "blurb": "Coverage, cost, and wait times.", "fieldTags": ["medicine", "economics"], "openers": ["What's your own experience with the system?", "Which country would you copy?"]},
-  {"id": "should-all-psychedelics-be-legal-for-medical-use", "kind": "question", "title": "Should all psychedelics be legal for medical use?", "blurb": "Promising trials, thin regulation, and long-standing stigma.", "fieldTags": ["medicine", "psychology"], "openers": ["How strong do you think the evidence is?", "What should the guardrails be?"]},
-  {"id": "should-drug-possession-be-decriminalized", "kind": "question", "title": "Should drug possession be decriminalized?", "blurb": "Treating addiction as health, not crime.", "fieldTags": ["medicine", "law"], "openers": ["What do you read in the Oregon and Portugal stories?", "What has to be in place first?"]},
-  {"id": "should-vaccines-be-mandatory-for-school", "kind": "question", "title": "Should vaccines be mandatory for school?", "blurb": "Herd protection against parental choice.", "fieldTags": ["medicine", "law"], "openers": ["Where would you allow exemptions?", "Do mandates backfire?"]},
-  {"id": "should-human-embryo-editing-be-allowed", "kind": "question", "title": "Should human embryo editing be allowed?", "blurb": "Preventing disease, and where that road goes.", "fieldTags": ["medicine", "philosophy"], "openers": ["Is there a clear line between therapy and enhancement?", "Who should set the rules?"]},
-  {"id": "should-prisons-be-abolished", "kind": "question", "title": "Should prisons be abolished?", "blurb": "What would replace them, and what would keep people safe?", "fieldTags": ["law", "sociology"], "openers": ["What does abolition mean to you?", "Which reform comes first?"]},
-  {"id": "should-police-budgets-be-shifted-to-social-services", "kind": "question", "title": "Should police budgets be shifted to social services?", "blurb": "Who responds to a mental health crisis?", "fieldTags": ["law", "sociology"], "openers": ["Which cities have made this work?", "What would you move first?"]},
-  {"id": "should-immigration-be-significantly-increased", "kind": "question", "title": "Should immigration be significantly increased?", "blurb": "Labor markets, identity, and moral claims.", "fieldTags": ["politics", "economics"], "openers": ["What's your own family's story here?", "Who should get priority?"]},
-  {"id": "should-national-service-be-mandatory", "kind": "question", "title": "Should national service be mandatory?", "blurb": "Shared civic experience against personal freedom.", "fieldTags": ["politics", "sociology"], "openers": ["Would you have done it?", "Which country's model is best?"]},
-  {"id": "should-stolen-colonial-artifacts-be-returned", "kind": "question", "title": "Should stolen colonial artifacts be returned?", "blurb": "Museums, restitution, and contested ownership.", "fieldTags": ["history", "law"], "openers": ["Which case do you find hardest?", "What happens to the museums?"]},
-  {"id": "should-history-curricula-be-set-nationally", "kind": "question", "title": "Should history curricula be set nationally?", "blurb": "Shared story or local control?", "fieldTags": ["history", "education"], "openers": ["What did your school leave out?", "Who should write it?"]},
-  {"id": "should-monuments-to-controversial-figures-come-down", "kind": "question", "title": "Should monuments to controversial figures come down?", "blurb": "Memory, erasure, and public space.", "fieldTags": ["history", "politics"], "openers": ["Is there one near you?", "What would you replace it with?"]},
-  {"id": "should-academic-journals-be-free-to-read", "kind": "question", "title": "Should academic journals be free to read?", "blurb": "Publicly funded research, privately held paywalls.", "fieldTags": ["education", "economics"], "openers": ["Who should pay for peer review?", "How do you get papers now?"]},
-  {"id": "should-peer-review-be-open-and-signed", "kind": "question", "title": "Should peer review be open and signed?", "blurb": "Transparency against retaliation.", "fieldTags": ["education", "sociology"], "openers": ["Would you sign your reviews?", "What's the worst part of peer review now?"]},
-  {"id": "should-speakers-be-barred-from-campus-for-their-views", "kind": "question", "title": "Should speakers be barred from campus for their views?", "blurb": "Free inquiry, safety, and who a university is for.", "fieldTags": ["education", "philosophy"], "openers": ["Where would you draw the line?", "Is there a speaker you'd have protested?"]},
-  {"id": "should-animal-testing-be-phased-out", "kind": "question", "title": "Should animal testing be phased out?", "blurb": "Medical progress, animal suffering, and the alternatives.", "fieldTags": ["medicine", "biology"], "openers": ["What do researchers around you think?", "How close are the replacements?"]},
-  {"id": "should-zoos-exist", "kind": "question", "title": "Should zoos exist?", "blurb": "Conservation and education against captivity.", "fieldTags": ["biology", "philosophy"], "openers": ["Do you visit them?", "What's a good zoo, if there is one?"]},
-  {"id": "should-countries-pay-reparations-for-slavery-and-colonialism", "kind": "question", "title": "Should countries pay reparations for slavery and colonialism?", "blurb": "Historical debts and how anyone could settle them.", "fieldTags": ["history", "economics"], "openers": ["What form could it take?", "Who owes whom?"]},
-  {"id": "should-billionaires-exist", "kind": "question", "title": "Should billionaires exist?", "blurb": "Reward for creation, or a failure of policy?", "fieldTags": ["economics", "philosophy"], "openers": ["Where would you put the ceiling, if anywhere?", "What would actually change?"]},
-  {"id": "should-companies-have-workers-on-their-boards", "kind": "question", "title": "Should companies have workers on their boards?", "blurb": "Codetermination in Germany, and elsewhere.", "fieldTags": ["economics", "politics"], "openers": ["Would it have changed any job you've had?", "What does the evidence show?"]},
-  {"id": "should-public-libraries-be-funded-before-stadiums", "kind": "question", "title": "Should public libraries be funded before stadiums?", "blurb": "Civic priorities, and who gets to set them.", "fieldTags": ["urbanism", "economics"], "openers": ["What did your city last spend big on?", "What's the best library you've used?"]},
-  {"id": "should-governments-regulate-ultra-processed-food", "kind": "question", "title": "Should governments regulate ultra-processed food?", "blurb": "Public health against personal choice.", "fieldTags": ["medicine", "politics"], "openers": ["What would regulation look like?", "Is the category even well defined?"]},
-  {"id": "should-space-be-open-to-commercial-mining", "kind": "question", "title": "Should space be open to commercial mining?", "blurb": "Who owns what's out there?", "fieldTags": ["law", "engineering"], "openers": ["Does the Outer Space Treaty still hold up?", "Who should benefit?"]},
-  {"id": "should-local-news-be-publicly-funded", "kind": "question", "title": "Should local news be publicly funded?", "blurb": "Saving reporting against government influence.", "fieldTags": ["politics", "economics"], "openers": ["Who covers your local council now?", "How would you keep it independent?"]},
-  {"id": "should-public-servants-be-allowed-to-strike", "kind": "question", "title": "Should public servants be allowed to strike?", "blurb": "Workers' rights against essential services.", "fieldTags": ["politics", "law"], "openers": ["Which services would you carve out?", "What happens when they can't?"]},
-  {"id": "should-high-skilled-migrants-be-prioritized", "kind": "question", "title": "Should high-skilled migrants be prioritized?", "blurb": "Economic gain against brain drain and fairness.", "fieldTags": ["politics", "economics"], "openers": ["What's the effect back home?", "Do points systems work?"]},
-  {"id": "philosophy-of-language", "kind": "interest", "title": "Philosophy of language", "blurb": "What words do, and how meaning gets fixed.", "fieldTags": ["philosophy", "linguistics"], "openers": ["Wittgenstein early or late?", "Which puzzle about meaning do you keep returning to?"]},
-  {"id": "network-science", "kind": "interest", "title": "Network science", "blurb": "Why some ideas, diseases, and people spread.", "fieldTags": ["mathematics", "sociology"], "openers": ["What network do you wish you could map?", "Which model do you find most overused?"]},
-  {"id": "health-economics", "kind": "interest", "title": "Health economics", "blurb": "Why care costs what it costs.", "fieldTags": ["economics", "medicine"], "openers": ["What's the strangest bill you've ever seen?", "Which incentive would you fix first?"]},
-  {"id": "children-s-literature", "kind": "interest", "title": "Children's literature", "blurb": "The books that made us, reread as adults.", "fieldTags": ["literature", "education"], "openers": ["Which childhood book holds up?", "What did you only notice as an adult?"]},
-  {"id": "museums-and-public-memory", "kind": "interest", "title": "Museums and public memory", "blurb": "Who curates the past, and for whom.", "fieldTags": ["history", "art"], "openers": ["Which museum changed how you see something?", "Want to go to one and compare notes?"]},
-  {"id": "astronomy-for-amateurs", "kind": "interest", "title": "Astronomy for amateurs", "blurb": "Telescopes, dark skies, and looking up on purpose.", "fieldTags": ["physics", "education"], "openers": ["What's the best thing you've seen with your own eyes?", "Where's the darkest sky near here?"]},
-  {"id": "urban-ecology", "kind": "interest", "title": "Urban ecology", "blurb": "Foxes, street trees, and the wild inside cities.", "fieldTags": ["environment", "urbanism"], "openers": ["What's the strangest wildlife you've seen around here?", "Which park here do you know best?"]},
-  {"id": "philosophy-of-education", "kind": "interest", "title": "Philosophy of education", "blurb": "What schooling is actually for.", "fieldTags": ["education", "philosophy"], "openers": ["Dewey, Freire, or someone else?", "What do you wish school had been for?"]},
-  {"id": "economics-of-attention", "kind": "interest", "title": "Economics of attention", "blurb": "How apps, ads, and media compete for your time.", "fieldTags": ["economics", "psychology"], "openers": ["What's taken more of your attention than you'd like?", "Should attention be regulated at all?"]},
-  {"id": "should-universities-cap-international-student-numbers", "kind": "question", "title": "Should universities cap international student numbers?", "blurb": "Housing and funding pressures against openness.", "fieldTags": ["education", "politics"], "openers": ["Who benefits from the current numbers?", "What would a cap do to your campus?"]},
-  {"id": "should-the-retirement-age-rise-with-life-expectancy", "kind": "question", "title": "Should the retirement age rise with life expectancy?", "blurb": "Fiscal arithmetic against fairness to manual workers.", "fieldTags": ["economics", "politics"], "openers": ["Should it depend on your job?", "What do you expect for your own generation?"]},
-  {"id": "should-organ-donation-be-opt-out-by-default", "kind": "question", "title": "Should organ donation be opt-out by default?", "blurb": "More organs, or too much state over your body?", "fieldTags": ["medicine", "philosophy"], "openers": ["Have you registered?", "Does the default really change the numbers?"]},
-  {"id": "should-advertising-to-children-be-banned", "kind": "question", "title": "Should advertising to children be banned?", "blurb": "Protecting kids against commercial speech.", "fieldTags": ["law", "psychology"], "openers": ["Which ads got to you as a child?", "Where would you draw the age line?"]}
+{
+"id": "behavioral-economics",
+"kind": "interest",
+"title": "Behavioral economics",
+"blurb": "Why people don't act like the models say they should.",
+"fieldTags": [
+"economics",
+"psychology"
+],
+"openers": [
+"Which classic finding do you think holds up worst?",
+"Have you ever caught a nudge working on you?",
+"What would you run as a field experiment around here?"
+]
+},
+{
+"id": "development-economics",
+"kind": "interest",
+"title": "Development economics",
+"blurb": "What actually moves poor countries and households forward.",
+"fieldTags": [
+"economics",
+"politics"
+],
+"openers": [
+"Randomized trials or big-picture institutions: where do you start?",
+"Which country's path puzzles you most?"
+]
+},
+{
+"id": "economic-history",
+"kind": "interest",
+"title": "Economic history",
+"blurb": "Industrial revolutions, crashes, and the long shadow of institutions.",
+"fieldTags": [
+"economics",
+"history"
+],
+"openers": [
+"Which period do you wish more economists studied?",
+"What's the best book you've read on why some places got rich?"
+]
+},
+{
+"id": "labor-markets-and-the-future-of-work",
+"kind": "interest",
+"title": "Labor markets and the future of work",
+"blurb": "Wages, unions, gig work, and who bargains with whom.",
+"fieldTags": [
+"economics",
+"sociology"
+],
+"openers": [
+"What's changed most about work in your field?",
+"Would you join a union if your job had one?"
+]
+},
+{
+"id": "game-theory-in-everyday-life",
+"kind": "interest",
+"title": "Game theory in everyday life",
+"blurb": "Auctions, bluffing, and why group projects go wrong.",
+"fieldTags": [
+"economics",
+"mathematics"
+],
+"openers": [
+"What's a real situation you've analyzed as a game?",
+"Where does the theory break down with actual people?"
+]
+},
+{
+"id": "monetary-policy-and-central-banks",
+"kind": "interest",
+"title": "Monetary policy and central banks",
+"blurb": "Interest rates, inflation, and unelected power.",
+"fieldTags": [
+"economics",
+"politics"
+],
+"openers": [
+"What do central banks get too much credit for?",
+"What would you ask a central banker over coffee?"
+]
+},
+{
+"id": "comparative-politics",
+"kind": "interest",
+"title": "Comparative politics",
+"blurb": "Why similar countries end up with very different governments.",
+"fieldTags": [
+"politics",
+"history"
+],
+"openers": [
+"Which two countries do you love comparing?",
+"What's a political system you think is underrated?"
+]
+},
+{
+"id": "democratic-backsliding",
+"kind": "interest",
+"title": "Democratic backsliding",
+"blurb": "How democracies erode, and what slows it down.",
+"fieldTags": [
+"politics",
+"law"
+],
+"openers": [
+"What's the earliest warning sign you'd watch for?",
+"Which recovery from backsliding do you find most hopeful?"
+]
+},
+{
+"id": "international-relations-theory",
+"kind": "interest",
+"title": "International relations theory",
+"blurb": "Realists, liberals, and arguments that outlast any one war.",
+"fieldTags": [
+"politics",
+"history"
+],
+"openers": [
+"Which school of thought persuades you most this year?",
+"What event changed how you think about world politics?"
+]
+},
+{
+"id": "electoral-systems-and-voting-reform",
+"kind": "interest",
+"title": "Electoral systems and voting reform",
+"blurb": "Ranked ballots, proportional seats, and who gets represented.",
+"fieldTags": [
+"politics",
+"mathematics"
+],
+"openers": [
+"What's the voting method you'd actually defend?",
+"Has a voting reform ever really changed outcomes?"
+]
+},
+{
+"id": "local-government-and-city-councils",
+"kind": "interest",
+"title": "Local government and city councils",
+"blurb": "The meetings almost nobody attends that shape daily life.",
+"fieldTags": [
+"politics",
+"urbanism"
+],
+"openers": [
+"Have you ever been to a council meeting?",
+"What local decision do you wish more people noticed?"
+]
+},
+{
+"id": "social-movements",
+"kind": "interest",
+"title": "Social movements",
+"blurb": "How protest turns into change, or doesn't.",
+"fieldTags": [
+"politics",
+"sociology"
+],
+"openers": [
+"Which movement's strategy do you find most instructive?",
+"What makes a movement last past its first big moment?"
+]
+},
+{
+"id": "constitutional-law",
+"kind": "interest",
+"title": "Constitutional law",
+"blurb": "Rights, courts, and who gets the last word.",
+"fieldTags": [
+"law",
+"politics"
+],
+"openers": [
+"Which ruling would you most like to reargue?",
+"How much should judges defer to legislatures?"
+]
+},
+{
+"id": "international-law",
+"kind": "interest",
+"title": "International law",
+"blurb": "Treaties, tribunals, and rules without an enforcer.",
+"fieldTags": [
+"law",
+"politics"
+],
+"openers": [
+"Does international law constrain anyone powerful?",
+"Which tribunal's record interests you most?"
+]
+},
+{
+"id": "law-and-technology",
+"kind": "interest",
+"title": "Law and technology",
+"blurb": "Copyright, privacy, and old statutes meeting new machines.",
+"fieldTags": [
+"law",
+"computer_science"
+],
+"openers": [
+"What legal question about technology feels most unsettled?",
+"Which law aged the worst?"
+]
+},
+{
+"id": "criminal-justice-research",
+"kind": "interest",
+"title": "Criminal justice research",
+"blurb": "Policing, sentencing, and what the evidence shows.",
+"fieldTags": [
+"law",
+"sociology"
+],
+"openers": [
+"Which finding surprised you most?",
+"What would you measure that nobody measures now?"
+]
+},
+{
+"id": "philosophy-of-mind",
+"kind": "interest",
+"title": "Philosophy of mind",
+"blurb": "Consciousness, perception, and what it's like to be anything.",
+"fieldTags": [
+"philosophy",
+"psychology"
+],
+"openers": [
+"Which position did you hold first and abandon?",
+"Could a machine ever settle this question for you?"
+]
+},
+{
+"id": "ethics-and-moral-philosophy",
+"kind": "interest",
+"title": "Ethics and moral philosophy",
+"blurb": "What we owe each other, argued carefully.",
+"fieldTags": [
+"philosophy"
+],
+"openers": [
+"Which ethical view do you find hardest to live by?",
+"Is there a thought experiment you think is overrated?"
+]
+},
+{
+"id": "political-philosophy",
+"kind": "interest",
+"title": "Political philosophy",
+"blurb": "Justice, liberty, and who gets to decide.",
+"fieldTags": [
+"philosophy",
+"politics"
+],
+"openers": [
+"Rawls, Nozick, or someone else entirely?",
+"What's the strongest argument against your own view?"
+]
+},
+{
+"id": "philosophy-of-science",
+"kind": "interest",
+"title": "Philosophy of science",
+"blurb": "What makes a theory good, and whether science can tell.",
+"fieldTags": [
+"philosophy",
+"physics"
+],
+"openers": [
+"Does Popper still hold up for you?",
+"Which scientific practice would you question first?"
+]
+},
+{
+"id": "existentialism",
+"kind": "interest",
+"title": "Existentialism",
+"blurb": "Sartre, de Beauvoir, Camus, and how to live anyway.",
+"fieldTags": [
+"philosophy",
+"literature"
+],
+"openers": [
+"Who did you read first?",
+"Does any of it help on an ordinary Tuesday?"
+]
+},
+{
+"id": "effective-altruism-and-its-critics",
+"kind": "interest",
+"title": "Effective altruism and its critics",
+"blurb": "How to do the most good, and who gets to define good.",
+"fieldTags": [
+"philosophy",
+"economics"
+],
+"openers": [
+"What did the movement get right?",
+"Where do you get off the train?"
+]
+},
+{
+"id": "ancient-philosophy",
+"kind": "interest",
+"title": "Ancient philosophy",
+"blurb": "Plato, Aristotle, the Stoics, and why they keep coming back.",
+"fieldTags": [
+"philosophy",
+"history"
+],
+"openers": [
+"Which ancient thinker would you most like to argue with?",
+"Is modern Stoicism the real thing?"
+]
+},
+{
+"id": "non-western-philosophy",
+"kind": "interest",
+"title": "Non-Western philosophy",
+"blurb": "Confucian, Buddhist, Islamic, and African traditions of thought.",
+"fieldTags": [
+"philosophy",
+"history"
+],
+"openers": [
+"Which tradition changed how you think?",
+"What should everyone read first?"
+]
+},
+{
+"id": "medieval-history",
+"kind": "interest",
+"title": "Medieval history",
+"blurb": "Far stranger and more connected than the stereotype.",
+"fieldTags": [
+"history"
+],
+"openers": [
+"What's your favorite medieval myth to debunk?",
+"Which place and century would you visit?"
+]
+},
+{
+"id": "history-of-empire-and-colonialism",
+"kind": "interest",
+"title": "History of empire and colonialism",
+"blurb": "How empires were built, run, and remembered.",
+"fieldTags": [
+"history",
+"politics"
+],
+"openers": [
+"Which archive or book changed your view?",
+"How should a former empire teach this in schools?"
+]
+},
+{
+"id": "oral-history-and-memory",
+"kind": "interest",
+"title": "Oral history and memory",
+"blurb": "Whose stories get recorded, and how memory bends them.",
+"fieldTags": [
+"history",
+"sociology"
+],
+"openers": [
+"Whose story would you most want to record?",
+"How far do you trust a remembered account?"
+]
+},
+{
+"id": "history-of-science",
+"kind": "interest",
+"title": "History of science",
+"blurb": "How knowledge actually got made, mistakes included.",
+"fieldTags": [
+"history",
+"physics"
+],
+"openers": [
+"Which discovery has the most misleading popular story?",
+"Who deserves far more credit than they get?"
+]
+},
+{
+"id": "urban-history",
+"kind": "interest",
+"title": "Urban history",
+"blurb": "How the city you live in came to look the way it does.",
+"fieldTags": [
+"history",
+"urbanism"
+],
+"openers": [
+"What's the strangest thing about this city's past?",
+"Which neighborhood's story should more people know?"
+]
+},
+{
+"id": "sociology-of-class",
+"kind": "interest",
+"title": "Sociology of class",
+"blurb": "How class works now, including the parts nobody says aloud.",
+"fieldTags": [
+"sociology",
+"economics"
+],
+"openers": [
+"When did you first notice class in your own life?",
+"Is Bourdieu still the right lens?"
+]
+},
+{
+"id": "migration-and-diaspora",
+"kind": "interest",
+"title": "Migration and diaspora",
+"blurb": "Why people move, and what they carry with them.",
+"fieldTags": [
+"sociology",
+"politics"
+],
+"openers": [
+"Does your family have a migration story?",
+"What do policy debates get wrong about migrants?"
+]
+},
+{
+"id": "sociology-of-the-internet",
+"kind": "interest",
+"title": "Sociology of the internet",
+"blurb": "Online communities, status games, and how norms form.",
+"fieldTags": [
+"sociology",
+"computer_science"
+],
+"openers": [
+"Which online community taught you the most?",
+"Has the internet made you more or less lonely?"
+]
+},
+{
+"id": "gender-studies",
+"kind": "interest",
+"title": "Gender studies",
+"blurb": "How gender shapes work, care, law, and everyday life.",
+"fieldTags": [
+"sociology",
+"philosophy"
+],
+"openers": [
+"Which book reframed this for you?",
+"What question in this field do you think is unanswered?"
+]
+},
+{
+"id": "religion-in-public-life",
+"kind": "interest",
+"title": "Religion in public life",
+"blurb": "Faith, secularism, and how they share a society.",
+"fieldTags": [
+"sociology",
+"politics"
+],
+"openers": [
+"How did you grow up thinking about religion?",
+"Which country handles this best?"
+]
+},
+{
+"id": "cognitive-psychology",
+"kind": "interest",
+"title": "Cognitive psychology",
+"blurb": "Attention, memory, and how thinking actually happens.",
+"fieldTags": [
+"psychology"
+],
+"openers": [
+"Which illusion do you still fall for?",
+"What should everyone know about memory?"
+]
+},
+{
+"id": "replication-crisis",
+"kind": "interest",
+"title": "Replication crisis",
+"blurb": "What survived, what didn't, and how to do better.",
+"fieldTags": [
+"psychology",
+"mathematics"
+],
+"openers": [
+"Which failed replication stung most?",
+"What would you change first about how studies get published?"
+]
+},
+{
+"id": "developmental-psychology",
+"kind": "interest",
+"title": "Developmental psychology",
+"blurb": "How children become people.",
+"fieldTags": [
+"psychology",
+"education"
+],
+"openers": [
+"Which finding changed how you see childhood?",
+"What do you think we get wrong about teenagers?"
+]
+},
+{
+"id": "social-psychology-of-belief",
+"kind": "interest",
+"title": "Social psychology of belief",
+"blurb": "Why people believe things, and why they change their minds.",
+"fieldTags": [
+"psychology",
+"sociology"
+],
+"openers": [
+"When did you last really change your mind?",
+"What actually persuades someone?"
+]
+},
+{
+"id": "psychology-of-loneliness-and-friendship",
+"kind": "interest",
+"title": "Psychology of loneliness and friendship",
+"blurb": "Why making friends gets harder, and what helps.",
+"fieldTags": [
+"psychology",
+"sociology"
+],
+"openers": [
+"How have you made friends as an adult?",
+"What makes a friendship last for you?"
+]
+},
+{
+"id": "clinical-psychology-and-therapy-research",
+"kind": "interest",
+"title": "Clinical psychology and therapy research",
+"blurb": "What works in therapy, and how anyone can tell.",
+"fieldTags": [
+"psychology",
+"medicine"
+],
+"openers": [
+"Which approach do you think is over- or under-rated?",
+"How should we measure whether therapy worked?"
+]
+},
+{
+"id": "the-nineteenth-century-novel",
+"kind": "interest",
+"title": "The nineteenth-century novel",
+"blurb": "Big books, big societies, and very long sentences.",
+"fieldTags": [
+"literature",
+"history"
+],
+"openers": [
+"Tolstoy, Eliot, Dickens: who's your pick?",
+"Which long novel was worth every page?"
+]
+},
+{
+"id": "contemporary-fiction",
+"kind": "interest",
+"title": "Contemporary fiction",
+"blurb": "What's being written now and why it matters.",
+"fieldTags": [
+"literature"
+],
+"openers": [
+"What's the best novel you read this year?",
+"Who's a living writer people will still read in fifty years?"
+]
+},
+{
+"id": "poetry",
+"kind": "interest",
+"title": "Poetry",
+"blurb": "Reading it, writing it, and arguing about what it's for.",
+"fieldTags": [
+"literature",
+"art"
+],
+"openers": [
+"Which poem do you know by heart?",
+"Who got you into poetry?"
+]
+},
+{
+"id": "science-fiction-as-philosophy",
+"kind": "interest",
+"title": "Science fiction as philosophy",
+"blurb": "Thought experiments with spaceships.",
+"fieldTags": [
+"literature",
+"philosophy"
+],
+"openers": [
+"Which novel changed how you think?",
+"Le Guin or Lem?"
+]
+},
+{
+"id": "translation-and-world-literature",
+"kind": "interest",
+"title": "Translation and world literature",
+"blurb": "What crosses between languages, and what can't.",
+"fieldTags": [
+"literature",
+"linguistics"
+],
+"openers": [
+"Which translated book should everyone read?",
+"Have you compared two translations of the same book?"
+]
+},
+{
+"id": "literary-theory",
+"kind": "interest",
+"title": "Literary theory",
+"blurb": "Reading the reading, and whether it helps.",
+"fieldTags": [
+"literature",
+"philosophy"
+],
+"openers": [
+"Which theorist do you actually find useful?",
+"Has theory ever ruined a book for you?"
+]
+},
+{
+"id": "great-books-reading-group",
+"kind": "interest",
+"title": "Great books reading group",
+"blurb": "Slow reading of old books with other people.",
+"fieldTags": [
+"literature",
+"philosophy"
+],
+"openers": [
+"What's the first book you'd pick for the group?",
+"How many pages a week is realistic for you?"
+]
+},
+{
+"id": "sociolinguistics",
+"kind": "interest",
+"title": "Sociolinguistics",
+"blurb": "How accent, slang, and code-switching mark who we are.",
+"fieldTags": [
+"linguistics",
+"sociology"
+],
+"openers": [
+"Do you speak differently with different people?",
+"What language change annoys you, and why does it?"
+]
+},
+{
+"id": "language-learning",
+"kind": "interest",
+"title": "Language learning",
+"blurb": "What actually works for learning a language as an adult.",
+"fieldTags": [
+"linguistics",
+"education"
+],
+"openers": [
+"What are you learning right now?",
+"What method wasted the most of your time?"
+]
+},
+{
+"id": "endangered-languages",
+"kind": "interest",
+"title": "Endangered languages",
+"blurb": "Documentation, revival, and what's lost when a language goes.",
+"fieldTags": [
+"linguistics",
+"history"
+],
+"openers": [
+"Which revival effort do you find most inspiring?",
+"What's lost when a language dies?"
+]
+},
+{
+"id": "language-and-ai",
+"kind": "interest",
+"title": "Language and AI",
+"blurb": "What large language models do and don't tell us about language.",
+"fieldTags": [
+"linguistics",
+"computer_science"
+],
+"openers": [
+"Do language models change linguistics at all?",
+"What would convince you a model understands?"
+]
+},
+{
+"id": "architecture-and-the-built-environment",
+"kind": "interest",
+"title": "Architecture and the built environment",
+"blurb": "Why buildings look the way they do, and how they feel inside.",
+"fieldTags": [
+"art",
+"urbanism"
+],
+"openers": [
+"Which building nearby do you love or hate?",
+"What would you build on the nearest empty lot?"
+]
+},
+{
+"id": "contemporary-art",
+"kind": "interest",
+"title": "Contemporary art",
+"blurb": "What's in the galleries, and whether it's any good.",
+"fieldTags": [
+"art"
+],
+"openers": [
+"What's the last show that stayed with you?",
+"Want to go see something and argue about it?"
+]
+},
+{
+"id": "film-as-an-art-form",
+"kind": "interest",
+"title": "Film as an art form",
+"blurb": "Slow cinema, auteurs, and what film can do that nothing else can.",
+"fieldTags": [
+"art",
+"literature"
+],
+"openers": [
+"Which film do you recommend to everyone?",
+"Which director do you think is overrated?"
+]
+},
+{
+"id": "design-and-how-things-work",
+"kind": "interest",
+"title": "Design and how things work",
+"blurb": "Everyday objects, interfaces, and good and bad decisions.",
+"fieldTags": [
+"art",
+"engineering"
+],
+"openers": [
+"What's a badly designed thing you use every day?",
+"What's the most elegant object you own?"
+]
+},
+{
+"id": "music-theory-and-listening",
+"kind": "interest",
+"title": "Music theory and listening",
+"blurb": "Why some music works, across traditions.",
+"fieldTags": [
+"art",
+"mathematics"
+],
+"openers": [
+"What piece would you walk someone through?",
+"Did learning theory change what you enjoy?"
+]
+},
+{
+"id": "photography-and-visual-culture",
+"kind": "interest",
+"title": "Photography and visual culture",
+"blurb": "Images, truth, and what we do with cameras everywhere.",
+"fieldTags": [
+"art",
+"sociology"
+],
+"openers": [
+"Which photograph do you think about most?",
+"Do you still trust photographs?"
+]
+},
+{
+"id": "evolutionary-biology",
+"kind": "interest",
+"title": "Evolutionary biology",
+"blurb": "Selection, drift, and the weird things it produces.",
+"fieldTags": [
+"biology"
+],
+"openers": [
+"What's your favorite strange adaptation?",
+"Which popular evolutionary story is wrong?"
+]
+},
+{
+"id": "neuroscience",
+"kind": "interest",
+"title": "Neuroscience",
+"blurb": "Brains, circuits, and how much we really know.",
+"fieldTags": [
+"biology",
+"psychology"
+],
+"openers": [
+"What's the biggest open question for you?",
+"Which neuroscience claim do you distrust?"
+]
+},
+{
+"id": "genetics-and-crispr",
+"kind": "interest",
+"title": "Genetics and CRISPR",
+"blurb": "Reading and editing genomes, and where to stop.",
+"fieldTags": [
+"biology",
+"medicine"
+],
+"openers": [
+"Where would you draw the line on editing?",
+"What application excites you most?"
+]
+},
+{
+"id": "microbiome-research",
+"kind": "interest",
+"title": "Microbiome research",
+"blurb": "The organisms living on you, and how much they matter.",
+"fieldTags": [
+"biology",
+"medicine"
+],
+"openers": [
+"How much of the hype do you believe?",
+"What experiment would you want to see done?"
+]
+},
+{
+"id": "ecology-and-biodiversity",
+"kind": "interest",
+"title": "Ecology and biodiversity",
+"blurb": "How ecosystems hold together and fall apart.",
+"fieldTags": [
+"biology",
+"environment"
+],
+"openers": [
+"Which ecosystem do you know best?",
+"Which species do you wish people cared about?"
+]
+},
+{
+"id": "animal-cognition",
+"kind": "interest",
+"title": "Animal cognition",
+"blurb": "What crows, octopuses, and dogs actually understand.",
+"fieldTags": [
+"biology",
+"psychology"
+],
+"openers": [
+"Which animal study blew your mind?",
+"How would we ever know what an animal experiences?"
+]
+},
+{
+"id": "origins-of-life",
+"kind": "interest",
+"title": "Origins of life",
+"blurb": "How chemistry turned into biology.",
+"fieldTags": [
+"biology",
+"chemistry"
+],
+"openers": [
+"Which hypothesis do you find most convincing?",
+"Would finding life elsewhere change much for you?"
+]
+},
+{
+"id": "public-health",
+"kind": "interest",
+"title": "Public health",
+"blurb": "Populations, prevention, and what actually keeps people alive.",
+"fieldTags": [
+"medicine",
+"politics"
+],
+"openers": [
+"What's the most underrated public health win?",
+"Which health policy would you change first?"
+]
+},
+{
+"id": "global-health-and-pandemics",
+"kind": "interest",
+"title": "Global health and pandemics",
+"blurb": "What we learned, and what we've already forgotten.",
+"fieldTags": [
+"medicine",
+"politics"
+],
+"openers": [
+"What should we have learned from COVID?",
+"Who's doing this work well?"
+]
+},
+{
+"id": "medical-ethics",
+"kind": "interest",
+"title": "Medical ethics",
+"blurb": "Consent, scarcity, and hard calls at the bedside.",
+"fieldTags": [
+"medicine",
+"philosophy"
+],
+"openers": [
+"Which case do you keep coming back to?",
+"Who should decide when resources are scarce?"
+]
+},
+{
+"id": "aging-and-longevity-science",
+"kind": "interest",
+"title": "Aging and longevity science",
+"blurb": "What can actually be done, and what's just marketing.",
+"fieldTags": [
+"medicine",
+"biology"
+],
+"openers": [
+"Which claim do you find most credible?",
+"Would you want to live to 150?"
+]
+},
+{
+"id": "mental-health-systems",
+"kind": "interest",
+"title": "Mental health systems",
+"blurb": "Access, stigma, and how care gets organized.",
+"fieldTags": [
+"medicine",
+"psychology"
+],
+"openers": [
+"What would you change first?",
+"What does your community lack?"
+]
+},
+{
+"id": "nutrition-science",
+"kind": "interest",
+"title": "Nutrition science",
+"blurb": "Why the advice keeps changing.",
+"fieldTags": [
+"medicine",
+"biology"
+],
+"openers": [
+"Which study design do you trust?",
+"What food advice did you stop believing?"
+]
+},
+{
+"id": "quantum-mechanics-and-interpretation",
+"kind": "interest",
+"title": "Quantum mechanics and interpretation",
+"blurb": "What the math says, and what it means.",
+"fieldTags": [
+"physics",
+"philosophy"
+],
+"openers": [
+"Which interpretation do you lean toward?",
+"Does the interpretation question even matter?"
+]
+},
+{
+"id": "astrophysics-and-cosmology",
+"kind": "interest",
+"title": "Astrophysics and cosmology",
+"blurb": "Dark matter, the early universe, and what we can see.",
+"fieldTags": [
+"physics"
+],
+"openers": [
+"What's the biggest puzzle for you?",
+"What would you point a telescope at?"
+]
+},
+{
+"id": "climate-physics",
+"kind": "interest",
+"title": "Climate physics",
+"blurb": "How the models work and how sure we are.",
+"fieldTags": [
+"physics",
+"environment"
+],
+"openers": [
+"Which uncertainty do you think matters most?",
+"How do you explain feedback loops to friends?"
+]
+},
+{
+"id": "physics-for-non-physicists",
+"kind": "interest",
+"title": "Physics for non-physicists",
+"blurb": "Big ideas without the math, or with a little.",
+"fieldTags": [
+"physics",
+"education"
+],
+"openers": [
+"What's a concept you finally understood recently?",
+"Which analogy do you think misleads people?"
+]
+},
+{
+"id": "materials-science",
+"kind": "interest",
+"title": "Materials science",
+"blurb": "The stuff that quietly decides what's possible.",
+"fieldTags": [
+"chemistry",
+"engineering"
+],
+"openers": [
+"What material is the most underrated?",
+"Which breakthrough are you watching?"
+]
+},
+{
+"id": "green-chemistry",
+"kind": "interest",
+"title": "Green chemistry",
+"blurb": "Making things without making a mess.",
+"fieldTags": [
+"chemistry",
+"environment"
+],
+"openers": [
+"What's the worst everyday chemical process?",
+"Which fix looks closest to real?"
+]
+},
+{
+"id": "drug-discovery",
+"kind": "interest",
+"title": "Drug discovery",
+"blurb": "How molecules become medicines, and why most don't.",
+"fieldTags": [
+"chemistry",
+"medicine"
+],
+"openers": [
+"Has AI changed this yet?",
+"Why do you think so many candidates fail?"
+]
+},
+{
+"id": "foundations-of-mathematics",
+"kind": "interest",
+"title": "Foundations of mathematics",
+"blurb": "Sets, proofs, and what math rests on.",
+"fieldTags": [
+"mathematics",
+"philosophy"
+],
+"openers": [
+"Do you think mathematical objects exist?",
+"Which paradox do you enjoy most?"
+]
+},
+{
+"id": "statistics-and-causal-inference",
+"kind": "interest",
+"title": "Statistics and causal inference",
+"blurb": "Getting from correlation to something you can act on.",
+"fieldTags": [
+"mathematics",
+"economics"
+],
+"openers": [
+"What's the worst causal claim you've seen lately?",
+"Which method do you reach for first?"
+]
+},
+{
+"id": "beautiful-proofs",
+"kind": "interest",
+"title": "Beautiful proofs",
+"blurb": "A casual math club for the pleasure of it.",
+"fieldTags": [
+"mathematics"
+],
+"openers": [
+"What's your favorite proof?",
+"Which result felt like magic when you first saw it?"
+]
+},
+{
+"id": "math-education",
+"kind": "interest",
+"title": "Math education",
+"blurb": "Why so many people decide they're bad at math.",
+"fieldTags": [
+"mathematics",
+"education"
+],
+"openers": [
+"When did math click for you, or not?",
+"How would you teach fractions?"
+]
+},
+{
+"id": "machine-learning-research",
+"kind": "interest",
+"title": "Machine learning research",
+"blurb": "What's actually new in the papers.",
+"fieldTags": [
+"computer_science",
+"mathematics"
+],
+"openers": [
+"Which recent paper stayed with you?",
+"What do you think is overhyped?"
+]
+},
+{
+"id": "ai-safety-and-governance",
+"kind": "interest",
+"title": "AI safety and governance",
+"blurb": "How to steer powerful systems, and who should.",
+"fieldTags": [
+"computer_science",
+"politics"
+],
+"openers": [
+"What worries you most, concretely?",
+"What regulation would you write first?"
+]
+},
+{
+"id": "open-source-communities",
+"kind": "interest",
+"title": "Open source communities",
+"blurb": "How volunteers build infrastructure the world relies on.",
+"fieldTags": [
+"computer_science",
+"sociology"
+],
+"openers": [
+"What's your first contribution story?",
+"How should maintainers get paid?"
+]
+},
+{
+"id": "privacy-and-surveillance",
+"kind": "interest",
+"title": "Privacy and surveillance",
+"blurb": "Who sees your data, and what they do with it.",
+"fieldTags": [
+"computer_science",
+"law"
+],
+"openers": [
+"What did you change after learning how tracking works?",
+"Is privacy still winnable?"
+]
+},
+{
+"id": "algorithms-and-complexity",
+"kind": "interest",
+"title": "Algorithms and complexity",
+"blurb": "What can be computed, and how fast.",
+"fieldTags": [
+"computer_science",
+"mathematics"
+],
+"openers": [
+"What's the most elegant algorithm you know?",
+"What do you bet on P vs NP?"
+]
+},
+{
+"id": "human-computer-interaction",
+"kind": "interest",
+"title": "Human-computer interaction",
+"blurb": "How software shapes what people do.",
+"fieldTags": [
+"computer_science",
+"psychology"
+],
+"openers": [
+"Which interface changed how you behave?",
+"What study would you run on a popular app?"
+]
+},
+{
+"id": "robotics",
+"kind": "interest",
+"title": "Robotics",
+"blurb": "Machines in the messy real world.",
+"fieldTags": [
+"engineering",
+"computer_science"
+],
+"openers": [
+"What's the hardest thing about the physical world?",
+"Which robot do you actually want at home?"
+]
+},
+{
+"id": "energy-systems",
+"kind": "interest",
+"title": "Energy systems",
+"blurb": "Grids, storage, and getting off fossil fuels.",
+"fieldTags": [
+"engineering",
+"environment"
+],
+"openers": [
+"What's the real bottleneck right now?",
+"Nuclear, solar, or something else first?"
+]
+},
+{
+"id": "transit-engineering",
+"kind": "interest",
+"title": "Transit engineering",
+"blurb": "Signals, rolling stock, and why trains run late.",
+"fieldTags": [
+"engineering",
+"urbanism"
+],
+"openers": [
+"Which system should we copy?",
+"What's your favorite transit line and why?"
+]
+},
+{
+"id": "biomedical-engineering",
+"kind": "interest",
+"title": "Biomedical engineering",
+"blurb": "Devices, implants, and building for bodies.",
+"fieldTags": [
+"engineering",
+"medicine"
+],
+"openers": [
+"Which device do you think will matter most?",
+"What's the hardest constraint in your view?"
+]
+},
+{
+"id": "space-exploration",
+"kind": "interest",
+"title": "Space exploration",
+"blurb": "Rockets, missions, and whether we should go.",
+"fieldTags": [
+"engineering",
+"physics"
+],
+"openers": [
+"Which mission are you following?",
+"Robots or people?"
+]
+},
+{
+"id": "climate-adaptation",
+"kind": "interest",
+"title": "Climate adaptation",
+"blurb": "Living with the warming that's already locked in.",
+"fieldTags": [
+"environment",
+"urbanism"
+],
+"openers": [
+"What will your city have to change first?",
+"Who pays when a place has to move?"
+]
+},
+{
+"id": "climate-activism-and-strategy",
+"kind": "interest",
+"title": "Climate activism and strategy",
+"blurb": "What works for pushing change, and what backfires.",
+"fieldTags": [
+"environment",
+"politics"
+],
+"openers": [
+"Have you taken part in any of it?",
+"Which tactic do you think is most misunderstood?"
+]
+},
+{
+"id": "conservation-in-practice",
+"kind": "interest",
+"title": "Conservation in practice",
+"blurb": "Fieldwork, rewilding, and hard tradeoffs.",
+"fieldTags": [
+"environment",
+"biology"
+],
+"openers": [
+"What project do you most admire?",
+"Should we bring back extinct species?"
+]
+},
+{
+"id": "food-systems-and-agriculture",
+"kind": "interest",
+"title": "Food systems and agriculture",
+"blurb": "How we feed ourselves, and at what cost.",
+"fieldTags": [
+"environment",
+"economics"
+],
+"openers": [
+"What would you change about how we farm?",
+"What local food project is worth visiting?"
+]
+},
+{
+"id": "water-politics",
+"kind": "interest",
+"title": "Water politics",
+"blurb": "Rivers, dams, and who gets what.",
+"fieldTags": [
+"environment",
+"politics"
+],
+"openers": [
+"Which water dispute should more people know about?",
+"Where's your water come from?"
+]
+},
+{
+"id": "pedagogy-and-how-people-learn",
+"kind": "interest",
+"title": "Pedagogy and how people learn",
+"blurb": "What good teaching actually involves.",
+"fieldTags": [
+"education",
+"psychology"
+],
+"openers": [
+"Who's the best teacher you ever had?",
+"What did they do differently?"
+]
+},
+{
+"id": "higher-education",
+"kind": "interest",
+"title": "Higher education",
+"blurb": "What universities are for, and whether they're doing it.",
+"fieldTags": [
+"education",
+"sociology"
+],
+"openers": [
+"What would you change about your degree?",
+"Is the lecture dead?"
+]
+},
+{
+"id": "alternative-schools",
+"kind": "interest",
+"title": "Alternative schools",
+"blurb": "Montessori, unschooling, and other experiments.",
+"fieldTags": [
+"education"
+],
+"openers": [
+"What do you wish your school had done?",
+"Which approach has the best evidence?"
+]
+},
+{
+"id": "education-and-technology",
+"kind": "interest",
+"title": "Education and technology",
+"blurb": "What software in classrooms has really changed.",
+"fieldTags": [
+"education",
+"computer_science"
+],
+"openers": [
+"Has AI changed how you learn?",
+"What edtech failed in your experience?"
+]
+},
+{
+"id": "urban-planning",
+"kind": "interest",
+"title": "Urban planning",
+"blurb": "Zoning, streets, and how cities get made.",
+"fieldTags": [
+"urbanism",
+"politics"
+],
+"openers": [
+"What would you rezone first?",
+"Which street here needs fixing most?"
+]
+},
+{
+"id": "walkable-cities",
+"kind": "interest",
+"title": "Walkable cities",
+"blurb": "Why some places are pleasant to be in on foot.",
+"fieldTags": [
+"urbanism",
+"environment"
+],
+"openers": [
+"Where's the best walk in this city?",
+"Want to walk it and talk?"
+]
+},
+{
+"id": "third-places-and-community-spaces",
+"kind": "interest",
+"title": "Third places and community spaces",
+"blurb": "Libraries, cafés, and places to be without buying much.",
+"fieldTags": [
+"urbanism",
+"sociology"
+],
+"openers": [
+"What's your favorite third place around here?",
+"Which ones have we lost?"
+]
+},
+{
+"id": "thinking-in-public",
+"kind": "interest",
+"title": "Thinking in public",
+"blurb": "Essays, blogs, and working out ideas where people can see them.",
+"fieldTags": [
+"philosophy",
+"literature"
+],
+"openers": [
+"Do you write in public?",
+"Which essayist do you read for pleasure?"
+]
+},
+{
+"id": "science-communication",
+"kind": "interest",
+"title": "Science communication",
+"blurb": "Explaining hard things without lying.",
+"fieldTags": [
+"education",
+"physics"
+],
+"openers": [
+"Who does this best?",
+"What's the hardest thing you've tried to explain?"
+]
+},
+{
+"id": "research-methods-clinic",
+"kind": "interest",
+"title": "Research methods clinic",
+"blurb": "Bring your project, get a second pair of eyes.",
+"fieldTags": [
+"sociology",
+"mathematics"
+],
+"openers": [
+"What are you working on right now?",
+"What part of your method worries you?"
+]
+},
+{
+"id": "finding-research-collaborators",
+"kind": "interest",
+"title": "Finding research collaborators",
+"blurb": "Meet people to work on a real project with.",
+"fieldTags": [
+"education",
+"sociology"
+],
+"openers": [
+"What project needs another person?",
+"What skill are you looking for?"
+]
+},
+{
+"id": "getting-into-grad-school",
+"kind": "interest",
+"title": "Getting into grad school",
+"blurb": "Applications, advisors, and whether to go at all.",
+"fieldTags": [
+"education"
+],
+"openers": [
+"Where are you in the process?",
+"What do you wish someone had told you?"
+]
+},
+{
+"id": "careers-outside-academia",
+"kind": "interest",
+"title": "Careers outside academia",
+"blurb": "What PhDs and researchers do next.",
+"fieldTags": [
+"education",
+"economics"
+],
+"openers": [
+"What's pulling you away, or keeping you in?",
+"Who made a move you admire?"
+]
+},
+{
+"id": "nonprofit-and-civic-careers",
+"kind": "interest",
+"title": "Nonprofit and civic careers",
+"blurb": "Doing useful work and still paying rent.",
+"fieldTags": [
+"politics",
+"economics"
+],
+"openers": [
+"What's your dream job in this space?",
+"What do you wish you knew before starting?"
+]
+},
+{
+"id": "think-tanks-and-policy-careers",
+"kind": "interest",
+"title": "Think tanks and policy careers",
+"blurb": "How research actually reaches decision-makers.",
+"fieldTags": [
+"politics",
+"economics"
+],
+"openers": [
+"Have you seen research change a decision?",
+"Which organization do you respect?"
+]
+},
+{
+"id": "science-and-policy",
+"kind": "interest",
+"title": "Science and policy",
+"blurb": "When evidence meets politics.",
+"fieldTags": [
+"politics",
+"medicine"
+],
+"openers": [
+"When did evidence actually win?",
+"Should scientists take political positions?"
+]
+},
+{
+"id": "journalism-and-the-news",
+"kind": "interest",
+"title": "Journalism and the news",
+"blurb": "How reporting works, and what's happening to it.",
+"fieldTags": [
+"politics",
+"sociology"
+],
+"openers": [
+"Which outlet do you trust and why?",
+"What local story isn't being covered?"
+]
+},
+{
+"id": "philosophy-of-technology",
+"kind": "interest",
+"title": "Philosophy of technology",
+"blurb": "What our tools are doing to us.",
+"fieldTags": [
+"philosophy",
+"computer_science"
+],
+"openers": [
+"Which tool changed how you think?",
+"Is Heidegger any help here?"
+]
+},
+{
+"id": "economics-of-housing",
+"kind": "interest",
+"title": "Economics of housing",
+"blurb": "Why rents do what they do.",
+"fieldTags": [
+"economics",
+"urbanism"
+],
+"openers": [
+"What's your housing story in this city?",
+"What's the most misunderstood thing about rents?"
+]
+},
+{
+"id": "inequality-research",
+"kind": "interest",
+"title": "Inequality research",
+"blurb": "Who has what, how we measure it, and what follows.",
+"fieldTags": [
+"economics",
+"sociology"
+],
+"openers": [
+"Which number surprised you most?",
+"What's the right measure?"
+]
+},
+{
+"id": "disability-studies",
+"kind": "interest",
+"title": "Disability studies",
+"blurb": "How society makes disability, and what to do about it.",
+"fieldTags": [
+"sociology",
+"medicine"
+],
+"openers": [
+"What changed your view on this?",
+"Which design choice do you wish more people noticed?"
+]
+},
+{
+"id": "indigenous-knowledge-and-sovereignty",
+"kind": "interest",
+"title": "Indigenous knowledge and sovereignty",
+"blurb": "Land, law, and other ways of knowing.",
+"fieldTags": [
+"history",
+"law"
+],
+"openers": [
+"Whose work should people read first?",
+"How does this show up where you live?"
+]
+},
+{
+"id": "geopolitics-of-technology",
+"kind": "interest",
+"title": "Geopolitics of technology",
+"blurb": "Chips, supply chains, and competition between states.",
+"fieldTags": [
+"politics",
+"computer_science"
+],
+"openers": [
+"What dependency worries you most?",
+"Who's misreading this?"
+]
+},
+{
+"id": "sleep-science",
+"kind": "interest",
+"title": "Sleep science",
+"blurb": "What we know, and what the apps pretend to know.",
+"fieldTags": [
+"medicine",
+"psychology"
+],
+"openers": [
+"What actually improved your sleep?",
+"Which claim doesn't hold up?"
+]
+},
+{
+"id": "philosophy-of-sport-and-play",
+"kind": "interest",
+"title": "Philosophy of sport and play",
+"blurb": "Why we care so much about games.",
+"fieldTags": [
+"philosophy",
+"sociology"
+],
+"openers": [
+"What do you play?",
+"Is sport a good model for anything else?"
+]
+},
+{
+"id": "rhetoric-and-persuasion",
+"kind": "interest",
+"title": "Rhetoric and persuasion",
+"blurb": "How arguments work on real people.",
+"fieldTags": [
+"linguistics",
+"politics"
+],
+"openers": [
+"Who's the best speaker you've heard?",
+"Which fallacy do you commit most?"
+]
+},
+{
+"id": "learning-to-debate",
+"kind": "interest",
+"title": "Learning to debate",
+"blurb": "Practice arguing well with people who disagree.",
+"fieldTags": [
+"politics",
+"philosophy"
+],
+"openers": [
+"Have you ever debated competitively?",
+"What topic would you like to practice on?"
+]
+},
+{
+"id": "should-cities-abolish-single-family-zoning",
+"kind": "question",
+"title": "Should cities abolish single-family zoning?",
+"blurb": "Allowing more homes on every lot could cut rents. It could also change neighborhoods quickly.",
+"fieldTags": [
+"urbanism",
+"economics"
+],
+"openers": [
+"What would it change on your own street?",
+"What's the best evidence you've seen either way?"
+]
+},
+{
+"id": "should-rent-control-be-expanded",
+"kind": "question",
+"title": "Should rent control be expanded?",
+"blurb": "It protects tenants today. The argument is over who it costs tomorrow.",
+"fieldTags": [
+"economics",
+"urbanism"
+],
+"openers": [
+"Have you lived under rent control?",
+"Which city's approach do you find most convincing?"
+]
+},
+{
+"id": "should-public-transit-be-free",
+"kind": "question",
+"title": "Should public transit be free?",
+"blurb": "Cost, ridership, and whether the money would do more elsewhere.",
+"fieldTags": [
+"urbanism",
+"economics"
+],
+"openers": [
+"Would free fares change how you get around?",
+"Service or price: which matters more?"
+]
+},
+{
+"id": "should-cars-be-banned-from-city-centers",
+"kind": "question",
+"title": "Should cars be banned from city centers?",
+"blurb": "Cleaner and quieter, but who loses access?",
+"fieldTags": [
+"urbanism",
+"environment"
+],
+"openers": [
+"What would it mean for this city?",
+"Who should get exemptions?"
+]
+},
+{
+"id": "should-cities-charge-for-congestion",
+"kind": "question",
+"title": "Should cities charge for congestion?",
+"blurb": "Paying to drive downtown: efficient or unfair?",
+"fieldTags": [
+"urbanism",
+"economics"
+],
+"openers": [
+"Has any city done it well?",
+"Who should the revenue go to?"
+]
+},
+{
+"id": "should-college-be-tuition-free",
+"kind": "question",
+"title": "Should college be tuition-free?",
+"blurb": "Who benefits, who pays, and what happens to quality.",
+"fieldTags": [
+"education",
+"economics"
+],
+"openers": [
+"How did your own education get paid for?",
+"Would you target it by income?"
+]
+},
+{
+"id": "should-student-debt-be-forgiven",
+"kind": "question",
+"title": "Should student debt be forgiven?",
+"blurb": "Relief for borrowers against fairness to everyone else.",
+"fieldTags": [
+"education",
+"economics"
+],
+"openers": [
+"How does this touch your life?",
+"What would you do instead?"
+]
+},
+{
+"id": "should-universities-drop-legacy-admissions",
+"kind": "question",
+"title": "Should universities drop legacy admissions?",
+"blurb": "Family connections, donations, and what fairness requires.",
+"fieldTags": [
+"education",
+"politics"
+],
+"openers": [
+"Should donors get anything at all?",
+"Would you go further than this?"
+]
+},
+{
+"id": "should-universities-use-standardized-tests",
+"kind": "question",
+"title": "Should universities use standardized tests?",
+"blurb": "Tests may flag talent or reinforce privilege. Possibly both.",
+"fieldTags": [
+"education",
+"sociology"
+],
+"openers": [
+"Did tests help or hurt you?",
+"What would you use instead?"
+]
+},
+{
+"id": "should-phones-be-banned-in-schools",
+"kind": "question",
+"title": "Should phones be banned in schools?",
+"blurb": "Attention, safety, and how to tell if bans work.",
+"fieldTags": [
+"education",
+"psychology"
+],
+"openers": [
+"What was your school's rule?",
+"What would make a ban actually work?"
+]
+},
+{
+"id": "should-ai-tools-be-allowed-in-university-assignments",
+"kind": "question",
+"title": "Should AI tools be allowed in university assignments?",
+"blurb": "Cheating, skill, or the new calculator.",
+"fieldTags": [
+"education",
+"computer_science"
+],
+"openers": [
+"How do you use AI in your own work?",
+"What should an assignment look like now?"
+]
+},
+{
+"id": "should-the-voting-age-be-lowered-to-16",
+"kind": "question",
+"title": "Should the voting age be lowered to 16?",
+"blurb": "Civic habit, maturity, and who gets a say in the future.",
+"fieldTags": [
+"politics",
+"education"
+],
+"openers": [
+"What would you have done with a vote at 16?",
+"Where have they tried it?"
+]
+},
+{
+"id": "should-voting-be-mandatory",
+"kind": "question",
+"title": "Should voting be mandatory?",
+"blurb": "Higher turnout, but is an unwilling vote worth much?",
+"fieldTags": [
+"politics",
+"philosophy"
+],
+"openers": [
+"Would you support a fine for not voting?",
+"What's Australia's experience tell us?"
+]
+},
+{
+"id": "should-we-adopt-ranked-choice-voting",
+"kind": "question",
+"title": "Should we adopt ranked-choice voting?",
+"blurb": "More choice on the ballot, more complexity in the count.",
+"fieldTags": [
+"politics",
+"mathematics"
+],
+"openers": [
+"Have you ever voted this way?",
+"Does it really reduce polarization?"
+]
+},
+{
+"id": "should-legislators-face-term-limits",
+"kind": "question",
+"title": "Should legislators face term limits?",
+"blurb": "Fresh blood or more power to lobbyists and staff?",
+"fieldTags": [
+"politics",
+"law"
+],
+"openers": [
+"What does the evidence show from US states?",
+"Would you apply it to judges too?"
+]
+},
+{
+"id": "should-citizens-assemblies-make-binding-decisions",
+"kind": "question",
+"title": "Should citizens' assemblies make binding decisions?",
+"blurb": "Randomly chosen people, deliberating with experts.",
+"fieldTags": [
+"politics",
+"philosophy"
+],
+"openers": [
+"Would you serve on one?",
+"What decision would you hand to one first?"
+]
+},
+{
+"id": "should-private-money-be-banned-from-political-campaigns",
+"kind": "question",
+"title": "Should private money be banned from political campaigns?",
+"blurb": "Equal voices or restricted speech.",
+"fieldTags": [
+"politics",
+"law"
+],
+"openers": [
+"Where would you draw the line?",
+"Who'd fill the vacuum?"
+]
+},
+{
+"id": "should-supreme-court-justices-have-term-limits",
+"kind": "question",
+"title": "Should supreme court justices have term limits?",
+"blurb": "Lifetime tenure against regular turnover.",
+"fieldTags": [
+"law",
+"politics"
+],
+"openers": [
+"How long is the right term?",
+"Would it lower the temperature?"
+]
+},
+{
+"id": "should-social-media-be-banned-for-under-16s",
+"kind": "question",
+"title": "Should social media be banned for under-16s?",
+"blurb": "Protecting kids, or an unworkable gesture?",
+"fieldTags": [
+"politics",
+"psychology"
+],
+"openers": [
+"What age did you start, and would you change it?",
+"How would you enforce it?"
+]
+},
+{
+"id": "should-platforms-be-liable-for-what-users-post",
+"kind": "question",
+"title": "Should platforms be liable for what users post?",
+"blurb": "Accountability against open speech.",
+"fieldTags": [
+"law",
+"computer_science"
+],
+"openers": [
+"Which harm is worst under the current rules?",
+"Who gets hurt if platforms over-moderate?"
+]
+},
+{
+"id": "should-facial-recognition-be-banned-in-public-spaces",
+"kind": "question",
+"title": "Should facial recognition be banned in public spaces?",
+"blurb": "Security tool or end of anonymity.",
+"fieldTags": [
+"law",
+"computer_science"
+],
+"openers": [
+"Would you accept it for serious crimes?",
+"Who decides what counts as serious?"
+]
+},
+{
+"id": "should-frontier-ai-development-be-licensed",
+"kind": "question",
+"title": "Should frontier AI development be licensed?",
+"blurb": "Safety oversight, or a moat for incumbents.",
+"fieldTags": [
+"computer_science",
+"politics"
+],
+"openers": [
+"Who should grant the license?",
+"What would you require?"
+]
+},
+{
+"id": "should-ai-generated-work-be-copyrightable",
+"kind": "question",
+"title": "Should AI-generated work be copyrightable?",
+"blurb": "Who owns output nobody quite authored?",
+"fieldTags": [
+"law",
+"art"
+],
+"openers": [
+"Where would you draw the line on human input?",
+"How does this hit working artists?"
+]
+},
+{
+"id": "should-we-introduce-a-universal-basic-income",
+"kind": "question",
+"title": "Should we introduce a universal basic income?",
+"blurb": "Cash for everyone, no strings attached. What happens next?",
+"fieldTags": [
+"economics",
+"politics"
+],
+"openers": [
+"Which pilot do you find most telling?",
+"How would you pay for it?"
+]
+},
+{
+"id": "should-the-minimum-wage-be-much-higher",
+"kind": "question",
+"title": "Should the minimum wage be much higher?",
+"blurb": "Living wages against the risk of lost jobs.",
+"fieldTags": [
+"economics",
+"politics"
+],
+"openers": [
+"What's your first-job story?",
+"Should it vary by city?"
+]
+},
+{
+"id": "should-there-be-a-wealth-tax",
+"kind": "question",
+"title": "Should there be a wealth tax?",
+"blurb": "Taxing what people own, not just what they earn.",
+"fieldTags": [
+"economics",
+"politics"
+],
+"openers": [
+"Why did so many countries repeal it?",
+"What rate and threshold would you pick?"
+]
+},
+{
+"id": "should-a-four-day-work-week-become-standard",
+"kind": "question",
+"title": "Should a four-day work week become standard?",
+"blurb": "Same pay, fewer days, and what the trials found.",
+"fieldTags": [
+"economics",
+"sociology"
+],
+"openers": [
+"Could your work fit into four days?",
+"Who gets left out?"
+]
+},
+{
+"id": "should-gig-workers-be-classified-as-employees",
+"kind": "question",
+"title": "Should gig workers be classified as employees?",
+"blurb": "Flexibility against protection.",
+"fieldTags": [
+"economics",
+"law"
+],
+"openers": [
+"Have you done gig work?",
+"Is there a third category that works?"
+]
+},
+{
+"id": "should-unpaid-internships-be-banned",
+"kind": "question",
+"title": "Should unpaid internships be banned?",
+"blurb": "Opportunity for some, a barrier for many.",
+"fieldTags": [
+"economics",
+"education"
+],
+"openers": [
+"Did you take one?",
+"What would replace them?"
+]
+},
+{
+"id": "should-inheritance-be-taxed-more-heavily",
+"kind": "question",
+"title": "Should inheritance be taxed more heavily?",
+"blurb": "Merit, family, and accumulated advantage.",
+"fieldTags": [
+"economics",
+"philosophy"
+],
+"openers": [
+"How much should someone be able to pass on?",
+"What about family homes and businesses?"
+]
+},
+{
+"id": "should-countries-phase-out-nuclear-power-or-build-more",
+"kind": "question",
+"title": "Should countries phase out nuclear power, or build more?",
+"blurb": "Low carbon, high stakes, long timelines.",
+"fieldTags": [
+"environment",
+"engineering"
+],
+"openers": [
+"How do you weigh waste against emissions?",
+"What's the real obstacle to building?"
+]
+},
+{
+"id": "should-carbon-be-taxed-at-the-consumer-level",
+"kind": "question",
+"title": "Should carbon be taxed at the consumer level?",
+"blurb": "Prices that change behavior but hit some harder.",
+"fieldTags": [
+"environment",
+"economics"
+],
+"openers": [
+"Which design makes it fair?",
+"Why is it so politically toxic?"
+]
+},
+{
+"id": "should-meat-be-taxed-for-climate-reasons",
+"kind": "question",
+"title": "Should meat be taxed for climate reasons?",
+"blurb": "Food choices, public health, and whose diet gets regulated.",
+"fieldTags": [
+"environment",
+"medicine"
+],
+"openers": [
+"Would it change what you eat?",
+"Is this the right lever?"
+]
+},
+{
+"id": "should-geoengineering-research-be-funded",
+"kind": "question",
+"title": "Should geoengineering research be funded?",
+"blurb": "Insurance policy or moral hazard.",
+"fieldTags": [
+"environment",
+"physics"
+],
+"openers": [
+"Who should get to decide to deploy it?",
+"Where's the line between research and doing it?"
+]
+},
+{
+"id": "should-new-oil-and-gas-projects-be-banned",
+"kind": "question",
+"title": "Should new oil and gas projects be banned?",
+"blurb": "Supply-side climate policy against energy security.",
+"fieldTags": [
+"environment",
+"politics"
+],
+"openers": [
+"What's the fairest transition for workers?",
+"How should poorer countries be treated?"
+]
+},
+{
+"id": "should-climate-protest-that-disrupts-daily-life-be-protected",
+"kind": "question",
+"title": "Should climate protest that disrupts daily life be protected?",
+"blurb": "Civil disobedience, public patience, and the law.",
+"fieldTags": [
+"environment",
+"law"
+],
+"openers": [
+"Which tactic crossed a line for you?",
+"Does disruption help or hurt the cause?"
+]
+},
+{
+"id": "should-physician-assisted-dying-be-legal",
+"kind": "question",
+"title": "Should physician-assisted dying be legal?",
+"blurb": "Autonomy, safeguards, and pressure on the vulnerable.",
+"fieldTags": [
+"medicine",
+"philosophy"
+],
+"openers": [
+"Which safeguards would you insist on?",
+"What have Canada and the Netherlands taught us?"
+]
+},
+{
+"id": "should-healthcare-be-single-payer",
+"kind": "question",
+"title": "Should healthcare be single-payer?",
+"blurb": "Coverage, cost, and wait times.",
+"fieldTags": [
+"medicine",
+"economics"
+],
+"openers": [
+"What's your own experience with the system?",
+"Which country would you copy?"
+]
+},
+{
+"id": "should-all-psychedelics-be-legal-for-medical-use",
+"kind": "question",
+"title": "Should all psychedelics be legal for medical use?",
+"blurb": "Promising trials, thin regulation, and long-standing stigma.",
+"fieldTags": [
+"medicine",
+"psychology"
+],
+"openers": [
+"How strong do you think the evidence is?",
+"What should the guardrails be?"
+]
+},
+{
+"id": "should-drug-possession-be-decriminalized",
+"kind": "question",
+"title": "Should drug possession be decriminalized?",
+"blurb": "Treating addiction as health, not crime.",
+"fieldTags": [
+"medicine",
+"law"
+],
+"openers": [
+"What do you read in the Oregon and Portugal stories?",
+"What has to be in place first?"
+]
+},
+{
+"id": "should-vaccines-be-mandatory-for-school",
+"kind": "question",
+"title": "Should vaccines be mandatory for school?",
+"blurb": "Herd protection against parental choice.",
+"fieldTags": [
+"medicine",
+"law"
+],
+"openers": [
+"Where would you allow exemptions?",
+"Do mandates backfire?"
+]
+},
+{
+"id": "should-human-embryo-editing-be-allowed",
+"kind": "question",
+"title": "Should human embryo editing be allowed?",
+"blurb": "Preventing disease, and where that road goes.",
+"fieldTags": [
+"medicine",
+"philosophy"
+],
+"openers": [
+"Is there a clear line between therapy and enhancement?",
+"Who should set the rules?"
+]
+},
+{
+"id": "should-prisons-be-abolished",
+"kind": "question",
+"title": "Should prisons be abolished?",
+"blurb": "What would replace them, and what would keep people safe?",
+"fieldTags": [
+"law",
+"sociology"
+],
+"openers": [
+"What does abolition mean to you?",
+"Which reform comes first?"
+]
+},
+{
+"id": "should-police-budgets-be-shifted-to-social-services",
+"kind": "question",
+"title": "Should police budgets be shifted to social services?",
+"blurb": "Who responds to a mental health crisis?",
+"fieldTags": [
+"law",
+"sociology"
+],
+"openers": [
+"Which cities have made this work?",
+"What would you move first?"
+]
+},
+{
+"id": "should-immigration-be-significantly-increased",
+"kind": "question",
+"title": "Should immigration be significantly increased?",
+"blurb": "Labor markets, identity, and moral claims.",
+"fieldTags": [
+"politics",
+"economics"
+],
+"openers": [
+"What's your own family's story here?",
+"Who should get priority?"
+]
+},
+{
+"id": "should-national-service-be-mandatory",
+"kind": "question",
+"title": "Should national service be mandatory?",
+"blurb": "Shared civic experience against personal freedom.",
+"fieldTags": [
+"politics",
+"sociology"
+],
+"openers": [
+"Would you have done it?",
+"Which country's model is best?"
+]
+},
+{
+"id": "should-stolen-colonial-artifacts-be-returned",
+"kind": "question",
+"title": "Should stolen colonial artifacts be returned?",
+"blurb": "Museums, restitution, and contested ownership.",
+"fieldTags": [
+"history",
+"law"
+],
+"openers": [
+"Which case do you find hardest?",
+"What happens to the museums?"
+]
+},
+{
+"id": "should-history-curricula-be-set-nationally",
+"kind": "question",
+"title": "Should history curricula be set nationally?",
+"blurb": "Shared story or local control?",
+"fieldTags": [
+"history",
+"education"
+],
+"openers": [
+"What did your school leave out?",
+"Who should write it?"
+]
+},
+{
+"id": "should-monuments-to-controversial-figures-come-down",
+"kind": "question",
+"title": "Should monuments to controversial figures come down?",
+"blurb": "Memory, erasure, and public space.",
+"fieldTags": [
+"history",
+"politics"
+],
+"openers": [
+"Is there one near you?",
+"What would you replace it with?"
+]
+},
+{
+"id": "should-academic-journals-be-free-to-read",
+"kind": "question",
+"title": "Should academic journals be free to read?",
+"blurb": "Publicly funded research, privately held paywalls.",
+"fieldTags": [
+"education",
+"economics"
+],
+"openers": [
+"Who should pay for peer review?",
+"How do you get papers now?"
+]
+},
+{
+"id": "should-peer-review-be-open-and-signed",
+"kind": "question",
+"title": "Should peer review be open and signed?",
+"blurb": "Transparency against retaliation.",
+"fieldTags": [
+"education",
+"sociology"
+],
+"openers": [
+"Would you sign your reviews?",
+"What's the worst part of peer review now?"
+]
+},
+{
+"id": "should-speakers-be-barred-from-campus-for-their-views",
+"kind": "question",
+"title": "Should speakers be barred from campus for their views?",
+"blurb": "Free inquiry, safety, and who a university is for.",
+"fieldTags": [
+"education",
+"philosophy"
+],
+"openers": [
+"Where would you draw the line?",
+"Is there a speaker you'd have protested?"
+]
+},
+{
+"id": "should-animal-testing-be-phased-out",
+"kind": "question",
+"title": "Should animal testing be phased out?",
+"blurb": "Medical progress, animal suffering, and the alternatives.",
+"fieldTags": [
+"medicine",
+"biology"
+],
+"openers": [
+"What do researchers around you think?",
+"How close are the replacements?"
+]
+},
+{
+"id": "should-zoos-exist",
+"kind": "question",
+"title": "Should zoos exist?",
+"blurb": "Conservation and education against captivity.",
+"fieldTags": [
+"biology",
+"philosophy"
+],
+"openers": [
+"Do you visit them?",
+"What's a good zoo, if there is one?"
+]
+},
+{
+"id": "should-countries-pay-reparations-for-slavery-and-colonialism",
+"kind": "question",
+"title": "Should countries pay reparations for slavery and colonialism?",
+"blurb": "Historical debts and how anyone could settle them.",
+"fieldTags": [
+"history",
+"economics"
+],
+"openers": [
+"What form could it take?",
+"Who owes whom?"
+]
+},
+{
+"id": "should-billionaires-exist",
+"kind": "question",
+"title": "Should billionaires exist?",
+"blurb": "Reward for creation, or a failure of policy?",
+"fieldTags": [
+"economics",
+"philosophy"
+],
+"openers": [
+"Where would you put the ceiling, if anywhere?",
+"What would actually change?"
+]
+},
+{
+"id": "should-companies-have-workers-on-their-boards",
+"kind": "question",
+"title": "Should companies have workers on their boards?",
+"blurb": "Codetermination in Germany, and elsewhere.",
+"fieldTags": [
+"economics",
+"politics"
+],
+"openers": [
+"Would it have changed any job you've had?",
+"What does the evidence show?"
+]
+},
+{
+"id": "should-public-libraries-be-funded-before-stadiums",
+"kind": "question",
+"title": "Should public libraries be funded before stadiums?",
+"blurb": "Civic priorities, and who gets to set them.",
+"fieldTags": [
+"urbanism",
+"economics"
+],
+"openers": [
+"What did your city last spend big on?",
+"What's the best library you've used?"
+]
+},
+{
+"id": "should-governments-regulate-ultra-processed-food",
+"kind": "question",
+"title": "Should governments regulate ultra-processed food?",
+"blurb": "Public health against personal choice.",
+"fieldTags": [
+"medicine",
+"politics"
+],
+"openers": [
+"What would regulation look like?",
+"Is the category even well defined?"
+]
+},
+{
+"id": "should-space-be-open-to-commercial-mining",
+"kind": "question",
+"title": "Should space be open to commercial mining?",
+"blurb": "Who owns what's out there?",
+"fieldTags": [
+"law",
+"engineering"
+],
+"openers": [
+"Does the Outer Space Treaty still hold up?",
+"Who should benefit?"
+]
+},
+{
+"id": "should-local-news-be-publicly-funded",
+"kind": "question",
+"title": "Should local news be publicly funded?",
+"blurb": "Saving reporting against government influence.",
+"fieldTags": [
+"politics",
+"economics"
+],
+"openers": [
+"Who covers your local council now?",
+"How would you keep it independent?"
+]
+},
+{
+"id": "should-public-servants-be-allowed-to-strike",
+"kind": "question",
+"title": "Should public servants be allowed to strike?",
+"blurb": "Workers' rights against essential services.",
+"fieldTags": [
+"politics",
+"law"
+],
+"openers": [
+"Which services would you carve out?",
+"What happens when they can't?"
+]
+},
+{
+"id": "should-high-skilled-migrants-be-prioritized",
+"kind": "question",
+"title": "Should high-skilled migrants be prioritized?",
+"blurb": "Economic gain against brain drain and fairness.",
+"fieldTags": [
+"politics",
+"economics"
+],
+"openers": [
+"What's the effect back home?",
+"Do points systems work?"
+]
+},
+{
+"id": "philosophy-of-language",
+"kind": "interest",
+"title": "Philosophy of language",
+"blurb": "What words do, and how meaning gets fixed.",
+"fieldTags": [
+"philosophy",
+"linguistics"
+],
+"openers": [
+"Wittgenstein early or late?",
+"Which puzzle about meaning do you keep returning to?"
+]
+},
+{
+"id": "network-science",
+"kind": "interest",
+"title": "Network science",
+"blurb": "Why some ideas, diseases, and people spread.",
+"fieldTags": [
+"mathematics",
+"sociology"
+],
+"openers": [
+"What network do you wish you could map?",
+"Which model do you find most overused?"
+]
+},
+{
+"id": "health-economics",
+"kind": "interest",
+"title": "Health economics",
+"blurb": "Why care costs what it costs.",
+"fieldTags": [
+"economics",
+"medicine"
+],
+"openers": [
+"What's the strangest bill you've ever seen?",
+"Which incentive would you fix first?"
+]
+},
+{
+"id": "children-s-literature",
+"kind": "interest",
+"title": "Children's literature",
+"blurb": "The books that made us, reread as adults.",
+"fieldTags": [
+"literature",
+"education"
+],
+"openers": [
+"Which childhood book holds up?",
+"What did you only notice as an adult?"
+]
+},
+{
+"id": "museums-and-public-memory",
+"kind": "interest",
+"title": "Museums and public memory",
+"blurb": "Who curates the past, and for whom.",
+"fieldTags": [
+"history",
+"art"
+],
+"openers": [
+"Which museum changed how you see something?",
+"Want to go to one and compare notes?"
+]
+},
+{
+"id": "astronomy-for-amateurs",
+"kind": "interest",
+"title": "Astronomy for amateurs",
+"blurb": "Telescopes, dark skies, and looking up on purpose.",
+"fieldTags": [
+"physics",
+"education"
+],
+"openers": [
+"What's the best thing you've seen with your own eyes?",
+"Where's the darkest sky near here?"
+]
+},
+{
+"id": "urban-ecology",
+"kind": "interest",
+"title": "Urban ecology",
+"blurb": "Foxes, street trees, and the wild inside cities.",
+"fieldTags": [
+"environment",
+"urbanism"
+],
+"openers": [
+"What's the strangest wildlife you've seen around here?",
+"Which park here do you know best?"
+]
+},
+{
+"id": "philosophy-of-education",
+"kind": "interest",
+"title": "Philosophy of education",
+"blurb": "What schooling is actually for.",
+"fieldTags": [
+"education",
+"philosophy"
+],
+"openers": [
+"Dewey, Freire, or someone else?",
+"What do you wish school had been for?"
+]
+},
+{
+"id": "economics-of-attention",
+"kind": "interest",
+"title": "Economics of attention",
+"blurb": "How apps, ads, and media compete for your time.",
+"fieldTags": [
+"economics",
+"psychology"
+],
+"openers": [
+"What's taken more of your attention than you'd like?",
+"Should attention be regulated at all?"
+]
+},
+{
+"id": "should-universities-cap-international-student-numbers",
+"kind": "question",
+"title": "Should universities cap international student numbers?",
+"blurb": "Housing and funding pressures against openness.",
+"fieldTags": [
+"education",
+"politics"
+],
+"openers": [
+"Who benefits from the current numbers?",
+"What would a cap do to your campus?"
+]
+},
+{
+"id": "should-the-retirement-age-rise-with-life-expectancy",
+"kind": "question",
+"title": "Should the retirement age rise with life expectancy?",
+"blurb": "Fiscal arithmetic against fairness to manual workers.",
+"fieldTags": [
+"economics",
+"politics"
+],
+"openers": [
+"Should it depend on your job?",
+"What do you expect for your own generation?"
+]
+},
+{
+"id": "should-organ-donation-be-opt-out-by-default",
+"kind": "question",
+"title": "Should organ donation be opt-out by default?",
+"blurb": "More organs, or too much state over your body?",
+"fieldTags": [
+"medicine",
+"philosophy"
+],
+"openers": [
+"Have you registered?",
+"Does the default really change the numbers?"
+]
+},
+{
+"id": "should-advertising-to-children-be-banned",
+"kind": "question",
+"title": "Should advertising to children be banned?",
+"blurb": "Protecting kids against commercial speech.",
+"fieldTags": [
+"law",
+"psychology"
+],
+"openers": [
+"Which ads got to you as a child?",
+"Where would you draw the age line?"
+]
+},
+{
+"id": "starting-a-business-as-a-student",
+"kind": "interest",
+"title": "Starting a business as a student",
+"blurb": "What it takes, and what it costs you.",
+"fieldTags": [
+"business",
+"economics"
+],
+"openers": [
+"What would you start if it couldn't fail?",
+"Who should you talk to first?"
+],
+"fr": {
+"title": "Lancer une entreprise pendant ses études",
+"blurb": "Ce qu'il faut, et ce que ça coûte.",
+"openers": [
+"Que lanceriez-vous si l'échec était impossible?",
+"À qui faut-il parler d'abord?"
+]
+}
+},
+{
+"id": "co-ops-and-worker-ownership",
+"kind": "interest",
+"title": "Co-ops and worker ownership",
+"blurb": "Companies owned by the people who work there.",
+"fieldTags": [
+"business",
+"politics"
+],
+"openers": [
+"Have you ever worked at or used a co-op?",
+"Why aren't there more of them?"
+],
+"fr": {
+"title": "Coopératives et propriété des travailleurs",
+"blurb": "Des entreprises détenues par celles et ceux qui y travaillent.",
+"openers": [
+"Avez-vous déjà travaillé dans une coopérative, ou utilisé ses services?",
+"Pourquoi n'y en a-t-il pas davantage?"
+]
+}
+},
+{
+"id": "how-marketing-shapes-what-we-want",
+"kind": "interest",
+"title": "How marketing shapes what we want",
+"blurb": "Advertising, branding, and the psychology of buying.",
+"fieldTags": [
+"business",
+"psychology"
+],
+"openers": [
+"What's the last thing you bought because of an ad?",
+"Which brand has you completely convinced?"
+],
+"fr": {
+"title": "Comment le marketing façonne nos envies",
+"blurb": "La publicité, les marques et la psychologie de l'achat.",
+"openers": [
+"Quel est le dernier achat que vous devez à une publicité?",
+"Quelle marque vous a complètement convaincu?"
+]
+}
+},
+{
+"id": "should-companies-answer-to-more-than-shareholders",
+"kind": "question",
+"title": "Should companies answer to more than shareholders?",
+"blurb": "Stakeholder capitalism against profit first.",
+"fieldTags": [
+"business",
+"economics"
+],
+"openers": [
+"Who should a company owe the most to?",
+"Have you seen this done well anywhere?"
+],
+"fr": {
+"title": "Les entreprises doivent-elles répondre à d'autres que leurs actionnaires?",
+"blurb": "Le capitalisme des parties prenantes contre le profit d'abord.",
+"openers": [
+"Envers qui une entreprise a-t-elle le plus d'obligations?",
+"L'avez-vous déjà vu bien fait quelque part?"
+]
+}
+},
+{
+"id": "should-canada-have-a-four-day-work-week",
+"kind": "question",
+"title": "Should Canada have a four-day work week?",
+"blurb": "Same pay, fewer days.",
+"fieldTags": [
+"business",
+"sociology"
+],
+"openers": [
+"What would you do with the extra day?",
+"Which jobs couldn't make it work?"
+],
+"fr": {
+"title": "Le Canada devrait-il adopter la semaine de quatre jours?",
+"blurb": "Même salaire, moins de jours.",
+"openers": [
+"Que feriez-vous de la journée de plus?",
+"Quels emplois ne pourraient pas s'y adapter?"
+]
+}
+},
+{
+"id": "the-future-of-local-news",
+"kind": "interest",
+"title": "The future of local news",
+"blurb": "Who covers city hall when the newspaper closes?",
+"fieldTags": [
+"media",
+"politics"
+],
+"openers": [
+"Where do you actually get news about your city?",
+"Would you pay for local reporting?"
+],
+"fr": {
+"title": "L'avenir de l'information locale",
+"blurb": "Qui couvre l'hôtel de ville quand le journal ferme?",
+"openers": [
+"Où trouvez-vous vraiment les nouvelles de votre ville?",
+"Paieriez-vous pour du journalisme local?"
+]
+}
+},
+{
+"id": "how-to-spot-misinformation",
+"kind": "interest",
+"title": "How to spot misinformation",
+"blurb": "Verification, sourcing, and why smart people get fooled.",
+"fieldTags": [
+"media",
+"psychology"
+],
+"openers": [
+"What's the last thing you fell for?",
+"How do you check something fast?"
+],
+"fr": {
+"title": "Repérer la désinformation",
+"blurb": "La vérification, les sources, et pourquoi des gens brillants se font avoir.",
+"openers": [
+"Quelle est la dernière chose qui vous a trompé?",
+"Comment vérifiez-vous une information rapidement?"
+]
+}
+},
+{
+"id": "podcasts-as-journalism",
+"kind": "interest",
+"title": "Podcasts as journalism",
+"blurb": "Long conversations and what they replace.",
+"fieldTags": [
+"media"
+],
+"openers": [
+"Which podcast changed your mind about something?",
+"What do podcasts get away with that newspapers can't?"
+],
+"fr": {
+"title": "Le balado comme journalisme",
+"blurb": "Les longues conversations, et ce qu'elles remplacent.",
+"openers": [
+"Quel balado vous a fait changer d'avis?",
+"Que se permettent les balados que les journaux ne peuvent pas se permettre?"
+]
+}
+},
+{
+"id": "should-platforms-pay-news-outlets-for-links",
+"kind": "question",
+"title": "Should platforms pay news outlets for links?",
+"blurb": "The Online News Act, and who owes whom.",
+"fieldTags": [
+"media",
+"law"
+],
+"openers": [
+"Who actually benefits when a platform shares a story?",
+"Has the news ban changed how you read?"
+],
+"fr": {
+"title": "Les plateformes doivent-elles payer les médias pour les liens?",
+"blurb": "La Loi sur les nouvelles en ligne, et qui doit quoi à qui.",
+"openers": [
+"Qui profite vraiment quand une plateforme partage un article?",
+"Le blocage des nouvelles a-t-il changé vos habitudes de lecture?"
+]
+}
+},
+{
+"id": "should-public-money-fund-journalism",
+"kind": "question",
+"title": "Should public money fund journalism?",
+"blurb": "Independence against survival.",
+"fieldTags": [
+"media",
+"politics"
+],
+"openers": [
+"Can a publicly funded outlet stay independent?",
+"What would you fund first?"
+],
+"fr": {
+"title": "L'argent public doit-il financer le journalisme?",
+"blurb": "L'indépendance contre la survie.",
+"openers": [
+"Un média financé par l'État peut-il rester indépendant?",
+"Que financeriez-vous en premier?"
+]
+}
+},
+{
+"id": "how-a-bill-becomes-policy-that-works",
+"kind": "interest",
+"title": "How a bill becomes policy that works",
+"blurb": "The gap between passing a law and changing anything.",
+"fieldTags": [
+"public_policy",
+"politics"
+],
+"openers": [
+"Which policy looked great on paper and failed?",
+"Who should be in the room when rules get written?"
+],
+"fr": {
+"title": "Du projet de loi à une politique qui fonctionne",
+"blurb": "L'écart entre adopter une loi et changer quoi que ce soit.",
+"openers": [
+"Quelle politique semblait excellente sur papier, puis a échoué?",
+"Qui devrait être présent quand on rédige les règles?"
+]
+}
+},
+{
+"id": "evidence-based-policy",
+"kind": "interest",
+"title": "Evidence-based policy",
+"blurb": "Pilots, evaluations, and what governments ignore.",
+"fieldTags": [
+"public_policy",
+"economics"
+],
+"openers": [
+"What would you test before rolling out nationally?",
+"Why do bad programs survive?"
+],
+"fr": {
+"title": "Des politiques fondées sur les données probantes",
+"blurb": "Projets pilotes, évaluations, et ce que les gouvernements ignorent.",
+"openers": [
+"Que testeriez-vous avant un déploiement national?",
+"Pourquoi les mauvais programmes survivent-ils?"
+]
+}
+},
+{
+"id": "citizens-assemblies",
+"kind": "interest",
+"title": "Citizens' assemblies",
+"blurb": "Randomly chosen people deciding hard questions.",
+"fieldTags": [
+"public_policy",
+"politics"
+],
+"openers": [
+"What question would you give a citizens' assembly?",
+"Would you trust the result over a vote?"
+],
+"fr": {
+"title": "Les assemblées citoyennes",
+"blurb": "Des gens tirés au sort qui tranchent des questions difficiles.",
+"openers": [
+"Quelle question confieriez-vous à une assemblée citoyenne?",
+"Feriez-vous plus confiance à son résultat qu'à un vote?"
+]
+}
+},
+{
+"id": "should-canada-adopt-a-basic-income",
+"kind": "question",
+"title": "Should Canada adopt a basic income?",
+"blurb": "Replacing programs, or adding one.",
+"fieldTags": [
+"public_policy",
+"economics"
+],
+"openers": [
+"What would you stop funding to pay for it?",
+"What would you do differently if you had one?"
+],
+"fr": {
+"title": "Le Canada devrait-il adopter un revenu de base?",
+"blurb": "Remplacer des programmes, ou en ajouter un.",
+"openers": [
+"Que cesseriez-vous de financer pour le payer?",
+"Que feriez-vous autrement si vous en aviez un?"
+]
+}
+},
+{
+"id": "should-cities-set-their-own-immigration-targets",
+"kind": "question",
+"title": "Should cities set their own immigration targets?",
+"blurb": "Who decides how a place grows.",
+"fieldTags": [
+"public_policy",
+"urbanism"
+],
+"openers": [
+"What should a city have to show first?",
+"Who loses if every city sets its own?"
+],
+"fr": {
+"title": "Les villes devraient-elles fixer leurs propres cibles d'immigration?",
+"blurb": "Qui décide de la croissance d'un endroit.",
+"openers": [
+"Que devrait démontrer une ville d'abord?",
+"Qui serait perdant si chaque ville fixait les siennes?"
+]
+}
+},
+{
+"id": "comparative-religion",
+"kind": "interest",
+"title": "Comparative religion",
+"blurb": "What traditions share, and where they really differ.",
+"fieldTags": [
+"religion",
+"history"
+],
+"openers": [
+"What surprised you about a tradition that isn't yours?",
+"What do you think they all get right?"
+],
+"fr": {
+"title": "Religions comparées",
+"blurb": "Ce que les traditions partagent, et là où elles diffèrent vraiment.",
+"openers": [
+"Qu'est-ce qui vous a surpris dans une tradition qui n'est pas la vôtre?",
+"Sur quoi ont-elles toutes raison, selon vous?"
+]
+}
+},
+{
+"id": "faith-and-science",
+"kind": "interest",
+"title": "Faith and science",
+"blurb": "Conflict, coexistence, or different questions?",
+"fieldTags": [
+"religion",
+"philosophy"
+],
+"openers": [
+"Have you seen these two get along?",
+"Is there a question science can't touch?"
+],
+"fr": {
+"title": "Foi et science",
+"blurb": "Conflit, coexistence, ou questions différentes?",
+"openers": [
+"Les avez-vous déjà vues faire bon ménage?",
+"Existe-t-il une question hors de portée de la science?"
+]
+}
+},
+{
+"id": "secularism-in-everyday-life",
+"kind": "interest",
+"title": "Secularism in everyday life",
+"blurb": "Rituals, community, and meaning without religion.",
+"fieldTags": [
+"religion",
+"sociology"
+],
+"openers": [
+"What replaces the rituals when religion goes?",
+"Where do you find that kind of community?"
+],
+"fr": {
+"title": "La laïcité au quotidien",
+"blurb": "Rituels, communauté et sens, sans religion.",
+"openers": [
+"Qu'est-ce qui remplace les rituels quand la religion s'en va?",
+"Où trouvez-vous ce genre de communauté?"
+]
+}
+},
+{
+"id": "sacred-texts-as-literature",
+"kind": "interest",
+"title": "Sacred texts as literature",
+"blurb": "Reading scripture for its craft.",
+"fieldTags": [
+"religion",
+"literature"
+],
+"openers": [
+"Which passage do you find most beautiful?",
+"Does reading it as literature change what it means?"
+],
+"fr": {
+"title": "Les textes sacrés comme littérature",
+"blurb": "Lire les Écritures pour leur art.",
+"openers": [
+"Quel passage trouvez-vous le plus beau?",
+"Le lire comme de la littérature en change-t-il le sens?"
+]
+}
+},
+{
+"id": "should-public-servants-be-allowed-to-wear-religious-symbols",
+"kind": "question",
+"title": "Should public servants be allowed to wear religious symbols?",
+"blurb": "Quebec's Bill 21 and the wider debate.",
+"fieldTags": [
+"religion",
+"law"
+],
+"openers": [
+"Where would you draw the line, if anywhere?",
+"Does a symbol change how you see a teacher or a judge?"
+],
+"fr": {
+"title": "Les fonctionnaires devraient-ils pouvoir porter des signes religieux?",
+"blurb": "La Loi 21 du Québec, et le débat plus large.",
+"openers": [
+"Où tracez-vous la limite, s'il y en a une?",
+"Un signe change-t-il votre regard sur une enseignante ou un juge?"
+]
+}
+},
+{
+"id": "indigenous-languages-and-revival",
+"kind": "interest",
+"title": "Indigenous languages and revival",
+"blurb": "How communities are bringing languages back.",
+"fieldTags": [
+"indigenous_studies",
+"linguistics"
+],
+"openers": [
+"Which revival project do you find most hopeful?",
+"What should a university do to help?"
+],
+"fr": {
+"title": "Langues autochtones et revitalisation",
+"blurb": "Comment des communautés font revivre leurs langues.",
+"openers": [
+"Quel projet de revitalisation vous donne le plus d'espoir?",
+"Que devrait faire une université pour aider?"
+]
+}
+},
+{
+"id": "treaties-in-canada-today",
+"kind": "interest",
+"title": "Treaties in Canada today",
+"blurb": "What they promised, and what they mean now.",
+"fieldTags": [
+"indigenous_studies",
+"law"
+],
+"openers": [
+"Which treaty covers the land you live on?",
+"What did school teach you about them?"
+],
+"fr": {
+"title": "Les traités au Canada aujourd'hui",
+"blurb": "Ce qu'ils promettaient, et ce qu'ils signifient maintenant.",
+"openers": [
+"Quel traité couvre le territoire où vous habitez?",
+"Que vous a-t-on appris à l'école à leur sujet?"
+]
+}
+},
+{
+"id": "indigenous-knowledge-and-science",
+"kind": "interest",
+"title": "Indigenous knowledge and science",
+"blurb": "Land-based knowledge alongside Western methods.",
+"fieldTags": [
+"indigenous_studies",
+"environment"
+],
+"openers": [
+"Where have you seen the two work together well?",
+"What does respectful collaboration look like?"
+],
+"fr": {
+"title": "Savoirs autochtones et science",
+"blurb": "Des savoirs liés au territoire, aux côtés des méthodes occidentales.",
+"openers": [
+"Où avez-vous vu les deux bien fonctionner ensemble?",
+"À quoi ressemble une collaboration respectueuse?"
+]
+}
+},
+{
+"id": "indigenous-writers-and-storytelling",
+"kind": "interest",
+"title": "Indigenous writers and storytelling",
+"blurb": "Novels, poetry, and oral traditions.",
+"fieldTags": [
+"indigenous_studies",
+"literature"
+],
+"openers": [
+"Which Indigenous author should everyone read?",
+"How does oral storytelling change on the page?"
+],
+"fr": {
+"title": "Auteurs autochtones et art du récit",
+"blurb": "Romans, poésie et traditions orales.",
+"openers": [
+"Quel auteur autochtone tout le monde devrait-il lire?",
+"Comment le récit oral change-t-il une fois écrit?"
+]
+}
+},
+{
+"id": "what-should-reconciliation-require-of-universities",
+"kind": "question",
+"title": "What should reconciliation require of universities?",
+"blurb": "Curriculum, hiring, land, and money.",
+"fieldTags": [
+"indigenous_studies",
+"education"
+],
+"openers": [
+"What has your school done that actually mattered?",
+"What would real change cost?"
+],
+"fr": {
+"title": "Qu'est-ce que la réconciliation exige des universités?",
+"blurb": "Programmes, embauche, territoire et argent.",
+"openers": [
+"Qu'a fait votre établissement qui a vraiment compté?",
+"Combien coûterait un vrai changement?"
+]
+}
+},
+{
+"id": "film-as-an-argument",
+"kind": "interest",
+"title": "Film as an argument",
+"blurb": "How movies make a case without saying so.",
+"fieldTags": [
+"music_film",
+"art"
+],
+"openers": [
+"Which film changed how you see something?",
+"What's the most persuasive movie you've seen?"
+],
+"fr": {
+"title": "Le cinéma comme argument",
+"blurb": "Comment un film défend une thèse sans la dire.",
+"openers": [
+"Quel film a changé votre regard sur quelque chose?",
+"Quel est le film le plus convaincant que vous ayez vu?"
+]
+}
+},
+{
+"id": "why-certain-music-moves-us",
+"kind": "interest",
+"title": "Why certain music moves us",
+"blurb": "Harmony, memory, and the science of chills.",
+"fieldTags": [
+"music_film",
+"psychology"
+],
+"openers": [
+"Which song gets you every time?",
+"Why do sad songs feel good?"
+],
+"fr": {
+"title": "Pourquoi certaines musiques nous émeuvent",
+"blurb": "L'harmonie, la mémoire et la science des frissons.",
+"openers": [
+"Quelle chanson vous fait de l'effet à tout coup?",
+"Pourquoi les chansons tristes font-elles du bien?"
+]
+}
+},
+{
+"id": "canadian-music-and-identity",
+"kind": "interest",
+"title": "Canadian music and identity",
+"blurb": "From Joni Mitchell to Tanya Tagaq.",
+"fieldTags": [
+"music_film"
+],
+"openers": [
+"Which artist sounds most Canadian to you?",
+"Does national identity matter in music?"
+],
+"fr": {
+"title": "Musique et identité canadiennes",
+"blurb": "De Joni Mitchell à Tanya Tagaq.",
+"openers": [
+"Quel artiste vous semble le plus canadien?",
+"L'identité nationale compte-t-elle en musique?"
+]
+}
+},
+{
+"id": "quebec-cinema",
+"kind": "interest",
+"title": "Quebec cinema",
+"blurb": "A small industry with an outsized voice.",
+"fieldTags": [
+"music_film",
+"history"
+],
+"openers": [
+"Which Quebec film should someone start with?",
+"How does it differ from English Canadian film?"
+],
+"fr": {
+"title": "Le cinéma québécois",
+"blurb": "Une petite industrie à la voix immense.",
+"openers": [
+"Par quel film québécois devrait-on commencer?",
+"En quoi diffère-t-il du cinéma canadien-anglais?"
+]
+}
+},
+{
+"id": "should-streaming-services-have-to-fund-canadian-content",
+"kind": "question",
+"title": "Should streaming services have to fund Canadian content?",
+"blurb": "The Online Streaming Act and cultural protection.",
+"fieldTags": [
+"music_film",
+"law"
+],
+"openers": [
+"Have quotas ever introduced you to something good?",
+"Can culture be protected without limiting choice?"
+],
+"fr": {
+"title": "Les plateformes de diffusion doivent-elles financer le contenu canadien?",
+"blurb": "La Loi sur la diffusion continue en ligne et la protection de la culture.",
+"openers": [
+"Des quotas vous ont-ils déjà fait découvrir quelque chose de bien?",
+"Peut-on protéger la culture sans limiter le choix?"
+]
+}
+},
+{
+"id": "should-ai-music-be-allowed-on-charts",
+"kind": "question",
+"title": "Should AI music be allowed on charts?",
+"blurb": "Who counts as an artist.",
+"fieldTags": [
+"music_film",
+"computer_science"
+],
+"openers": [
+"Would you care if your favourite song was generated?",
+"Who should be paid when AI learns from an artist?"
+],
+"fr": {
+"title": "La musique créée par l'IA devrait-elle figurer aux palmarès?",
+"blurb": "Qui peut être considéré comme artiste.",
+"openers": [
+"Cela vous dérangerait-il que votre chanson préférée soit générée?",
+"Qui devrait être payé quand l'IA apprend d'un artiste?"
+]
+}
+},
+{
+"id": "the-chemistry-of-cooking",
+"kind": "interest",
+"title": "The chemistry of cooking",
+"blurb": "What really happens in the pan.",
+"fieldTags": [
+"chemistry"
+],
+"openers": [
+"What cooking myth should die?",
+"Which reaction do you rely on most?"
+],
+"fr": {
+"title": "La chimie de la cuisine",
+"blurb": "Ce qui se passe vraiment dans la poêle.",
+"openers": [
+"Quel mythe culinaire devrait disparaître?",
+"De quelle réaction dépendez-vous le plus?"
+]
+}
+},
+{
+"id": "batteries-and-the-materials-they-need",
+"kind": "interest",
+"title": "Batteries and the materials they need",
+"blurb": "Lithium, recycling, and where it all comes from.",
+"fieldTags": [
+"chemistry",
+"engineering"
+],
+"openers": [
+"What happens to all those batteries in twenty years?",
+"Is mining in Canada part of the answer?"
+],
+"fr": {
+"title": "Les batteries et leurs matériaux",
+"blurb": "Le lithium, le recyclage, et d'où tout cela provient.",
+"openers": [
+"Que deviendront toutes ces batteries dans vingt ans?",
+"L'exploitation minière au Canada fait-elle partie de la solution?"
+]
+}
+},
+{
+"id": "forever-chemicals",
+"kind": "interest",
+"title": "Forever chemicals",
+"blurb": "PFAS, water, and who is responsible.",
+"fieldTags": [
+"chemistry",
+"medicine"
+],
+"openers": [
+"Would you test your own water?",
+"Who should pay for the cleanup?"
+],
+"fr": {
+"title": "Les polluants éternels",
+"blurb": "Les SPFA, l'eau, et qui en est responsable.",
+"openers": [
+"Feriez-vous analyser votre eau?",
+"Qui devrait payer le nettoyage?"
+]
+}
+},
+{
+"id": "should-we-ban-single-use-plastics-entirely",
+"kind": "question",
+"title": "Should we ban single-use plastics entirely?",
+"blurb": "Convenience, medicine, and waste.",
+"fieldTags": [
+"chemistry",
+"environment"
+],
+"openers": [
+"Which ones can't we live without?",
+"Would you pay more for the alternative?"
+],
+"fr": {
+"title": "Faut-il interdire complètement les plastiques à usage unique?",
+"blurb": "La commodité, la médecine et les déchets.",
+"openers": [
+"Desquels ne peut-on pas se passer?",
+"Paieriez-vous plus cher pour une solution de rechange?"
+]
+}
+},
+{
+"id": "bilingualism-and-the-brain",
+"kind": "interest",
+"title": "Bilingualism and the brain",
+"blurb": "What growing up with two languages really does.",
+"fieldTags": [
+"linguistics",
+"psychology"
+],
+"openers": [
+"Do you think differently in another language?",
+"What's the best age to learn one?"
+],
+"fr": {
+"title": "Le bilinguisme et le cerveau",
+"blurb": "Ce que grandir avec deux langues change vraiment.",
+"openers": [
+"Pensez-vous autrement dans une autre langue?",
+"Quel est le meilleur âge pour en apprendre une?"
+]
+}
+},
+{
+"id": "how-slang-spreads",
+"kind": "interest",
+"title": "How slang spreads",
+"blurb": "From a group chat to the dictionary.",
+"fieldTags": [
+"linguistics",
+"sociology"
+],
+"openers": [
+"Which word of yours baffles your parents?",
+"Who really decides what's correct?"
+],
+"fr": {
+"title": "Comment l'argot se répand",
+"blurb": "De la conversation de groupe au dictionnaire.",
+"openers": [
+"Quel mot de votre vocabulaire déroute vos parents?",
+"Qui décide vraiment de ce qui est correct?"
+]
+}
+},
+{
+"id": "should-ottawa-be-officially-bilingual",
+"kind": "question",
+"title": "Should Ottawa be officially bilingual?",
+"blurb": "Services, costs, and what it signals.",
+"fieldTags": [
+"linguistics",
+"politics"
+],
+"openers": [
+"What changes in practice?",
+"Who should it serve first?"
+],
+"fr": {
+"title": "Ottawa devrait-elle être officiellement bilingue?",
+"blurb": "Les services, les coûts, et le message envoyé.",
+"openers": [
+"Qu'est-ce que cela changerait concrètement?",
+"Qui devrait-on servir en premier?"
+]
+}
+},
+{
+"id": "public-art-and-who-it-s-for",
+"kind": "interest",
+"title": "Public art and who it's for",
+"blurb": "Murals, monuments, and who gets asked.",
+"fieldTags": [
+"art",
+"urbanism"
+],
+"openers": [
+"Which piece of public art do you walk past on purpose?",
+"What would you put up in your neighbourhood?"
+],
+"fr": {
+"title": "L'art public, et pour qui",
+"blurb": "Murales, monuments, et qui on consulte.",
+"openers": [
+"Devant quelle œuvre passez-vous exprès?",
+"Qu'installeriez-vous dans votre quartier?"
+]
+}
+},
+{
+"id": "design-that-changes-behaviour",
+"kind": "interest",
+"title": "Design that changes behaviour",
+"blurb": "Good chairs, bad forms, and what objects ask of us.",
+"fieldTags": [
+"art",
+"psychology"
+],
+"openers": [
+"What's the best-designed thing you own?",
+"Which form or app makes you angry?"
+],
+"fr": {
+"title": "Le design qui change les comportements",
+"blurb": "Bonnes chaises, mauvais formulaires, et ce que les objets exigent de nous.",
+"openers": [
+"Quel est l'objet le mieux conçu que vous possédez?",
+"Quel formulaire ou quelle application vous met en colère?"
+]
+}
+},
+{
+"id": "should-museums-return-objects-to-where-they-came-from",
+"kind": "question",
+"title": "Should museums return objects to where they came from?",
+"blurb": "Repatriation and who owns the past.",
+"fieldTags": [
+"art",
+"history"
+],
+"openers": [
+"Is there an object you think should go home?",
+"What should a museum be, after that?"
+],
+"fr": {
+"title": "Les musées doivent-ils rendre les objets à leurs lieux d'origine?",
+"blurb": "Le rapatriement, et à qui appartient le passé.",
+"openers": [
+"Y a-t-il un objet qui devrait, selon vous, rentrer chez lui?",
+"Que devrait être un musée après cela?"
+]
+}
+},
+{
+"id": "how-bridges-and-buildings-fail",
+"kind": "interest",
+"title": "How bridges and buildings fail",
+"blurb": "What engineers learn from disasters.",
+"fieldTags": [
+"engineering",
+"history"
+],
+"openers": [
+"Which failure taught you the most?",
+"Whose job is it to say no?"
+],
+"fr": {
+"title": "Comment les ponts et les bâtiments s'effondrent",
+"blurb": "Ce que les ingénieurs apprennent des catastrophes.",
+"openers": [
+"Quel échec vous a le plus appris?",
+"À qui revient-il de dire non?"
+]
+}
+},
+{
+"id": "repair-culture",
+"kind": "interest",
+"title": "Repair culture",
+"blurb": "Fixing things, and the right to.",
+"fieldTags": [
+"engineering",
+"environment"
+],
+"openers": [
+"What's the last thing you fixed yourself?",
+"Should companies have to make things repairable?"
+],
+"fr": {
+"title": "La culture de la réparation",
+"blurb": "Réparer, et le droit de le faire.",
+"openers": [
+"Quelle est la dernière chose que vous avez réparée?",
+"Les entreprises devraient-elles être obligées de fabriquer des objets réparables?"
+]
+}
+},
+{
+"id": "should-canada-build-more-nuclear-power",
+"kind": "question",
+"title": "Should Canada build more nuclear power?",
+"blurb": "Clean, steady, expensive, and contested.",
+"fieldTags": [
+"engineering",
+"environment"
+],
+"openers": [
+"Would you live next to a small reactor?",
+"What's the real alternative?"
+],
+"fr": {
+"title": "Le Canada devrait-il construire plus de centrales nucléaires?",
+"blurb": "Propre, stable, coûteux et contesté.",
+"openers": [
+"Habiteriez-vous à côté d'un petit réacteur?",
+"Quelle est la vraie solution de rechange?"
+]
+}
+},
+{
+"id": "quantum-physics-without-the-hype",
+"kind": "interest",
+"title": "Quantum physics without the hype",
+"blurb": "What it does and doesn't say.",
+"fieldTags": [
+"physics",
+"philosophy"
+],
+"openers": [
+"What's the worst misuse of quantum you've heard?",
+"Which interpretation do you lean toward?"
+],
+"fr": {
+"title": "La physique quantique sans le battage",
+"blurb": "Ce qu'elle dit, et ce qu'elle ne dit pas.",
+"openers": [
+"Quel est le pire usage du mot quantique que vous ayez entendu?",
+"Vers quelle interprétation penchez-vous?"
+]
+}
+},
+{
+"id": "everyday-physics",
+"kind": "interest",
+"title": "Everyday physics",
+"blurb": "Why the shower curtain moves toward you.",
+"fieldTags": [
+"physics"
+],
+"openers": [
+"What everyday thing still puzzles you?",
+"What would you explain to a ten-year-old?"
+],
+"fr": {
+"title": "La physique du quotidien",
+"blurb": "Pourquoi le rideau de douche vient vers vous.",
+"openers": [
+"Quelle chose du quotidien vous intrigue encore?",
+"Qu'expliqueriez-vous à un enfant de dix ans?"
+]
+}
+},
+{
+"id": "maths-in-voting-and-fairness",
+"kind": "interest",
+"title": "Maths in voting and fairness",
+"blurb": "Why no voting system is perfect.",
+"fieldTags": [
+"mathematics",
+"politics"
+],
+"openers": [
+"Which voting system would you pick for Canada?",
+"What does fair even mean mathematically?"
+],
+"fr": {
+"title": "Les maths du vote et de l'équité",
+"blurb": "Pourquoi aucun mode de scrutin n'est parfait.",
+"openers": [
+"Quel mode de scrutin choisiriez-vous pour le Canada?",
+"Que veut dire « équitable » en mathématiques?"
+]
+}
+},
+{
+"id": "how-to-think-about-probability",
+"kind": "interest",
+"title": "How to think about probability",
+"blurb": "Why our instincts are so bad at it.",
+"fieldTags": [
+"mathematics",
+"psychology"
+],
+"openers": [
+"What's a probability that surprised you?",
+"Do you buy lottery tickets, knowing the odds?"
+],
+"fr": {
+"title": "Comment penser les probabilités",
+"blurb": "Pourquoi nos intuitions sont si mauvaises.",
+"openers": [
+"Quelle probabilité vous a surpris?",
+"Achetez-vous des billets de loterie, en connaissant les chances?"
+]
+}
+}
 ]

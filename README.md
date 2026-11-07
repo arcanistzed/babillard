@@ -128,7 +128,7 @@ The `/admin` pages live behind Cloudflare Access.
 - **Overview** shows meetups that happened and the current queues.
 - **Reports** is the queue. Safety and underage reports go first and also email `ADMIN_EMAIL` right away. A report shows only the messages the reporter's phone shared. The server deletes closed reports and moderation history after two years.
 - **Topics** lets a moderator fix the wording, kind, fields, and conversation openers of a suggestion before approving it.
-- **People** finds an account by name or email, with its report history and a ban button.
+- **People** finds an account by name or email, with its report history, its photo and a button to remove it, and a ban button.
 - **History** records every action and who took it, using the email Access verified.
 - **Crashes** groups reports from the app by error message for 30 days. Stack traces from release builds are minified, so they show roughly where a crash happened, not the original line.
 

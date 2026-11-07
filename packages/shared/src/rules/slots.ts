@@ -50,3 +50,27 @@ export function suggestMeetupSlots(now: Date = new Date(), count = 6): MeetupSlo
   });
   return [...soonest, ...weekend.slice(0, count - soonest.length)].sort((a, b) => a.startsAt - b.startsAt);
 }
+
+const CUSTOM_DAYS = 21;
+const EARLIEST_HOUR = 7;
+const LATEST_HOUR = 22;
+
+/** The days offered under "Pick another time", starting today. */
+export function meetupDays(now: Date = new Date()): Date[] {
+  return Array.from({ length: CUSTOM_DAYS }, (_, offset) => new Date(now.getFullYear(), now.getMonth(), now.getDate() + offset));
+}
+
+/** Half-hour start times on a day, leaving out anything less than an hour away. */
+export function meetupTimes(day: Date, now: Date = new Date()): Date[] {
+  const earliest = now.getTime() + 60 * 60 * 1000;
+  const times: Date[] = [];
+  for (let minutes = EARLIEST_HOUR * 60; minutes <= LATEST_HOUR * 60; minutes += 30) {
+    const time = new Date(day.getFullYear(), day.getMonth(), day.getDate(), 0, minutes);
+    if (time.getTime() >= earliest) times.push(time);
+  }
+  return times;
+}
+
+export function meetupSlotAt(start: Date): { startsAt: number; endsAt: number } {
+  return { startsAt: start.getTime(), endsAt: start.getTime() + SLOT_MS };
+}

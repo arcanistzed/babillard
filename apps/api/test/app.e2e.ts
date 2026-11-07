@@ -1240,6 +1240,23 @@ describe("moderation", () => {
     expect((await returning.get("/me")).profile.displayName).toBe("Came Back");
   }, 90_000);
 
+  it("lets a moderator remove one photo without touching the rest of the account", async () => {
+    const target = await person("toronto", { displayName: "Photo Person" });
+    const png = Uint8Array.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 0, 0, 0, 0]);
+    const upload = await fetch(`${BASE}/me/avatar`, { method: "PUT", headers: { authorization: `Bearer ${target.token}`, "content-type": "image/png" }, body: png });
+    expect(upload.status).toBe(200);
+    const avatarUrl = (await target.get("/me")).profile.avatarUrl;
+    expect((await fetch(avatarUrl)).status).toBe(200);
+    expect(await adminPage(`/admin/users/${target.id}`)).toContain("Remove photo");
+
+    await adminPost(`/admin/users/${target.id}/remove-photo`, {});
+    const me = await target.get("/me");
+    expect(me.profile.avatarUrl).toBeNull();
+    expect(me.profile.displayName).toBe("Photo Person");
+    expect((await fetch(avatarUrl)).status).toBe(404);
+    expect(await adminPage("/admin/history")).toContain("removed photo");
+  });
+
   it("rejects cross-site posts to the new actions", async () => {
     const target = await person("toronto");
     for (const path of [`/admin/users/${target.id}/ban`, `/admin/users/${target.id}/unban`]) {
