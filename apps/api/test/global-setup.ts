@@ -46,8 +46,9 @@ function startServer(port: number, logName: string, persistDir: string, vars: Re
     ["dev", "--port", String(port), "--inspector-port", String(port + 1000), "--persist-to", persistDir, "--test-scheduled", "--show-interactive-dev-session=false", "--log-level", "log", ...varFlags],
     { cwd: apiDir, stdio: ["ignore", "pipe", "pipe"], env: { ...process.env, CI: "true", WRANGLER_SEND_METRICS: "false" } },
   );
-  child.stdout?.pipe(log);
-  child.stderr?.pipe(log);
+  // Both streams share one log, so neither may close it when it ends first.
+  child.stdout?.pipe(log, { end: false });
+  child.stderr?.pipe(log, { end: false });
   return child;
 }
 
