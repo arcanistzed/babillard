@@ -14,7 +14,7 @@ const privacyEn = `# Privacy policy
 
 Last updated: November 8, 2026
 
-Babillard helps people find others nearby who want to talk about the same topics, then meet in person. In this policy, "we" means the operator of Babillard, named in our Terms of use. We're based in Canada. Our privacy officer is responsible for how we handle your information. Questions and requests go to privacy@danielthorp.com.
+Babillard helps people find others nearby who want to talk about the same topics, then meet in person. In this policy, "we" means the operator of Babillard, named in our Terms of use. We're based in Canada. Our privacy officer is responsible for how we handle your information. Questions and requests go to privacy@babillard.app.
 
 ## What we collect
 
@@ -85,7 +85,7 @@ Reports made about you stay for the period above, so that deleting an account ca
 
 ## Your rights
 
-You can ask for a copy of your information, ask us to correct or delete it, and ask how the app's ranking affected what you saw. You can withdraw consent at any time by deleting your account. You can change most of it yourself under Edit profile. Write to privacy@danielthorp.com for anything else, and we'll answer within 30 days.
+You can ask for a copy of your information, ask us to correct or delete it, and ask how the app's ranking affected what you saw. You can withdraw consent at any time by deleting your account. You can change most of it yourself under Edit profile. Write to privacy@babillard.app for anything else, and we'll answer within 30 days.
 
 ## Age
 
@@ -133,7 +133,7 @@ What you post stays yours. You give us a non-exclusive, worldwide, royalty-free 
 
 ## Moderation
 
-You can report anyone from their profile or by long-pressing a message. We aim to act on reports within 24 hours, and first on anything involving a minor or intimate images shared without consent. Our Safety page explains how. Moderators may warn you, remove content, or ban you, and they can do this without notice when safety is at stake. If you think we got it wrong, write to privacy@danielthorp.com and a person will look at it again. You can leave at any time by deleting your account.
+You can report anyone from their profile or by long-pressing a message. We aim to act on reports within 24 hours, and first on anything involving a minor or intimate images shared without consent. Our Safety page explains how. Moderators may warn you, remove content, or ban you, and they can do this without notice when safety is at stake. If you think we got it wrong, write to privacy@babillard.app and a person will look at it again. You can leave at any time by deleting your account.
 
 ## The service
 
@@ -161,7 +161,7 @@ These terms are between you and us, not Apple or Google. They aren't responsible
 
 ## Other terms
 
-These terms and the Privacy policy are the whole agreement between you and us. If part of them can't be enforced, the rest still applies. If we don't enforce something, we haven't given up the right to. We may transfer these terms to a company that takes over Babillard. You can't transfer your account. The app, its name, and its design belong to us. Questions go to privacy@danielthorp.com.
+These terms and the Privacy policy are the whole agreement between you and us. If part of them can't be enforced, the rest still applies. If we don't enforce something, we haven't given up the right to. We may transfer these terms to a company that takes over Babillard. You can't transfer your account. The app, its name, and its design belong to us. Questions go to privacy@babillard.app.
 
 ## Credits
 
@@ -195,13 +195,13 @@ We don't run background checks. Meet in a public place the first time, tell a fr
 
 ## Contact
 
-Safety concerns, including anything involving a child: safety@danielthorp.com. Help for someone in crisis in Canada is at 9-8-8, by call or text. To report a child being exploited, go to Cybertip.ca.`;
+Safety concerns, including anything involving a child: safety@babillard.app. Help for someone in crisis in Canada is at 9-8-8, by call or text. To report a child being exploited, go to Cybertip.ca.`;
 
 const privacyFr = `# Politique de confidentialité
 
 Dernière mise à jour: 8 novembre 2026
 
-Babillard aide les gens à trouver des personnes près de chez eux qui veulent parler des mêmes sujets, puis à se rencontrer en personne. Dans cette politique, « nous » désigne l'exploitant de Babillard, nommé dans nos Conditions d'utilisation. Nous sommes établis au Canada. Notre responsable de la protection des renseignements personnels répond de la façon dont nous traitons vos renseignements. Adressez vos questions et demandes à privacy@danielthorp.com.
+Babillard aide les gens à trouver des personnes près de chez eux qui veulent parler des mêmes sujets, puis à se rencontrer en personne. Dans cette politique, « nous » désigne l'exploitant de Babillard, nommé dans nos Conditions d'utilisation. Nous sommes établis au Canada. Notre responsable de la protection des renseignements personnels répond de la façon dont nous traitons vos renseignements. Adressez vos questions et demandes à privacy@babillard.app.
 
 ## Ce que nous recueillons
 
@@ -272,7 +272,7 @@ Les signalements vous concernant sont conservés pendant la période indiquée c
 
 ## Vos droits
 
-Vous pouvez demander une copie de vos renseignements, demander de les corriger ou de les supprimer, et demander comment le classement de l'application a influencé ce que vous avez vu. Vous pouvez retirer votre consentement à tout moment en supprimant votre compte. Vous pouvez modifier la plupart de ces renseignements vous-même dans Modifier le profil. Pour le reste, écrivez à privacy@danielthorp.com. Nous répondrons dans un délai de 30 jours.
+Vous pouvez demander une copie de vos renseignements, demander de les corriger ou de les supprimer, et demander comment le classement de l'application a influencé ce que vous avez vu. Vous pouvez retirer votre consentement à tout moment en supprimant votre compte. Vous pouvez modifier la plupart de ces renseignements vous-même dans Modifier le profil. Pour le reste, écrivez à privacy@babillard.app. Nous répondrons dans un délai de 30 jours.
 
 ## Âge
 
@@ -320,7 +320,7 @@ Ce que vous publiez vous appartient. Vous nous accordez une licence non exclusiv
 
 ## Modération
 
-Vous pouvez signaler quelqu'un depuis son profil ou en appuyant longuement sur un message. Nous visons à donner suite aux signalements dans les 24 heures, en priorité pour ce qui concerne une personne mineure ou des images intimes partagées sans consentement. Notre page Sécurité explique comment. Les modérateurs peuvent vous avertir, retirer du contenu ou vous bannir, et ils peuvent le faire sans préavis lorsque la sécurité est en jeu. Si vous pensez que nous avons fait erreur, écrivez à privacy@danielthorp.com et une personne réexaminera la décision. Vous pouvez partir à tout moment en supprimant votre compte.
+Vous pouvez signaler quelqu'un depuis son profil ou en appuyant longuement sur un message. Nous visons à donner suite aux signalements dans les 24 heures, en priorité pour ce qui concerne une personne mineure ou des images intimes partagées sans consentement. Notre page Sécurité explique comment. Les modérateurs peuvent vous avertir, retirer du contenu ou vous bannir, et ils peuvent le faire sans préavis lorsque la sécurité est en jeu. Si vous pensez que nous avons fait erreur, écrivez à privacy@babillard.app et une personne réexaminera la décision. Vous pouvez partir à tout moment en supprimant votre compte.
 
 ## Le service
 
@@ -348,7 +348,7 @@ Ces conditions vous lient à nous, et non à Apple ou à Google. Ces entreprises
 
 ## Autres conditions
 
-Ces conditions et la Politique de confidentialité constituent l'entente complète entre vous et nous. Si une partie ne peut être appliquée, le reste demeure en vigueur. Si nous ne faisons pas respecter une disposition, nous ne renonçons pas à ce droit. Nous pouvons céder ces conditions à une société qui reprend Babillard. Vous ne pouvez pas céder votre compte. L'application, son nom et sa conception nous appartiennent. Adressez vos questions à privacy@danielthorp.com.
+Ces conditions et la Politique de confidentialité constituent l'entente complète entre vous et nous. Si une partie ne peut être appliquée, le reste demeure en vigueur. Si nous ne faisons pas respecter une disposition, nous ne renonçons pas à ce droit. Nous pouvons céder ces conditions à une société qui reprend Babillard. Vous ne pouvez pas céder votre compte. L'application, son nom et sa conception nous appartiennent. Adressez vos questions à privacy@babillard.app.
 
 ## Mentions
 
@@ -382,7 +382,7 @@ Nous ne faisons pas de vérification des antécédents. Rencontrez-vous dans un 
 
 ## Nous joindre
 
-Préoccupations de sécurité, y compris tout ce qui concerne un enfant: safety@danielthorp.com. Au Canada, de l'aide en cas de crise est offerte au 9-8-8, par appel ou texto. Pour signaler l'exploitation d'un enfant, rendez-vous sur Cyberaide.ca.`;
+Préoccupations de sécurité, y compris tout ce qui concerne un enfant: safety@babillard.app. Au Canada, de l'aide en cas de crise est offerte au 9-8-8, par appel ou texto. Pour signaler l'exploitation d'un enfant, rendez-vous sur Cyberaide.ca.`;
 
 export const LEGAL_TEXT: Record<LegalPage, Record<Language, string>> = {
   privacy: { en: privacyEn, fr: privacyFr },

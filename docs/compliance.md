@@ -2,7 +2,7 @@
 
 This is the working record behind the public policy, terms, and safety pages. It's our best reading of the rules, not legal advice, so have a lawyer review it before the store listings go live.
 
-Daniel Thorp is the privacy officer. Requests go to privacy@danielthorp.com, and safety concerns to safety@danielthorp.com.
+Daniel Thorp is the privacy officer. Requests go to privacy@babillard.app, and safety concerns to safety@babillard.app.
 
 ## What applies
 
