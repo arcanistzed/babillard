@@ -1,4 +1,4 @@
-import { sendMessageSchema, visibleLookingFor, type ChatMessage, type ConversationDetail, type InboxItem, type Stance } from "@ideas-match/shared";
+import { sendMessageSchema, visibleLookingFor, type ChatMessage, type ConversationDetail, type InboxItem, type Stance } from "@babillard/shared";
 import { localizeTopic, requestLanguage } from "../lib/language";
 import { and, desc, eq, gt, inArray, or, sql } from "drizzle-orm";
 import { Hono } from "hono";

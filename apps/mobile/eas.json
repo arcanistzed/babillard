@@ -21,7 +21,7 @@
         "buildType": "apk"
       },
       "env": {
-        "EXPO_PUBLIC_API_URL": "https://ideasmatch.danielthorp.com"
+        "EXPO_PUBLIC_API_URL": "https://babillard.app"
       }
     },
     "production": {
@@ -29,7 +29,7 @@
       "pnpm": "11.1.3",
       "autoIncrement": true,
       "env": {
-        "EXPO_PUBLIC_API_URL": "https://ideasmatch.danielthorp.com"
+        "EXPO_PUBLIC_API_URL": "https://babillard.app"
       }
     },
     "ios-simulator": {

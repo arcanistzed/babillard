@@ -1,4 +1,4 @@
-import type { InboxItem } from "@ideas-match/shared";
+import type { InboxItem } from "@babillard/shared";
 import { useQuery } from "@tanstack/react-query";
 import { router, useFocusEffect } from "expo-router";
 import { useCallback, useEffect, useState } from "react";

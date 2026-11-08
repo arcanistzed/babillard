@@ -1,5 +1,5 @@
 import { Ionicons } from "@expo/vector-icons";
-import { campusForDomain, describeCity, nearestCity, searchCities, type Locality } from "@ideas-match/shared";
+import { campusForDomain, describeCity, nearestCity, searchCities, type Locality } from "@babillard/shared";
 import { useQuery } from "@tanstack/react-query";
 import * as Location from "expo-location";
 import { useEffect, useMemo, useRef, useState } from "react";

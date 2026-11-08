@@ -1,11 +1,11 @@
-import { authStartSchema, authVerifySchema, institutionDomain } from "@ideas-match/shared";
+import { authStartSchema, authVerifySchema, institutionDomain } from "@babillard/shared";
 import { requestLanguage } from "../lib/language";
 import { and, desc, eq, gt, isNull, sql } from "drizzle-orm";
 import { Hono } from "hono";
 import { createMiddleware } from "hono/factory";
 import { html } from "hono/html";
 import { getDb, schema } from "../db";
-import { clientIp, isDevMode } from "../lib/config";
+import { isDevMode } from "../lib/config";
 import { sendLoginEmail } from "../lib/email";
 import { fail, parseJson } from "../lib/http";
 import { hmacHex, newId, randomCode, randomToken, safeEqual, sha256Hex } from "../lib/tokens";
@@ -29,7 +29,7 @@ function codeHash(secret: string, email: string, code: string): Promise<string> 
 const limitByIp = (binding: "SIGN_IN_START_LIMIT" | "SIGN_IN_VERIFY_LIMIT") =>
   createMiddleware<AppEnv>(async (c, next) => {
     if (!isDevMode(c.env)) {
-      const key = clientIp(c.env, (name) => c.req.header(name));
+      const key = c.req.header("cf-connecting-ip") ?? "unknown";
       const { success } = await c.env[binding].limit({ key });
       if (!success) throw fail(429, "too_many_attempts");
     }

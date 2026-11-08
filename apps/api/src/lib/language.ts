@@ -1,4 +1,4 @@
-import { VENUE_LABELS, type VenueKind } from "@ideas-match/shared";
+import { VENUE_LABELS, type VenueKind } from "@babillard/shared";
 import type { Context } from "hono";
 
 export type Language = "en" | "fr";

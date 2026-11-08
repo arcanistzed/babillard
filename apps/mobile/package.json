@@ -1,5 +1,5 @@
 {
-  "name": "@ideas-match/mobile",
+  "name": "@babillard/mobile",
   "version": "0.1.0",
   "private": true,
   "main": "expo-router/entry",
@@ -14,7 +14,7 @@
     "@expo-google-fonts/atkinson-hyperlegible": "^0.4.0",
     "@expo-google-fonts/bricolage-grotesque": "^0.4.0",
     "@expo/vector-icons": "^15.0.2",
-    "@ideas-match/shared": "workspace:*",
+    "@babillard/shared": "workspace:*",
     "@tanstack/react-query": "^5.90.0",
     "expo": "~58.0.23",
     "expo-calendar": "~58.0.6",

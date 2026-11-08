@@ -1,9 +1,13 @@
 {
   "$schema": "./node_modules/wrangler/config-schema.json",
-  "name": "ideas-match-api",
+  "name": "babillard",
   "account_id": "04b61c9801867f8e9b37768bb3483b7b",
   "main": "src/index.ts",
-  "workers_dev": true,
+  "workers_dev": false,
+  "routes": [{ "pattern": "babillard.app", "custom_domain": true }],
+  // The landing page, built from apps/site. Files that exist are served directly,
+  // and every other path goes to the API.
+  "assets": { "directory": "../site/public" },
   // Preview URLs would be public and share production data.
   "preview_urls": false,
   "compatibility_date": "2026-11-04",
@@ -15,12 +19,12 @@
   "d1_databases": [
     {
       "binding": "DB",
-      "database_name": "ideas-match",
-      "database_id": "fe92edf7-f0ff-4497-b4bb-1ba46d15c854",
+      "database_name": "babillard",
+      "database_id": "4f409cc6-2ea5-40d7-ba6a-d185e993a046",
       "migrations_dir": "drizzle"
     }
   ],
-  "r2_buckets": [{ "binding": "AVATARS", "bucket_name": "ideas-match-avatars" }],
+  "r2_buckets": [{ "binding": "AVATARS", "bucket_name": "babillard" }],
   "durable_objects": {
     "bindings": [
       { "name": "CHAT_ROOM", "class_name": "ChatRoom" },
@@ -35,9 +39,7 @@
   ],
   "triggers": { "crons": ["*/5 * * * *"] },
   "vars": {
-    "PUBLIC_ORIGIN": "https://ideasmatch.danielthorp.com",
-    // Cloudflare Access guards /admin on this hostname only.
-    "ADMIN_ORIGIN": "https://ideas-match-api.ideas-match.workers.dev",
+    "PUBLIC_ORIGIN": "https://babillard.app",
     // Must be an address on a domain verified in SES.
     "EMAIL_FROM": "Babillard <login@danielthorp.com>",
     "SES_REGION": "ca-central-1",
@@ -49,7 +51,7 @@
     "ACCESS_TEAM_DOMAIN": "plain-lab-430e.cloudflareaccess.com",
     "ACCESS_AUD": "1a85a5c256e7112a4102ae7618d91089b6b4ab5f3c266222fec7c38e5d4a8bf7",
     "APPLE_APP_ID": "",
-    "ANDROID_PACKAGE": "com.danielthorp.babillard",
+    "ANDROID_PACKAGE": "com.babillard",
     "ANDROID_CERT_SHA256": "A7:F8:EA:6D:0A:53:65:D4:52:D2:D4:13:B5:E7:29:97:57:98:FD:F4:9E:97:7E:F8:7E:B0:1F:40:68:4E:C6:F3",
     "NUDGE_AFTER_MS": "",
     "MATCH_EXPIRY_MS": "",

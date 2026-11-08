@@ -2,7 +2,7 @@ import { AtkinsonHyperlegible_400Regular } from "@expo-google-fonts/atkinson-hyp
 import { AtkinsonHyperlegible_700Bold } from "@expo-google-fonts/atkinson-hyperlegible/700Bold";
 import { BricolageGrotesque_600SemiBold } from "@expo-google-fonts/bricolage-grotesque/600SemiBold";
 import { BricolageGrotesque_800ExtraBold } from "@expo-google-fonts/bricolage-grotesque/800ExtraBold";
-import type { PushData } from "@ideas-match/shared";
+import type { PushData } from "@babillard/shared";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { useFonts } from "expo-font";
 import * as Notifications from "expo-notifications";

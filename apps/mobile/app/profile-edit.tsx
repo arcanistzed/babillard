@@ -1,4 +1,4 @@
-import { ROLES, type Me } from "@ideas-match/shared";
+import { ROLES, type Me } from "@babillard/shared";
 import { useQueryClient } from "@tanstack/react-query";
 import { router } from "expo-router";
 import { useCallback, useState } from "react";

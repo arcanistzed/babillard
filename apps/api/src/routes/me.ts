@@ -1,4 +1,4 @@
-import { deviceKeySchema, isAdult, LEGAL_VERSION, locationSchema, onboardingSchema, profileSaveSchema, pushTokenSchema, type Locality, type Me } from "@ideas-match/shared";
+import { deviceKeySchema, isAdult, LEGAL_VERSION, locationSchema, onboardingSchema, profileSaveSchema, pushTokenSchema, type Locality, type Me } from "@babillard/shared";
 import { and, desc, eq, inArray, isNull } from "drizzle-orm";
 import { Hono } from "hono";
 import { getDb, schema } from "../db";

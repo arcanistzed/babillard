@@ -1,4 +1,4 @@
-import { LOOKING_FOR, type LookingFor } from "@ideas-match/shared";
+import { LOOKING_FOR, type LookingFor } from "@babillard/shared";
 import { StyleSheet, View } from "react-native";
 import { useTheme } from "@/theme";
 import { Chip, ChipRow, T } from "@/ui";

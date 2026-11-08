@@ -1,5 +1,5 @@
 import { Ionicons } from "@expo/vector-icons";
-import type { InboxItem } from "@ideas-match/shared";
+import type { InboxItem } from "@babillard/shared";
 import { useQuery } from "@tanstack/react-query";
 import { Tabs } from "expo-router";
 import { api } from "@/api";

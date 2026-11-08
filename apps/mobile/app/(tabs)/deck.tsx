@@ -1,4 +1,4 @@
-import { FIELD_GROUPS, GROUP_MIN_SIZE, type FieldGroupId, type Stance, type TopicCard, type TopicSwipeResult } from "@ideas-match/shared";
+import { FIELD_GROUPS, GROUP_MIN_SIZE, type FieldGroupId, type Stance, type TopicCard, type TopicSwipeResult } from "@babillard/shared";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { router } from "expo-router";
 import { useCallback, useEffect, useRef, useState } from "react";

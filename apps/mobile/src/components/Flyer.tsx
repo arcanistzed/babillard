@@ -1,4 +1,4 @@
-import { GROUP_MAX_SIZE, GROUP_MIN_SIZE, type Field, type Lean, type Stance, type TopicCard } from "@ideas-match/shared";
+import { GROUP_MAX_SIZE, GROUP_MIN_SIZE, type Field, type Lean, type Stance, type TopicCard } from "@babillard/shared";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import Animated, { Extrapolation, FadeIn, interpolate, useAnimatedStyle, type SharedValue } from "react-native-reanimated";
 import { fonts, flyerInk } from "@/theme";

@@ -20,4 +20,4 @@ jobs:
       - run: pnpm lint
       - run: pnpm test
       - name: End-to-end tests
-        run: pnpm --filter @ideas-match/api test:e2e --testTimeout=120000 --hookTimeout=180000
+        run: pnpm --filter @babillard/api test:e2e --testTimeout=120000 --hookTimeout=180000

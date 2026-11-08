@@ -1,4 +1,4 @@
-import { type PeopleSwipeResult, type PersonCard } from "@ideas-match/shared";
+import { type PeopleSwipeResult, type PersonCard } from "@babillard/shared";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { router, useFocusEffect } from "expo-router";
 import { useCallback, useEffect, useRef, useState } from "react";

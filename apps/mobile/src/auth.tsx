@@ -1,4 +1,4 @@
-import type { Me } from "@ideas-match/shared";
+import type { Me } from "@babillard/shared";
 import { useQueryClient } from "@tanstack/react-query";
 import * as SecureStore from "expo-secure-store";
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
@@ -6,7 +6,7 @@ import { api, setSessionToken, setUnauthorizedHandler } from "./api";
 import { deleteDeviceKey, ensureDeviceKey, forgetLoadedKey } from "./e2ee";
 import { registerForPush, unregisterPush } from "./push";
 
-const TOKEN_KEY = "ideas-match.session";
+const TOKEN_KEY = "babillard.session";
 
 interface AuthState {
   ready: boolean;

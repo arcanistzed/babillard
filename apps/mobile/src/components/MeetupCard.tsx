@@ -1,4 +1,4 @@
-import type { MeetupSummary } from "@ideas-match/shared";
+import type { MeetupSummary } from "@babillard/shared";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { router } from "expo-router";
 import { Pressable, StyleSheet, View } from "react-native";

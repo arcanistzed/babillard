@@ -1,4 +1,4 @@
-import type { Field as FieldName } from "@ideas-match/shared";
+import type { Field as FieldName } from "@babillard/shared";
 import { useQueryClient } from "@tanstack/react-query";
 import { router } from "expo-router";
 import { useState } from "react";

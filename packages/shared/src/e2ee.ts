@@ -100,14 +100,14 @@ function pairKey(me: DeviceKey, theirPublicKey: string): Uint8Array {
   if (cached) return cached;
   const shared = x25519.getSharedSecret(me.secretKey, fromBase64(theirPublicKey));
   const [first, second] = [me.publicKey, theirPublicKey].sort() as [string, string];
-  const key = hkdf(sha256, shared, encoder.encode(`${first}:${second}`), encoder.encode("ideas-match/v1/pair"), 32);
+  const key = hkdf(sha256, shared, encoder.encode(`${first}:${second}`), encoder.encode("babillard/v1/pair"), 32);
   pairKeys.set(id, key);
   return key;
 }
 
 // Tying each message to its chat and sender stops a server from moving it to another chat or crediting someone else.
-const messageContext = (conversationId: string, senderId: string) => encoder.encode(`ideas-match/v1/message:${conversationId}:${senderId}`);
-const wrapContext = (conversationId: string, senderId: string, reader: string) => encoder.encode(`ideas-match/v1/wrap:${conversationId}:${senderId}:${reader}`);
+const messageContext = (conversationId: string, senderId: string) => encoder.encode(`babillard/v1/message:${conversationId}:${senderId}`);
+const wrapContext = (conversationId: string, senderId: string, reader: string) => encoder.encode(`babillard/v1/wrap:${conversationId}:${senderId}:${reader}`);
 
 export function sealMessage(input: { text: string; conversationId: string; senderId: string; sender: DeviceKey; readers: string[]; random: Random }): Envelope {
   const { text, conversationId, senderId, sender, readers, random } = input;
@@ -150,7 +150,7 @@ export function openMessage(input: { envelope: Envelope; conversationId: string;
 
 /** Everyone in a chat sees the same code unless the server gave someone a different set of keys. */
 export function securityCode(publicKeys: string[]): string {
-  const digest = sha256(encoder.encode(["ideas-match/v1/code", ...[...publicKeys].sort()].join(":")));
+  const digest = sha256(encoder.encode(["babillard/v1/code", ...[...publicKeys].sort()].join(":")));
   const groups: string[] = [];
   for (let i = 0; i < 12; i += 3) {
     const value = ((digest[i]! << 16) | (digest[i + 1]! << 8) | digest[i + 2]!) % 100000;
@@ -162,7 +162,7 @@ export function securityCode(publicKeys: string[]): string {
 const BACKUP_KDF = { N: 2 ** 15, r: 8, p: 1, dkLen: 32 };
 
 export interface KeyBackup {
-  app: "ideas-match";
+  app: "babillard";
   v: 1;
   salt: string;
   nonce: string;
@@ -179,14 +179,14 @@ export async function createKeyBackup(secretKeys: Uint8Array[], passphrase: stri
   const [salt, nonce] = [random(16), random(24)];
   const key = await backupKey(passphrase, salt);
   const plain = encoder.encode(JSON.stringify(secretKeys.map(toBase64)));
-  return { app: "ideas-match", v: 1, salt: toBase64(salt), nonce: toBase64(nonce), ciphertext: toBase64(xchacha20poly1305(key, nonce).encrypt(plain)) };
+  return { app: "babillard", v: 1, salt: toBase64(salt), nonce: toBase64(nonce), ciphertext: toBase64(xchacha20poly1305(key, nonce).encrypt(plain)) };
 }
 
 /** Returns null for a wrong passphrase or a file that isn't a backup. */
 export async function openKeyBackup(text: string, passphrase: string): Promise<Uint8Array[] | null> {
   try {
     const backup = JSON.parse(text) as KeyBackup;
-    if (backup.app !== "ideas-match" || backup.v !== 1) return null;
+    if (backup.app !== "babillard" || backup.v !== 1) return null;
     const key = await backupKey(passphrase, fromBase64(backup.salt));
     const plain = xchacha20poly1305(key, fromBase64(backup.nonce)).decrypt(fromBase64(backup.ciphertext));
     return (JSON.parse(decoder.decode(plain)) as string[]).map(fromBase64);

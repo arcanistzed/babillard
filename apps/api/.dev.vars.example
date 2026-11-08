@@ -9,5 +9,3 @@ SES_ACCESS_KEY_ID=not-used-in-dev-mode
 SES_SECRET_ACCESS_KEY=not-used-in-dev-mode
 # Where new report alerts go. Set with `wrangler secret put ADMIN_EMAIL` in production.
 ADMIN_EMAIL=admin@example.test
-# Shared with the danielthorp.com front Worker. Set with `wrangler secret put PROXY_KEY` on both. Empty turns forwarding off.
-PROXY_KEY=

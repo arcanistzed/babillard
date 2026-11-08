@@ -17,7 +17,7 @@ importers:
 
   apps/api:
     dependencies:
-      '@ideas-match/shared':
+      '@babillard/shared':
         specifier: workspace:*
         version: link:../../packages/shared
       aws4fetch:
@@ -47,10 +47,13 @@ importers:
         version: 5.1.0(@types/node@24.19.2)(vite@8.3.5(@types/node@24.19.2)(esbuild@0.28.2)(terser@5.51.2)(tsx@4.23.15))
       wrangler:
         specifier: ^4.157.0
-        version: 4.157.0(@cloudflare/workers-types@4.20260702.1)(@types/node@24.19.2)
+        version: 4.157.0(@types/node@24.19.2)
 
   apps/mobile:
     dependencies:
+      '@babillard/shared':
+        specifier: workspace:*
+        version: link:../../packages/shared
       '@expo-google-fonts/atkinson-hyperlegible':
         specifier: ^0.4.0
         version: 0.4.1
@@ -60,9 +63,6 @@ importers:
       '@expo/vector-icons':
         specifier: ^15.0.2
         version: 15.1.1(expo-font@58.0.11(expo@58.0.23)(react-native@0.88.1(@babel/core@7.29.7)(@react-native/metro-config@0.88.1(@babel/core@7.29.7))(@types/react@19.3.0)(react@19.3.0))(react@19.3.0))(react-native@0.88.1(@babel/core@7.29.7)(@react-native/metro-config@0.88.1(@babel/core@7.29.7))(@types/react@19.3.0)(react@19.3.0))(react@19.3.0)
-      '@ideas-match/shared':
-        specifier: workspace:*
-        version: link:../../packages/shared
       '@tanstack/react-query':
         specifier: ^5.90.0
         version: 5.105.3(@types/react@19.3.0)(react@19.3.0)
@@ -169,18 +169,12 @@ importers:
 
   apps/site:
     devDependencies:
-      '@cloudflare/workers-types':
-        specifier: ^4.20251101.0
-        version: 4.20260702.1
       '@types/node':
         specifier: ^24
         version: 24.19.2
       typescript:
         specifier: ~5.9.3
         version: 5.9.3
-      wrangler:
-        specifier: ^4.157.0
-        version: 4.157.0(@cloudflare/workers-types@4.20260702.1)(@types/node@24.19.2)
 
   packages/shared:
     dependencies:
@@ -642,9 +636,6 @@ packages:
     engines: {node: '>=16'}
     cpu: [x64]
     os: [win32]
-
-  '@cloudflare/workers-types@4.20260702.1':
-    resolution: {integrity: sha512-mOhf5TUEB1m2vPrxtqoIGfz0fUC9xyxRDx5gWHy5s+OCo6dcV+g7wI1R7gYCMFohhqF/2y2xeKVwMwCJjfn/WA==}
 
   '@cspotcode/source-map-support@0.8.1':
     resolution: {integrity: sha512-IchNf6dN4tHoMFIn/7OE8LWZ19Y6q/67Bmf6vnGREv8RSbBVb9LPJxEcnwrcwX6ixSvaiGoomAUvu4YSxXrVgw==}
@@ -5581,8 +5572,6 @@ snapshots:
   '@cloudflare/workerd-windows-64@1.20261103.1':
     optional: true
 
-  '@cloudflare/workers-types@4.20260702.1': {}
-
   '@cspotcode/source-map-support@0.8.1':
     dependencies:
       '@jridgewell/trace-mapping': 0.3.9
@@ -10250,7 +10239,7 @@ snapshots:
       '@cloudflare/workerd-linux-arm64': 1.20261103.1
       '@cloudflare/workerd-windows-64': 1.20261103.1
 
-  wrangler@4.157.0(@cloudflare/workers-types@4.20260702.1)(@types/node@24.19.2):
+  wrangler@4.157.0(@types/node@24.19.2):
     dependencies:
       '@cloudflare/kv-asset-handler': 0.5.0
       '@cloudflare/unenv-preset': 2.16.2(unenv@2.0.0-rc.24)(workerd@1.20261103.1)
@@ -10262,7 +10251,6 @@ snapshots:
       unenv: 2.0.0-rc.24
       workerd: 1.20261103.1
     optionalDependencies:
-      '@cloudflare/workers-types': 4.20260702.1
       fsevents: 2.3.3
     transitivePeerDependencies:
       - '@types/node'

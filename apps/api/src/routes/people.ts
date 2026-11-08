@@ -1,4 +1,4 @@
-import { topicPhrase, isMutualMatch, matchExpiresAt, matchOpenerMessage, orderedPair, peopleSwipeSchema, pickBilingualOpener, rankPeople, visibleLookingFor, type Field, type LookingFor, type PeopleSwipeResult, type PersonCard, type Role } from "@ideas-match/shared";
+import { topicPhrase, isMutualMatch, matchExpiresAt, matchOpenerMessage, orderedPair, peopleSwipeSchema, pickBilingualOpener, rankPeople, visibleLookingFor, type Field, type LookingFor, type PeopleSwipeResult, type PersonCard, type Role } from "@babillard/shared";
 import { requestLanguage } from "../lib/language";
 import { and, eq, sql } from "drizzle-orm";
 import { Hono } from "hono";

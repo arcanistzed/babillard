@@ -1,5 +1,5 @@
 import { DurableObject } from "cloudflare:workers";
-import { sendMessageSchema, type ChatMessage, type Envelope, type ServerSocketEvent } from "@ideas-match/shared";
+import { sendMessageSchema, type ChatMessage, type Envelope, type ServerSocketEvent } from "@babillard/shared";
 import { and, eq, inArray, isNull, ne, notInArray, sql } from "drizzle-orm";
 import { getDb, schema } from "../db";
 import { newId } from "../lib/tokens";

@@ -1,4 +1,4 @@
-import type { BlockPair } from "@ideas-match/shared";
+import type { BlockPair } from "@babillard/shared";
 import { and, eq, inArray, or } from "drizzle-orm";
 import { schema, type Db } from "../db";
 

@@ -1,4 +1,4 @@
-import { ROLES, isAdult, type Field as FieldName, type LookingFor, type Me, type Role } from "@ideas-match/shared";
+import { ROLES, isAdult, type Field as FieldName, type LookingFor, type Me, type Role } from "@babillard/shared";
 import { useCallback, useState } from "react";
 import { ScrollView, StyleSheet, View } from "react-native";
 import Animated, { FadeInLeft, FadeInRight, useAnimatedStyle, withTiming } from "react-native-reanimated";

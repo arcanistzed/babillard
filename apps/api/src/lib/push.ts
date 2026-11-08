@@ -1,4 +1,4 @@
-import type { PushData } from "@ideas-match/shared";
+import type { PushData } from "@babillard/shared";
 import { eq, inArray } from "drizzle-orm";
 import { getDb, schema } from "../db";
 

@@ -6,7 +6,7 @@ import { describe, expect, it } from "vitest";
 import { ApiError, Client, createPerson, type PersonSeed } from "../scripts/api-client.ts";
 import { canLinkInEmail, loginEmailContent } from "../src/lib/loginEmailContent.ts";
 import { randomBytes } from "node:crypto";
-import { generateDeviceKey, nearestCity, openMessage, sealMessage, searchCities, type Locality } from "@ideas-match/shared";
+import { generateDeviceKey, nearestCity, openMessage, sealMessage, searchCities, type Locality } from "@babillard/shared";
 
 const apiDir = join(dirname(fileURLToPath(import.meta.url)), "..");
 const BASE = "http://localhost:8799";
@@ -242,7 +242,7 @@ describe("production settings", () => {
 
 describe("sign-in email content", () => {
   it("leaves out workers.dev links, which mail filters treat as phishing", () => {
-    const email = loginEmailContent("123456", "https://ideas-match-api.ideas-match.workers.dev/auth/link?token=abc");
+    const email = loginEmailContent("123456", "https://babillard.babillard.workers.dev/auth/link?token=abc");
     expect(email.subject).toBe("123456 is your Babillard code");
     for (const body of [email.text, email.html]) {
       expect(body).toContain("123456");
@@ -253,9 +253,9 @@ describe("sign-in email content", () => {
   });
 
   it("only allows links on the API's own domain", () => {
-    expect(canLinkInEmail("https://ideas-match-api.ideas-match.workers.dev/admin/reports")).toBe(false);
+    expect(canLinkInEmail("https://babillard.babillard.workers.dev/admin/reports")).toBe(false);
     expect(canLinkInEmail("https://api.example.org/admin/reports")).toBe(true);
-    expect(canLinkInEmail("https://ideas-match-api.ideas-match.workers.dev/auth/link", true)).toBe(true);
+    expect(canLinkInEmail("https://babillard.babillard.workers.dev/auth/link", true)).toBe(true);
   });
 
   it("includes the link on the API's own domain", () => {
@@ -1211,7 +1211,7 @@ describe("moderation", () => {
     const threeYearsAgo = Date.now() - 3 * 365 * 24 * 60 * 60 * 1000;
     execFileSync(
       join(apiDir, "../../node_modules/.bin/wrangler"),
-      ["d1", "execute", "ideas-match", "--local", "--persist-to", DEV_DB, "--command", `UPDATE reports SET created_at = ${threeYearsAgo}, resolved_at = CASE WHEN resolved_at IS NULL THEN NULL ELSE ${threeYearsAgo} END WHERE target_user_id IN ('${closed.id}', '${open.id}'); UPDATE moderation_log SET created_at = ${threeYearsAgo} WHERE detail LIKE '%Reason: spam%';`],
+      ["d1", "execute", "babillard", "--local", "--persist-to", DEV_DB, "--command", `UPDATE reports SET created_at = ${threeYearsAgo}, resolved_at = CASE WHEN resolved_at IS NULL THEN NULL ELSE ${threeYearsAgo} END WHERE target_user_id IN ('${closed.id}', '${open.id}'); UPDATE moderation_log SET created_at = ${threeYearsAgo} WHERE detail LIKE '%Reason: spam%';`],
       { cwd: apiDir, stdio: "pipe", env: { ...process.env, CI: "true", WRANGLER_SEND_METRICS: "false" } },
     );
     await sweep();
@@ -1223,7 +1223,7 @@ describe("moderation", () => {
 
   it("warns about, then deletes, an account unused for two years, unless its owner comes back", async () => {
     const wrangler = (command: string) =>
-      execFileSync(join(apiDir, "../../node_modules/.bin/wrangler"), ["d1", "execute", "ideas-match", "--local", "--persist-to", DEV_DB, "--command", command], { cwd: apiDir, stdio: "pipe", env: { ...process.env, CI: "true", WRANGLER_SEND_METRICS: "false" } });
+      execFileSync(join(apiDir, "../../node_modules/.bin/wrangler"), ["d1", "execute", "babillard", "--local", "--persist-to", DEV_DB, "--command", command], { cwd: apiDir, stdio: "pipe", env: { ...process.env, CI: "true", WRANGLER_SEND_METRICS: "false" } });
     const day = 24 * 60 * 60 * 1000;
     const longAgo = Date.now() - 800 * day;
     const leaving = await person("toronto", { displayName: "Long Gone" });
@@ -1596,6 +1596,16 @@ describe("crash reports and public pages", () => {
     expect(await response.text()).toContain("Get the Android app");
     expect(await (await fetch(`${BASE}/t/poetry`)).text()).toContain("Get the Android app");
     expect((await fetch(`${BASE}/download/android`)).status).toBe(404);
+  });
+});
+
+describe("landing page", () => {
+  it("serves the landing page in both languages beside the API", async () => {
+    const english = await fetch(`${BASE}/`);
+    expect(english.status).toBe(200);
+    expect(await english.text()).toContain("Babillard is Canadian French for bulletin board.");
+    expect(await (await fetch(`${BASE}/fr/`)).text()).toContain('lang="fr-CA"');
+    expect((await fetch(`${BASE}/healthz`)).status).toBe(200);
   });
 });
 

@@ -1,4 +1,4 @@
-import { openWithContentKey, orderedPair, reportSchema, type ReportEvidence } from "@ideas-match/shared";
+import { openWithContentKey, orderedPair, reportSchema, type ReportEvidence } from "@babillard/shared";
 import { and, eq, gt, inArray, sql } from "drizzle-orm";
 import { Hono } from "hono";
 import { getDb, schema } from "../db";

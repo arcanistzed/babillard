@@ -13,7 +13,7 @@ What we measure is how many meetups actually happened, shown at the top of the `
 | `apps/mobile` | Expo and React Native app with expo-router, Reanimated, and Gesture Handler |
 | `apps/api` | Cloudflare Worker with Hono and Drizzle on D1, two Durable Objects, and R2. It sends email through Amazon SES and push through Expo |
 | `packages/shared` | Matching rules, request schemas, and response types used by both |
-| `apps/site` | The landing page at ideasmatch.danielthorp.com, and the Worker that forwards the rest of that domain to the API |
+| `apps/site` | The landing page at babillard.app. The API Worker serves its built files |
 
 The rules that decide who sees whom and who gets grouped are plain functions in `packages/shared/src/rules`.
 
@@ -36,21 +36,21 @@ cp apps/api/.dev.vars.example apps/api/.dev.vars
 ```
 
 ```bash
-pnpm --filter @ideas-match/api db:migrate:local
+pnpm --filter @babillard/api db:migrate:local
 ```
 
 ```bash
-pnpm --filter @ideas-match/api seed:local
+pnpm --filter @babillard/api seed:local
 ```
 
 ```bash
-pnpm --filter @ideas-match/api dev
+pnpm --filter @babillard/api dev
 ```
 
 With that running, add 30 fake people from another terminal. It prints emails you can sign in with.
 
 ```bash
-pnpm --filter @ideas-match/api seed:dev
+pnpm --filter @babillard/api seed:dev
 ```
 
 To start over, stop the server and delete `apps/api/.wrangler/state` completely. Deleting only the database leaves the Durable Objects behind, and they'll still remember conversations and cohorts that no longer exist.
@@ -58,7 +58,7 @@ To start over, stop the server and delete `apps/api/.wrangler/state` completely.
 Now run the app, either way:
 
 - **Expo Go** is the quickest. It can't receive push notifications or open sign-in links, but the six-digit code works. Run `cd apps/mobile && npx expo start --go`, and pick the version of Expo Go that matches SDK 58.
-- **A development build** does everything, and takes longer the first time. Run `cp apps/mobile/.env.example apps/mobile/.env`, then `pnpm --filter @ideas-match/mobile android`. React Native on Android needs JDK 17 or 21, so point `JAVA_HOME` at one if your default is newer. iOS needs a Mac.
+- **A development build** does everything, and takes longer the first time. Run `cp apps/mobile/.env.example apps/mobile/.env`, then `pnpm --filter @babillard/mobile android`. React Native on Android needs JDK 17 or 21, so point `JAVA_HOME` at one if your default is newer. iOS needs a Mac.
 
 The default API URL works on an Android emulator. For a physical phone, use your computer's LAN address in both `apps/mobile/.env` and `PUBLIC_ORIGIN` in `.dev.vars`. In development, the check-your-inbox screen shows the sign-in code and no email goes out.
 
@@ -73,7 +73,7 @@ cd apps/mobile && npx eas-cli build --platform android --profile preview
 EAS removes its copy after about two weeks, so invite pages serve the APK from R2 at `/download/android`. After each new build, download the APK and upload it:
 
 ```bash
-cd apps/api && npx wrangler r2 object put ideas-match-avatars/releases/ideas-match.apk --file <path-to-apk> --remote
+cd apps/api && npx wrangler r2 object put babillard/releases/babillard.apk --file <path-to-apk> --remote
 ```
 
 ### iPhone testing without an Apple Developer account
@@ -81,7 +81,7 @@ cd apps/api && npx wrangler r2 object put ideas-match-avatars/releases/ideas-mat
 Expo Go runs the app on a real iPhone. Start the server below, then scan its QR code with the iPhone camera:
 
 ```bash
-cd apps/mobile && EXPO_PUBLIC_API_URL=https://ideasmatch.danielthorp.com npx expo start --go
+cd apps/mobile && EXPO_PUBLIC_API_URL=https://babillard.app npx expo start --go
 ```
 
 The phone must be on the same network as this computer. Add `--tunnel` if it isn't. Push notifications and sign-in links don't work this way. This project was tested with Expo Go 58.0.7 on iOS.
@@ -109,7 +109,7 @@ pnpm lint
 ```
 
 ```bash
-pnpm --filter @ideas-match/api test:e2e
+pnpm --filter @babillard/api test:e2e
 ```
 
 The end-to-end suite starts two local Workers with throwaway databases. One runs in dev mode. The other has production settings, so it can check the protections dev mode turns off, such as sign-in rate limits and the locked admin pages. It covers sign-in, swiping, matching, chat over WebSocket, group formation under concurrent load, meetups, the cron sweep, moderation, crash reports, and account deletion. On a busy machine, raise `--testTimeout` before you blame the code. GitHub Actions runs all of these on every push to `main` and on pull requests.
@@ -191,30 +191,24 @@ There are also per-address limits on sign-in email, and daily limits on reports 
 
 ## Deploy
 
-The Worker runs on the dedicated Ideas Match Cloudflare account. Use its `wrangler` profile, and check `npx wrangler whoami` first if you have other accounts.
+The Worker runs on the dedicated Babillard Cloudflare account. Use its `babillard` `wrangler` profile, and check `npx wrangler whoami` first if you have other accounts.
 
 For a normal release, apply new migrations, then deploy:
 
 ```bash
-pnpm --filter @ideas-match/api db:migrate:remote
+pnpm --filter @babillard/api db:migrate:remote
 ```
 
 ```bash
-pnpm --filter @ideas-match/api deploy
+pnpm --filter @babillard/api deploy
 ```
 
-The landing page deploys separately, to the Personal account that holds danielthorp.com. Edit the text in `apps/site/src/copy.ts`, not the generated HTML.
+The deploy also publishes the landing page. The API Worker serves the files in `apps/site/public` at `/`, `/fr/`, and `/site/*`, and every other path goes to the API. Edit the page text in `apps/site/src/copy.ts`, not the generated HTML.
+
+When topics or cities change, run `pnpm --filter @babillard/api seed:sql`, then load the result. It's safe to run again, and it moves people out of any city that was merged into another.
 
 ```bash
-pnpm --filter @ideas-match/site deploy
-```
-
-The API runs in the Ideas Match account, and danielthorp.com is in the Personal account. A custom domain must be in the same account as its Worker, so `apps/site` owns `ideasmatch.danielthorp.com`. It serves `/`, `/fr/`, and `/site/*`, and forwards everything else to the API's `workers.dev` address, including WebSockets. It sends `/admin` straight to the `workers.dev` address, because Cloudflare Access guards it there. Both Workers share a `PROXY_KEY` secret, so the API can trust the visitor IP that the front Worker passes along for sign-in rate limits. If Ideas Match gets its own domain, add that domain to the Ideas Match account, attach it to the API, set `PUBLIC_ORIGIN`, and retire `apps/site`'s forwarding.
-
-When topics or cities change, run `pnpm --filter @ideas-match/api seed:sql`, then load the result. It's safe to run again, and it moves people out of any city that was merged into another.
-
-```bash
-cd apps/api && npx wrangler d1 execute ideas-match --remote --file seed/seed.sql
+cd apps/api && npx wrangler d1 execute babillard --remote --file seed/seed.sql
 ```
 
 ### Setting it up from nothing
@@ -222,11 +216,11 @@ cd apps/api && npx wrangler d1 execute ideas-match --remote --file seed/seed.sql
 1. **Create the resources.** Put the printed database ID in `wrangler.jsonc`.
 
    ```bash
-   npx wrangler d1 create ideas-match
+   npx wrangler d1 create babillard
    ```
 
    ```bash
-   npx wrangler r2 bucket create ideas-match-avatars
+   npx wrangler r2 bucket create babillard
    ```
 
 2. **Set the secrets.** `AUTH_SECRET` is a long random value, and `ADMIN_EMAIL` receives report alerts.
@@ -255,7 +249,7 @@ cd apps/api && npx wrangler d1 execute ideas-match --remote --file seed/seed.sql
 
 6. **Set up the app builds.** The EAS project ID is in `apps/mobile/app.config.ts`. Android push needs a Firebase project, with `google-services.json` in `apps/mobile` and an FCM V1 key uploaded through `eas credentials`. iOS push needs an Apple Developer account.
 
-7. **Sign-in links.** `ANDROID_CERT_SHA256` is set, so Android verifies App Links on the `PUBLIC_ORIGIN` host. iOS still needs `APPLE_APP_ID` (team ID and bundle ID). Emails leave out links on `workers.dev` hosts, because mail filters treat those as phishing. People who use an older build that still points at `workers.dev` sign in with the six-digit code.
+7. **Sign-in links.** `ANDROID_CERT_SHA256` is set, so Android verifies App Links on the `PUBLIC_ORIGIN` host. iOS still needs `APPLE_APP_ID` (team ID and bundle ID). Emails leave out links on `workers.dev` hosts, because mail filters treat those as phishing.
 
 ## Decisions worth knowing
 

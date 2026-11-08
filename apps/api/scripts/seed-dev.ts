@@ -2,7 +2,7 @@
 // that the swipes produced a match and a group. Everything goes through the
 // real API. Needs DEV_MODE=true, and migrations and seed data already applied.
 //
-//   pnpm --filter @ideas-match/api seed:dev
+//   pnpm --filter @babillard/api seed:dev
 import { createPerson, type Client } from "./api-client.ts";
 
 const BASE_URL = process.env.API_URL ?? "http://localhost:8787";

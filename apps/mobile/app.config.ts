@@ -1,12 +1,12 @@
 import type { ExpoConfig } from "expo/config";
 
 // The API domain hosts the Universal Link and App Link association files.
-const apiHost = new URL(process.env.EXPO_PUBLIC_API_URL ?? "https://ideasmatch.danielthorp.com").hostname;
+const apiHost = new URL(process.env.EXPO_PUBLIC_API_URL ?? "https://babillard.app").hostname;
 const isRealHost = !["localhost", "10.0.2.2", "127.0.0.1"].includes(apiHost);
 
 const config: ExpoConfig = {
   name: "Babillard",
-  slug: "ideas-match",
+  slug: "babillard",
   owner: "arcanistzed",
   version: "0.1.0",
   orientation: "portrait",
@@ -14,14 +14,14 @@ const config: ExpoConfig = {
   userInterfaceStyle: "automatic",
   icon: "./assets/icon.png",
   ios: {
-    bundleIdentifier: "com.danielthorp.babillard",
+    bundleIdentifier: "com.babillard",
     supportsTablet: false,
     // Standard HTTPS only, so TestFlight doesn't ask about export compliance on every build.
     config: { usesNonExemptEncryption: false },
     ...(isRealHost ? { associatedDomains: [`applinks:${apiHost}`] } : {}),
   },
   android: {
-    package: "com.danielthorp.babillard",
+    package: "com.babillard",
     softwareKeyboardLayoutMode: "resize",
     googleServicesFile: "./google-services.json",
     adaptiveIcon: { foregroundImage: "./assets/adaptive-icon.png", backgroundColor: "#FF5FAE" },
@@ -49,7 +49,7 @@ const config: ExpoConfig = {
     ["expo-location", { locationWhenInUsePermission: "Babillard uses your location once to suggest your city. It stays on your phone.", locationAlwaysAndWhenInUsePermission: false, locationAlwaysPermission: false }],
   ],
   extra: {
-    eas: { projectId: "54672913-5065-4a88-8789-a29ffcb13a89" },
+    eas: { projectId: "90b977e9-6bcd-4b3b-9059-d63e4b4d5bc1" },
   },
 };
 

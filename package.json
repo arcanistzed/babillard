@@ -1,11 +1,11 @@
 {
-  "name": "ideas-match",
+  "name": "babillard",
   "private": true,
   "packageManager": "pnpm@11.1.3",
   "scripts": {
     "test": "pnpm -r --if-present test",
     "typecheck": "pnpm -r --if-present typecheck",
-    "lint": "eslint apps/api packages/shared && pnpm --filter @ideas-match/mobile lint"
+    "lint": "eslint apps/api packages/shared && pnpm --filter @babillard/mobile lint"
   },
   "devDependencies": {
     "eslint": "^9.39.5",

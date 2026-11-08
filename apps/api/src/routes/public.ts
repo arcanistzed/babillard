@@ -1,4 +1,4 @@
-import { outcomeSummary, VENUE_LABELS, type OutcomeCounts, type TopicOutcomes } from "@ideas-match/shared";
+import { outcomeSummary, VENUE_LABELS, type OutcomeCounts, type TopicOutcomes } from "@babillard/shared";
 import { and, desc, eq, inArray, sql } from "drizzle-orm";
 import { Hono } from "hono";
 import { html, raw } from "hono/html";
@@ -8,7 +8,7 @@ import { buildIcs } from "../lib/ics";
 import { localizeTopic, requestLanguage } from "../lib/language";
 import type { AppEnv } from "../types";
 
-const ANDROID_APK_KEY = "releases/ideas-match.apk";
+const ANDROID_APK_KEY = "releases/babillard.apk";
 
 function getApp(language: Language = "en") {
   return language === "fr"
@@ -145,7 +145,7 @@ publicRoutes.get("/download/android", async (c) => {
   const apk = await c.env.AVATARS.get(ANDROID_APK_KEY);
   if (!apk) return c.notFound();
   return new Response(apk.body, {
-    headers: { "content-type": "application/vnd.android.package-archive", "content-disposition": 'attachment; filename="ideas-match.apk"', "content-length": String(apk.size) },
+    headers: { "content-type": "application/vnd.android.package-archive", "content-disposition": 'attachment; filename="babillard.apk"', "content-length": String(apk.size) },
   });
 });
 

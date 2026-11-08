@@ -1,4 +1,4 @@
-import type { Me } from "@ideas-match/shared";
+import type { Me } from "@babillard/shared";
 import { useState } from "react";
 import { StyleSheet, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";

@@ -1,4 +1,4 @@
-import { securityCode, type ConversationDetail, type Stance } from "@ideas-match/shared";
+import { securityCode, type ConversationDetail, type Stance } from "@babillard/shared";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { router, useLocalSearchParams } from "expo-router";
 import { Alert, Pressable, ScrollView, StyleSheet, Switch, View } from "react-native";

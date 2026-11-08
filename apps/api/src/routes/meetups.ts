@@ -1,4 +1,4 @@
-import { didMeetSchema, isMeetupConfirmed, meetupOutcomeSchema, meetupProposalSchema, meetupResponseSchema, requiredYesCount, type ConversationKind, type MeetupSummary } from "@ideas-match/shared";
+import { didMeetSchema, isMeetupConfirmed, meetupOutcomeSchema, meetupProposalSchema, meetupResponseSchema, requiredYesCount, type ConversationKind, type MeetupSummary } from "@babillard/shared";
 import { requestLanguage, venueNames } from "../lib/language";
 import { and, desc, eq, inArray, sql } from "drizzle-orm";
 import { Hono } from "hono";

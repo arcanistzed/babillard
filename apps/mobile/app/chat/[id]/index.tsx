@@ -1,5 +1,5 @@
 import { Ionicons } from "@expo/vector-icons";
-import type { ConversationDetail } from "@ideas-match/shared";
+import type { ConversationDetail } from "@babillard/shared";
 import { useQuery } from "@tanstack/react-query";
 import { router, Stack, useLocalSearchParams } from "expo-router";
 import { useCallback, useMemo, useState } from "react";

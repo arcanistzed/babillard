@@ -1,4 +1,4 @@
-import { REPORT_REASONS, type ChatMessage, type ReportReason } from "@ideas-match/shared";
+import { REPORT_REASONS, type ChatMessage, type ReportReason } from "@babillard/shared";
 import { useQueryClient } from "@tanstack/react-query";
 import { router, useLocalSearchParams } from "expo-router";
 import { useState } from "react";

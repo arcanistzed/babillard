@@ -1,4 +1,4 @@
-import { meetupDays, meetupSlotAt, meetupTimes, suggestMeetupSlots, VENUE_KINDS, type MeetupSummary, type VenueKind } from "@ideas-match/shared";
+import { meetupDays, meetupSlotAt, meetupTimes, suggestMeetupSlots, VENUE_KINDS, type MeetupSummary, type VenueKind } from "@babillard/shared";
 import { useQueryClient } from "@tanstack/react-query";
 import { router, useLocalSearchParams } from "expo-router";
 import { useMemo, useState } from "react";

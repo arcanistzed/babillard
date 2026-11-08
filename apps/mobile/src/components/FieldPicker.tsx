@@ -1,4 +1,4 @@
-import { FIELD_GROUPS, type Field } from "@ideas-match/shared";
+import { FIELD_GROUPS, type Field } from "@babillard/shared";
 import { StyleSheet, View } from "react-native";
 import { fieldGroupLabel, fieldLabel } from "@/i18n";
 import { Chip, ChipRow, T } from "@/ui";

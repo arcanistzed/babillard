@@ -1,21 +1,21 @@
 {
   "project_info": {
-    "project_number": "1074931593219",
-    "project_id": "ideas-match-bdc52",
-    "storage_bucket": "ideas-match-bdc52.firebasestorage.app"
+    "project_number": "355479445426",
+    "project_id": "babillard-c8dc2",
+    "storage_bucket": "babillard-c8dc2.firebasestorage.app"
   },
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:1074931593219:android:ffff5782c089ae48031e36",
+        "mobilesdk_app_id": "1:355479445426:android:d3ee28b450cc2a43a30eab",
         "android_client_info": {
-          "package_name": "app.ideasmatch"
+          "package_name": "com.babillard"
         }
       },
       "oauth_client": [],
       "api_key": [
         {
-          "current_key": "AIzaSyBhpv3ehK_Trolmq0NxFMKE1Jk890bpmEU"
+          "current_key": "AIzaSyDg6PjyGqz2FG6YLVhVcXsKOORD-7HrOqU"
         }
       ],
       "services": {

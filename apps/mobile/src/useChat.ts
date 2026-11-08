@@ -1,4 +1,4 @@
-import type { ChatMessage, ConversationDetail, ServerSocketEvent } from "@ideas-match/shared";
+import type { ChatMessage, ConversationDetail, ServerSocketEvent } from "@babillard/shared";
 import { useQueryClient } from "@tanstack/react-query";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { api, ApiError, openConversationSocket } from "./api";

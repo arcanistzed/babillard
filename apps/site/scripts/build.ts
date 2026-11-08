@@ -3,7 +3,7 @@ import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { copy, type Lang } from "../src/copy.ts";
 
-const ORIGIN = "https://ideasmatch.danielthorp.com";
+const ORIGIN = "https://babillard.app";
 const DOWNLOAD = "/download/android";
 const SEATS = 8;
 const root = join(dirname(fileURLToPath(import.meta.url)), "..", "public");

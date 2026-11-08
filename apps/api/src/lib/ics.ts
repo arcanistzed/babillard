@@ -12,7 +12,7 @@ export function buildIcs(event: { uid: string; startsAt: number; endsAt: number;
     "VERSION:2.0",
     "PRODID:-//Babillard//Meetups//EN",
     "BEGIN:VEVENT",
-    `UID:${event.uid}@ideasmatch`,
+    `UID:${event.uid}@babillard.app`,
     `DTSTAMP:${formatUtc(Date.now())}`,
     `DTSTART:${formatUtc(event.startsAt)}`,
     `DTEND:${formatUtc(event.endsAt)}`,

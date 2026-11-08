@@ -1,5 +1,5 @@
-import type { Field, FieldGroupId, LookingFor, Role, VenueKind } from "@ideas-match/shared";
-import { FIELD_LABELS, LOOKING_FOR_LABELS, ROLE_LABELS, VENUE_LABELS } from "@ideas-match/shared";
+import type { Field, FieldGroupId, LookingFor, Role, VenueKind } from "@babillard/shared";
+import { FIELD_LABELS, LOOKING_FOR_LABELS, ROLE_LABELS, VENUE_LABELS } from "@babillard/shared";
 
 /** The app follows the phone's language: French if it's set to French, English otherwise. */
 export const isFrench = Intl.DateTimeFormat().resolvedOptions().locale.toLowerCase().startsWith("fr");

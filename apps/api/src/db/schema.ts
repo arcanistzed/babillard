@@ -1,6 +1,6 @@
-import type { Envelope, ReportEvidence } from "@ideas-match/shared";
+import type { Envelope, ReportEvidence } from "@babillard/shared";
 import { index, integer, primaryKey, real, sqliteTable, text, uniqueIndex } from "drizzle-orm/sqlite-core";
-import type { EndedUp, Field, LookingFor, MeetAgain, MindChanged, Role, Stance, VenueKind } from "@ideas-match/shared";
+import type { EndedUp, Field, LookingFor, MeetAgain, MindChanged, Role, Stance, VenueKind } from "@babillard/shared";
 
 export const users = sqliteTable(
   "users",

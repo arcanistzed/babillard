@@ -10,7 +10,7 @@ import { t } from "@/i18n";
 import { Button, ErrorText, Field, FormScreen, T } from "@/ui";
 
 const MIN_PASSPHRASE = 8;
-const FILE_NAME = "ideas-match-key-backup.json";
+const FILE_NAME = "babillard-key-backup.json";
 
 export default function KeyBackup() {
   const { me } = useAuth();

@@ -1,4 +1,4 @@
-import { defaultOpeners, FIELD_LABELS, FIELDS } from "@ideas-match/shared";
+import { defaultOpeners, FIELD_LABELS, FIELDS } from "@babillard/shared";
 import { and, desc, eq, gt, inArray, isNotNull, isNull, like, or, sql } from "drizzle-orm";
 import { Hono } from "hono";
 import { csrf } from "hono/csrf";

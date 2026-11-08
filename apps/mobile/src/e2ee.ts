@@ -12,13 +12,13 @@ import {
   type ConversationMember,
   type DeviceKey,
   type Envelope,
-} from "@ideas-match/shared";
+} from "@babillard/shared";
 import * as Crypto from "expo-crypto";
 import * as SecureStore from "expo-secure-store";
 import { api } from "./api";
 
-const storageName = (userId: string) => `ideas-match.device-key.${userId}`;
-const restoredName = (userId: string) => `ideas-match.restored-keys.${userId}`;
+const storageName = (userId: string) => `babillard.device-key.${userId}`;
+const restoredName = (userId: string) => `babillard.restored-keys.${userId}`;
 const random = (length: number) => Crypto.getRandomBytes(length);
 
 let current: { userId: string; key: Promise<DeviceKey> } | null = null;

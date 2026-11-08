@@ -1,4 +1,4 @@
-import type { Me } from "@ideas-match/shared";
+import type { Me } from "@babillard/shared";
 import { router, useLocalSearchParams } from "expo-router";
 import { useEffect, useRef, useState } from "react";
 import { ActivityIndicator, StyleSheet, View } from "react-native";

@@ -1,4 +1,4 @@
-import { TAKEAWAY_MAX_LENGTH, type EndedUp, type MeetAgain, type MeetupSummary, type MindChanged, type MyOutcome } from "@ideas-match/shared";
+import { TAKEAWAY_MAX_LENGTH, type EndedUp, type MeetAgain, type MeetupSummary, type MindChanged, type MyOutcome } from "@babillard/shared";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { StyleSheet, View } from "react-native";

@@ -1,5 +1,5 @@
 import { DurableObject } from "cloudflare:workers";
-import { GROUP_MAX_SIZE, canJoin, formGroups, topicPhrase, type Stance, type Waiter } from "@ideas-match/shared";
+import { GROUP_MAX_SIZE, canJoin, formGroups, topicPhrase, type Stance, type Waiter } from "@babillard/shared";
 import { and, eq, inArray, isNotNull } from "drizzle-orm";
 import { getDb, schema } from "../db";
 import { blocksBetween, blockedWith } from "../lib/blocks";

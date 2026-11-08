@@ -1,4 +1,4 @@
-import { isCheckinDue, isMatchExpired, isNudgeDue, isProposalStale, isReminderDue, pickBilingualOpener } from "@ideas-match/shared";
+import { isCheckinDue, isMatchExpired, isNudgeDue, isProposalStale, isReminderDue, pickBilingualOpener } from "@babillard/shared";
 import { deleteAccount } from "./lib/accounts";
 import { sendEmail } from "./lib/email";
 import { and, eq, inArray, isNotNull, isNull, lt, lte, sql } from "drizzle-orm";

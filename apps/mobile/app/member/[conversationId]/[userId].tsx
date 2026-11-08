@@ -1,4 +1,4 @@
-import type { Field, LookingFor, Role } from "@ideas-match/shared";
+import type { Field, LookingFor, Role } from "@babillard/shared";
 import { useQuery } from "@tanstack/react-query";
 import { router, Stack, useLocalSearchParams } from "expo-router";
 import { ActivityIndicator, ScrollView, StyleSheet, View } from "react-native";

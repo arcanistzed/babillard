@@ -42,7 +42,7 @@
       "runtimeExecutable": "bash",
       "runtimeArgs": [
         "-c",
-        "cd apps/mobile && EXPO_PUBLIC_API_URL=https://ideasmatch.danielthorp.com ../../node_modules/.bin/expo start --dev-client --port 8082 --clear"
+        "cd apps/mobile && EXPO_PUBLIC_API_URL=https://babillard.app ../../node_modules/.bin/expo start --dev-client --port 8082 --clear"
       ],
       "port": 8082
     },
@@ -51,7 +51,7 @@
       "runtimeExecutable": "bash",
       "runtimeArgs": [
         "-c",
-        "cd apps/mobile && EXPO_PUBLIC_API_URL=https://ideasmatch.danielthorp.com ../../node_modules/.bin/expo start --go --port 8083"
+        "cd apps/mobile && EXPO_PUBLIC_API_URL=https://babillard.app ../../node_modules/.bin/expo start --go --port 8083"
       ],
       "port": 8083
     },

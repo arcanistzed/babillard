@@ -1,6 +1,5 @@
 import { eq } from "drizzle-orm";
 import { schema, type Db } from "../db";
-import { adminOrigin } from "./config";
 import { sendEmail } from "./email";
 import { newId } from "./tokens";
 
@@ -26,7 +25,7 @@ export function isUrgentReason(reason: string): boolean {
  */
 export async function notifyAdminOfReport(env: Env, reason: string): Promise<void> {
   const label = REASON_LABELS[reason] ?? reason;
-  const link = `${adminOrigin(env)}/admin/reports`;
+  const link = `${env.PUBLIC_ORIGIN}/admin/reports`;
   try {
     if (!env.ADMIN_EMAIL) throw new Error("ADMIN_EMAIL is not set");
     await sendEmail(env, {

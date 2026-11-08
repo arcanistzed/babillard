@@ -73,9 +73,10 @@ export default async function setup() {
   const devDb = join(persist, "dev");
   const prodDb = join(persist, "prod");
   execFileSync("node", ["scripts/gen-seed-sql.ts"], { cwd: apiDir, stdio: "pipe" });
+  execFileSync("node", ["../site/scripts/build.ts"], { cwd: apiDir, stdio: "pipe" });
   for (const dir of [devDb, prodDb]) {
-    runWrangler(["d1", "migrations", "apply", "ideas-match", "--local", "--persist-to", dir]);
-    runWrangler(["d1", "execute", "ideas-match", "--local", "--persist-to", dir, "--file", "seed/seed.sql"]);
+    runWrangler(["d1", "migrations", "apply", "babillard", "--local", "--persist-to", dir]);
+    runWrangler(["d1", "execute", "babillard", "--local", "--persist-to", dir, "--file", "seed/seed.sql"]);
   }
 
   const ses = startFakeSes();
