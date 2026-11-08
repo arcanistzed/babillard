@@ -1,4 +1,4 @@
-# Ideas Match
+# Babillard
 
 A mobile app where people find each other through the ideas they want to talk about, then meet in person.
 

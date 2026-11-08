@@ -63,7 +63,7 @@ export default function Onboard() {
   // While someone is typing a city, the results need the room, and Continue can't be tapped yet anyway.
   const searchingForCity = step === 3 && cityId === null && keyboardOpen;
   const dobComplete = /^\d{4}-\d{2}-\d{2}$/.test(dob);
-  const dobError = dobComplete && !isAdult(dob) ? t("Ideas Match is for people 18 and over.", "Ideas Match est réservé aux personnes de 18 ans et plus.") : null;
+  const dobError = dobComplete && !isAdult(dob) ? t("Babillard is for people 18 and over.", "Babillard est réservé aux personnes de 18 ans et plus.") : null;
   const canContinue = [
     displayName.trim().length > 0 && dobComplete && !dobError && agreed,
     role !== null && fields.length > 0,

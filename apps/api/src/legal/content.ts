@@ -14,7 +14,7 @@ const privacyEn = `# Privacy policy
 
 Last updated: November 8, 2026
 
-Ideas Match helps people find others nearby who want to talk about the same topics, then meet in person. In this policy, "we" means the operator of Ideas Match, named in our Terms of use. We're based in Canada. Our privacy officer is responsible for how we handle your information. Questions and requests go to privacy@danielthorp.com.
+Babillard helps people find others nearby who want to talk about the same topics, then meet in person. In this policy, "we" means the operator of Babillard, named in our Terms of use. We're based in Canada. Our privacy officer is responsible for how we handle your information. Questions and requests go to privacy@danielthorp.com.
 
 ## What we collect
 
@@ -66,7 +66,7 @@ We use these companies to run the service, and only for that purpose:
 - Amazon Web Services sends sign-in and moderation emails, so it handles your email address.
 - Expo, Google, and Apple deliver push notifications, so they handle your device token and the notification text, which says who wrote to you but not what they said.
 
-These companies may process information outside Canada, including in the United States, where other laws apply. We also disclose information if the law requires it, or if we believe it's needed to protect someone from serious harm. If Ideas Match moves to a company or a new owner, your information moves with it under this policy, and we'll tell you.
+These companies may process information outside Canada, including in the United States, where other laws apply. We also disclose information if the law requires it, or if we believe it's needed to protect someone from serious harm. If Babillard moves to a company or a new owner, your information moves with it under this policy, and we'll tell you.
 
 ## How long we keep it
 
@@ -89,7 +89,7 @@ You can ask for a copy of your information, ask us to correct or delete it, and 
 
 ## Age
 
-Ideas Match is for people 18 and over. If we learn that someone is younger, we'll close the account.
+Babillard is for people 18 and over. If we learn that someone is younger, we'll close the account.
 
 ## Security
 
@@ -103,7 +103,7 @@ const termsEn = `# Terms of use
 
 Last updated: November 7, 2026
 
-These terms are an agreement between you and Daniel Thorp, who runs Ideas Match. By ticking the box when you sign up, you accept them and our Privacy policy. If you don't agree, don't use the app.
+These terms are an agreement between you and Daniel Thorp, who runs Babillard. By ticking the box when you sign up, you accept them and our Privacy policy. If you don't agree, don't use the app.
 
 ## Who can use it
 
@@ -137,7 +137,7 @@ You can report anyone from their profile or by long-pressing a message. We aim t
 
 ## The service
 
-Ideas Match is free right now. It's a young product, so features may change, and it may have outages or stop running. We'll give notice before shutting it down if we can.
+Babillard is free right now. It's a young product, so features may change, and it may have outages or stop running. We'll give notice before shutting it down if we can.
 
 ## Limits on our responsibility
 
@@ -161,7 +161,7 @@ These terms are between you and us, not Apple or Google. They aren't responsible
 
 ## Other terms
 
-These terms and the Privacy policy are the whole agreement between you and us. If part of them can't be enforced, the rest still applies. If we don't enforce something, we haven't given up the right to. We may transfer these terms to a company that takes over Ideas Match. You can't transfer your account. The app, its name, and its design belong to us. Questions go to privacy@danielthorp.com.
+These terms and the Privacy policy are the whole agreement between you and us. If part of them can't be enforced, the rest still applies. If we don't enforce something, we haven't given up the right to. We may transfer these terms to a company that takes over Babillard. You can't transfer your account. The app, its name, and its design belong to us. Questions go to privacy@danielthorp.com.
 
 ## Credits
 
@@ -171,11 +171,11 @@ const safetyEn = `# Safety standards
 
 Last updated: November 7, 2026
 
-Ideas Match is for adults who want to meet in person to talk about ideas. This page explains how we keep people safe, especially children, who aren't allowed on the app.
+Babillard is for adults who want to meet in person to talk about ideas. This page explains how we keep people safe, especially children, who aren't allowed on the app.
 
 ## Children
 
-You must be 18 to use Ideas Match, and we ask for a date of birth at sign-up. We have zero tolerance for child sexual abuse and exploitation. Anything that sexualizes or endangers a minor gets the account banned. We report child sexual abuse material to Cybertip.ca and to police, as Canadian law requires. If we learn that someone is under 18, we close the account.
+You must be 18 to use Babillard, and we ask for a date of birth at sign-up. We have zero tolerance for child sexual abuse and exploitation. Anything that sexualizes or endangers a minor gets the account banned. We report child sexual abuse material to Cybertip.ca and to police, as Canadian law requires. If we learn that someone is under 18, we close the account.
 
 ## Harmful content
 
@@ -201,7 +201,7 @@ const privacyFr = `# Politique de confidentialité
 
 Dernière mise à jour: 8 novembre 2026
 
-Ideas Match aide les gens à trouver des personnes près de chez eux qui veulent parler des mêmes sujets, puis à se rencontrer en personne. Dans cette politique, « nous » désigne l'exploitant d'Ideas Match, nommé dans nos Conditions d'utilisation. Nous sommes établis au Canada. Notre responsable de la protection des renseignements personnels répond de la façon dont nous traitons vos renseignements. Adressez vos questions et demandes à privacy@danielthorp.com.
+Babillard aide les gens à trouver des personnes près de chez eux qui veulent parler des mêmes sujets, puis à se rencontrer en personne. Dans cette politique, « nous » désigne l'exploitant de Babillard, nommé dans nos Conditions d'utilisation. Nous sommes établis au Canada. Notre responsable de la protection des renseignements personnels répond de la façon dont nous traitons vos renseignements. Adressez vos questions et demandes à privacy@danielthorp.com.
 
 ## Ce que nous recueillons
 
@@ -253,7 +253,7 @@ Nous faisons appel à ces entreprises pour faire fonctionner le service, et seul
 - Amazon Web Services envoie les courriels de connexion et de modération, et traite donc votre adresse courriel.
 - Expo, Google et Apple livrent les notifications, et traitent donc le jeton de votre appareil et le texte de la notification, qui indique qui vous a écrit mais pas ce qui a été écrit.
 
-Ces entreprises peuvent traiter des renseignements à l'extérieur du Canada, y compris aux États-Unis, où d'autres lois s'appliquent. Nous communiquons aussi des renseignements si la loi l'exige, ou si nous croyons que c'est nécessaire pour protéger quelqu'un d'un préjudice grave. Si Ideas Match passe à une société ou à un nouveau propriétaire, vos renseignements suivent sous cette politique, et nous vous en informerons.
+Ces entreprises peuvent traiter des renseignements à l'extérieur du Canada, y compris aux États-Unis, où d'autres lois s'appliquent. Nous communiquons aussi des renseignements si la loi l'exige, ou si nous croyons que c'est nécessaire pour protéger quelqu'un d'un préjudice grave. Si Babillard passe à une société ou à un nouveau propriétaire, vos renseignements suivent sous cette politique, et nous vous en informerons.
 
 ## Combien de temps nous les conservons
 
@@ -276,7 +276,7 @@ Vous pouvez demander une copie de vos renseignements, demander de les corriger o
 
 ## Âge
 
-Ideas Match est réservé aux personnes de 18 ans et plus. Si nous apprenons qu'une personne est plus jeune, nous fermerons le compte.
+Babillard est réservé aux personnes de 18 ans et plus. Si nous apprenons qu'une personne est plus jeune, nous fermerons le compte.
 
 ## Sécurité
 
@@ -290,7 +290,7 @@ const termsFr = `# Conditions d'utilisation
 
 Dernière mise à jour: 7 novembre 2026
 
-Ces conditions constituent une entente entre vous et Daniel Thorp, qui exploite Ideas Match. En cochant la case à l'inscription, vous les acceptez, ainsi que notre Politique de confidentialité. Si vous n'êtes pas d'accord, n'utilisez pas l'application.
+Ces conditions constituent une entente entre vous et Daniel Thorp, qui exploite Babillard. En cochant la case à l'inscription, vous les acceptez, ainsi que notre Politique de confidentialité. Si vous n'êtes pas d'accord, n'utilisez pas l'application.
 
 ## Qui peut l'utiliser
 
@@ -324,7 +324,7 @@ Vous pouvez signaler quelqu'un depuis son profil ou en appuyant longuement sur u
 
 ## Le service
 
-Ideas Match est gratuit pour l'instant. C'est un jeune produit: ses fonctions peuvent changer, il peut connaître des pannes ou cesser de fonctionner. Si possible, nous donnerons un préavis avant de le fermer.
+Babillard est gratuit pour l'instant. C'est un jeune produit: ses fonctions peuvent changer, il peut connaître des pannes ou cesser de fonctionner. Si possible, nous donnerons un préavis avant de le fermer.
 
 ## Limites de notre responsabilité
 
@@ -348,7 +348,7 @@ Ces conditions vous lient à nous, et non à Apple ou à Google. Ces entreprises
 
 ## Autres conditions
 
-Ces conditions et la Politique de confidentialité constituent l'entente complète entre vous et nous. Si une partie ne peut être appliquée, le reste demeure en vigueur. Si nous ne faisons pas respecter une disposition, nous ne renonçons pas à ce droit. Nous pouvons céder ces conditions à une société qui reprend Ideas Match. Vous ne pouvez pas céder votre compte. L'application, son nom et sa conception nous appartiennent. Adressez vos questions à privacy@danielthorp.com.
+Ces conditions et la Politique de confidentialité constituent l'entente complète entre vous et nous. Si une partie ne peut être appliquée, le reste demeure en vigueur. Si nous ne faisons pas respecter une disposition, nous ne renonçons pas à ce droit. Nous pouvons céder ces conditions à une société qui reprend Babillard. Vous ne pouvez pas céder votre compte. L'application, son nom et sa conception nous appartiennent. Adressez vos questions à privacy@danielthorp.com.
 
 ## Mentions
 
@@ -358,11 +358,11 @@ const safetyFr = `# Normes de sécurité
 
 Dernière mise à jour: 7 novembre 2026
 
-Ideas Match s'adresse aux adultes qui veulent se rencontrer en personne pour parler d'idées. Cette page explique comment nous assurons la sécurité des gens, en particulier des enfants, qui ne sont pas admis sur l'application.
+Babillard s'adresse aux adultes qui veulent se rencontrer en personne pour parler d'idées. Cette page explique comment nous assurons la sécurité des gens, en particulier des enfants, qui ne sont pas admis sur l'application.
 
 ## Enfants
 
-Il faut avoir 18 ans pour utiliser Ideas Match, et nous demandons une date de naissance à l'inscription. Nous ne tolérons aucune exploitation ni aucun abus sexuels d'enfants. Tout contenu qui sexualise ou met en danger une personne mineure entraîne le bannissement du compte. Nous signalons le matériel d'abus pédosexuels à Cyberaide.ca et à la police, comme l'exige la loi canadienne. Si nous apprenons qu'une personne a moins de 18 ans, nous fermons le compte.
+Il faut avoir 18 ans pour utiliser Babillard, et nous demandons une date de naissance à l'inscription. Nous ne tolérons aucune exploitation ni aucun abus sexuels d'enfants. Tout contenu qui sexualise ou met en danger une personne mineure entraîne le bannissement du compte. Nous signalons le matériel d'abus pédosexuels à Cyberaide.ca et à la police, comme l'exige la loi canadienne. Si nous apprenons qu'une personne a moins de 18 ans, nous fermons le compte.
 
 ## Contenu préjudiciable
 

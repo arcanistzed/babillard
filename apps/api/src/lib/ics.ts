@@ -10,7 +10,7 @@ export function buildIcs(event: { uid: string; startsAt: number; endsAt: number;
   return [
     "BEGIN:VCALENDAR",
     "VERSION:2.0",
-    "PRODID:-//Ideas Match//Meetups//EN",
+    "PRODID:-//Babillard//Meetups//EN",
     "BEGIN:VEVENT",
     `UID:${event.uid}@ideasmatch`,
     `DTSTAMP:${formatUtc(Date.now())}`,

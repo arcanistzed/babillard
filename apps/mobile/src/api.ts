@@ -73,11 +73,11 @@ export function openConversationSocket(conversationId: string): WebSocket {
 export function friendlyError(error: unknown): string {
   if (!(error instanceof ApiError)) return t("Something went wrong. Try again.", "Un problème est survenu. Réessayez.");
   const messages: Record<string, string> = {
-    network: t("Can't reach Ideas Match. Check your connection and try again.", "Impossible de joindre Ideas Match. Vérifiez votre connexion et réessayez."),
+    network: t("Can't reach Babillard. Check your connection and try again.", "Impossible de joindre Babillard. Vérifiez votre connexion et réessayez."),
     did_not_meet: t("Only people who met can answer these questions.", "Seules les personnes qui se sont rencontrées peuvent répondre à ces questions."),
     invalid_or_expired: t("That code didn't work. Check it, or ask for a new one.", "Ce code n'a pas fonctionné. Vérifiez-le ou demandez-en un nouveau."),
     account_unavailable: t("This account has been closed.", "Ce compte a été fermé."),
-    under_age: t("Ideas Match is for people 18 and over.", "Ideas Match est réservé aux personnes de 18 ans et plus."),
+    under_age: t("Babillard is for people 18 and over.", "Babillard est réservé aux personnes de 18 ans et plus."),
     email_unavailable: t("We couldn't send your email just now. Try again in a minute.", "Impossible d'envoyer le courriel pour le moment. Réessayez dans une minute."),
     too_many_attempts: t("Too many tries. Wait a minute and try again.", "Trop d'essais. Attendez une minute et réessayez."),
     too_many_submissions: t("That's the limit for today. Suggest more tomorrow.", "C'est la limite pour aujourd'hui. Suggérez-en d'autres demain."),

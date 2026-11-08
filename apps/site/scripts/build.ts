@@ -113,7 +113,7 @@ function page(lang: Lang): string {
 <body>
 <a class="skip" href="#main">${esc(c.skip)}</a>
 <header class="bar">
-  <a class="brand" href="${c.path}"><img src="/site/icon.png" alt="" width="32" height="32">Ideas Match</a>
+  <a class="brand" href="${c.path}"><img src="/site/icon.png" alt="" width="32" height="32">Babillard</a>
   <nav class="barnav"><a href="${c.otherPath}" hreflang="${c.otherLang}" lang="${c.otherLang}">${esc(c.otherLabel)}</a>${download("btn small")}</nav>
 </header>
 <main id="main">
@@ -151,7 +151,7 @@ function page(lang: Lang): string {
 </main>
 <footer class="foot">
   <ul>${c.footer.map(([label, href]) => `<li><a href="${href}">${esc(label)}</a></li>`).join("")}<li><a href="${c.otherPath}" hreflang="${c.otherLang}" lang="${c.otherLang}">${esc(c.otherLabel)}</a></li></ul>
-  <p>Ideas Match</p>
+  <p>Babillard</p>
 </footer>
 </body>
 </html>

@@ -6,7 +6,7 @@ Daniel Thorp is the privacy officer. Requests go to privacy@danielthorp.com, and
 
 ## What applies
 
-| Law | Status on November 7, 2026 | Effect on Ideas Match |
+| Law | Status on November 7, 2026 | Effect on Babillard |
 |---|---|---|
 | PIPEDA | In force | The main privacy law for this app |
 | Quebec Law 25, Consumer Protection Act, Charter of the French Language | In force | Applies because the Ottawa region includes Gatineau and Quebec users can join |

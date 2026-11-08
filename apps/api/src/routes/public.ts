@@ -63,7 +63,7 @@ function page(title: string, body: unknown, language: Language = "en") {
       </head>
       <body>
         ${body}
-        <p class="muted">${language === "fr" ? "Ideas Match aide les gens à se trouver grâce à ce dont ils veulent parler, puis à se rencontrer en personne." : "Ideas Match is where people find each other through what they want to talk about, then meet in person."}</p>
+        <p class="muted">${language === "fr" ? "Babillard aide les gens à se trouver grâce à ce dont ils veulent parler, puis à se rencontrer en personne." : "Babillard is where people find each other through what they want to talk about, then meet in person."}</p>
       </body>
     </html>`;
 }
@@ -169,8 +169,8 @@ publicRoutes.get("/invite", (c) => {
   const language = requestLanguage(c);
   return c.html(
     language === "fr"
-      ? page("Rejoindre Ideas Match", html`<h1>Quelqu'un veut parler d'idées avec vous</h1><p>Faites glisser les sujets qui vous intéressent, trouvez des gens près de chez vous et rencontrez-les.</p>${getApp("fr")}`, "fr")
-      : page("Join Ideas Match", html`<h1>Someone wants to talk ideas with you</h1><p>Swipe on the topics you care about, match with people nearby, and meet up.</p>${getApp()}`),
+      ? page("Rejoindre Babillard", html`<h1>Quelqu'un veut parler d'idées avec vous</h1><p>Faites glisser les sujets qui vous intéressent, trouvez des gens près de chez vous et rencontrez-les.</p>${getApp("fr")}`, "fr")
+      : page("Join Babillard", html`<h1>Someone wants to talk ideas with you</h1><p>Swipe on the topics you care about, match with people nearby, and meet up.</p>${getApp()}`),
   );
 });
 
@@ -203,7 +203,7 @@ publicRoutes.get("/m/:file", async (c) => {
   if (!row || row.meetup.state === "cancelled") return c.notFound();
 
   const { meetup, topicTitle } = row;
-  const summary = topicTitle ? `Ideas Match meetup: ${topicTitle}` : "Ideas Match meetup";
+  const summary = topicTitle ? `Babillard meetup: ${topicTitle}` : "Babillard meetup";
   const location = meetup.venueNote || VENUE_LABELS[meetup.venueKind];
   const url = `${c.env.PUBLIC_ORIGIN}/m/${token}`;
 

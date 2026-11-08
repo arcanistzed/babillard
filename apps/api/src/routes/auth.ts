@@ -144,15 +144,15 @@ auth.get("/link", (c) => {
       <head>
         <meta charset="utf-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
-        <title>Ideas Match sign-in</title>
+        <title>Babillard sign-in</title>
         <style>
           body { font: 16px/1.5 system-ui, sans-serif; max-width: 28rem; margin: 4rem auto; padding: 0 1rem; color: #1f2430; }
           a.button { display: inline-block; padding: 0.75rem 1.25rem; background: #1f2430; color: #fff; border-radius: 0.5rem; text-decoration: none; }
         </style>
       </head>
       <body>
-        <h1>Open Ideas Match</h1>
-        <p><a class="button" href="ideasmatch://auth/link?token=${encodeURIComponent(token)}">Open the app</a></p>
+        <h1>Open Babillard</h1>
+        <p><a class="button" href="babillard://auth/link?token=${encodeURIComponent(token)}">Open the app</a></p>
         <p>Reading this on another device? Type the six-digit code from your email into the app instead.</p>
       </body>
     </html>`);

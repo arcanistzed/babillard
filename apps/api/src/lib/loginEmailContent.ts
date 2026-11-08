@@ -19,11 +19,11 @@ export function loginEmailContent(code: string, link: string, language: "en" | "
   const french = language === "fr";
   const expiry = french ? (includeLink ? "Les deux expirent" : "Il expire") : includeLink ? "Both expire" : "It expires";
   const notice = french ? `${expiry} dans 15 minutes. Si vous n'avez rien demandé, ignorez ce courriel.` : `${expiry} in 15 minutes. If you didn't ask for this, you can ignore it.`;
-  const lead = french ? "Votre code Ideas Match est" : "Your Ideas Match code is";
+  const lead = french ? "Votre code Babillard est" : "Your Babillard code is";
   const linkLead = french ? "Ou ouvrez ce lien sur votre téléphone :" : "Or open this link on your phone:";
-  const linkLabel = french ? "Ouvrir Ideas Match" : "Open Ideas Match";
+  const linkLabel = french ? "Ouvrir Babillard" : "Open Babillard";
   return {
-    subject: french ? `${code} est votre code Ideas Match` : `${code} is your Ideas Match code`,
+    subject: french ? `${code} est votre code Babillard` : `${code} is your Babillard code`,
     text: `${lead} ${code}.\n\n${includeLink ? `${linkLead}\n${link}\n\n` : ""}${notice}`,
     html: `<p>${lead} <strong style="font-size:20px">${code}</strong>.</p>${includeLink ? `<p><a href="${link}">${linkLabel}</a></p>` : ""}<p>${notice}</p>`,
   };

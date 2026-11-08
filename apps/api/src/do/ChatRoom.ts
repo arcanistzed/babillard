@@ -193,7 +193,7 @@ export class ChatRoom extends DurableObject<Env> {
         .where(eq(schema.profiles.userId, senderId));
       this.ctx.waitUntil(
         sendPush(this.env, recipients, {
-          title: profile?.name ?? "Ideas Match",
+          title: profile?.name ?? "Babillard",
           // Push services can read this, so it never holds the message itself.
           body: "New message",
           ...(profile?.name ? { fr: { title: profile.name, body: "Nouveau message" } } : {}),

@@ -39,7 +39,7 @@
     // Cloudflare Access guards /admin on this hostname only.
     "ADMIN_ORIGIN": "https://ideas-match-api.ideas-match.workers.dev",
     // Must be an address on a domain verified in SES.
-    "EMAIL_FROM": "Ideas Match <login@danielthorp.com>",
+    "EMAIL_FROM": "Babillard <login@danielthorp.com>",
     "SES_REGION": "ca-central-1",
     "SES_ENDPOINT": "",
     "PUSH_MODE": "expo",
@@ -49,7 +49,7 @@
     "ACCESS_TEAM_DOMAIN": "plain-lab-430e.cloudflareaccess.com",
     "ACCESS_AUD": "1a85a5c256e7112a4102ae7618d91089b6b4ab5f3c266222fec7c38e5d4a8bf7",
     "APPLE_APP_ID": "",
-    "ANDROID_PACKAGE": "app.ideasmatch",
+    "ANDROID_PACKAGE": "com.danielthorp.babillard",
     "ANDROID_CERT_SHA256": "A7:F8:EA:6D:0A:53:65:D4:52:D2:D4:13:B5:E7:29:97:57:98:FD:F4:9E:97:7E:F8:7E:B0:1F:40:68:4E:C6:F3",
     "NUDGE_AFTER_MS": "",
     "MATCH_EXPIRY_MS": "",

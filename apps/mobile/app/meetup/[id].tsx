@@ -34,7 +34,7 @@ export default function MeetupScreen() {
 
   async function addToCalendar() {
     try {
-      await Calendar.createEventInCalendarAsync({ title: t("Ideas Match meetup", "Rencontre Ideas Match"), startDate: new Date(meetup!.startsAt), endDate: new Date(meetup!.endsAt), location: place, url: meetup!.shareUrl });
+      await Calendar.createEventInCalendarAsync({ title: t("Babillard meetup", "Rencontre Babillard"), startDate: new Date(meetup!.startsAt), endDate: new Date(meetup!.endsAt), location: place, url: meetup!.shareUrl });
     } catch {
       // No calendar app that takes this request. The calendar file still works.
       await Linking.openURL(`${meetup!.shareUrl}.ics`).catch(() => setError(t("Couldn't open your calendar.", "Impossible d'ouvrir votre calendrier.")));

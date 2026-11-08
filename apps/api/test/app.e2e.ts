@@ -188,18 +188,18 @@ describe("production settings", () => {
     expect(request?.authorization).toMatch(/^AWS4-HMAC-SHA256 Credential=AKIAE2EFAKEKEY\/\d{8}\/ca-central-1\/ses\/aws4_request, SignedHeaders=\S+, Signature=[0-9a-f]{64}$/);
     expect(request?.amzDate).toMatch(/^\d{8}T\d{6}Z$/);
     expect(JSON.stringify(request)).not.toContain("e2e-fake-secret-value");
-    expect(request?.body.FromEmailAddress).toBe("Ideas Match <login@example.test>");
+    expect(request?.body.FromEmailAddress).toBe("Babillard <login@example.test>");
 
     const text = request!.body.Content.Simple.Body.Text.Data;
     const code = /code is (\d{6})/.exec(text)?.[1];
     const link = /(http\S+\/auth\/link\?token=\S+)/.exec(text)?.[1];
     expect(code).toBeTruthy();
-    expect(request!.body.Content.Simple.Subject.Data).toBe(`${code} is your Ideas Match code`);
+    expect(request!.body.Content.Simple.Subject.Data).toBe(`${code} is your Babillard code`);
     expect(request!.body.Content.Simple.Body.Html.Data).toContain(code);
     expect(link?.startsWith(PROD)).toBe(true);
 
     const landing = await fetch(link!);
-    expect(await landing.text()).toContain("ideasmatch://auth/link?token=");
+    expect(await landing.text()).toContain("babillard://auth/link?token=");
 
     const client = new Client(PROD);
     const session = await client.post("/auth/verify", { email, code });
@@ -217,7 +217,7 @@ describe("production settings", () => {
       "SES failure in the log",
     );
     expect(log).not.toContain("e2e-fake-secret-value");
-    expect(log).not.toMatch(/is your Ideas Match code/);
+    expect(log).not.toMatch(/is your Babillard code/);
   });
 
   it("slows one network requesting codes for many different addresses", async () => {
@@ -243,7 +243,7 @@ describe("production settings", () => {
 describe("sign-in email content", () => {
   it("leaves out workers.dev links, which mail filters treat as phishing", () => {
     const email = loginEmailContent("123456", "https://ideas-match-api.ideas-match.workers.dev/auth/link?token=abc");
-    expect(email.subject).toBe("123456 is your Ideas Match code");
+    expect(email.subject).toBe("123456 is your Babillard code");
     for (const body of [email.text, email.html]) {
       expect(body).toContain("123456");
       expect(body).not.toContain("workers.dev");
@@ -1028,7 +1028,7 @@ describe("moderation", () => {
     await reporter.post("/safety/reports", { targetUserId: target.id, reason: "safety", note: "private note text" });
     const alerts = await waitFor(async () => sesRequests("admin@example.test"), (rows) => rows.length > before, "report alert");
     const alert = alerts[alerts.length - 1]!;
-    expect(alert.body.Content.Simple.Subject.Data).toBe("[Urgent] New Ideas Match report: Feels unsafe");
+    expect(alert.body.Content.Simple.Subject.Data).toBe("[Urgent] New Babillard report: Feels unsafe");
     const content = JSON.stringify(alert.body.Content);
     expect(content).toContain("/admin/reports");
     expect(content).not.toContain("Secret Name");
@@ -1042,7 +1042,7 @@ describe("moderation", () => {
     const target = await person("toronto", { displayName: "Spammy Person" });
     await reporter.post("/safety/reports", { targetUserId: target.id, reason: "spam" });
     const alerts = await waitFor(async () => sesRequests("admin@example.test"), (rows) => rows.length > before, "report alert");
-    expect(alerts[alerts.length - 1]!.body.Content.Simple.Subject.Data).toBe("New Ideas Match report: Spam");
+    expect(alerts[alerts.length - 1]!.body.Content.Simple.Subject.Data).toBe("New Babillard report: Spam");
     await adminPost(`/admin/reports/${await openReportId("Spammy Person")}`, { action: "resolved" });
   });
 
@@ -1062,7 +1062,7 @@ describe("moderation", () => {
     expect(response.status).toBe(302);
     expect(response.headers.get("location")).toBe("/admin/reports");
     const [warning] = sesRequests("warn-me@example.test");
-    expect(warning?.body.Content.Simple.Subject.Data).toBe("A note about your conduct on Ideas Match");
+    expect(warning?.body.Content.Simple.Subject.Data).toBe("A note about your conduct on Babillard");
     expect(await adminPage("/admin/reports")).not.toContain("Warned Person");
     expect(await adminPage(`/admin/users/${target.id}`)).toContain("warned");
   });

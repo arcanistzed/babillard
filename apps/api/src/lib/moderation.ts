@@ -31,7 +31,7 @@ export async function notifyAdminOfReport(env: Env, reason: string): Promise<voi
     if (!env.ADMIN_EMAIL) throw new Error("ADMIN_EMAIL is not set");
     await sendEmail(env, {
       to: env.ADMIN_EMAIL,
-      subject: `${isUrgentReason(reason) ? "[Urgent] " : ""}New Ideas Match report: ${label}`,
+      subject: `${isUrgentReason(reason) ? "[Urgent] " : ""}New Babillard report: ${label}`,
       text: `A new report needs review.\n\nReason: ${label}\n\n${link}`,
       html: `<p>A new report needs review.</p><p>Reason: <strong>${label}</strong></p><p><a href="${link}">Open reports</a></p>`,
     });
@@ -44,9 +44,9 @@ export async function notifyAdminOfReport(env: Env, reason: string): Promise<voi
 export async function sendConductWarning(env: Env, email: string, language: "en" | "fr" = "en"): Promise<void> {
   const french = language === "fr";
   const text = french
-    ? "Quelqu'un a signalé un échange récent avec vous sur Ideas Match. Merci de garder vos conversations respectueuses. Si cela se reproduit, votre compte pourrait être fermé."
-    : "Someone reported a recent interaction with you on Ideas Match. Please keep conversations respectful. If this happens again, your account may be closed.";
-  await sendEmail(env, { to: email, subject: french ? "Un mot sur votre comportement sur Ideas Match" : "A note about your conduct on Ideas Match", text, html: `<p>${text}</p>` });
+    ? "Quelqu'un a signalé un échange récent avec vous sur Babillard. Merci de garder vos conversations respectueuses. Si cela se reproduit, votre compte pourrait être fermé."
+    : "Someone reported a recent interaction with you on Babillard. Please keep conversations respectful. If this happens again, your account may be closed.";
+  await sendEmail(env, { to: email, subject: french ? "Un mot sur votre comportement sur Babillard" : "A note about your conduct on Babillard", text, html: `<p>${text}</p>` });
 }
 
 /** Ends every session and removes push tokens. Their profile and memberships stay, so a ban can be undone. */

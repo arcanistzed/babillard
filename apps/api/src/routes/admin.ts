@@ -46,7 +46,7 @@ function page(title: string, body: unknown) {
       <head>
         <meta charset="utf-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
-        <title>${title} · Ideas Match admin</title>
+        <title>${title} · Babillard admin</title>
         <style>
           body { font: 15px/1.5 system-ui, sans-serif; max-width: 56rem; margin: 2rem auto; padding: 0 1rem; color: #1f2430; }
           nav a { margin-right: 1rem; }

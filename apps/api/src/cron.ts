@@ -175,9 +175,9 @@ async function warnInactiveAccounts(env: Env, db: Db, now: number): Promise<numb
   for (const user of due) {
     const french = user.language === "fr";
     const text = french
-      ? "Vous n'avez pas utilisé Ideas Match depuis presque deux ans. Nous supprimerons donc votre compte et vos renseignements dans 30 jours. Pour garder votre compte, ouvrez l'application et connectez-vous."
-      : "You haven't used Ideas Match in almost two years, so we'll delete your account and your information in 30 days. To keep your account, open the app and sign in.";
-    const subject = french ? "Votre compte Ideas Match sera supprimé dans 30 jours" : "Your Ideas Match account will be deleted in 30 days";
+      ? "Vous n'avez pas utilisé Babillard depuis presque deux ans. Nous supprimerons donc votre compte et vos renseignements dans 30 jours. Pour garder votre compte, ouvrez l'application et connectez-vous."
+      : "You haven't used Babillard in almost two years, so we'll delete your account and your information in 30 days. To keep your account, open the app and sign in.";
+    const subject = french ? "Votre compte Babillard sera supprimé dans 30 jours" : "Your Babillard account will be deleted in 30 days";
     await sendEmail(env, { to: user.email, subject, text, html: `<p>${text}</p>` });
     await db.update(schema.users).set({ inactivityWarnedAt: now }).where(eq(schema.users.id, user.id));
   }
