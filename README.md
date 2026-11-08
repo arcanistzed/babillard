@@ -13,6 +13,7 @@ What we measure is how many meetups actually happened, shown at the top of the `
 | `apps/mobile` | Expo and React Native app with expo-router, Reanimated, and Gesture Handler |
 | `apps/api` | Cloudflare Worker with Hono and Drizzle on D1, two Durable Objects, and R2. It sends email through Amazon SES and push through Expo |
 | `packages/shared` | Matching rules, request schemas, and response types used by both |
+| `apps/site` | The landing page at ideasmatch.danielthorp.com, and the Worker that forwards the rest of that domain to the API |
 
 The rules that decide who sees whom and who gets grouped are plain functions in `packages/shared/src/rules`.
 
@@ -80,7 +81,7 @@ cd apps/api && npx wrangler r2 object put ideas-match-avatars/releases/ideas-mat
 Expo Go runs the app on a real iPhone. Start the server below, then scan its QR code with the iPhone camera:
 
 ```bash
-cd apps/mobile && EXPO_PUBLIC_API_URL=https://ideas-match-api.ideas-match.workers.dev npx expo start --go
+cd apps/mobile && EXPO_PUBLIC_API_URL=https://ideasmatch.danielthorp.com npx expo start --go
 ```
 
 The phone must be on the same network as this computer. Add `--tunnel` if it isn't. Push notifications and sign-in links don't work this way. This project was tested with Expo Go 58.0.7 on iOS.
@@ -202,6 +203,14 @@ pnpm --filter @ideas-match/api db:migrate:remote
 pnpm --filter @ideas-match/api deploy
 ```
 
+The landing page deploys separately, to the Personal account that holds danielthorp.com. Edit the text in `apps/site/src/copy.ts`, not the generated HTML.
+
+```bash
+pnpm --filter @ideas-match/site deploy
+```
+
+The API runs in the Ideas Match account, and danielthorp.com is in the Personal account. A custom domain must be in the same account as its Worker, so `apps/site` owns `ideasmatch.danielthorp.com`. It serves `/`, `/fr/`, and `/site/*`, and forwards everything else to the API's `workers.dev` address, including WebSockets. It sends `/admin` straight to the `workers.dev` address, because Cloudflare Access guards it there. Both Workers share a `PROXY_KEY` secret, so the API can trust the visitor IP that the front Worker passes along for sign-in rate limits. If Ideas Match gets its own domain, add that domain to the Ideas Match account, attach it to the API, set `PUBLIC_ORIGIN`, and retire `apps/site`'s forwarding.
+
 When topics or cities change, run `pnpm --filter @ideas-match/api seed:sql`, then load the result. It's safe to run again, and it moves people out of any city that was merged into another.
 
 ```bash
@@ -246,7 +255,7 @@ cd apps/api && npx wrangler d1 execute ideas-match --remote --file seed/seed.sql
 
 6. **Set up the app builds.** The EAS project ID is in `apps/mobile/app.config.ts`. Android push needs a Firebase project, with `google-services.json` in `apps/mobile` and an FCM V1 key uploaded through `eas credentials`. iOS push needs an Apple Developer account.
 
-7. **Turn on sign-in links.** `ANDROID_CERT_SHA256` is set, so Android verifies App Links. iOS still needs `APPLE_APP_ID` (team ID and bundle ID). Emails only include a link once the API has its own domain, because mail filters treat `workers.dev` links as phishing, so for now people sign in with the six-digit code.
+7. **Sign-in links.** `ANDROID_CERT_SHA256` is set, so Android verifies App Links on the `PUBLIC_ORIGIN` host. iOS still needs `APPLE_APP_ID` (team ID and bundle ID). Emails leave out links on `workers.dev` hosts, because mail filters treat those as phishing. People who use an older build that still points at `workers.dev` sign in with the six-digit code.
 
 ## Decisions worth knowing
 

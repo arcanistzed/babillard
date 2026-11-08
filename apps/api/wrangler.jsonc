@@ -35,7 +35,9 @@
   ],
   "triggers": { "crons": ["*/5 * * * *"] },
   "vars": {
-    "PUBLIC_ORIGIN": "https://ideas-match-api.ideas-match.workers.dev",
+    "PUBLIC_ORIGIN": "https://ideasmatch.danielthorp.com",
+    // Cloudflare Access guards /admin on this hostname only.
+    "ADMIN_ORIGIN": "https://ideas-match-api.ideas-match.workers.dev",
     // Must be an address on a domain verified in SES.
     "EMAIL_FROM": "Ideas Match <login@danielthorp.com>",
     "SES_REGION": "ca-central-1",

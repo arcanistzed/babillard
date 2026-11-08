@@ -21,3 +21,19 @@ export function isDevMode(env: Env): boolean {
 export function avatarUrl(env: Env, key: string | null | undefined): string | null {
   return key ? `${env.PUBLIC_ORIGIN}/avatars/${key}` : null;
 }
+
+/**
+ * The visitor's IP, for rate limits. Requests through the danielthorp.com front
+ * Worker arrive from Cloudflare's own address, so that Worker passes the real one
+ * along with a shared key. Without the key, the header is ignored.
+ */
+export function clientIp(env: Env, header: (name: string) => string | undefined): string {
+  const forwarded = header("x-client-ip");
+  if (forwarded && env.PROXY_KEY && header("x-proxy-key") === env.PROXY_KEY) return forwarded;
+  return header("cf-connecting-ip") ?? "unknown";
+}
+
+/** Admin pages stay on the API's own hostname, where Cloudflare Access guards them. */
+export function adminOrigin(env: Env): string {
+  return env.ADMIN_ORIGIN || env.PUBLIC_ORIGIN;
+}
