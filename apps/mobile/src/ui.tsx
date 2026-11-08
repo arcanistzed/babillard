@@ -32,9 +32,11 @@ interface ButtonProps extends Omit<PressableProps, "style" | "children"> {
   kind?: "primary" | "secondary" | "quiet" | "danger";
   busy?: boolean;
   style?: StyleProp<ViewStyle>;
+  /** For screens with their own fixed colours, where the theme's text colour could vanish against them. */
+  textColor?: string;
 }
 
-export function Button({ label, kind = "primary", busy, disabled, style, onPressIn, onPressOut, ...props }: ButtonProps) {
+export function Button({ label, kind = "primary", busy, disabled, style, textColor, onPressIn, onPressOut, ...props }: ButtonProps) {
   const theme = useTheme();
   const scale = useSharedValue(1);
   const pressStyle = useAnimatedStyle(() => ({ transform: [{ scale: scale.value }] }));
@@ -61,7 +63,7 @@ export function Button({ label, kind = "primary", busy, disabled, style, onPress
       {...props}
       style={[styles.button, { backgroundColor: colors.bg, borderColor: colors.border, opacity: inactive ? 0.5 : 1 }, pressStyle, style]}
     >
-      {busy ? <ActivityIndicator color={colors.fg} /> : <Text style={[VARIANTS.bodyBold, { color: colors.fg }]}>{label}</Text>}
+      {busy ? <ActivityIndicator color={textColor ?? colors.fg} /> : <Text style={[VARIANTS.bodyBold, { color: textColor ?? colors.fg }]}>{label}</Text>}
     </AnimatedPressable>
   );
 }

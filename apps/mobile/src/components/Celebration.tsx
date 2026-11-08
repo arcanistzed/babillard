@@ -49,8 +49,8 @@ export function Celebration({ title, body, action, onAction, onDismiss, dismissL
           </Animated.Text>
         </View>
         <Animated.View entering={FadeInDown.delay(260).duration(260)} style={styles.actions}>
-          <Button label={action} onPress={onAction} style={styles.primary} />
-          <Button label={dismissLabel} kind="secondary" onPress={onDismiss} style={styles.secondary} />
+          <Button label={action} onPress={onAction} style={styles.primary} textColor={PINK} />
+          <Button label={dismissLabel} kind="secondary" onPress={onDismiss} style={styles.secondary} textColor={INK} />
         </Animated.View>
       </SafeAreaView>
     </Modal>

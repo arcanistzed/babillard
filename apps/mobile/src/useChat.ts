@@ -1,6 +1,7 @@
 import type { ChatMessage, ConversationDetail, ServerSocketEvent } from "@babillard/shared";
 import { useQueryClient } from "@tanstack/react-query";
 import { useCallback, useEffect, useRef, useState } from "react";
+import { AppState } from "react-native";
 import { api, ApiError, openConversationSocket } from "./api";
 import { ensureDeviceKey, readingKeys, readMessage, sealFor, type ReadableMessage } from "./e2ee";
 
@@ -83,6 +84,9 @@ export function useChat(conversationId: string, myId: string | undefined, onRemo
 
   useEffect(() => {
     let closed = false;
+    // The server pushes only to people without an open socket, so a socket left open
+    // in the background would swallow notifications. Close it there and reopen on return.
+    let paused = AppState.currentState === "background";
     let attempt = 0;
     let retry: ReturnType<typeof setTimeout> | undefined;
 
@@ -123,7 +127,7 @@ export function useChat(conversationId: string, myId: string | undefined, onRemo
       };
       ws.onclose = (event) => {
         setConnected(false);
-        if (closed) return;
+        if (closed || paused) return;
         if (event.code === REMOVED_CLOSE_CODE) {
           onRemoved();
           return;
@@ -142,11 +146,24 @@ export function useChat(conversationId: string, myId: string | undefined, onRemo
         onRemoved();
       }
     });
-    connect();
+    if (!paused) connect();
+    const appState = AppState.addEventListener("change", (state) => {
+      if (closed) return;
+      if (state === "background" && !paused) {
+        paused = true;
+        if (retry) clearTimeout(retry);
+        socket.current?.close();
+      } else if (state === "active" && paused) {
+        paused = false;
+        attempt = 0;
+        connect();
+      }
+    });
 
     const pendingTimers = timers.current;
     return () => {
       closed = true;
+      appState.remove();
       if (retry) clearTimeout(retry);
       socket.current?.close();
       for (const timer of pendingTimers.values()) clearTimeout(timer);
