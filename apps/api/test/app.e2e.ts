@@ -255,6 +255,7 @@ describe("sign-in email content", () => {
   it("only allows links on the API's own domain", () => {
     expect(canLinkInEmail("https://ideas-match-api.ideas-match.workers.dev/admin/reports")).toBe(false);
     expect(canLinkInEmail("https://api.example.org/admin/reports")).toBe(true);
+    expect(canLinkInEmail("https://ideas-match-api.ideas-match.workers.dev/auth/link", true)).toBe(true);
   });
 
   it("includes the link on the API's own domain", () => {

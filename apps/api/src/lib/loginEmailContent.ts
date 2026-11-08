@@ -4,17 +4,18 @@ export interface LoginEmail {
   html: string;
 }
 
-export function canLinkInEmail(url: string): boolean {
-  return !new URL(url).hostname.endsWith(".workers.dev");
+/**
+ * Mail filters can treat workers.dev links as a phishing signal, and Microsoft 365
+ * once sent our sign-in email to junk with one in it. EMAIL_LINKS_ON_WORKERS_DEV
+ * turns the link back on there, to test whether that still happens. The code
+ * alone is always enough to sign in.
+ */
+export function canLinkInEmail(url: string, allowWorkersDev = false): boolean {
+  return allowWorkersDev || !new URL(url).hostname.endsWith(".workers.dev");
 }
 
-/**
- * Mail filters treat workers.dev links as a phishing signal, and Microsoft 365
- * sent our sign-in email to junk with one in it. The link only goes in once the
- * API is on its own domain. The code alone is enough to sign in.
- */
-export function loginEmailContent(code: string, link: string, language: "en" | "fr" = "en"): LoginEmail {
-  const includeLink = canLinkInEmail(link);
+export function loginEmailContent(code: string, link: string, language: "en" | "fr" = "en", allowWorkersDev = false): LoginEmail {
+  const includeLink = canLinkInEmail(link, allowWorkersDev);
   const french = language === "fr";
   const expiry = french ? (includeLink ? "Les deux expirent" : "Il expire") : includeLink ? "Both expire" : "It expires";
   const notice = french ? `${expiry} dans 15 minutes. Si vous n'avez rien demandé, ignorez ce courriel.` : `${expiry} in 15 minutes. If you didn't ask for this, you can ignore it.`;

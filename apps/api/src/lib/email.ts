@@ -52,5 +52,5 @@ export async function sendEmail(env: Env, message: EmailMessage): Promise<void> 
 }
 
 export function sendLoginEmail(env: Env, to: string, code: string, link: string, language: "en" | "fr" = "en"): Promise<void> {
-  return sendEmail(env, { to, ...loginEmailContent(code, link, language) });
+  return sendEmail(env, { to, ...loginEmailContent(code, link, language, env.EMAIL_LINKS_ON_WORKERS_DEV === "true") });
 }
