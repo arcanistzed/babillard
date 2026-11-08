@@ -128,6 +128,7 @@ The `/admin` pages live behind Cloudflare Access.
 - **Overview** shows meetups that happened and the current queues.
 - **Reports** is the queue. Safety and underage reports go first and also email `ADMIN_EMAIL` right away. A report shows only the messages the reporter's phone shared. The server deletes closed reports and moderation history after two years.
 - **Topics** lets a moderator fix the wording, kind, fields, and conversation openers of a suggestion before approving it.
+- **Takeaways** holds the one-line takeaways people write after a meetup. An approved line appears on the topic's public page without a name.
 - **People** finds an account by name or email, with its report history, its photo and a button to remove it, and a ban button.
 - **History** records every action and who took it, using the email Access verified.
 - **Crashes** groups reports from the app by error message for 30 days. Stack traces from release builds are minified, so they show roughly where a crash happened, not the original line.
@@ -135,6 +136,10 @@ The `/admin` pages live behind Cloudflare Access.
 ## How people lean
 
 Question cards show how the city leans, as percentages, once someone picks a stance. The totals stay hidden below 10 answers and when everyone agrees, because then they would reveal each person's answer. Topic cards also show how many meetups were confirmed as held, from 5 up. Stance never decides who meets whom.
+
+## After a meetup
+
+Once someone says a meetup happened, the app asks three private questions: did anyone change their mind, did the group mostly agree, split, or mostly disagree, and would they meet again on this topic. Each topic's card and public page show the answers as percentages once 5 people have answered. Anyone who later says the meetup didn't happen drops out of the totals. People can also write one optional line about what they took away. That line isn't end-to-end encrypted. It waits in the Takeaways queue, and only approved lines appear on the topic page.
 
 ## Languages
 

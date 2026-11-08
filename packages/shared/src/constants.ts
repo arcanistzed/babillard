@@ -128,6 +128,16 @@ export const LEAN_MIN_ANSWERS = 10;
 /** A count of one or two meetups reads as discouraging, so the number only shows once it says something. */
 export const MEETUPS_HELD_MIN_SHOWN = 5;
 
+/** Answers from fewer people than this could point to one meetup's group, so the topic's totals stay hidden. */
+export const OUTCOME_MIN_ANSWERS = 5;
+export const TAKEAWAY_MAX_LENGTH = 200;
+export const MIND_CHANGED = ["mine", "other", "no"] as const;
+export type MindChanged = (typeof MIND_CHANGED)[number];
+export const ENDED_UP = ["agreed", "split", "disagreed"] as const;
+export type EndedUp = (typeof ENDED_UP)[number];
+export const MEET_AGAIN = ["yes", "maybe", "no"] as const;
+export type MeetAgain = (typeof MEET_AGAIN)[number];
+
 export const STANCES = ["for", "against", "unsure"] as const;
 export type Stance = (typeof STANCES)[number];
 

@@ -31,6 +31,7 @@ import {
   FIELD_GROUPS,
   FIELDS,
   leanSummary,
+  outcomeSummary,
   meetupDays,
   meetupSlotAt,
   meetupTimes,
@@ -551,6 +552,18 @@ describe("how a city leans", () => {
   it("gives whole percentages, never counts", () => {
     expect(leanSummary({ for: 6, against: 3, unsure: 1 })).toEqual({ for: 60, against: 30, unsure: 10 });
     expect(leanSummary({ for: 2, against: 9 })).toEqual({ for: 18, against: 82, unsure: 0 });
+  });
+});
+
+describe("meetup outcomes", () => {
+  it("stay hidden until enough people have answered", () => {
+    expect(outcomeSummary({ mindChanged: { no: 4 }, endedUp: { split: 4 }, meetAgain: { yes: 4 } })).toBeNull();
+  });
+
+  it("count both kinds of changed mind together, as percentages of answers", () => {
+    expect(
+      outcomeSummary({ mindChanged: { mine: 1, other: 2, no: 5 }, endedUp: { agreed: 2, split: 4, disagreed: 2 }, meetAgain: { yes: 6, maybe: 1, no: 1 } }),
+    ).toEqual({ answers: 8, mindChanged: 38, agreed: 25, split: 50, disagreed: 25, meetAgain: 75 });
   });
 });
 

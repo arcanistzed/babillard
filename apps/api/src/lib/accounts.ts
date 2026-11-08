@@ -26,6 +26,7 @@ export async function deleteAccount(env: Env, id: string): Promise<void> {
     db.delete(schema.peopleSwipes).where(or(eq(schema.peopleSwipes.fromUser, id), eq(schema.peopleSwipes.toUser, id))),
     db.delete(schema.blocks).where(or(eq(schema.blocks.blockerId, id), eq(schema.blocks.blockedId, id))),
     db.delete(schema.meetupResponses).where(eq(schema.meetupResponses.userId, id)),
+    db.delete(schema.meetupOutcomes).where(eq(schema.meetupOutcomes.userId, id)),
     db.delete(schema.pushTokens).where(eq(schema.pushTokens.userId, id)),
     db.delete(schema.deviceKeys).where(eq(schema.deviceKeys.userId, id)),
     db.delete(schema.sessions).where(eq(schema.sessions.userId, id)),

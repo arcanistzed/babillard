@@ -1,4 +1,5 @@
-import { LEAN_MIN_ANSWERS, type Stance } from "../constants";
+import { LEAN_MIN_ANSWERS, OUTCOME_MIN_ANSWERS, type EndedUp, type MeetAgain, type MindChanged, type Stance } from "../constants";
+import type { TopicOutcomes } from "../api";
 
 export function orderedPair(userA: string, userB: string): [string, string] {
   return userA < userB ? [userA, userB] : [userB, userA];
@@ -53,4 +54,26 @@ export function leanSummary(counts: Partial<Record<Stance, number>>): Lean | nul
   const total = yes + no + unsure;
   if (total < LEAN_MIN_ANSWERS || Math.max(yes, no, unsure) === total) return null;
   return { for: Math.round((yes / total) * 100), against: Math.round((no / total) * 100), unsure: Math.round((unsure / total) * 100) };
+}
+
+export interface OutcomeCounts {
+  mindChanged: Partial<Record<MindChanged, number>>;
+  endedUp: Partial<Record<EndedUp, number>>;
+  meetAgain: Partial<Record<MeetAgain, number>>;
+}
+
+/** Turns one topic's answers into percentages, or null when too few people answered to stay anonymous. */
+export function outcomeSummary(counts: OutcomeCounts): TopicOutcomes | null {
+  const sum = (values: Partial<Record<string, number>>) => Object.values(values).reduce<number>((total, value) => total + (value ?? 0), 0);
+  const answers = sum(counts.mindChanged);
+  if (answers < OUTCOME_MIN_ANSWERS) return null;
+  const share = (value: number | undefined) => Math.round(((value ?? 0) / answers) * 100);
+  return {
+    answers,
+    mindChanged: share((counts.mindChanged.mine ?? 0) + (counts.mindChanged.other ?? 0)),
+    agreed: share(counts.endedUp.agreed),
+    split: share(counts.endedUp.split),
+    disagreed: share(counts.endedUp.disagreed),
+    meetAgain: share(counts.meetAgain.yes),
+  };
 }

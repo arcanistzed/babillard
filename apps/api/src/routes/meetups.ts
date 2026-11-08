@@ -1,5 +1,5 @@
-import { didMeetSchema, isMeetupConfirmed, meetupProposalSchema, meetupResponseSchema, requiredYesCount, type ConversationKind, type MeetupSummary } from "@ideas-match/shared";
-import { venueNames } from "../lib/language";
+import { didMeetSchema, isMeetupConfirmed, meetupOutcomeSchema, meetupProposalSchema, meetupResponseSchema, requiredYesCount, type ConversationKind, type MeetupSummary } from "@ideas-match/shared";
+import { requestLanguage, venueNames } from "../lib/language";
 import { and, desc, eq, inArray, sql } from "drizzle-orm";
 import { Hono } from "hono";
 import { getDb, schema, type Db } from "../db";
@@ -40,16 +40,21 @@ export async function meetupSummaries(env: Env, db: Db, conversationId: string, 
     .limit(10);
   if (rows.length === 0) return [];
 
-  const [responses, count] = await Promise.all([
-    db.select().from(schema.meetupResponses).where(inArray(schema.meetupResponses.meetupId, rows.map((row) => row.id))),
+  const ids = rows.map((row) => row.id);
+  const [responses, count, outcomes] = await Promise.all([
+    db.select().from(schema.meetupResponses).where(inArray(schema.meetupResponses.meetupId, ids)),
     memberCount(db, conversationId),
+    db.select().from(schema.meetupOutcomes).where(and(inArray(schema.meetupOutcomes.meetupId, ids), eq(schema.meetupOutcomes.userId, userId))),
   ]);
-  return rows.map((row) => toSummary(env, row, responses, kind, count, userId));
+  return rows.map((row) => toSummary(env, row, responses, outcomes, kind, count, userId));
 }
 
-function toSummary(env: Env, row: MeetupRow, responses: (typeof schema.meetupResponses.$inferSelect)[], kind: ConversationKind, count: number, userId: string): MeetupSummary {
+type OutcomeRow = typeof schema.meetupOutcomes.$inferSelect;
+
+function toSummary(env: Env, row: MeetupRow, responses: (typeof schema.meetupResponses.$inferSelect)[], outcomes: OutcomeRow[], kind: ConversationKind, count: number, userId: string): MeetupSummary {
   const own = responses.filter((response) => response.meetupId === row.id);
   const mine = own.find((response) => response.userId === userId);
+  const outcome = outcomes.find((entry) => entry.meetupId === row.id);
   return {
     id: row.id,
     conversationId: row.conversationId,
@@ -63,6 +68,7 @@ function toSummary(env: Env, row: MeetupRow, responses: (typeof schema.meetupRes
     requiredYes: requiredYesCount(kind, count),
     myResponse: mine?.response ?? null,
     myDidMeet: mine?.didMeet ?? null,
+    myOutcome: outcome ? { mindChanged: outcome.mindChanged, endedUp: outcome.endedUp, meetAgain: outcome.meetAgain, takeaway: outcome.takeaway ?? "" } : null,
     shareUrl: `${env.PUBLIC_ORIGIN}/m/${row.shareToken}`,
     checkinOpen: row.checkinSentAt !== null,
   };
@@ -200,6 +206,36 @@ meetups.post("/:id/did-meet", async (c) => {
     .returning({ id: schema.meetupResponses.userId });
   if (updated.length === 0) throw fail(403, "no_response_recorded");
   console.log(JSON.stringify({ event: "did_meet", meetupId: meetup.id, didMeet }));
+  return c.json(await summaryFor(c.env, db, meetup, conversation.kind, user.id));
+});
+
+/** The questions after "Yes, we met". Only people who said they met can answer, and they can change their answers later. */
+meetups.post("/:id/outcome", async (c) => {
+  const user = c.get("user");
+  const input = await parseJson(c, meetupOutcomeSchema);
+  const db = getDb(c.env);
+  const { meetup, conversation } = await loadMeetup(db, c.req.param("id"), user.id);
+  const [response] = await db
+    .select({ didMeet: schema.meetupResponses.didMeet })
+    .from(schema.meetupResponses)
+    .where(and(eq(schema.meetupResponses.meetupId, meetup.id), eq(schema.meetupResponses.userId, user.id)));
+  if (response?.didMeet !== true) throw fail(409, "did_not_meet");
+
+  const [previous] = await db
+    .select({ takeaway: schema.meetupOutcomes.takeaway, takeawayStatus: schema.meetupOutcomes.takeawayStatus, reviewedAt: schema.meetupOutcomes.reviewedAt })
+    .from(schema.meetupOutcomes)
+    .where(and(eq(schema.meetupOutcomes.meetupId, meetup.id), eq(schema.meetupOutcomes.userId, user.id)));
+  const takeaway = input.takeaway || null;
+  // An edited line goes back to moderators. An unchanged one keeps its decision.
+  const unchanged = previous && previous.takeaway === takeaway;
+  const review = unchanged
+    ? { takeawayStatus: previous.takeawayStatus, reviewedAt: previous.reviewedAt }
+    : { takeawayStatus: takeaway ? ("pending" as const) : null, reviewedAt: null };
+  const answers = { mindChanged: input.mindChanged, endedUp: input.endedUp, meetAgain: input.meetAgain, takeaway, language: requestLanguage(c), ...review };
+  await db
+    .insert(schema.meetupOutcomes)
+    .values({ meetupId: meetup.id, userId: user.id, createdAt: Date.now(), ...answers })
+    .onConflictDoUpdate({ target: [schema.meetupOutcomes.meetupId, schema.meetupOutcomes.userId], set: answers });
   return c.json(await summaryFor(c.env, db, meetup, conversation.kind, user.id));
 });
 

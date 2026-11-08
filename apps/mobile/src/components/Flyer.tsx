@@ -55,6 +55,12 @@ export function Flyer({ topic, stance, onStance, isTop = true, pull }: { topic: 
   const isQuestion = topic.kind === "question";
   const held = topic.meetupsHeld ? t(`${topic.meetupsHeld} meetups held`, `${topic.meetupsHeld} rencontres tenues`) : null;
   const nearby = topic.pending ? t("In review", "En cours d'examen") : [nearbyLine(topic.nearbyCount), held].filter(Boolean).join(" · ") || null;
+  const outcomes = topic.outcomes
+    ? t(
+        `After meetups: ${topic.outcomes.mindChanged}% saw a mind change, ${topic.outcomes.meetAgain}% would meet again`,
+        `Après les rencontres: ${topic.outcomes.mindChanged} % ont vu un avis changer, ${topic.outcomes.meetAgain} % se reverraient`,
+      )
+    : null;
   const titleSize = topic.title.length > 48 ? 32 : topic.title.length > 26 ? 38 : 46;
 
   return (
@@ -96,6 +102,7 @@ export function Flyer({ topic, stance, onStance, isTop = true, pull }: { topic: 
           </View>
         ) : null}
 
+        {outcomes ? <Text style={[styles.nearby, { color: fg }]}>{outcomes}</Text> : null}
         {nearby ? <Text style={[styles.nearby, { color: fg }]}>{nearby}</Text> : null}
       </View>
       {/* The card underneath keeps its tabs hidden, or they'd show through the top card's torn ones. */}

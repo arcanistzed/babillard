@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { FIELDS, LOOKING_FOR, REPORT_REASONS, ROLES, STANCES, VENUE_KINDS } from "./constants";
+import { ENDED_UP, FIELDS, LOOKING_FOR, MEET_AGAIN, MIND_CHANGED, REPORT_REASONS, ROLES, STANCES, TAKEAWAY_MAX_LENGTH, VENUE_KINDS } from "./constants";
 
 export const emailSchema = z.string().trim().toLowerCase().email().max(254);
 
@@ -74,6 +74,13 @@ export const meetupProposalSchema = z
 
 export const meetupResponseSchema = z.object({ response: z.enum(["yes", "no", "maybe"]) });
 export const didMeetSchema = z.object({ didMeet: z.boolean() });
+
+export const meetupOutcomeSchema = z.object({
+  mindChanged: z.enum(MIND_CHANGED),
+  endedUp: z.enum(ENDED_UP),
+  meetAgain: z.enum(MEET_AGAIN),
+  takeaway: z.string().trim().max(TAKEAWAY_MAX_LENGTH).default(""),
+});
 
 export const reportSchema = z.object({
   targetUserId: z.string().min(1),

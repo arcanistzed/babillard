@@ -1505,6 +1505,79 @@ describe("crash reports and public pages", () => {
     expect((await cardForNewPerson()).meetupsHeld).toBe(5);
   }, 120_000);
 
+  it("collects meetup outcomes from people who met, shows totals from five answers, and publishes only approved takeaways", async () => {
+    const topic = "democratic-backsliding";
+    const cardForNewPerson = async () => {
+      const viewer = await person("boston");
+      for (let page = 0; page < 15; page += 1) {
+        const cards = await viewer.get("/deck/topics");
+        const card = cards.find((row: any) => row.id === topic);
+        if (card) return card;
+        for (const row of cards) await viewer.post(`/deck/topics/${row.id}/swipe`, { direction: "left" });
+      }
+      throw new Error("topic never came up");
+    };
+    const meetups: { a: Client; b: Client; id: string }[] = [];
+    for (let i = 0; i < 3; i += 1) {
+      const [a, b] = [await person("new-york"), await person("new-york")];
+      const chat = await match(a, b, topic);
+      const soon = Date.now();
+      const meetup = await a.post(`/meetups?conversationId=${chat}`, { startsAt: soon + 500, endsAt: soon + 1000, venueKind: "cafe", venueNote: "" });
+      await b.post(`/meetups/${meetup.id}/respond`, { response: "yes" });
+      meetups.push({ a, b, id: meetup.id });
+    }
+    await sleep(2000);
+    await sweep();
+
+    const [first, second, third] = meetups as [(typeof meetups)[0], (typeof meetups)[0], (typeof meetups)[0]];
+    const answer = (mindChanged: string, endedUp: string, meetAgain: string, takeaway = "") => ({ mindChanged, endedUp, meetAgain, takeaway });
+    // Nobody can answer before saying the meetup happened, or after saying it didn't.
+    expect(await status(first.a.post(`/meetups/${first.id}/outcome`, answer("mine", "agreed", "yes")))).toBe(409);
+    await first.a.post(`/meetups/${first.id}/did-meet`, { didMeet: false });
+    expect(await status(first.a.post(`/meetups/${first.id}/outcome`, answer("mine", "agreed", "yes")))).toBe(409);
+
+    const takeaway = "<b>Term limits</b> mattered less than we thought";
+    const answers: [Client, string, ReturnType<typeof answer>][] = [
+      [first.a, first.id, answer("mine", "agreed", "yes", takeaway)],
+      [first.b, first.id, answer("other", "split", "yes")],
+      [second.a, second.id, answer("no", "split", "maybe")],
+      [second.b, second.id, answer("no", "disagreed", "yes")],
+    ];
+    for (const [client, id, body] of answers) {
+      await client.post(`/meetups/${id}/did-meet`, { didMeet: true });
+      await client.post(`/meetups/${id}/outcome`, body);
+    }
+    expect((await first.a.get(`/meetups/${first.id}`)).myOutcome).toEqual({ mindChanged: "mine", endedUp: "agreed", meetAgain: "yes", takeaway });
+    expect((await cardForNewPerson()).outcomes).toBeNull();
+
+    await third.a.post(`/meetups/${third.id}/did-meet`, { didMeet: true });
+    await third.a.post(`/meetups/${third.id}/outcome`, answer("no", "split", "no"));
+    expect((await cardForNewPerson()).outcomes).toEqual({ answers: 5, mindChanged: 40, agreed: 20, split: 60, disagreed: 20, meetAgain: 60 });
+
+    // The takeaway waits for a moderator, and the public page shows it escaped and without a name.
+    const topicPage = async () => (await fetch(`${BASE}/t/${topic}`)).text();
+    expect(await topicPage()).not.toContain("Term limits");
+    expect(await topicPage()).toContain("40% saw someone change their mind");
+    const queue = await adminPage("/admin/takeaways");
+    expect(queue).toContain("&lt;b&gt;Term limits&lt;/b&gt;");
+    expect((await adminPost(`/admin/takeaways/${first.id}/${first.a.id}`, { action: "approved" })).status).toBe(302);
+    const published = await topicPage();
+    expect(published).toContain("&lt;b&gt;Term limits&lt;/b&gt; mattered less than we thought");
+    expect(published).not.toContain("<b>Term limits");
+    expect(await adminPage("/admin/history")).toContain("takeaway");
+
+    // Changing answers keeps an approved line, but an edited line goes back to the queue.
+    await first.a.post(`/meetups/${first.id}/outcome`, answer("mine", "split", "yes", takeaway));
+    expect(await topicPage()).toContain("Term limits");
+    await first.a.post(`/meetups/${first.id}/outcome`, answer("mine", "split", "yes", "Edited line"));
+    expect(await topicPage()).not.toContain("Term limits");
+    expect(await adminPage("/admin/takeaways")).toContain("Edited line");
+
+    // Someone who later says it didn't happen no longer counts.
+    await third.a.post(`/meetups/${third.id}/did-meet`, { didMeet: false });
+    expect((await cardForNewPerson()).outcomes).toBeNull();
+  }, 120_000);
+
   it("filters the deck by field group", async () => {
     const viewer = await person("toronto");
     const arts = await viewer.get("/deck/topics?group=arts");

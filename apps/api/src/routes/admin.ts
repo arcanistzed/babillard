@@ -73,7 +73,7 @@ function page(title: string, body: unknown) {
         </style>
       </head>
       <body>
-        <nav><a href="/admin">Overview</a><a href="/admin/reports">Reports</a><a href="/admin/topics">Topics</a><a href="/admin/users">People</a><a href="/admin/history">History</a><a href="/admin/crashes">Crashes</a></nav>
+        <nav><a href="/admin">Overview</a><a href="/admin/reports">Reports</a><a href="/admin/topics">Topics</a><a href="/admin/takeaways">Takeaways</a><a href="/admin/users">People</a><a href="/admin/history">History</a><a href="/admin/crashes">Crashes</a></nav>
         <h1>${title}</h1>
         ${body}
       </body>
@@ -457,6 +457,56 @@ admin.post("/topics/:id", async (c) => {
     if (swiper.cityId) await joinCohort(c.env, { userId: swiper.userId, cityId: swiper.cityId, topic: topic!, stance: swiper.stance });
   }
   return c.redirect("/admin/topics");
+});
+
+admin.get("/takeaways", async (c) => {
+  const rows = await getDb(c.env)
+    .select({
+      meetupId: schema.meetupOutcomes.meetupId,
+      userId: schema.meetupOutcomes.userId,
+      takeaway: schema.meetupOutcomes.takeaway,
+      language: schema.meetupOutcomes.language,
+      createdAt: schema.meetupOutcomes.createdAt,
+      topicTitle: schema.topics.title,
+    })
+    .from(schema.meetupOutcomes)
+    .innerJoin(schema.meetups, eq(schema.meetups.id, schema.meetupOutcomes.meetupId))
+    .innerJoin(schema.conversations, eq(schema.conversations.id, schema.meetups.conversationId))
+    .leftJoin(schema.topics, eq(schema.topics.id, schema.conversations.topicId))
+    .where(eq(schema.meetupOutcomes.takeawayStatus, "pending"))
+    .orderBy(schema.meetupOutcomes.createdAt)
+    .limit(100);
+  const items = rows.map(
+    (row) => html`<article>
+      <p class="muted">${row.topicTitle ?? "No topic"} · ${row.language === "fr" ? "French" : "English"} · ${new Date(row.createdAt).toISOString().slice(0, 16).replace("T", " ")} UTC · <a href="/admin/users/${row.userId}">writer</a></p>
+      <blockquote>${row.takeaway}</blockquote>
+      <form method="post" action="/admin/takeaways/${row.meetupId}/${row.userId}">
+        <button name="action" value="approved">Show on the topic page</button>
+        <button name="action" value="rejected">Reject</button>
+      </form>
+    </article>`,
+  );
+  return c.html(
+    page(
+      "Takeaways awaiting review",
+      html`<p class="muted">Approved lines appear on the public topic page without a name. Reject anything that identifies someone, or that isn't about the discussion.</p>
+        ${items.length ? items : html`<p>Nothing to review.</p>`}`,
+    ),
+  );
+});
+
+admin.post("/takeaways/:meetupId/:userId", async (c) => {
+  const db = getDb(c.env);
+  const { meetupId, userId } = c.req.param();
+  const action = (await c.req.parseBody()).action;
+  if (action !== "approved" && action !== "rejected") throw fail(400, "invalid_action");
+  const [row] = await db
+    .update(schema.meetupOutcomes)
+    .set({ takeawayStatus: action, reviewedAt: Date.now() })
+    .where(and(eq(schema.meetupOutcomes.meetupId, meetupId), eq(schema.meetupOutcomes.userId, userId), eq(schema.meetupOutcomes.takeawayStatus, "pending")))
+    .returning({ takeaway: schema.meetupOutcomes.takeaway });
+  if (row) await logModeration(db, c.get("adminEmail"), action, "takeaway", `${meetupId}:${userId}`, row.takeaway ?? "");
+  return c.redirect("/admin/takeaways");
 });
 
 admin.get("/history", async (c) => {

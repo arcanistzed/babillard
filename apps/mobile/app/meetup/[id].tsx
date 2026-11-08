@@ -6,6 +6,7 @@ import { ActivityIndicator, Linking, ScrollView, Share, StyleSheet, View } from 
 import { api, friendlyError } from "@/api";
 import { useAuth } from "@/auth";
 import { RsvpChips, stateLine, useMeetup } from "@/components/MeetupCard";
+import { OutcomeForm } from "@/components/OutcomeForm";
 import { describeWhen } from "@/format";
 import { useTheme } from "@/theme";
 import { Button, ErrorText, T } from "@/ui";
@@ -62,6 +63,7 @@ export default function MeetupScreen() {
           ) : (
             <T muted>{meetup.myDidMeet ? t("Glad you met.", "Tant mieux!") : t("Thanks for letting us know.", "Merci de nous l'avoir dit.")}</T>
           )}
+          {meetup.myDidMeet ? <OutcomeForm key={meetup.myOutcome ? "answered" : "new"} meetup={meetup} /> : null}
         </View>
       ) : null}
 

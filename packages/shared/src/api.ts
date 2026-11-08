@@ -1,6 +1,6 @@
 import type { Envelope } from "./e2ee";
 import type { Lean } from "./rules/match";
-import type { Field, LookingFor, Role, Stance, VenueKind } from "./constants";
+import type { EndedUp, Field, LookingFor, MeetAgain, MindChanged, Role, Stance, VenueKind } from "./constants";
 
 /** Response shapes shared by the Worker and the app. */
 
@@ -52,6 +52,26 @@ export interface TopicCard {
   lean: Lean | null;
   /** Meetups on this topic that someone confirmed really happened. Null until there are enough to be worth showing. */
   meetupsHeld: number | null;
+  /** What people reported after meetups on this topic. Null until enough of them have answered. */
+  outcomes: TopicOutcomes | null;
+}
+
+/** Percentages of answers, so no single meetup can be picked out. */
+export interface TopicOutcomes {
+  answers: number;
+  /** Said their own or someone else's mind changed. */
+  mindChanged: number;
+  agreed: number;
+  split: number;
+  disagreed: number;
+  meetAgain: number;
+}
+
+export interface MyOutcome {
+  mindChanged: MindChanged;
+  endedUp: EndedUp;
+  meetAgain: MeetAgain;
+  takeaway: string;
 }
 
 export interface TopicSwipeResult {
@@ -115,6 +135,8 @@ export interface MeetupSummary {
   requiredYes: number;
   myResponse: "yes" | "no" | "maybe" | null;
   myDidMeet: boolean | null;
+  /** Null until this person answers the questions that follow "Yes, we met". */
+  myOutcome: MyOutcome | null;
   shareUrl: string;
   checkinOpen: boolean;
 }

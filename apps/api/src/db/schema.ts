@@ -1,6 +1,6 @@
 import type { Envelope, ReportEvidence } from "@ideas-match/shared";
 import { index, integer, primaryKey, real, sqliteTable, text, uniqueIndex } from "drizzle-orm/sqlite-core";
-import type { Field, LookingFor, Role, Stance, VenueKind } from "@ideas-match/shared";
+import type { EndedUp, Field, LookingFor, MeetAgain, MindChanged, Role, Stance, VenueKind } from "@ideas-match/shared";
 
 export const users = sqliteTable(
   "users",
@@ -171,6 +171,27 @@ export const meetupResponses = sqliteTable(
   (t) => [primaryKey({ columns: [t.meetupId, t.userId] })],
 );
 
+/**
+ * What each attendee reported after a meetup they confirmed. Answers feed per-topic percentages.
+ * The optional takeaway line is plain text, not end-to-end encrypted: a moderator reads it, and an approved one appears on the topic page without a name.
+ */
+export const meetupOutcomes = sqliteTable(
+  "meetup_outcomes",
+  {
+    meetupId: text("meetup_id").notNull(),
+    userId: text("user_id").notNull(),
+    mindChanged: text("mind_changed").$type<MindChanged>().notNull(),
+    endedUp: text("ended_up").$type<EndedUp>().notNull(),
+    meetAgain: text("meet_again").$type<MeetAgain>().notNull(),
+    takeaway: text("takeaway"),
+    takeawayStatus: text("takeaway_status", { enum: ["pending", "approved", "rejected"] }),
+    language: text("language", { enum: ["en", "fr"] }).notNull().default("en"),
+    createdAt: integer("created_at").notNull(),
+    reviewedAt: integer("reviewed_at"),
+  },
+  (t) => [primaryKey({ columns: [t.meetupId, t.userId] }), index("meetup_outcomes_takeaway_idx").on(t.takeawayStatus, t.createdAt)],
+);
+
 export const reports = sqliteTable(
   "reports",
   {
@@ -243,7 +264,7 @@ export const moderationLog = sqliteTable(
     id: text("id").primaryKey(),
     actor: text("actor").notNull(),
     action: text("action").notNull(),
-    targetType: text("target_type", { enum: ["report", "user", "topic"] }).notNull(),
+    targetType: text("target_type", { enum: ["report", "user", "topic", "takeaway"] }).notNull(),
     targetId: text("target_id").notNull(),
     detail: text("detail").notNull().default(""),
     createdAt: integer("created_at").notNull(),

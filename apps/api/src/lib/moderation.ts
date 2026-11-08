@@ -1,5 +1,6 @@
 import { eq } from "drizzle-orm";
 import { schema, type Db } from "../db";
+import { adminOrigin } from "./config";
 import { sendEmail } from "./email";
 import { newId } from "./tokens";
 
@@ -25,7 +26,7 @@ export function isUrgentReason(reason: string): boolean {
  */
 export async function notifyAdminOfReport(env: Env, reason: string): Promise<void> {
   const label = REASON_LABELS[reason] ?? reason;
-  const link = `${env.PUBLIC_ORIGIN}/admin/reports`;
+  const link = `${adminOrigin(env)}/admin/reports`;
   try {
     if (!env.ADMIN_EMAIL) throw new Error("ADMIN_EMAIL is not set");
     await sendEmail(env, {
@@ -63,6 +64,6 @@ export async function banUser(env: Env, db: Db, userId: string): Promise<void> {
 }
 
 
-export async function logModeration(db: Db, actor: string, action: string, targetType: "report" | "user" | "topic", targetId: string, detail = ""): Promise<void> {
+export async function logModeration(db: Db, actor: string, action: string, targetType: "report" | "user" | "topic" | "takeaway", targetId: string, detail = ""): Promise<void> {
   await db.insert(schema.moderationLog).values({ id: newId(), actor, action, targetType, targetId, detail, createdAt: Date.now() });
 }

@@ -1,5 +1,5 @@
-import { VENUE_LABELS } from "@ideas-match/shared";
-import { and, eq, inArray } from "drizzle-orm";
+import { outcomeSummary, VENUE_LABELS, type OutcomeCounts, type TopicOutcomes } from "@ideas-match/shared";
+import { and, desc, eq, inArray, sql } from "drizzle-orm";
 import { Hono } from "hono";
 import { html, raw } from "hono/html";
 import { getDb, schema } from "../db";
@@ -68,6 +68,57 @@ function page(title: string, body: unknown, language: Language = "en") {
     </html>`;
 }
 
+const MAX_TAKEAWAYS_SHOWN = 10;
+
+/** Answers only count from people who still say the meetup happened. */
+async function topicOutcomes(db: ReturnType<typeof getDb>, topicId: string) {
+  const t = schema.meetupOutcomes;
+  const metOnTopic = and(eq(schema.conversations.topicId, topicId), eq(schema.meetupResponses.didMeet, true));
+  const [rows, takeaways] = await Promise.all([
+    db
+      .select({ mindChanged: t.mindChanged, endedUp: t.endedUp, meetAgain: t.meetAgain, count: sql<number>`count(*)` })
+      .from(t)
+      .innerJoin(schema.meetups, eq(schema.meetups.id, t.meetupId))
+      .innerJoin(schema.conversations, eq(schema.conversations.id, schema.meetups.conversationId))
+      .innerJoin(schema.meetupResponses, and(eq(schema.meetupResponses.meetupId, t.meetupId), eq(schema.meetupResponses.userId, t.userId)))
+      .where(metOnTopic)
+      .groupBy(t.mindChanged, t.endedUp, t.meetAgain),
+    db
+      .select({ text: t.takeaway, language: t.language })
+      .from(t)
+      .innerJoin(schema.meetups, eq(schema.meetups.id, t.meetupId))
+      .innerJoin(schema.conversations, eq(schema.conversations.id, schema.meetups.conversationId))
+      .innerJoin(schema.meetupResponses, and(eq(schema.meetupResponses.meetupId, t.meetupId), eq(schema.meetupResponses.userId, t.userId)))
+      .where(and(metOnTopic, eq(t.takeawayStatus, "approved")))
+      .orderBy(desc(t.reviewedAt))
+      .limit(MAX_TAKEAWAYS_SHOWN),
+  ]);
+  const counts: OutcomeCounts = { mindChanged: {}, endedUp: {}, meetAgain: {} };
+  for (const row of rows) {
+    counts.mindChanged[row.mindChanged] = (counts.mindChanged[row.mindChanged] ?? 0) + row.count;
+    counts.endedUp[row.endedUp] = (counts.endedUp[row.endedUp] ?? 0) + row.count;
+    counts.meetAgain[row.meetAgain] = (counts.meetAgain[row.meetAgain] ?? 0) + row.count;
+  }
+  return { outcomes: outcomeSummary(counts), takeaways: takeaways.filter((row): row is { text: string; language: Language } => Boolean(row.text)) };
+}
+
+function outcomesSection(outcomes: TopicOutcomes | null, takeaways: { text: string; language: Language }[], language: Language) {
+  if (!outcomes && takeaways.length === 0) return "";
+  const fr = language === "fr";
+  return html`<section>
+    <h2>${fr ? "Après les rencontres" : "After meeting up"}</h2>
+    ${outcomes
+      ? html`<ul>
+          <li>${fr ? `${outcomes.mindChanged} % ont vu quelqu'un changer d'avis` : `${outcomes.mindChanged}% saw someone change their mind`}</li>
+          <li>${fr ? `${outcomes.agreed} % surtout d'accord, ${outcomes.split} % partagés, ${outcomes.disagreed} % surtout en désaccord` : `${outcomes.agreed}% mostly agreed, ${outcomes.split}% split, ${outcomes.disagreed}% mostly disagreed`}</li>
+          <li>${fr ? `${outcomes.meetAgain} % se reverraient pour en parler` : `${outcomes.meetAgain}% would meet again on this`}</li>
+        </ul>
+        <p class="muted">${fr ? `D'après ${outcomes.answers} réponses.` : `From ${outcomes.answers} answers.`}</p>`
+      : ""}
+    ${takeaways.map((row) => html`<blockquote lang="${row.language}">${row.text}</blockquote>`)}
+  </section>`;
+}
+
 const publicRoutes = new Hono<AppEnv>();
 
 publicRoutes.get("/healthz", (c) => c.json({ ok: true }));
@@ -132,7 +183,8 @@ publicRoutes.get("/t/:id", async (c) => {
   if (!topic) return c.notFound();
   const language = requestLanguage(c);
   const { title, blurb } = localizeTopic(topic, language);
-  return c.html(page(title, html`<h1>${title}</h1><p>${blurb}</p>${getApp(language)}`, language));
+  const { outcomes, takeaways } = await topicOutcomes(db, topic.id);
+  return c.html(page(title, html`<h1>${title}</h1><p>${blurb}</p>${outcomesSection(outcomes, takeaways, language)}${getApp(language)}`, language));
 });
 
 /** Reachable only through an unguessable token. Shows the plan, never who's going. */

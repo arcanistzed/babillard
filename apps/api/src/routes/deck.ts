@@ -1,4 +1,4 @@
-import { DECK_PAGE_SIZE, FIELD_GROUPS, leanSummary, MEETUPS_HELD_MIN_SHOWN, rankTopics, topicSwipeSchema, topicSubmissionSchema, type TopicCard, type TopicSwipeResult } from "@ideas-match/shared";
+import { DECK_PAGE_SIZE, FIELD_GROUPS, leanSummary, MEETUPS_HELD_MIN_SHOWN, outcomeSummary, rankTopics, type OutcomeCounts, topicSwipeSchema, topicSubmissionSchema, type TopicCard, type TopicSwipeResult } from "@ideas-match/shared";
 import { localizeTopic, requestLanguage } from "../lib/language";
 import { and, eq, gt, inArray, isNotNull, isNull, or, sql } from "drizzle-orm";
 import { Hono } from "hono";
@@ -75,7 +75,7 @@ deck.get("/topics", async (c) => {
     ),
   ];
   const ids = ranked.map((topic) => topic.id);
-  const [stanceRows, heldRows] = ids.length
+  const [stanceRows, heldRows, outcomeRows] = ids.length
     ? await Promise.all([
         db
           .select({ topicId: swipes.topicId, stance: swipes.stance, count: sql<number>`count(*)` })
@@ -90,10 +90,37 @@ deck.get("/topics", async (c) => {
           .innerJoin(schema.meetupResponses, eq(schema.meetupResponses.meetupId, schema.meetups.id))
           .where(and(inArray(schema.conversations.topicId, ids), eq(schema.meetupResponses.didMeet, true)))
           .groupBy(schema.conversations.topicId),
+        db
+          .select({
+            topicId: schema.conversations.topicId,
+            mindChanged: schema.meetupOutcomes.mindChanged,
+            endedUp: schema.meetupOutcomes.endedUp,
+            meetAgain: schema.meetupOutcomes.meetAgain,
+            count: sql<number>`count(*)`,
+          })
+          .from(schema.meetupOutcomes)
+          .innerJoin(schema.meetups, eq(schema.meetups.id, schema.meetupOutcomes.meetupId))
+          .innerJoin(schema.conversations, eq(schema.conversations.id, schema.meetups.conversationId))
+          .innerJoin(
+            schema.meetupResponses,
+            and(eq(schema.meetupResponses.meetupId, schema.meetupOutcomes.meetupId), eq(schema.meetupResponses.userId, schema.meetupOutcomes.userId)),
+          )
+          // Someone who later says the meetup didn't happen no longer counts.
+          .where(and(inArray(schema.conversations.topicId, ids), eq(schema.meetupResponses.didMeet, true)))
+          .groupBy(schema.conversations.topicId, schema.meetupOutcomes.mindChanged, schema.meetupOutcomes.endedUp, schema.meetupOutcomes.meetAgain),
       ])
-    : [[], []];
+    : [[], [], []];
   const stanceCounts = (topicId: string) => Object.fromEntries(stanceRows.filter((row) => row.topicId === topicId).map((row) => [row.stance, row.count]));
   const held = new Map(heldRows.map((row) => [row.topicId, row.count]));
+  const outcomeCounts = new Map<string, OutcomeCounts>();
+  for (const row of outcomeRows) {
+    if (!row.topicId) continue;
+    const counts = outcomeCounts.get(row.topicId) ?? { mindChanged: {}, endedUp: {}, meetAgain: {} };
+    counts.mindChanged[row.mindChanged] = (counts.mindChanged[row.mindChanged] ?? 0) + row.count;
+    counts.endedUp[row.endedUp] = (counts.endedUp[row.endedUp] ?? 0) + row.count;
+    counts.meetAgain[row.meetAgain] = (counts.meetAgain[row.meetAgain] ?? 0) + row.count;
+    outcomeCounts.set(row.topicId, counts);
+  }
 
   const language = requestLanguage(c);
   const cards: TopicCard[] = ranked.map((topic) => ({
@@ -106,6 +133,7 @@ deck.get("/topics", async (c) => {
     pending: topic.status === "pending",
     lean: topic.kind === "question" ? leanSummary(stanceCounts(topic.id)) : null,
     meetupsHeld: (held.get(topic.id) ?? 0) >= MEETUPS_HELD_MIN_SHOWN ? held.get(topic.id)! : null,
+    outcomes: outcomeCounts.has(topic.id) ? outcomeSummary(outcomeCounts.get(topic.id)!) : null,
   }));
   return c.json(cards);
 });

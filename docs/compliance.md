@@ -54,6 +54,8 @@ Regulated services are defined by a user count that regulations will set, or by 
 
 The cron sweep in `apps/api/src/cron.ts` enforces the schedule in the policy, including the two-year limits on closed reports, moderation history, and inactive accounts. A banned person's record stays while the ban lasts.
 
+Meetup outcome answers and takeaway lines (`meetup_outcomes`) have no separate limit. They're the data behind each topic's percentages, so the sweep leaves them alone, and they go when the person deletes their account or the inactive-account sweep removes it. Deleting a row also takes an approved takeaway off the topic page. Takeaways aren't end-to-end encrypted: a moderator approves each one before it appears publicly without a name, and the in-app form says so before anyone writes one.
+
 ## If there's a breach
 
 1. Work out what was exposed and contain it: rotate `AUTH_SECRET` and any keys, and end sessions if needed.
