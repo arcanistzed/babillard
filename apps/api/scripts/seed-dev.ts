@@ -12,7 +12,7 @@ const ROLES = ["undergrad", "grad", "researcher", "other"];
 const FIELDS = [["economics", "politics"], ["philosophy", "literature"], ["computer_science", "mathematics"], ["urbanism", "environment"], ["psychology", "sociology"]];
 const LOOKING_FOR = [["learning", "friends"], ["research", "networking"], ["reading_group", "debate"], ["friends", "more_than_friends"], ["networking", "debate"]];
 const CITIES = [
-  { id: "boston", campuses: ["harvard", "mit", "boston-university", null], topics: ["walkable-cities", "behavioral-economics", "should-cities-abolish-single-family-zoning"] },
+  { id: "boston", campuses: ["harvard", "mit", "boston-university", null], topics: ["walkable-cities", "behavioral-economics", "should-cities-charge-for-congestion"] },
   { id: "toronto", campuses: ["u-of-t", "york-university", null], topics: ["great-books-reading-group", "machine-learning-research", "should-public-transit-be-free"] },
 ];
 const STANCES = ["for", "against", "unsure"];

@@ -57,6 +57,13 @@
       "when": 1794117089777,
       "tag": "0007_fearless_captain_britain",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "6",
+      "when": 1794267767257,
+      "tag": "0008_brainy_blacklash",
+      "breakpoints": true
     }
   ]
 }

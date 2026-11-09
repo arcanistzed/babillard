@@ -62,7 +62,14 @@ export const topics = sqliteTable(
     openers: text("openers", { mode: "json" }).$type<string[]>().notNull(),
     /** Seeded topics have a French version. Topics people suggest don't. */
     fr: text("fr", { mode: "json" }).$type<{ title: string; blurb: string; openers: string[] }>(),
-    status: text("status", { enum: ["seeded", "pending", "approved", "rejected"] }).notNull(),
+    status: text("status", { enum: ["seeded", "pending", "approved", "rejected", "retired"] }).notNull(),
+    /**
+     * Where the topic appears: null for everywhere, a country code ("CA"), a country and
+     * region ("CA:Ontario"), or a locality ID. Suggested topics stay in the suggester's city.
+     */
+    place: text("place"),
+    /** Seeded topics new people see first, in this order, so early arrivals overlap. */
+    starter: integer("starter"),
     createdBy: text("created_by"),
     createdAt: integer("created_at").notNull(),
   },

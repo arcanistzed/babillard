@@ -2,7 +2,7 @@
 import { readFileSync, writeFileSync } from "node:fs";
 
 interface SeedLocality { id: string; name: string; kind: string; parentId: string | null; region: string; country: string; countryCode: string; population: number; aliases: string[]; latitude: number; longitude: number }
-interface SeedTopic { id: string; kind: string; title: string; blurb: string; fieldTags: string[]; openers: string[]; fr: { title: string; blurb: string; openers: string[] } }
+interface SeedTopic { id: string; kind: string; title: string; blurb: string; fieldTags: string[]; openers: string[]; fr: { title: string; blurb: string; openers: string[] }; place?: string; starter?: number }
 
 const root = new URL("../seed/", import.meta.url);
 const localities: SeedLocality[] = JSON.parse(readFileSync(new URL("localities.json", root), "utf8"));
@@ -25,12 +25,16 @@ const statements = [
   ]),
   ...topics.map(
     (t) =>
-      `INSERT OR IGNORE INTO topics (id, kind, title, blurb, field_tags, openers, status, created_at) VALUES (${quote(t.id)}, ${quote(t.kind)}, ${quote(t.title)}, ${quote(t.blurb)}, ${quote(JSON.stringify(t.fieldTags))}, ${quote(JSON.stringify(t.openers))}, 'seeded', ${now});`,
+      `INSERT OR IGNORE INTO topics (id, kind, title, blurb, field_tags, openers, fr, place, starter, status, created_at) VALUES (${quote(t.id)}, ${quote(t.kind)}, ${quote(t.title)}, ${quote(t.blurb)}, ${quote(JSON.stringify(t.fieldTags))}, ${quote(JSON.stringify(t.openers))}, ${quote(JSON.stringify(t.fr))}, ${quote(t.place ?? null)}, ${t.starter ?? "NULL"}, 'seeded', ${now});`,
   ),
-  // Existing rows pick up new fields and translations. Topics people suggested are left alone.
+  // Seeded topics follow the file, so edits to wording, place, or starter order reach existing databases.
+  // Topics people suggested are left alone.
   ...topics.map(
-    (t) => `UPDATE topics SET field_tags = ${quote(JSON.stringify(t.fieldTags))}, fr = ${quote(JSON.stringify(t.fr))} WHERE id = ${quote(t.id)} AND status = 'seeded';`,
+    (t) =>
+      `UPDATE topics SET title = ${quote(t.title)}, blurb = ${quote(t.blurb)}, openers = ${quote(JSON.stringify(t.openers))}, field_tags = ${quote(JSON.stringify(t.fieldTags))}, fr = ${quote(JSON.stringify(t.fr))}, place = ${quote(t.place ?? null)}, starter = ${t.starter ?? "NULL"} WHERE id = ${quote(t.id)} AND status = 'seeded';`,
   ),
+  // A seeded topic dropped from the file is retired, not deleted, so existing groups keep their topic.
+  `UPDATE topics SET status = 'retired', starter = NULL WHERE status = 'seeded' AND id NOT IN (${topics.map((t) => quote(t.id)).join(", ")});`,
 ];
 
 writeFileSync(new URL("seed.sql", root), `${statements.join("\n")}\n`);

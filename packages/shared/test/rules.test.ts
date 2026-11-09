@@ -86,6 +86,16 @@ describe("rankTopics", () => {
     const ranked = rankTopics(topics, { userFields: [], random: () => values.shift() ?? 0 });
     expect(ranked[0]?.id).toBe("b");
   });
+
+  it("leads newcomers with the starter topics in their fixed order", () => {
+    const topics = [
+      { id: "fit", fieldTags: ["law", "politics"], cohortSize: 3 },
+      { id: "second", fieldTags: [], cohortSize: 0, starter: 2 },
+      { id: "first", fieldTags: [], cohortSize: 0, starter: 1 },
+    ];
+    expect(rankTopics(topics, { userFields: ["law", "politics"], random: Math.random, newcomer: true }).map((t) => t.id)).toEqual(["first", "second", "fit"]);
+    expect(rankTopics(topics, { userFields: ["law", "politics"], random: noJitter })[0]?.id).toBe("fit");
+  });
 });
 
 describe("rankPeople", () => {

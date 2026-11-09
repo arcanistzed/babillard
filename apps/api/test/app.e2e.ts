@@ -2,6 +2,7 @@ import { execFileSync } from "node:child_process";
 import { readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
+import { NEWCOMER_SWIPES } from "@babillard/shared";
 import { describe, expect, it } from "vitest";
 import { ApiError, Client, createPerson, type PersonSeed } from "../scripts/api-client.ts";
 import { canLinkInEmail, loginEmailContent } from "../src/lib/loginEmailContent.ts";
@@ -401,6 +402,27 @@ describe("topic deck", () => {
     expect(physics).toBeGreaterThan(5);
   });
 
+  it("starts newcomers on the shared starter topics, then stops once they've swiped enough", async () => {
+    const client = await person("toronto", { fields: ["physics"] });
+    const [first, second] = await client.get("/deck/topics");
+    expect([first.id, second.id]).toEqual(["should-a-four-day-work-week-become-standard", "walkable-cities"]);
+    for (const card of (await client.get("/deck/topics")).slice(0, NEWCOMER_SWIPES)) await client.post(`/deck/topics/${card.id}/swipe`, { direction: "left" });
+    const later = await client.get("/deck/topics");
+    expect(later[0].fieldTags).toContain("physics");
+  });
+
+  it("keeps local questions in their place", async () => {
+    const ottawa = await person("ottawa-08-ca");
+    const toronto = await person("toronto");
+    const london = await person("london");
+    const swipe = (client: any, id: string) => status(client.post(`/deck/topics/${id}/swipe`, { direction: "left" }));
+    expect(await swipe(ottawa, "should-ottawa-and-gatineau-run-one-transit-system")).toBe(200);
+    expect(await swipe(toronto, "should-ottawa-and-gatineau-run-one-transit-system")).toBe(404);
+    expect(await swipe(toronto, "should-organ-donation-be-opt-out-by-default")).toBe(200);
+    expect(await swipe(london, "should-organ-donation-be-opt-out-by-default")).toBe(404);
+    expect(await swipe(london, "should-a-four-day-work-week-become-standard")).toBe(200);
+  });
+
   it("does not show a swiped topic again", async () => {
     const client = await person("london");
     const [first] = await client.get("/deck/topics");
@@ -755,7 +777,7 @@ describe("automatic groups", () => {
   });
 
   it("shows a question group its spread of stances, and no individual's", async () => {
-    const topicId = "should-public-servants-be-allowed-to-strike";
+    const topicId = "should-voting-be-mandatory";
     const stances = ["for", "for", "against", "unsure"];
     const people = await Promise.all(stances.map(() => person("london")));
     let groupId: string | null = null;
@@ -1296,6 +1318,8 @@ describe("submitted topics", () => {
 
     const card = (await other.get("/deck/topics")).find((entry: any) => entry.id === id);
     expect(card?.pending).toBe(false);
+    // Approval keeps a suggestion in the city it came from.
+    expect(await status((await person("toronto", { fields: ["law"] })).post(`/deck/topics/${id}/swipe`, { direction: "right" }))).toBe(404);
 
     const joiners = await Promise.all(Array.from({ length: 3 }, () => person("san-francisco")));
     const results = [];

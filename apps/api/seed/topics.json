@@ -855,7 +855,8 @@
 "Comment vous êtes-vous fait des amis à l'âge adulte?",
 "Qu'est-ce qui fait durer une amitié, pour vous?"
 ]
-}
+},
+"starter": 5
 },
 {
 "id": "clinical-psychology-and-therapy-research",
@@ -1821,7 +1822,8 @@
 "Qu'est-ce qui vous inquiète le plus, concrètement?",
 "Quelle réglementation rédigeriez-vous d'abord?"
 ]
-}
+},
+"starter": 11
 },
 {
 "id": "open-source-communities",
@@ -2019,7 +2021,8 @@
 "Quelle mission suivez-vous?",
 "Des robots ou des humains?"
 ]
-}
+},
+"starter": 10
 },
 {
 "id": "climate-adaptation",
@@ -2260,7 +2263,8 @@
 "Quelle est la plus belle marche de cette ville?",
 "Envie de la faire en discutant?"
 ]
-}
+},
+"starter": 2
 },
 {
 "id": "third-places-and-community-spaces",
@@ -2548,7 +2552,8 @@
 "Quelle est votre histoire de logement dans cette ville?",
 "Qu'est-ce qui est le plus mal compris au sujet des loyers?"
 ]
-}
+},
+"starter": 8
 },
 {
 "id": "inequality-research",
@@ -2730,46 +2735,48 @@
 {
 "id": "should-cities-abolish-single-family-zoning",
 "kind": "question",
-"title": "Should cities abolish single-family zoning?",
-"blurb": "Allowing more homes on every lot could cut rents. It could also change neighbourhoods quickly.",
+"title": "Should every residential lot allow a fourplex?",
+"blurb": "Gentle density against neighbourhood character.",
 "fieldTags": [
 "urbanism",
 "economics"
 ],
 "openers": [
-"What would it change on your own street?",
-"What's the best evidence you've seen either way?"
+"Would you want one on your street?",
+"What makes a fourplex fit in?"
 ],
 "fr": {
-"title": "Les villes devraient-elles abolir le zonage unifamilial?",
-"blurb": "Permettre plus de logements par terrain pourrait réduire les loyers. Cela pourrait aussi changer vite les quartiers.",
+"title": "Faut-il permettre un quadruplex sur chaque terrain résidentiel?",
+"blurb": "La densité douce contre le caractère des quartiers.",
 "openers": [
-"Qu'est-ce que cela changerait dans votre rue?",
-"Quelles sont les meilleures données que vous avez vues, dans un sens ou l'autre?"
+"En voudriez-vous un dans votre rue?",
+"Qu'est-ce qui aide un quadruplex à bien s'intégrer?"
 ]
-}
+},
+"place": "CA"
 },
 {
 "id": "should-rent-control-be-expanded",
 "kind": "question",
-"title": "Should rent control be expanded?",
-"blurb": "It protects tenants today. The argument is over who it costs tomorrow.",
+"title": "Should Ontario bring back rent control on newer units?",
+"blurb": "Units first rented after November 2018 have no cap on increases.",
 "fieldTags": [
 "economics",
 "urbanism"
 ],
 "openers": [
-"Have you lived under rent control?",
-"Which city's approach do you find most convincing?"
+"Has your rent jumped at renewal?",
+"Would a cap slow new building?"
 ],
 "fr": {
-"title": "Faut-il étendre le contrôle des loyers?",
-"blurb": "Il protège les locataires aujourd'hui. Le débat porte sur ce qu'il coûte demain, et à qui.",
+"title": "L'Ontario devrait-il rétablir le contrôle des loyers pour les logements récents?",
+"blurb": "Les logements loués pour la première fois après novembre 2018 n'ont aucun plafond d'augmentation.",
 "openers": [
-"Avez-vous vécu sous contrôle des loyers?",
-"L'approche de quelle ville vous convainc le plus?"
+"Votre loyer a-t-il bondi au renouvellement?",
+"Un plafond ralentirait-il la construction?"
 ]
-}
+},
+"place": "CA:Ontario"
 },
 {
 "id": "should-public-transit-be-free",
@@ -2791,7 +2798,8 @@
 "La gratuité changerait-elle vos déplacements?",
 "Le service ou le prix: qu'est-ce qui compte le plus?"
 ]
-}
+},
+"starter": 9
 },
 {
 "id": "should-cars-be-banned-from-city-centers",
@@ -2840,112 +2848,47 @@
 {
 "id": "should-college-be-tuition-free",
 "kind": "question",
-"title": "Should college be tuition-free?",
-"blurb": "Who benefits, who pays, and what happens to quality.",
+"title": "Should college and university be tuition-free?",
+"blurb": "Germany does it. Ontario just ended its tuition freeze.",
 "fieldTags": [
 "education",
 "economics"
 ],
 "openers": [
-"How did your own education get paid for?",
-"Would you target it by income?"
+"Who should pay for a degree?",
+"Would free tuition change who goes?"
 ],
 "fr": {
-"title": "Les études postsecondaires devraient-elles être gratuites?",
-"blurb": "Qui en profite, qui paie, et ce qu'il advient de la qualité.",
+"title": "Le cégep, le collège et l'université devraient-ils être gratuits?",
+"blurb": "L'Allemagne le fait. L'Ontario vient de mettre fin à son gel des droits de scolarité.",
 "openers": [
-"Comment vos études ont-elles été payées?",
-"Le feriez-vous selon le revenu?"
-]
-}
-},
-{
-"id": "should-student-debt-be-forgiven",
-"kind": "question",
-"title": "Should student debt be forgiven?",
-"blurb": "Relief for borrowers against fairness to everyone else.",
-"fieldTags": [
-"education",
-"economics"
-],
-"openers": [
-"How does this touch your life?",
-"What would you do instead?"
-],
-"fr": {
-"title": "Faut-il annuler les dettes d'études?",
-"blurb": "Un soulagement pour les emprunteurs, contre l'équité envers les autres.",
-"openers": [
-"Comment cela vous touche-t-il?",
-"Que feriez-vous à la place?"
-]
-}
-},
-{
-"id": "should-universities-drop-legacy-admissions",
-"kind": "question",
-"title": "Should universities drop legacy admissions?",
-"blurb": "Family connections, donations, and what fairness requires.",
-"fieldTags": [
-"education",
-"politics"
-],
-"openers": [
-"Should donors get anything at all?",
-"Would you go further than this?"
-],
-"fr": {
-"title": "Les universités devraient-elles abandonner l'admission par filiation?",
-"blurb": "Liens familiaux, dons, et ce qu'exige l'équité.",
-"openers": [
-"Les donateurs devraient-ils obtenir quoi que ce soit?",
-"Iriez-vous plus loin?"
-]
-}
-},
-{
-"id": "should-universities-use-standardized-tests",
-"kind": "question",
-"title": "Should universities use standardized tests?",
-"blurb": "Tests may flag talent or reinforce privilege. Possibly both.",
-"fieldTags": [
-"education",
-"sociology"
-],
-"openers": [
-"Did tests help or hurt you?",
-"What would you use instead?"
-],
-"fr": {
-"title": "Les universités devraient-elles utiliser des tests standardisés?",
-"blurb": "Les tests peuvent révéler le talent ou renforcer le privilège. Peut-être les deux.",
-"openers": [
-"Les tests vous ont-ils aidé ou nui?",
-"Qu'utiliseriez-vous à la place?"
+"Qui devrait payer pour un diplôme?",
+"La gratuité changerait-elle qui fait des études?"
 ]
 }
 },
 {
 "id": "should-phones-be-banned-in-schools",
 "kind": "question",
-"title": "Should phones be banned in schools?",
-"blurb": "Attention, safety, and how to tell if bans work.",
+"title": "Should high schools ban phones all day, not just in class?",
+"blurb": "Ontario bans them in class from grade 7 up, and all day for younger kids.",
 "fieldTags": [
 "education",
 "psychology"
 ],
 "openers": [
 "What was your school's rule?",
-"What would make a ban actually work?"
+"Would you have wanted lunch without phones?"
 ],
 "fr": {
-"title": "Faut-il interdire les téléphones à l'école?",
-"blurb": "L'attention, la sécurité, et comment savoir si l'interdiction fonctionne.",
+"title": "Les écoles secondaires devraient-elles interdire les téléphones toute la journée?",
+"blurb": "L'Ontario les interdit en classe à partir de la 7e année, et toute la journée pour les plus jeunes.",
 "openers": [
 "Quelle était la règle dans votre école?",
-"Qu'est-ce qui ferait vraiment fonctionner une interdiction?"
+"Auriez-vous voulu des dîners sans téléphone?"
 ]
-}
+},
+"place": "CA:Ontario"
 },
 {
 "id": "should-ai-tools-be-allowed-in-university-assignments",
@@ -2967,29 +2910,31 @@
 "Comment utilisez-vous l'IA dans votre travail?",
 "À quoi devrait ressembler un travail aujourd'hui?"
 ]
-}
+},
+"starter": 7
 },
 {
 "id": "should-the-voting-age-be-lowered-to-16",
 "kind": "question",
-"title": "Should the voting age be lowered to 16?",
-"blurb": "Civic habit, maturity, and who gets a say in the future.",
+"title": "Should Canada lower the voting age to 16?",
+"blurb": "Old enough to work and pay taxes, but not to vote.",
 "fieldTags": [
 "politics",
 "education"
 ],
 "openers": [
-"What would you have done with a vote at 16?",
-"Where have they tried it?"
+"Were you ready to vote at 16?",
+"Would it change what parties promise?"
 ],
 "fr": {
-"title": "Faut-il abaisser l'âge du vote à 16 ans?",
-"blurb": "Habitude civique, maturité, et qui a son mot à dire sur l'avenir.",
+"title": "Le Canada devrait-il abaisser l'âge du vote à 16 ans?",
+"blurb": "Assez vieux pour travailler et payer des impôts, mais pas pour voter.",
 "openers": [
-"Qu'auriez-vous fait d'un vote à 16 ans?",
-"Où l'a-t-on essayé?"
+"Étiez-vous prêt à voter à 16 ans?",
+"Est-ce que ça changerait les promesses des partis?"
 ]
-}
+},
+"place": "CA"
 },
 {
 "id": "should-voting-be-mandatory",
@@ -3016,46 +2961,25 @@
 {
 "id": "should-we-adopt-ranked-choice-voting",
 "kind": "question",
-"title": "Should we adopt ranked-choice voting?",
-"blurb": "More choice on the ballot, more complexity in the count.",
+"title": "Should Canada replace first-past-the-post?",
+"blurb": "Ranked ballots, proportional representation, or keep what we have.",
 "fieldTags": [
 "politics",
 "mathematics"
 ],
 "openers": [
-"Have you ever voted this way?",
-"Does it really reduce polarization?"
+"Has your vote ever felt wasted?",
+"Which system would you pick?"
 ],
 "fr": {
-"title": "Faut-il adopter le vote préférentiel?",
-"blurb": "Plus de choix sur le bulletin, plus de complexité au dépouillement.",
+"title": "Le Canada devrait-il remplacer le scrutin uninominal à un tour?",
+"blurb": "Vote préférentiel, représentation proportionnelle, ou le statu quo.",
 "openers": [
-"Avez-vous déjà voté ainsi?",
-"Réduit-il vraiment la polarisation?"
+"Votre vote vous a-t-il déjà semblé inutile?",
+"Quel mode de scrutin choisiriez-vous?"
 ]
-}
 },
-{
-"id": "should-legislators-face-term-limits",
-"kind": "question",
-"title": "Should legislators face term limits?",
-"blurb": "Fresh blood or more power to lobbyists and staff?",
-"fieldTags": [
-"politics",
-"law"
-],
-"openers": [
-"What does the evidence show from US states?",
-"Would you apply it to judges too?"
-],
-"fr": {
-"title": "Faut-il limiter le nombre de mandats des élus?",
-"blurb": "Du sang neuf, ou plus de pouvoir aux lobbyistes et au personnel?",
-"openers": [
-"Que montrent les données des États américains?",
-"L'appliqueriez-vous aussi aux juges?"
-]
-}
+"place": "CA"
 },
 {
 "id": "should-citizens-assemblies-make-binding-decisions",
@@ -3081,70 +3005,28 @@
 }
 },
 {
-"id": "should-private-money-be-banned-from-political-campaigns",
-"kind": "question",
-"title": "Should private money be banned from political campaigns?",
-"blurb": "Equal voices or restricted speech.",
-"fieldTags": [
-"politics",
-"law"
-],
-"openers": [
-"Where would you draw the line?",
-"Who'd fill the vacuum?"
-],
-"fr": {
-"title": "Faut-il interdire l'argent privé dans les campagnes politiques?",
-"blurb": "Des voix égales ou une parole restreinte.",
-"openers": [
-"Où traceriez-vous la limite?",
-"Qui comblerait le vide?"
-]
-}
-},
-{
-"id": "should-supreme-court-justices-have-term-limits",
-"kind": "question",
-"title": "Should supreme court justices have term limits?",
-"blurb": "Lifetime tenure against regular turnover.",
-"fieldTags": [
-"law",
-"politics"
-],
-"openers": [
-"How long is the right term?",
-"Would it lower the temperature?"
-],
-"fr": {
-"title": "Les juges de la Cour suprême devraient-ils avoir un mandat limité?",
-"blurb": "La nomination à vie contre un renouvellement régulier.",
-"openers": [
-"Quelle serait la bonne durée?",
-"Cela calmerait-il le jeu?"
-]
-}
-},
-{
 "id": "should-social-media-be-banned-for-under-16s",
 "kind": "question",
-"title": "Should social media be banned for under-16s?",
-"blurb": "Protecting kids, or an unworkable gesture?",
+"title": "Should Canada ban social media for under-16s?",
+"blurb": "A federal bill would set the minimum age at 16, as Australia did.",
 "fieldTags": [
 "politics",
 "psychology"
 ],
 "openers": [
-"What age did you start, and would you change it?",
-"How would you enforce it?"
+"When did you get your first account?",
+"Could an age check ever work?"
 ],
 "fr": {
-"title": "Faut-il interdire les réseaux sociaux aux moins de 16 ans?",
-"blurb": "Protéger les jeunes, ou un geste impossible à appliquer?",
+"title": "Le Canada devrait-il interdire les réseaux sociaux aux moins de 16 ans?",
+"blurb": "Un projet de loi fédéral fixerait l'âge minimum à 16 ans, comme en Australie.",
 "openers": [
-"À quel âge avez-vous commencé, et changeriez-vous cela?",
-"Comment l'appliqueriez-vous?"
+"À quel âge avez-vous ouvert votre premier compte?",
+"Une vérification de l'âge peut-elle fonctionner?"
 ]
-}
+},
+"place": "CA",
+"starter": 3
 },
 {
 "id": "should-platforms-be-liable-for-what-users-post",
@@ -3261,24 +3143,25 @@
 {
 "id": "should-the-minimum-wage-be-much-higher",
 "kind": "question",
-"title": "Should the minimum wage be much higher?",
-"blurb": "Living wages against the risk of lost jobs.",
+"title": "Should Ontario's minimum wage be a living wage?",
+"blurb": "Living wage estimates in Ontario cities run well above the minimum.",
 "fieldTags": [
 "economics",
 "politics"
 ],
 "openers": [
-"What's your first-job story?",
-"Should it vary by city?"
+"Could you live on minimum wage here?",
+"Who would pay for the raise?"
 ],
 "fr": {
-"title": "Le salaire minimum devrait-il être beaucoup plus élevé?",
-"blurb": "Un salaire décent contre le risque de pertes d'emplois.",
+"title": "Le salaire minimum de l'Ontario devrait-il être un salaire viable?",
+"blurb": "Les estimations du salaire viable dans les villes ontariennes dépassent largement le minimum.",
 "openers": [
-"Comment s'est passé votre premier emploi?",
-"Devrait-il varier selon la ville?"
+"Pourriez-vous vivre ici au salaire minimum?",
+"Qui paierait la hausse?"
 ]
-}
+},
+"place": "CA:Ontario"
 },
 {
 "id": "should-there-be-a-wealth-tax",
@@ -3323,29 +3206,31 @@
 "Votre travail tiendrait-il en quatre jours?",
 "Qui serait laissé pour compte?"
 ]
-}
+},
+"starter": 1
 },
 {
 "id": "should-gig-workers-be-classified-as-employees",
 "kind": "question",
-"title": "Should gig workers be classified as employees?",
-"blurb": "Flexibility against protection.",
+"title": "Should delivery and ride-hail drivers be employees?",
+"blurb": "Ontario guarantees them a minimum wage while on a job, but not employee status.",
 "fieldTags": [
 "economics",
 "law"
 ],
 "openers": [
-"Have you done gig work?",
-"Is there a third category that works?"
+"Have you worked through an app?",
+"What would drivers lose as employees?"
 ],
 "fr": {
-"title": "Les travailleurs à la demande devraient-ils être considérés comme des employés?",
-"blurb": "La souplesse contre la protection.",
+"title": "Les livreurs et chauffeurs de VTC devraient-ils être des employés?",
+"blurb": "L'Ontario leur garantit un salaire minimum pendant une course, mais pas le statut d'employé.",
 "openers": [
-"Avez-vous déjà fait ce genre de travail?",
-"Une troisième catégorie fonctionnerait-elle?"
+"Avez-vous déjà travaillé par une application?",
+"Qu'est-ce que les chauffeurs perdraient comme employés?"
 ]
-}
+},
+"place": "CA"
 },
 {
 "id": "should-unpaid-internships-be-banned",
@@ -3373,68 +3258,71 @@
 {
 "id": "should-inheritance-be-taxed-more-heavily",
 "kind": "question",
-"title": "Should inheritance be taxed more heavily?",
-"blurb": "Merit, family, and accumulated advantage.",
+"title": "Should Canada bring back an inheritance tax?",
+"blurb": "Canada dropped its estate tax in 1972. Capital gains are taxed at death instead.",
 "fieldTags": [
 "economics",
 "philosophy"
 ],
 "openers": [
-"How much should someone be able to pass on?",
-"What about family homes and businesses?"
+"Is inherited wealth earned?",
+"Where should the line be?"
 ],
 "fr": {
-"title": "Faut-il imposer davantage les héritages?",
-"blurb": "Mérite, famille et avantages accumulés.",
+"title": "Le Canada devrait-il rétablir un impôt sur les successions?",
+"blurb": "Le Canada a aboli son impôt successoral en 1972. Les gains en capital sont plutôt imposés au décès.",
 "openers": [
-"Combien devrait-on pouvoir transmettre?",
-"Qu'en est-il des maisons et entreprises familiales?"
+"La richesse héritée est-elle méritée?",
+"Où devrait-on tracer la limite?"
 ]
-}
+},
+"place": "CA"
 },
 {
 "id": "should-countries-phase-out-nuclear-power-or-build-more",
 "kind": "question",
-"title": "Should countries phase out nuclear power, or build more?",
-"blurb": "Low carbon, high stakes, long timelines.",
+"title": "Should Ontario build more nuclear power?",
+"blurb": "Small modular reactors are going up at Darlington.",
 "fieldTags": [
 "environment",
 "engineering"
 ],
 "openers": [
-"How do you weigh waste against emissions?",
-"What's the real obstacle to building?"
+"Would you live near a reactor?",
+"What about the waste?"
 ],
 "fr": {
-"title": "Faut-il sortir du nucléaire, ou construire davantage?",
-"blurb": "Faible en carbone, enjeux élevés, longs délais.",
+"title": "L'Ontario devrait-il construire plus de centrales nucléaires?",
+"blurb": "De petits réacteurs modulaires sont en construction à Darlington.",
 "openers": [
-"Comment pesez-vous les déchets contre les émissions?",
-"Quel est le vrai obstacle à la construction?"
+"Habiteriez-vous près d'un réacteur?",
+"Et les déchets?"
 ]
-}
+},
+"place": "CA:Ontario"
 },
 {
 "id": "should-carbon-be-taxed-at-the-consumer-level",
 "kind": "question",
-"title": "Should carbon be taxed at the consumer level?",
-"blurb": "Prices that change behaviour but hit some harder.",
+"title": "Should Canada bring back the consumer carbon tax?",
+"blurb": "It ended in April 2025. Carbon pricing for industry remains.",
 "fieldTags": [
 "environment",
 "economics"
 ],
 "openers": [
-"Which design makes it fair?",
-"Why is it so politically toxic?"
+"Did the rebate cover your costs?",
+"What should replace it?"
 ],
 "fr": {
-"title": "Faut-il taxer le carbone auprès des consommateurs?",
-"blurb": "Des prix qui changent les comportements, mais qui frappent certains plus durement.",
+"title": "Le Canada devrait-il rétablir la taxe carbone pour les consommateurs?",
+"blurb": "Elle a pris fin en avril 2025. La tarification du carbone pour l'industrie demeure.",
 "openers": [
-"Quelle conception la rend équitable?",
-"Pourquoi est-ce si toxique politiquement?"
+"Le remboursement couvrait-il vos coûts?",
+"Par quoi devrait-on la remplacer?"
 ]
-}
+},
+"place": "CA"
 },
 {
 "id": "should-meat-be-taxed-for-climate-reasons",
@@ -3483,24 +3371,26 @@
 {
 "id": "should-new-oil-and-gas-projects-be-banned",
 "kind": "question",
-"title": "Should new oil and gas projects be banned?",
-"blurb": "Supply-side climate policy against energy security.",
+"title": "Should Canada build a new oil pipeline to the West Coast?",
+"blurb": "Ottawa and Alberta are backing a line to the B.C. coast.",
 "fieldTags": [
 "environment",
+"economics",
 "politics"
 ],
 "openers": [
-"What's the fairest transition for workers?",
-"How should poorer countries be treated?"
+"Who should have the final say?",
+"Can it fit with climate targets?"
 ],
 "fr": {
-"title": "Faut-il interdire les nouveaux projets pétroliers et gaziers?",
-"blurb": "Agir sur l'offre pour le climat, contre la sécurité énergétique.",
+"title": "Le Canada devrait-il construire un nouvel oléoduc vers la côte Ouest?",
+"blurb": "Ottawa et l'Alberta appuient un pipeline jusqu'à la côte de la Colombie-Britannique.",
 "openers": [
-"Quelle est la transition la plus juste pour les travailleurs?",
-"Comment traiter les pays plus pauvres?"
+"Qui devrait avoir le dernier mot?",
+"Est-ce compatible avec les cibles climatiques?"
 ]
-}
+},
+"place": "CA"
 },
 {
 "id": "should-climate-protest-that-disrupts-daily-life-be-protected",
@@ -3527,46 +3417,48 @@
 {
 "id": "should-physician-assisted-dying-be-legal",
 "kind": "question",
-"title": "Should physician-assisted dying be legal?",
-"blurb": "Autonomy, safeguards, and pressure on the vulnerable.",
+"title": "Should MAID be available when mental illness is the only condition?",
+"blurb": "Parliament is weighing whether to cancel the expansion planned for 2027.",
 "fieldTags": [
 "medicine",
 "philosophy"
 ],
 "openers": [
-"Which safeguards would you insist on?",
-"What have Canada and the Netherlands taught us?"
+"Can a mental illness be called irremediable?",
+"Who should decide?"
 ],
 "fr": {
-"title": "L'aide médicale à mourir devrait-elle être légale?",
-"blurb": "Autonomie, garde-fous, et pressions sur les personnes vulnérables.",
+"title": "L'AMM devrait-elle être offerte quand la maladie mentale est la seule condition?",
+"blurb": "Le Parlement se demande s'il faut annuler l'élargissement prévu en 2027.",
 "openers": [
-"Sur quels garde-fous insisteriez-vous?",
-"Que nous ont appris le Canada et les Pays-Bas?"
+"Une maladie mentale peut-elle être jugée irrémédiable?",
+"Qui devrait décider?"
 ]
-}
+},
+"place": "CA"
 },
 {
 "id": "should-healthcare-be-single-payer",
 "kind": "question",
-"title": "Should healthcare be single-payer?",
-"blurb": "Coverage, cost, and wait times.",
+"title": "Should Ontario move more surgeries to private clinics?",
+"blurb": "OHIP still pays. Critics say it pulls staff from hospitals.",
 "fieldTags": [
 "medicine",
 "economics"
 ],
 "openers": [
-"What's your own experience with the system?",
-"Which country would you copy?"
+"Would you go to a private clinic for a faster surgery?",
+"Does it shorten waits or move them?"
 ],
 "fr": {
-"title": "Les soins de santé devraient-ils relever d'un payeur unique?",
-"blurb": "Couverture, coût et temps d'attente.",
+"title": "L'Ontario devrait-il confier plus de chirurgies à des cliniques privées?",
+"blurb": "L'OHIP paie toujours. Les critiques disent que ça vide les hôpitaux de leur personnel.",
 "openers": [
-"Quelle est votre expérience du système?",
-"Quel pays imiteriez-vous?"
+"Iriez-vous dans une clinique privée pour être opéré plus vite?",
+"Est-ce que ça réduit l'attente ou la déplace?"
 ]
-}
+},
+"place": "CA:Ontario"
 },
 {
 "id": "should-all-psychedelics-be-legal-for-medical-use",
@@ -3594,45 +3486,47 @@
 "id": "should-drug-possession-be-decriminalized",
 "kind": "question",
 "title": "Should drug possession be decriminalized?",
-"blurb": "Treating addiction as health, not crime.",
+"blurb": "B.C. tried it and wound it down. Ontario is ending funding for supervised consumption sites.",
 "fieldTags": [
 "medicine",
 "law"
 ],
 "openers": [
-"What do you read in the Oregon and Portugal stories?",
-"What has to be in place first?"
+"What did B.C.'s pilot show?",
+"What should replace the sites?"
 ],
 "fr": {
-"title": "Faut-il décriminaliser la possession de drogues?",
-"blurb": "Traiter la dépendance comme une question de santé, pas comme un crime.",
+"title": "La possession de drogues devrait-elle être décriminalisée?",
+"blurb": "La C.-B. a fait l'essai et y a mis fin. L'Ontario cesse de financer les sites de consommation supervisée.",
 "openers": [
-"Que retenez-vous des cas de l'Oregon et du Portugal?",
-"Que faut-il mettre en place d'abord?"
+"Qu'a montré le projet pilote de la C.-B.?",
+"Par quoi faudrait-il remplacer les sites?"
 ]
-}
+},
+"place": "CA"
 },
 {
 "id": "should-vaccines-be-mandatory-for-school",
 "kind": "question",
-"title": "Should vaccines be mandatory for school?",
-"blurb": "Herd protection against parental choice.",
+"title": "Should Ontario end non-medical exemptions for school vaccines?",
+"blurb": "Measles came back in 2025.",
 "fieldTags": [
 "medicine",
 "law"
 ],
 "openers": [
-"Where would you allow exemptions?",
-"Do mandates backfire?"
+"Should belief be enough for an exemption?",
+"What actually raises vaccination rates?"
 ],
 "fr": {
-"title": "Les vaccins devraient-ils être obligatoires à l'école?",
-"blurb": "La protection collective contre le choix des parents.",
+"title": "L'Ontario devrait-il abolir les exemptions non médicales pour les vaccins scolaires?",
+"blurb": "La rougeole est revenue en 2025.",
 "openers": [
-"Où permettriez-vous des exemptions?",
-"Les obligations se retournent-elles contre nous?"
+"Une croyance devrait-elle suffire pour une exemption?",
+"Qu'est-ce qui augmente vraiment la vaccination?"
 ]
-}
+},
+"place": "CA:Ontario"
 },
 {
 "id": "should-human-embryo-editing-be-allowed",
@@ -3681,46 +3575,48 @@
 {
 "id": "should-police-budgets-be-shifted-to-social-services",
 "kind": "question",
-"title": "Should police budgets be shifted to social services?",
-"blurb": "Who responds to a mental health crisis?",
+"title": "Should Ottawa shift police money to mental-health crisis teams?",
+"blurb": "Some calls that go to police could go to a crisis worker.",
 "fieldTags": [
 "law",
 "sociology"
 ],
 "openers": [
-"Which cities have made this work?",
-"What would you move first?"
+"Who should answer a mental-health call?",
+"What has worked elsewhere?"
 ],
 "fr": {
-"title": "Faut-il transférer des budgets de police vers les services sociaux?",
-"blurb": "Qui intervient lors d'une crise de santé mentale?",
+"title": "Ottawa devrait-elle transférer des fonds policiers vers des équipes de crise en santé mentale?",
+"blurb": "Certains appels reçus par la police pourraient aller à un intervenant de crise.",
 "openers": [
-"Quelles villes y sont parvenues?",
-"Que transféreriez-vous d'abord?"
+"Qui devrait répondre à un appel en santé mentale?",
+"Qu'est-ce qui a fonctionné ailleurs?"
 ]
-}
+},
+"place": "ottawa-08-ca"
 },
 {
 "id": "should-immigration-be-significantly-increased",
 "kind": "question",
-"title": "Should immigration be significantly increased?",
-"blurb": "Labour markets, identity, and moral claims.",
+"title": "Should Canada lower immigration levels further?",
+"blurb": "The plan holds permanent admissions at 380,000 a year through 2029.",
 "fieldTags": [
 "politics",
 "economics"
 ],
 "openers": [
-"What's your own family's story here?",
-"Who should get priority?"
+"What's the right number?",
+"Is housing the real problem?"
 ],
 "fr": {
-"title": "Faut-il augmenter nettement l'immigration?",
-"blurb": "Marché du travail, identité et arguments moraux.",
+"title": "Le Canada devrait-il réduire encore ses niveaux d'immigration?",
+"blurb": "Le plan maintient les admissions permanentes à 380 000 par année jusqu'en 2029.",
 "openers": [
-"Quelle est l'histoire de votre famille à ce sujet?",
-"Qui devrait avoir la priorité?"
+"Quel serait le bon chiffre?",
+"Le vrai problème est-il le logement?"
 ]
-}
+},
+"place": "CA"
 },
 {
 "id": "should-national-service-be-mandatory",
@@ -3770,24 +3666,25 @@
 {
 "id": "should-history-curricula-be-set-nationally",
 "kind": "question",
-"title": "Should history curricula be set nationally?",
-"blurb": "Shared story or local control?",
+"title": "Should Canada have a national history curriculum?",
+"blurb": "Education is provincial, so each province teaches its own story.",
 "fieldTags": [
 "history",
 "education"
 ],
 "openers": [
-"What did your school leave out?",
-"Who should write it?"
+"What did your school skip?",
+"Who would write it?"
 ],
 "fr": {
-"title": "Les programmes d'histoire devraient-ils être nationaux?",
-"blurb": "Un récit commun ou un contrôle local?",
+"title": "Le Canada devrait-il avoir un programme national d'histoire?",
+"blurb": "L'éducation relève des provinces, et chacune enseigne sa propre version.",
 "openers": [
-"Qu'a omis votre école?",
-"Qui devrait les rédiger?"
+"Qu'est-ce que votre école a passé sous silence?",
+"Qui l'écrirait?"
 ]
-}
+},
+"place": "CA"
 },
 {
 "id": "should-monuments-to-controversial-figures-come-down",
@@ -3918,28 +3815,6 @@
 "openers": [
 "Y allez-vous?",
 "Qu'est-ce qu'un bon zoo, s'il en existe?"
-]
-}
-},
-{
-"id": "should-countries-pay-reparations-for-slavery-and-colonialism",
-"kind": "question",
-"title": "Should countries pay reparations for slavery and colonialism?",
-"blurb": "Historical debts and how anyone could settle them.",
-"fieldTags": [
-"history",
-"economics"
-],
-"openers": [
-"What form could it take?",
-"Who owes whom?"
-],
-"fr": {
-"title": "Les pays devraient-ils verser des réparations pour l'esclavage et le colonialisme?",
-"blurb": "Dettes historiques, et comment les régler.",
-"openers": [
-"Quelle forme cela pourrait-il prendre?",
-"Qui doit quoi à qui?"
 ]
 }
 },
@@ -4080,24 +3955,25 @@
 {
 "id": "should-public-servants-be-allowed-to-strike",
 "kind": "question",
-"title": "Should public servants be allowed to strike?",
-"blurb": "Workers' rights against essential services.",
+"title": "Should governments be able to order strikers back to work?",
+"blurb": "Ottawa has used it on rail, ports, Canada Post, and Air Canada.",
 "fieldTags": [
 "politics",
 "law"
 ],
 "openers": [
-"Which services would you carve out?",
-"What happens when they can't?"
+"Is any strike too disruptive to allow?",
+"What does a strike mean without the right to walk out?"
 ],
 "fr": {
-"title": "Les fonctionnaires devraient-ils pouvoir faire la grève?",
-"blurb": "Les droits des travailleurs contre les services essentiels.",
+"title": "Les gouvernements devraient-ils pouvoir forcer le retour au travail des grévistes?",
+"blurb": "Ottawa l'a fait pour le rail, les ports, Postes Canada et Air Canada.",
 "openers": [
-"Quels services excluriez-vous?",
-"Que se passe-t-il s'ils ne le peuvent pas?"
+"Certaines grèves sont-elles trop perturbatrices pour être permises?",
+"Que vaut une grève sans droit de débrayer?"
 ]
-}
+},
+"place": "CA"
 },
 {
 "id": "should-high-skilled-migrants-be-prioritized",
@@ -4323,90 +4199,94 @@
 {
 "id": "should-universities-cap-international-student-numbers",
 "kind": "question",
-"title": "Should universities cap international student numbers?",
-"blurb": "Housing and funding pressures against openness.",
+"title": "Should Canada keep capping international students?",
+"blurb": "Colleges cut programs after the cap, and rents eased.",
 "fieldTags": [
 "education",
 "politics"
 ],
 "openers": [
-"Who benefits from the current numbers?",
-"What would a cap do to your campus?"
+"Who gained and who lost?",
+"Should colleges rely on foreign tuition?"
 ],
 "fr": {
-"title": "Les universités devraient-elles plafonner le nombre d'étudiants internationaux?",
-"blurb": "Pressions sur le logement et le financement, contre l'ouverture.",
+"title": "Le Canada devrait-il maintenir le plafond d'étudiants étrangers?",
+"blurb": "Les collèges ont coupé des programmes après le plafond, et les loyers ont baissé.",
 "openers": [
-"Qui profite des chiffres actuels?",
-"Quel effet aurait un plafond sur votre campus?"
+"Qui y a gagné et qui y a perdu?",
+"Les collèges devraient-ils dépendre des droits des étudiants étrangers?"
 ]
-}
+},
+"place": "CA"
 },
 {
 "id": "should-the-retirement-age-rise-with-life-expectancy",
 "kind": "question",
-"title": "Should the retirement age rise with life expectancy?",
-"blurb": "Fiscal arithmetic against fairness to manual workers.",
+"title": "Should the pension age rise to 67?",
+"blurb": "Canada reversed a planned move to 67 in 2016.",
 "fieldTags": [
 "economics",
 "politics"
 ],
 "openers": [
-"Should it depend on your job?",
-"What do you expect for your own generation?"
+"When do you expect to retire?",
+"Is it fair to people in physical jobs?"
 ],
 "fr": {
-"title": "L'âge de la retraite devrait-il suivre l'espérance de vie?",
-"blurb": "L'arithmétique budgétaire contre l'équité pour les travailleurs manuels.",
+"title": "L'âge de la retraite devrait-il passer à 67 ans?",
+"blurb": "Le Canada a renoncé en 2016 au passage prévu à 67 ans.",
 "openers": [
-"Devrait-il dépendre de l'emploi?",
-"À quoi vous attendez-vous pour votre génération?"
+"À quel âge pensez-vous prendre votre retraite?",
+"Est-ce juste pour les emplois physiques?"
 ]
-}
+},
+"place": "CA"
 },
 {
 "id": "should-organ-donation-be-opt-out-by-default",
 "kind": "question",
-"title": "Should organ donation be opt-out by default?",
-"blurb": "More organs, or too much state over your body?",
+"title": "Should Ontario make organ donation opt-out?",
+"blurb": "Nova Scotia did in 2021.",
 "fieldTags": [
 "medicine",
 "philosophy"
 ],
 "openers": [
-"Have you registered?",
-"Does the default really change the numbers?"
+"Are you registered?",
+"Should families still get a say?"
 ],
 "fr": {
-"title": "Le don d'organes devrait-il être automatique, sauf refus?",
-"blurb": "Plus d'organes, ou trop d'État sur votre corps?",
+"title": "L'Ontario devrait-il adopter le consentement présumé au don d'organes?",
+"blurb": "La Nouvelle-Écosse l'a fait en 2021.",
 "openers": [
-"Vous êtes-vous inscrit?",
-"Le choix par défaut change-t-il vraiment les chiffres?"
+"Êtes-vous inscrit?",
+"Les familles devraient-elles avoir leur mot à dire?"
 ]
-}
+},
+"place": "CA:Ontario"
 },
 {
 "id": "should-advertising-to-children-be-banned",
 "kind": "question",
-"title": "Should advertising to children be banned?",
-"blurb": "Protecting kids against commercial speech.",
+"title": "Should Canada ban advertising to children, as Quebec does?",
+"blurb": "Quebec has banned it for kids under 13 since 1980.",
 "fieldTags": [
 "law",
 "psychology"
 ],
 "openers": [
-"Which ads got to you as a child?",
-"Where would you draw the age line?"
+"Which ads do you remember from childhood?",
+"Does it still work online?"
 ],
 "fr": {
-"title": "Faut-il interdire la publicité destinée aux enfants?",
-"blurb": "Protéger les enfants, contre la parole commerciale.",
+"title": "Le Canada devrait-il interdire la publicité destinée aux enfants, comme le Québec?",
+"blurb": "Le Québec l'interdit aux moins de 13 ans depuis 1980.",
 "openers": [
-"Quelles publicités vous ont marqué enfant?",
-"Où traceriez-vous la limite d'âge?"
+"De quelles publicités vous souvenez-vous?",
+"Est-ce encore efficace en ligne?"
 ]
-}
+},
+"place": "CA"
 },
 {
 "id": "starting-a-business-as-a-student",
@@ -4762,24 +4642,25 @@
 {
 "id": "should-public-servants-be-allowed-to-wear-religious-symbols",
 "kind": "question",
-"title": "Should public servants be allowed to wear religious symbols?",
-"blurb": "Quebec's Bill 21 and the wider debate.",
+"title": "Should Quebec's ban on religious symbols for some public workers stand?",
+"blurb": "Bill 21 is before the Supreme Court.",
 "fieldTags": [
 "religion",
 "law"
 ],
 "openers": [
-"Where would you draw the line, if anywhere?",
-"Does a symbol change how you see a teacher or a judge?"
+"Is secularism about the state or its workers?",
+"Should the notwithstanding clause protect it?"
 ],
 "fr": {
-"title": "Les fonctionnaires devraient-ils pouvoir porter des signes religieux?",
-"blurb": "La Loi 21 du Québec, et le débat plus large.",
+"title": "L'interdiction des signes religieux pour certains employés de l'État québécois devrait-elle tenir?",
+"blurb": "La loi 21 est devant la Cour suprême.",
 "openers": [
-"Où tracez-vous la limite, s'il y en a une?",
-"Un signe change-t-il votre regard sur une enseignante ou un juge?"
+"La laïcité concerne-t-elle l'État ou ses employés?",
+"La disposition de dérogation devrait-elle la protéger?"
 ]
-}
+},
+"place": "CA"
 },
 {
 "id": "indigenous-languages-and-revival",
@@ -5154,28 +5035,6 @@
 }
 },
 {
-"id": "should-ottawa-be-officially-bilingual",
-"kind": "question",
-"title": "Should Ottawa be officially bilingual?",
-"blurb": "Services, costs, and what it signals.",
-"fieldTags": [
-"linguistics",
-"politics"
-],
-"openers": [
-"What changes in practice?",
-"Who should it serve first?"
-],
-"fr": {
-"title": "Ottawa devrait-elle être officiellement bilingue?",
-"blurb": "Les services, les coûts, et le message envoyé.",
-"openers": [
-"Qu'est-ce que cela changerait concrètement?",
-"Qui devrait-on servir en premier?"
-]
-}
-},
-{
 "id": "public-art-and-who-it-s-for",
 "kind": "interest",
 "title": "Public art and who it's for",
@@ -5349,5 +5208,335 @@
 "Achetez-vous des billets de loterie, en connaissant les chances?"
 ]
 }
+},
+{
+"id": "should-the-notwithstanding-clause-be-harder-to-use",
+"kind": "question",
+"title": "Should the notwithstanding clause be harder to use?",
+"blurb": "Provinces now invoke it in advance. The Supreme Court is weighing whether that has limits.",
+"fieldTags": [
+"law",
+"politics"
+],
+"openers": [
+"When, if ever, should it be used?",
+"Who should check it?"
+],
+"fr": {
+"title": "La disposition de dérogation devrait-elle être plus difficile à utiliser?",
+"blurb": "Les provinces l'invoquent maintenant à l'avance. La Cour suprême se demande si ça a des limites.",
+"openers": [
+"Quand faudrait-il l'utiliser, si jamais?",
+"Qui devrait l'encadrer?"
+]
+},
+"place": "CA"
+},
+{
+"id": "should-osap-go-back-to-mostly-grants",
+"kind": "question",
+"title": "Should OSAP go back to mostly grants?",
+"blurb": "Since fall 2026, grants make up at most a quarter of student aid.",
+"fieldTags": [
+"education",
+"economics",
+"public_policy"
+],
+"openers": [
+"How much debt is too much?",
+"Who should pay for school?"
+],
+"fr": {
+"title": "Le RAFEO devrait-il redevenir surtout des bourses?",
+"blurb": "Depuis l'automne 2026, les bourses forment au plus le quart de l'aide aux études.",
+"openers": [
+"Combien de dette, c'est trop?",
+"Qui devrait payer les études?"
+]
+},
+"place": "CA:Ontario"
+},
+{
+"id": "should-ontario-let-cities-use-ranked-ballots",
+"kind": "question",
+"title": "Should Ontario let cities use ranked ballots again?",
+"blurb": "The province banned them for city elections in 2020.",
+"fieldTags": [
+"politics",
+"mathematics"
+],
+"openers": [
+"Should cities choose their own voting system?",
+"Would it change who runs?"
+],
+"fr": {
+"title": "L'Ontario devrait-il permettre de nouveau le vote préférentiel aux municipalités?",
+"blurb": "La province l'a interdit pour les élections municipales en 2020.",
+"openers": [
+"Les villes devraient-elles choisir leur propre mode de scrutin?",
+"Est-ce que ça changerait qui se présente?"
+]
+},
+"place": "CA:Ontario"
+},
+{
+"id": "should-public-servants-work-in-the-office-four-days",
+"kind": "question",
+"title": "Should federal public servants be in the office four days a week?",
+"blurb": "Most have had to be since July 2026.",
+"fieldTags": [
+"public_policy",
+"urbanism",
+"economics"
+],
+"openers": [
+"What did downtown feel like this summer?",
+"What should decide where work happens?"
+],
+"fr": {
+"title": "Les fonctionnaires fédéraux devraient-ils être au bureau quatre jours par semaine?",
+"blurb": "La plupart doivent l'être depuis juillet 2026.",
+"openers": [
+"Comment était le centre-ville cet été?",
+"Qu'est-ce qui devrait décider où on travaille?"
+]
+},
+"place": "ottawa-08-ca",
+"starter": 6
+},
+{
+"id": "should-the-federal-public-service-shrink",
+"kind": "question",
+"title": "Should the federal public service shrink?",
+"blurb": "Ottawa plans to cut about 28,000 positions by 2029.",
+"fieldTags": [
+"public_policy",
+"economics",
+"politics"
+],
+"openers": [
+"What should government stop doing?",
+"What happens to Ottawa's economy?"
+],
+"fr": {
+"title": "La fonction publique fédérale devrait-elle rapetisser?",
+"blurb": "Ottawa prévoit supprimer environ 28 000 postes d'ici 2029.",
+"openers": [
+"Qu'est-ce que le gouvernement devrait cesser de faire?",
+"Qu'arrive-t-il à l'économie d'Ottawa?"
+]
+},
+"place": "CA"
+},
+{
+"id": "should-ottawa-and-gatineau-run-one-transit-system",
+"kind": "question",
+"title": "Should Ottawa and Gatineau run one transit system?",
+"blurb": "OC Transpo and the STO meet downtown but run separately.",
+"fieldTags": [
+"urbanism",
+"public_policy"
+],
+"openers": [
+"How often do you cross the river?",
+"Who would run it?"
+],
+"fr": {
+"title": "Ottawa et Gatineau devraient-elles avoir un seul réseau de transport en commun?",
+"blurb": "OC Transpo et la STO se croisent au centre-ville, mais fonctionnent séparément.",
+"openers": [
+"Traversez-vous souvent la rivière?",
+"Qui le gérerait?"
+]
+},
+"place": "ottawa-08-ca"
+},
+{
+"id": "should-canada-spend-five-percent-of-gdp-on-defence",
+"kind": "question",
+"title": "Should Canada spend 5% of GDP on defence?",
+"blurb": "Canada promised NATO it would by 2035.",
+"fieldTags": [
+"politics",
+"economics"
+],
+"openers": [
+"What would you cut to pay for it?",
+"What threat is it for?"
+],
+"fr": {
+"title": "Le Canada devrait-il consacrer 5 % de son PIB à la défense?",
+"blurb": "Le Canada l'a promis à l'OTAN pour 2035.",
+"openers": [
+"Que couperiez-vous pour le payer?",
+"Contre quelle menace?"
+]
+},
+"place": "CA"
+},
+{
+"id": "should-canada-keep-the-monarchy",
+"kind": "question",
+"title": "Should Canada keep the monarchy?",
+"blurb": "Abolishing it would need every province to agree.",
+"fieldTags": [
+"politics",
+"history"
+],
+"openers": [
+"Does the Crown mean anything to you?",
+"What would replace it?"
+],
+"fr": {
+"title": "Le Canada devrait-il garder la monarchie?",
+"blurb": "L'abolir exigerait l'accord de toutes les provinces.",
+"openers": [
+"La Couronne signifie-t-elle quelque chose pour vous?",
+"Par quoi la remplacer?"
+]
+},
+"place": "CA"
+},
+{
+"id": "should-provinces-hold-separation-referendums",
+"kind": "question",
+"title": "Should provinces be able to hold separation referendums?",
+"blurb": "Alberta voted to stay in Canada in October 2026.",
+"fieldTags": [
+"politics",
+"law"
+],
+"openers": [
+"What should count as a clear result?",
+"Do referendums settle anything?"
+],
+"fr": {
+"title": "Les provinces devraient-elles pouvoir tenir des référendums sur la séparation?",
+"blurb": "L'Alberta a voté pour rester au Canada en octobre 2026.",
+"openers": [
+"Qu'est-ce qui devrait compter comme un résultat clair?",
+"Les référendums règlent-ils quelque chose?"
+]
+},
+"place": "CA"
+},
+{
+"id": "should-canada-try-to-join-the-european-union",
+"kind": "question",
+"title": "Should Canada try to join the European Union?",
+"blurb": "Polls in 2025 found many Canadians liked the idea.",
+"fieldTags": [
+"politics",
+"economics"
+],
+"openers": [
+"What would we gain?",
+"What would we give up?"
+],
+"fr": {
+"title": "Le Canada devrait-il tenter d'adhérer à l'Union européenne?",
+"blurb": "En 2025, des sondages montraient que beaucoup de Canadiens aimaient l'idée.",
+"openers": [
+"Qu'y gagnerait-on?",
+"À quoi renoncerait-on?"
+]
+},
+"place": "CA"
+},
+{
+"id": "should-provinces-drop-internal-trade-barriers",
+"kind": "question",
+"title": "Should provinces drop all internal trade barriers?",
+"blurb": "It can be easier to sell to another country than to another province.",
+"fieldTags": [
+"economics",
+"law"
+],
+"openers": [
+"Which barrier surprises you most?",
+"What should provinces keep control of?"
+],
+"fr": {
+"title": "Les provinces devraient-elles abolir toutes les barrières au commerce intérieur?",
+"blurb": "Il est parfois plus facile de vendre à un autre pays qu'à une autre province.",
+"openers": [
+"Quelle barrière vous étonne le plus?",
+"Que devraient garder les provinces?"
+]
+},
+"place": "CA"
+},
+{
+"id": "is-high-speed-rail-worth-what-it-costs",
+"kind": "question",
+"title": "Is high-speed rail worth what it costs?",
+"blurb": "Alto plans Toronto to Quebec City, starting with Ottawa to Montreal.",
+"fieldTags": [
+"engineering",
+"urbanism",
+"economics"
+],
+"openers": [
+"Would you take it over flying?",
+"Where should it stop?"
+],
+"fr": {
+"title": "Le train à grande vitesse vaut-il ce qu'il coûte?",
+"blurb": "Alto prévoit un trajet de Toronto à Québec, en commençant par Ottawa–Montréal.",
+"openers": [
+"Le prendriez-vous plutôt que l'avion?",
+"Où devrait-il s'arrêter?"
+]
+},
+"place": "CA",
+"starter": 12
+},
+{
+"id": "should-tipping-be-replaced-with-higher-wages",
+"kind": "question",
+"title": "Should tipping be replaced with higher wages?",
+"blurb": "Tip screens now ask for 20% at the counter.",
+"fieldTags": [
+"economics",
+"sociology",
+"business"
+],
+"openers": [
+"Do you tip at a counter?",
+"Who wins if tipping ends?"
+],
+"fr": {
+"title": "Le pourboire devrait-il être remplacé par de meilleurs salaires?",
+"blurb": "Les terminaux demandent maintenant 20 % au comptoir.",
+"openers": [
+"Laissez-vous un pourboire au comptoir?",
+"Qui y gagnerait si le pourboire disparaissait?"
+]
+},
+"starter": 4
+},
+{
+"id": "should-sports-betting-ads-be-banned",
+"kind": "question",
+"title": "Should sports betting ads be banned?",
+"blurb": "Ontario's open betting market made them hard to avoid.",
+"fieldTags": [
+"psychology",
+"media",
+"law"
+],
+"openers": [
+"Do you know anyone who bets on games?",
+"Is it different from a lottery ad?"
+],
+"fr": {
+"title": "La publicité des paris sportifs devrait-elle être interdite?",
+"blurb": "Le marché ouvert des paris en Ontario les a rendues incontournables.",
+"openers": [
+"Connaissez-vous quelqu'un qui parie sur des matchs?",
+"Est-ce différent d'une pub de loterie?"
+]
+},
+"place": "CA:Ontario"
 }
 ]

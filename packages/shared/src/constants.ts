@@ -3,6 +3,8 @@ export const GROUP_MAX_SIZE = 8;
 export const GROUP_MEETUP_CONFIRM_YES = 3;
 export const MIN_AGE_YEARS = 18;
 export const DECK_PAGE_SIZE = 20;
+/** Below this many topic swipes, someone sees the shared starter topics first. */
+export const NEWCOMER_SWIPES = 20;
 export const PEOPLE_PAGE_SIZE = 20;
 
 const HOUR = 60 * 60 * 1000;

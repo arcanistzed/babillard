@@ -47,6 +47,8 @@ export function Button({ label, kind = "primary", busy, disabled, style, textCol
     danger: { bg: "transparent", fg: theme.danger, border: theme.danger },
   }[kind];
   const inactive = disabled || busy;
+  // Half opacity made disabled buttons muddy and hard to read, so they get their own readable neutral colours.
+  const shown = disabled && !busy ? { bg: kind === "primary" ? theme.line : "transparent", fg: theme.muted, border: theme.line } : colors;
   return (
     <AnimatedPressable
       accessibilityRole="button"
@@ -61,9 +63,9 @@ export function Button({ label, kind = "primary", busy, disabled, style, textCol
         onPressOut?.(event);
       }}
       {...props}
-      style={[styles.button, { backgroundColor: colors.bg, borderColor: colors.border, opacity: inactive ? 0.5 : 1 }, pressStyle, style]}
+      style={[styles.button, { backgroundColor: shown.bg, borderColor: shown.border }, pressStyle, style]}
     >
-      {busy ? <ActivityIndicator color={textColor ?? colors.fg} /> : <Text style={[VARIANTS.bodyBold, { color: textColor ?? colors.fg }]}>{label}</Text>}
+      {busy ? <ActivityIndicator color={textColor ?? shown.fg} /> : <Text style={[VARIANTS.bodyBold, { color: disabled ? shown.fg : (textColor ?? shown.fg) }]}>{label}</Text>}
     </AnimatedPressable>
   );
 }

@@ -1,4 +1,4 @@
-import { DECK_PAGE_SIZE, FIELD_GROUPS, leanSummary, MEETUPS_HELD_MIN_SHOWN, outcomeSummary, rankTopics, type OutcomeCounts, topicSwipeSchema, topicSubmissionSchema, type TopicCard, type TopicSwipeResult } from "@babillard/shared";
+import { DECK_PAGE_SIZE, FIELD_GROUPS, NEWCOMER_SWIPES, leanSummary, MEETUPS_HELD_MIN_SHOWN, outcomeSummary, rankTopics, type OutcomeCounts, topicSwipeSchema, topicSubmissionSchema, type TopicCard, type TopicSwipeResult } from "@babillard/shared";
 import { localizeTopic, requestLanguage } from "../lib/language";
 import { and, eq, gt, inArray, isNotNull, isNull, or, sql } from "drizzle-orm";
 import { Hono } from "hono";
@@ -33,6 +33,11 @@ export async function joinCohort(
   });
 }
 
+/** The place values a topic can carry and still reach someone in this city: the city, its province or state, and its country. */
+export function placesFor(cityId: string, home: { region: string; countryCode: string } | undefined): string[] {
+  return home ? [cityId, `${home.countryCode}:${home.region}`, home.countryCode] : [cityId];
+}
+
 const deck = new Hono<AppEnv>();
 deck.use("*", requireAuth, requireOnboarded);
 
@@ -40,8 +45,10 @@ deck.get("/topics", async (c) => {
   const user = c.get("user");
   const db = getDb(c.env);
   const swipes = schema.topicSwipes;
+  const [home] = await db.select({ region: schema.localities.region, countryCode: schema.localities.countryCode }).from(schema.localities).where(eq(schema.localities.id, user.cityId!));
+  const places = placesFor(user.cityId!, home);
 
-  const [candidates, cohorts, profile] = await Promise.all([
+  const [candidates, cohorts, profile, swiped] = await Promise.all([
     db
       .select({ topic: schema.topics })
       .from(schema.topics)
@@ -49,6 +56,7 @@ deck.get("/topics", async (c) => {
       .where(
         and(
           isNull(swipes.userId),
+          or(isNull(schema.topics.place), inArray(schema.topics.place, places)),
           or(inArray(schema.topics.status, ["seeded", "approved"]), and(eq(schema.topics.status, "pending"), eq(schema.topics.createdBy, user.id))),
         ),
       ),
@@ -59,6 +67,7 @@ deck.get("/topics", async (c) => {
       .where(and(eq(swipes.direction, "right"), eq(schema.users.cityId, user.cityId!), eq(schema.users.status, "active")))
       .groupBy(swipes.topicId),
     db.select({ fields: schema.profiles.fields }).from(schema.profiles).where(eq(schema.profiles.userId, user.id)),
+    db.select({ count: sql<number>`count(*)` }).from(swipes).where(eq(swipes.userId, user.id)),
   ]);
 
   const nearby = new Map(cohorts.map((row) => [row.topicId, row.count]));
@@ -71,7 +80,7 @@ deck.get("/topics", async (c) => {
     ...ownPending,
     ...rankTopics(
       withCohorts.filter((topic) => topic.status !== "pending"),
-      { userFields: profile[0]?.fields ?? [], limit: Math.max(DECK_PAGE_SIZE - ownPending.length, 0) },
+      { userFields: profile[0]?.fields ?? [], limit: Math.max(DECK_PAGE_SIZE - ownPending.length, 0), newcomer: (swiped[0]?.count ?? 0) < NEWCOMER_SWIPES },
     ),
   ];
   const ids = ranked.map((topic) => topic.id);
@@ -144,8 +153,12 @@ deck.post("/topics/:id/swipe", async (c) => {
   const db = getDb(c.env);
   const topicId = c.req.param("id");
 
-  const [topic] = await db.select().from(schema.topics).where(eq(schema.topics.id, topicId));
-  const visible = topic && (topic.status === "seeded" || topic.status === "approved" || (topic.status === "pending" && topic.createdBy === user.id));
+  const [[topic], [home]] = await Promise.all([
+    db.select().from(schema.topics).where(eq(schema.topics.id, topicId)),
+    db.select({ region: schema.localities.region, countryCode: schema.localities.countryCode }).from(schema.localities).where(eq(schema.localities.id, user.cityId!)),
+  ]);
+  const inPlace = !topic?.place || placesFor(user.cityId!, home).includes(topic.place);
+  const visible = topic && inPlace && (topic.status === "seeded" || topic.status === "approved" || (topic.status === "pending" && topic.createdBy === user.id));
   if (!visible) throw fail(404, "topic_not_found");
 
   const stance = topic.kind === "question" && input.direction === "right" ? input.stance : null;
@@ -184,7 +197,8 @@ deck.post("/topics", async (c) => {
   if ((recent?.count ?? 0) >= MAX_SUBMISSIONS_PER_DAY) throw fail(429, "too_many_submissions");
 
   const id = newId();
-  await db.insert(schema.topics).values({ id, ...input, openers: [], status: "pending", createdBy: user.id, createdAt: now });
+  // A suggestion only reaches people in the suggester's city, and approval keeps it there.
+  await db.insert(schema.topics).values({ id, ...input, openers: [], status: "pending", place: user.cityId, createdBy: user.id, createdAt: now });
   return c.json({ id, status: "pending" }, 201);
 });
 

@@ -205,7 +205,7 @@ pnpm --filter @babillard/api deploy
 
 The deploy also publishes the landing page. The API Worker serves the files in `apps/site/public` at `/`, `/fr/`, and `/site/*`, and every other path goes to the API. Edit the page text in `apps/site/src/copy.ts`, not the generated HTML.
 
-When topics or cities change, run `pnpm --filter @babillard/api seed:sql`, then load the result. It's safe to run again, and it moves people out of any city that was merged into another.
+When topics or cities change, run `pnpm --filter @babillard/api seed:sql`, then load the result. It's safe to run again, and it moves people out of any city that was merged into another. Seeded topics take their wording, place, and starter order from `seed/topics.json` on every load, and a seeded topic removed from the file becomes `retired` rather than deleted, so its groups keep working.
 
 ```bash
 cd apps/api && npx wrangler d1 execute babillard --remote --file seed/seed.sql
@@ -256,6 +256,8 @@ cd apps/api && npx wrangler d1 execute babillard --remote --file seed/seed.sql
 - **Cities come from a fixed list, not free text.** Matching needs one shared ID per city, or "Ottawa" and "ottawa on" would never meet. Places inside a metro area share its row, so people in Aylmer, Gatineau, and Ottawa end up together. Canada uses a radius per metro. Elsewhere, a place under 1 million people merges into a city at least twice its size within 20 km in the same country. The list has 1,778 cities from [GeoNames](https://www.geonames.org/), under [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/), filtered to cities over 300,000 people, or over 30,000 in Canada.
 - **Location stays on the phone.** The location button finds the nearest city on the device and sends only that city.
 - **Moving city carries your picks.** Your right-swiped topics join the cohorts in the new city, so you can land in a group there. The topics you already joined stay yours, and existing chats stay open.
+- **Topics have a place.** A topic's `place` is empty for everywhere, a country code (`CA`), a province (`CA:Ontario`), or a city ID (`ottawa-08-ca`). The deck and swipes only reach people inside it. Suggested topics stay in the suggester's city, approved or not, so each area's deck grows from what people there propose. The seeded questions lean toward Ottawa, Ontario, and Canada, since that's where the app starts, and worldwide debates stay worldwide.
+- **Newcomers share an opening deck.** Until someone has swiped 20 topics, their deck leads with a fixed set of broad starter topics (`starter` in `seed/topics.json`). The first people in a city then overlap within minutes instead of scattering across 250 topics, before field overlap and nearby groups take over the ranking.
 - **Stance never decides who meets whom.** People gather around topics. A question's stance only feeds the group's overall spread, and later the policy consultation export.
 - **"Open to dating" is private unless mutual.** Every response showing someone's chips goes through `visibleLookingFor`.
 - **18 and over.** Date of birth is checked at onboarding, nothing is stored for anyone younger, and it can't be edited afterward.
