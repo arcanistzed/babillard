@@ -24,7 +24,7 @@ const config: ExpoConfig = {
     package: "com.babillard",
     softwareKeyboardLayoutMode: "resize",
     googleServicesFile: "./google-services.json",
-    adaptiveIcon: { foregroundImage: "./assets/adaptive-icon.png", backgroundColor: "#FF5FAE" },
+    adaptiveIcon: { foregroundImage: "./assets/adaptive-icon.png", monochromeImage: "./assets/monochrome-icon.png", backgroundColor: "#FF5FAE" },
     ...(isRealHost
       ? {
           intentFilters: [
@@ -43,7 +43,8 @@ const config: ExpoConfig = {
     ["expo-splash-screen", { image: "./assets/splash.png", imageWidth: 200, backgroundColor: "#FF5FAE" }],
     ["expo-secure-store", { faceIDPermission: false }],
     "expo-font",
-    "expo-notifications",
+    // Android draws the status-bar icon as a white silhouette, so it needs its own transparent image.
+    ["expo-notifications", { icon: "./assets/notification-icon.png", color: "#FF5FAE" }],
     ["expo-calendar", { calendarPermission: "Babillard adds meetups you confirm to your calendar.", remindersPermission: false }],
     ["expo-image-picker", { photosPermission: "Babillard uses a photo you choose for your profile.", cameraPermission: false, microphonePermission: false }],
     ["expo-location", { locationWhenInUsePermission: "Babillard uses your location once to suggest your city. It stays on your phone.", locationAlwaysAndWhenInUsePermission: false, locationAlwaysPermission: false }],
