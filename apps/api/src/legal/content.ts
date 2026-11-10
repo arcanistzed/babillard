@@ -1,5 +1,5 @@
-// The published text of the policy, terms, and safety page. The reviewed draft lives in a shared document,
-// so copy any change there into this file, and bump LEGAL_VERSION if people need to agree again.
+// The published text of the policy, terms, and safety page. This file is the source of truth: edit it here,
+// and bump LEGAL_VERSION if people need to agree again.
 
 export type LegalPage = "privacy" | "terms" | "safety";
 export type Language = "en" | "fr";

@@ -1489,7 +1489,7 @@ describe("crash reports and public pages", () => {
       const response = await fetch(`${BASE}${path}`);
       expect(response.status).toBe(200);
       const page = await response.text();
-      expect(page).toContain(`<html lang="${lang}">`);
+      expect(page).toContain(`<html lang="${lang}-CA">`);
       expect(page).toContain(`<h1>${title}</h1>`);
       expect(page).not.toContain("**");
       expect(page).not.toContain("[contact address]");
@@ -1656,11 +1656,20 @@ describe("crash reports and public pages", () => {
   });
 });
 
+describe("policy pages", () => {
+  it("serves the policies in the site's frame, with tabs and a language link", async () => {
+    const page = await (await fetch(`${BASE}/privacy`)).text();
+    expect(page).toContain('aria-current="page"');
+    expect(page).toContain('href="/confidentialite"');
+    expect(page).toContain('font-family: "Bricolage"');
+  });
+});
+
 describe("landing page", () => {
   it("serves the landing page in both languages beside the API", async () => {
     const english = await fetch(`${BASE}/`);
     expect(english.status).toBe(200);
-    expect(await english.text()).toContain("Babillard is Canadian French for bulletin board.");
+    expect(await english.text()).toContain("Pick a topic.");
     expect(await (await fetch(`${BASE}/fr/`)).text()).toContain('lang="fr-CA"');
     expect((await fetch(`${BASE}/healthz`)).status).toBe(200);
   });

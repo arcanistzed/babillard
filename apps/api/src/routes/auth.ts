@@ -6,6 +6,7 @@ import { createMiddleware } from "hono/factory";
 import { html } from "hono/html";
 import { getDb, schema } from "../db";
 import { isDevMode } from "../lib/config";
+import { page } from "../lib/page";
 import { sendLoginEmail } from "../lib/email";
 import { fail, parseJson } from "../lib/http";
 import { hmacHex, newId, randomCode, randomToken, safeEqual, sha256Hex } from "../lib/tokens";
@@ -139,23 +140,17 @@ auth.post("/logout", requireAuth, async (c) => {
  */
 auth.get("/link", (c) => {
   const token = c.req.query("token") ?? "";
-  return c.html(html`<!doctype html>
-    <html lang="en">
-      <head>
-        <meta charset="utf-8" />
-        <meta name="viewport" content="width=device-width, initial-scale=1" />
-        <title>Babillard sign-in</title>
-        <style>
-          body { font: 16px/1.5 system-ui, sans-serif; max-width: 28rem; margin: 4rem auto; padding: 0 1rem; color: #1f2430; }
-          a.button { display: inline-block; padding: 0.75rem 1.25rem; background: #1f2430; color: #fff; border-radius: 0.5rem; text-decoration: none; }
-        </style>
-      </head>
-      <body>
-        <h1>Open Babillard</h1>
-        <p><a class="button" href="babillard://auth/link?token=${encodeURIComponent(token)}">Open the app</a></p>
-        <p>Reading this on another device? Type the six-digit code from your email into the app instead.</p>
-      </body>
-    </html>`);
+  const fr = requestLanguage(c) === "fr";
+  return c.html(
+    page(
+      fr ? "Connexion" : "Sign in",
+      html`<h1>${fr ? "Ouvrir Babillard" : "Open Babillard"}</h1>
+        <p><a class="button" href="babillard://auth/link?token=${encodeURIComponent(token)}">${fr ? "Ouvrir l'application" : "Open the app"}</a></p>
+        <p class="muted">${fr ? "Vous lisez ceci sur un autre appareil? Entrez plutôt dans l'application le code à six chiffres reçu par courriel." : "Reading this on another device? Type the six-digit code from your email into the app instead."}</p>`,
+      fr ? "fr" : "en",
+      { hidden: true },
+    ),
+  );
 });
 
 export default auth;

@@ -18,7 +18,7 @@ const board = (lang: Lang): Flyer[] =>
     ? [
         { fields: "Economics and Politics", title: "Monetary policy and central banks", bg: "#FFC21A", fg: INK },
         { fields: "Philosophy", title: "Ethics and moral philosophy", bg: "#6B3FC9", fg: WHITE },
-        { fields: "Education and Psychology", title: "Should phones be banned in schools?", bg: "#FFD95C", fg: INK, question: true },
+        { fields: "Politics and Education", title: "Should Canada lower the voting age to 16?", bg: "#FF6A47", fg: INK, question: true },
         { fields: "History and Sociology", title: "Oral history and memory", bg: "#00727A", fg: WHITE },
         { fields: "Biology and Medicine", title: "Microbiome research", bg: "#39C3E8", fg: INK },
         { fields: "Literature and Linguistics", title: "Translation and world literature", bg: "#A3154F", fg: WHITE },
@@ -29,7 +29,7 @@ const board = (lang: Lang): Flyer[] =>
     : [
         { fields: "Économie et Politique", title: "Politique monétaire et banques centrales", bg: "#FFC21A", fg: INK },
         { fields: "Philosophie", title: "Éthique et philosophie morale", bg: "#6B3FC9", fg: WHITE },
-        { fields: "Éducation et Psychologie", title: "Faut-il interdire les téléphones à l'école?", bg: "#FFD95C", fg: INK, question: true },
+        { fields: "Politique et Éducation", title: "Le Canada devrait-il abaisser l'âge du vote à 16 ans?", bg: "#FF6A47", fg: INK, question: true },
         { fields: "Histoire et Sociologie", title: "Histoire orale et mémoire", bg: "#00727A", fg: WHITE },
         { fields: "Biologie et Médecine", title: "Recherche sur le microbiome", bg: "#39C3E8", fg: INK },
         { fields: "Littérature et Linguistique", title: "Traduction et littérature mondiale", bg: "#A3154F", fg: WHITE },
@@ -51,7 +51,6 @@ export const copy = {
     download: "Download for Android",
     hero: {
       h1: ["Pick a topic.", "Meet the people near you who picked it too."],
-      lead: "Babillard is Canadian French for bulletin board. Ours is pinned with research areas, books, and policy questions. Swipe right on the ones you'd happily talk about for an hour. When four people in your city pick the same one, a group chat opens, and the app helps you find a time to meet.",
       note: "Free, and Android only for now.",
     },
     board: board("en"),
@@ -60,7 +59,7 @@ export const copy = {
       { h: "Swipe on what you'd talk about", p: "Each card is a topic, like walkable cities or the foundations of mathematics. Some cards ask a question, and you can say where you stand before you swipe." },
       { h: "Four people open a group", p: "The tabs along the bottom of a card are seats. When the fourth person in your city tears one off, a group chat opens with all four of you in it. A group holds up to eight." },
       { h: "Or start with one person", p: "People who picked the same topic show up as cards too. If you both swipe right, a chat opens with a question about the topic to get you going." },
-      { h: "Then meet up", p: "Pick a time and a place in a couple of taps. Once enough people say yes, it's on. Afterward the app asks whether you actually met, and that's the number we measure ourselves by." },
+      { h: "Then meet up", p: "Pick a time and a place in a couple of taps. Once enough people say yes, it's on. Afterward, the app asks how it went." },
     ],
     rulesTitle: "A few things we decided",
     rules: [
@@ -81,14 +80,14 @@ export const copy = {
     phone: {
       chips: ["All", "Society", "Humanities", "Science"],
       walk: { fields: "Cities & urbanism and Environment & climate", title: "Walkable cities", blurb: "Why some places are pleasant to be in on foot.", nearby: "5 nearby" },
-      vote: { fields: "Politics and Mathematics", title: "Should we adopt ranked-choice voting?", stances: ["For", "Against", "Not sure"], nearby: "3 nearby. You'd open the group." },
-      opened: "A group on ranked-choice voting just opened in Ottawa.",
-      groupTitle: "Should we adopt ranked-choice voting?",
+      vote: { fields: "Politics and Mathematics", title: "Should Canada replace first-past-the-post?", stances: ["For", "Against", "Not sure"], nearby: "3 nearby. You'd open the group." },
+      opened: "A group on electoral reform just opened in Ottawa.",
+      groupTitle: "Should Canada replace first-past-the-post?",
       groupSub: "4 people",
       group: [
-        ["Maya", "Have you ever voted this way?"],
-        ["Jon", "Once, for a student union. It changed who bothered to run."],
-        ["Priya", "I want to know if it actually reduces polarization."],
+        ["Maya", "Has your vote ever felt wasted?"],
+        ["Jon", "Every federal election in my riding, honestly."],
+        ["Priya", "I'd take ranked ballots over proportional representation."],
         ["me", "Same. Coffee this week to argue about it?"],
         ["Maya", "Yes please"],
       ],
@@ -123,7 +122,6 @@ export const copy = {
     download: "Télécharger pour Android",
     hero: {
       h1: ["Choisissez un sujet.", "Rencontrez les gens près de chez vous qui l'ont choisi aussi."],
-      lead: "Un babillard, c'est là où l'on affiche ce qui se passe. Le nôtre est couvert de domaines de recherche, de livres et de questions de politique publique. Glissez à droite sur celles dont vous pourriez parler pendant une heure. Quand quatre personnes de votre ville choisissent le même sujet, une discussion de groupe s'ouvre, et l'application vous aide à trouver un moment pour vous rencontrer.",
       note: "Gratuit, et seulement sur Android pour l'instant.",
     },
     board: board("fr"),
@@ -132,7 +130,7 @@ export const copy = {
       { h: "Glissez sur ce dont vous aimeriez parler", p: "Chaque carte est un sujet, comme les villes marchables ou les fondements des mathématiques. Certaines posent une question, et vous pouvez dire où vous vous situez avant de glisser." },
       { h: "Quatre personnes ouvrent un groupe", p: "Les languettes au bas d'une carte sont des places. Quand la quatrième personne de votre ville en détache une, une discussion de groupe s'ouvre avec vous quatre. Un groupe compte jusqu'à huit personnes." },
       { h: "Ou commencez à deux", p: "Les gens qui ont choisi le même sujet apparaissent aussi sous forme de cartes. Si vous glissez tous les deux à droite, une discussion s'ouvre avec une question sur le sujet pour lancer la conversation." },
-      { h: "Puis rencontrez-vous", p: "Choisissez un moment et un lieu en quelques touches. Dès qu'assez de gens disent oui, c'est confirmé. Ensuite, l'application vous demande si vous vous êtes vraiment rencontrés, et c'est ce chiffre qui compte pour nous." },
+      { h: "Puis rencontrez-vous", p: "Choisissez un moment et un lieu en quelques touches. Dès qu'assez de gens disent oui, c'est confirmé. Ensuite, l'application vous demande comment ça s'est passé." },
     ],
     rulesTitle: "Quelques choix que nous avons faits",
     rules: [
@@ -153,14 +151,14 @@ export const copy = {
     phone: {
       chips: ["Tout", "Société", "Humanités", "Sciences"],
       walk: { fields: "Villes et urbanisme et Environnement et climat", title: "Villes marchables", blurb: "Pourquoi certains lieux sont agréables à pied.", nearby: "5 à proximité" },
-      vote: { fields: "Politique et Mathématiques", title: "Faut-il adopter le vote préférentiel?", stances: ["Pour", "Contre", "Incertain"], nearby: "3 à proximité. Vous ouvririez le groupe." },
-      opened: "Un groupe sur le vote préférentiel vient de s'ouvrir à Ottawa.",
-      groupTitle: "Faut-il adopter le vote préférentiel?",
+      vote: { fields: "Politique et Mathématiques", title: "Le Canada devrait-il remplacer le scrutin uninominal à un tour?", stances: ["Pour", "Contre", "Incertain"], nearby: "3 à proximité. Vous ouvririez le groupe." },
+      opened: "Un groupe sur la réforme électorale vient de s'ouvrir à Ottawa.",
+      groupTitle: "Le Canada devrait-il remplacer le scrutin uninominal à un tour?",
       groupSub: "4 personnes",
       group: [
-        ["Maya", "Avez-vous déjà voté ainsi?"],
-        ["Jon", "Une fois, pour une association étudiante. Ça a changé qui se présentait."],
-        ["Priya", "J'aimerais savoir s'il réduit vraiment la polarisation."],
+        ["Maya", "Votre vote vous a-t-il déjà semblé inutile?"],
+        ["Jon", "À chaque élection fédérale dans ma circonscription, franchement."],
+        ["Priya", "Je préférerais le vote préférentiel à la proportionnelle."],
         ["me", "Moi aussi. Un café cette semaine pour en débattre?"],
         ["Maya", "Oui, avec plaisir"],
       ],

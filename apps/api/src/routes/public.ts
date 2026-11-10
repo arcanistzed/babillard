@@ -6,6 +6,7 @@ import { getDb, schema } from "../db";
 import { LEGAL_PATHS, LEGAL_TEXT, type Language, type LegalPage } from "../legal/content";
 import { buildIcs } from "../lib/ics";
 import { localizeTopic, requestLanguage } from "../lib/language";
+import { legalTabs, page } from "../lib/page";
 import type { AppEnv } from "../types";
 
 const ANDROID_APK_KEY = "releases/babillard.apk";
@@ -27,6 +28,7 @@ function renderLegal(text: string): string {
       if (block.startsWith("# ")) return `<h1>${inline(block.slice(2))}</h1>`;
       if (block.startsWith("## ")) return `<h2>${inline(block.slice(3))}</h2>`;
       if (block.startsWith("- ")) return `<ul>${block.split("\n").map((item) => `<li>${inline(item.slice(2))}</li>`).join("")}</ul>`;
+      if (/^(Last updated|Dernière mise à jour):/.test(block)) return `<p class="meta">${inline(block)}</p>`;
       return `<p>${inline(block)}</p>`;
     })
     .join("\n");
@@ -36,36 +38,7 @@ function legalPage(pageName: LegalPage, language: Language) {
   const other: Language = language === "en" ? "fr" : "en";
   const text = LEGAL_TEXT[pageName][language];
   const title = text.split("\n")[0]!.slice(2);
-  const links = (Object.keys(LEGAL_PATHS) as LegalPage[]).map((name) => {
-    const heading = LEGAL_TEXT[name][language].split("\n")[0]!.slice(2);
-    return `<a href="${LEGAL_PATHS[name][language]}">${escapeHtml(heading)}</a>`;
-  });
-  const switcher = `<a href="${LEGAL_PATHS[pageName][other]}" lang="${other}">${other === "fr" ? "Français" : "English"}</a>`;
-  return page(title, html`<p>${raw(switcher)}</p>${raw(renderLegal(text))}<p class="muted">${raw(links.join(" · "))}</p>`, language);
-}
-
-function page(title: string, body: unknown, language: Language = "en") {
-  return html`<!doctype html>
-    <html lang="${language}">
-      <head>
-        <meta charset="utf-8" />
-        <meta name="viewport" content="width=device-width, initial-scale=1" />
-        <meta name="robots" content="noindex" />
-        <title>${title}</title>
-        <style>
-          :root { color-scheme: light dark; --ink: #1f2430; --paper: #fbf8f2; --muted: #5f6675; --accent: #b4432d; }
-          @media (prefers-color-scheme: dark) { :root { --ink: #f2efe8; --paper: #17181c; --muted: #a2a7b3; --accent: #e8795f; } }
-          body { font: 17px/1.55 Georgia, serif; background: var(--paper); color: var(--ink); max-width: 30rem; margin: 0 auto; padding: 3rem 1rem; }
-          h1 { line-height: 1.2; }
-          p.muted { color: var(--muted); }
-          a.button { display: inline-block; font-family: system-ui, sans-serif; padding: 0.7rem 1.2rem; border-radius: 0.5rem; background: var(--accent); color: #fff; text-decoration: none; }
-        </style>
-      </head>
-      <body>
-        ${body}
-        <p class="muted">${language === "fr" ? "Babillard aide les gens à se trouver grâce à ce dont ils veulent parler, puis à se rencontrer en personne." : "Babillard is where people find each other through what they want to talk about, then meet in person."}</p>
-      </body>
-    </html>`;
+  return page(title, html`${legalTabs(pageName, language)}${raw(renderLegal(text))}`, language, { alternate: LEGAL_PATHS[pageName][other] });
 }
 
 const MAX_TAKEAWAYS_SHOWN = 10;
@@ -122,6 +95,7 @@ function outcomesSection(outcomes: TopicOutcomes | null, takeaways: { text: stri
 const publicRoutes = new Hono<AppEnv>();
 
 publicRoutes.get("/healthz", (c) => c.json({ ok: true }));
+});
 
 publicRoutes.get("/.well-known/apple-app-site-association", (c) =>
   c.json({ applinks: { details: [{ appIDs: c.env.APPLE_APP_ID ? [c.env.APPLE_APP_ID] : [], components: [{ "/": "/auth/link" }] }] } }),
@@ -169,8 +143,8 @@ publicRoutes.get("/invite", (c) => {
   const language = requestLanguage(c);
   return c.html(
     language === "fr"
-      ? page("Rejoindre Babillard", html`<h1>Quelqu'un veut parler d'idées avec vous</h1><p>Faites glisser les sujets qui vous intéressent, trouvez des gens près de chez vous et rencontrez-les.</p>${getApp("fr")}`, "fr")
-      : page("Join Babillard", html`<h1>Someone wants to talk ideas with you</h1><p>Swipe on the topics you care about, match with people nearby, and meet up.</p>${getApp()}`),
+      ? page("Rejoindre Babillard", html`<h1>Quelqu'un veut parler d'idées avec vous</h1><p>Faites glisser les sujets qui vous intéressent, trouvez des gens près de chez vous et rencontrez-les.</p>${getApp("fr")}`, "fr", { hidden: true })
+      : page("Join Babillard", html`<h1>Someone wants to talk ideas with you</h1><p>Swipe on the topics you care about, match with people nearby, and meet up.</p>${getApp()}`, "en", { hidden: true }),
   );
 });
 
@@ -217,8 +191,14 @@ publicRoutes.get("/m/:file", async (c) => {
       summary,
       html`<h1>${topicTitle ?? "A meetup"}</h1>
         <p><strong>${location}</strong></p>
-        <p>${new Date(meetup.startsAt).toUTCString()}</p>
-        <p><a class="button" href="${url}.ics">Add to calendar</a></p>`,
+        <p><time datetime="${new Date(meetup.startsAt).toISOString()}" data-local>${new Date(meetup.startsAt).toUTCString()}</time></p>
+        <p><a class="button" href="${url}.ics">Add to calendar</a></p>
+        <script>
+          // The server doesn't know the reader's time zone, but their browser does.
+          for (const el of document.querySelectorAll("time[data-local]")) el.textContent = new Date(el.getAttribute("datetime")).toLocaleString(undefined, { weekday: "long", month: "long", day: "numeric", hour: "numeric", minute: "2-digit" });
+        </script>`,
+      "en",
+      { hidden: true },
     ),
   );
 });
