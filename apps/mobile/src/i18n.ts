@@ -101,3 +101,10 @@ export function slotLabel(label: string): string {
   const words = label.split(" ").map((word) => SLOT_WORDS[word] ?? word).join(" ");
   return words.charAt(0).toUpperCase() + words.slice(1);
 }
+
+/** "A", "A and B", or "A, B and C", in the app's language. */
+export function listOf(items: string[]): string {
+  const and = t(" and ", " et ");
+  if (items.length <= 2) return items.join(and);
+  return `${items.slice(0, -1).join(", ")}${and}${items[items.length - 1]}`;
+}

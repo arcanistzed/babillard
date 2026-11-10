@@ -2,7 +2,7 @@ import { GROUP_MAX_SIZE, GROUP_MIN_SIZE, type Field, type Lean, type Stance, typ
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import Animated, { Extrapolation, FadeIn, interpolate, useAnimatedStyle, type SharedValue } from "react-native-reanimated";
 import { fonts, flyerInk } from "@/theme";
-import { fieldLabel, t } from "@/i18n";
+import { fieldLabel, listOf, t } from "@/i18n";
 
 const STANCE_LABELS: Record<Stance, string> = { for: t("For", "Pour"), against: t("Against", "Contre"), unsure: t("Not sure", "Incertain") };
 
@@ -51,7 +51,7 @@ function CityLean({ lean, fg }: { lean: Lean; fg: string }) {
 
 export function Flyer({ topic, stance, onStance, isTop = true, pull }: { topic: TopicCard; stance: Stance | null; onStance: (stance: Stance | null) => void; isTop?: boolean; pull?: SharedValue<number> }) {
   const { bg, fg } = flyerInk(topic.fieldTags[0]);
-  const fields = topic.fieldTags.map((tag) => fieldLabel(tag as Field) ?? tag).join(t(" and ", " et "));
+  const fields = listOf(topic.fieldTags.map((tag) => fieldLabel(tag as Field) ?? tag));
   const isQuestion = topic.kind === "question";
   const held = topic.meetupsHeld ? t(`${topic.meetupsHeld} meetups held`, `${topic.meetupsHeld} rencontres tenues`) : null;
   const nearby = topic.pending ? t("In review", "En cours d'examen") : [nearbyLine(topic.nearbyCount), held].filter(Boolean).join(" · ") || null;
