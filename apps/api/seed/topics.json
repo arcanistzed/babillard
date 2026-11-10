@@ -5538,5 +5538,28 @@
 ]
 },
 "place": "CA:Ontario"
+},
+{
+"id": "is-the-ai-boom-a-bubble",
+"kind": "question",
+"title": "Is the AI boom a bubble?",
+"blurb": "Hundreds of billions are going into data centres. Will the revenue ever catch up?",
+"fieldTags": [
+"economics",
+"computer_science",
+"business"
+],
+"openers": [
+"What would change your mind?",
+"Who gets hurt if it pops?"
+],
+"fr": {
+"title": "L'essor de l'IA est-il une bulle?",
+"blurb": "Des centaines de milliards vont dans les centres de données. Les revenus suivront-ils?",
+"openers": [
+"Qu'est-ce qui vous ferait changer d'avis?",
+"Qui écoperait si elle éclatait?"
+]
+}
 }
 ]
