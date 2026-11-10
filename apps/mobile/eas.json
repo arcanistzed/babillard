@@ -22,7 +22,8 @@
       },
       "env": {
         "EXPO_PUBLIC_API_URL": "https://babillard.app"
-      }
+      },
+      "autoIncrement": true
     },
     "production": {
       "node": "24.18.1",

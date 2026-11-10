@@ -1656,6 +1656,13 @@ describe("crash reports and public pages", () => {
   });
 });
 
+describe("app updates", () => {
+  it("tells the app its newest and oldest supported builds, without sign-in", async () => {
+    const info = await (await fetch(`${BASE}/app/version`)).json();
+    expect(info.android).toEqual({ latest: 1, minimum: 1, url: `${BASE}/download/android` });
+  });
+});
+
 describe("policy pages", () => {
   it("serves the policies in the site's frame, with tabs and a language link", async () => {
     const page = await (await fetch(`${BASE}/privacy`)).text();

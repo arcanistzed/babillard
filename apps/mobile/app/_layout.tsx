@@ -13,6 +13,7 @@ import { useEffect } from "react";
 import { StyleSheet, useColorScheme, View } from "react-native";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { AuthProvider, useAuth } from "@/auth";
+import { UpdateRequired, useAppUpdate, useUpdateOffer } from "@/components/AppUpdate";
 import { installCrashReporter, reportCrash } from "@/crashReporter";
 import { fonts, useTheme } from "@/theme";
 import { Button, T } from "@/ui";
@@ -122,6 +123,13 @@ const styles = StyleSheet.create({
   crash: { flex: 1, padding: 24, gap: 16, justifyContent: "center" },
 });
 
+/** An outdated install gets offered the new build, or stopped if it's too old to work. */
+function Updated() {
+  const update = useAppUpdate();
+  useUpdateOffer(update);
+  return update.kind === "required" ? <UpdateRequired url={update.url} /> : <Navigator />;
+}
+
 export default function RootLayout() {
   const scheme = useColorScheme();
   const [fontsLoaded] = useFonts({
@@ -137,7 +145,7 @@ export default function RootLayout() {
       <QueryClientProvider client={queryClient}>
         <AuthProvider>
           <StatusBar style={scheme === "dark" ? "light" : "dark"} />
-          <Navigator />
+          <Updated />
         </AuthProvider>
       </QueryClientProvider>
     </GestureHandlerRootView>

@@ -1,4 +1,4 @@
-import { outcomeSummary, VENUE_LABELS, type OutcomeCounts, type TopicOutcomes } from "@babillard/shared";
+import { outcomeSummary, VENUE_LABELS, type AppVersionInfo, type OutcomeCounts, type TopicOutcomes } from "@babillard/shared";
 import { and, desc, eq, inArray, sql } from "drizzle-orm";
 import { Hono } from "hono";
 import { html, raw } from "hono/html";
@@ -95,6 +95,14 @@ function outcomesSection(outcomes: TopicOutcomes | null, takeaways: { text: stri
 const publicRoutes = new Hono<AppEnv>();
 
 publicRoutes.get("/healthz", (c) => c.json({ ok: true }));
+
+/** Open to everyone, since an outdated build may not be able to sign in. */
+publicRoutes.get("/app/version", (c) => {
+  const number = (value: string | undefined) => Math.max(Number.parseInt(value ?? "", 10) || 1, 1);
+  const info: AppVersionInfo = {
+    android: { latest: number(c.env.ANDROID_LATEST_BUILD), minimum: number(c.env.ANDROID_MIN_BUILD), url: `${c.env.PUBLIC_ORIGIN}/download/android` },
+  };
+  return c.json(info, 200, { "cache-control": "public, max-age=300" });
 });
 
 publicRoutes.get("/.well-known/apple-app-site-association", (c) =>

@@ -11,12 +11,13 @@
     "lint": "eslint ."
   },
   "dependencies": {
+    "@babillard/shared": "workspace:*",
     "@expo-google-fonts/atkinson-hyperlegible": "^0.4.0",
     "@expo-google-fonts/bricolage-grotesque": "^0.4.0",
     "@expo/vector-icons": "^15.0.2",
-    "@babillard/shared": "workspace:*",
     "@tanstack/react-query": "^5.90.0",
     "expo": "~58.0.23",
+    "expo-application": "~58.1.2",
     "expo-calendar": "~58.0.6",
     "expo-constants": "~58.0.15",
     "expo-crypto": "~58.0.7",

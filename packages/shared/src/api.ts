@@ -199,3 +199,8 @@ export interface WordingSuggestion {
   title: string;
   blurb: string;
 }
+
+/** What the app compares its own build number against. Builds below `minimum` must update to keep working. */
+export interface AppVersionInfo {
+  android: { latest: number; minimum: number; url: string };
+}
