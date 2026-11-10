@@ -56,7 +56,7 @@ function startFakeOpenAI() {
               title: `Clearer: ${input.title}`,
               blurb: "A tidier line.",
               openers: ["First opener?", "Second opener?"],
-              fr: { title: `Plus clair: ${input.title}`, blurb: "Une ligne plus claire.", openers: ["Première amorce?", "Deuxième amorce?"] },
+              fr: { title: `Plus clair : ${input.title}`, blurb: "Une ligne plus claire.", openers: ["Première amorce ?", "Deuxième amorce\u00a0?"] },
               place: "country",
               placeReason: "It's about Canada.",
             };

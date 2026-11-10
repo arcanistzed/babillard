@@ -1345,6 +1345,9 @@ describe("submitted topics", () => {
 
     const drafted = await (await fetch(`${BASE}/admin/topics?draft=${id}`)).text();
     expect(drafted).toContain("Plus clair: Should provinces fund legal aid properly?");
+    // The draft arrives with French-from-France spacing, and is tidied to Canadian usage.
+    expect(drafted).toContain("Première amorce?");
+    expect(drafted).not.toContain(" ?");
     expect(drafted).toContain("Suggested place: All of Canada");
 
     const approve = await fetch(`${BASE}/admin/topics/${id}`, {
