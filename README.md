@@ -185,6 +185,7 @@ Each one is a value in `apps/api/wrangler.jsonc`.
 | Sign-in requests per network | 10 per minute | The app asks the person to wait a minute |
 | Code checks per network | 30 per minute | Same |
 | Crash reports per network | 20 per minute | Reports are dropped |
+| Wording suggestions per person | 10 per minute | The app says to wait a minute |
 | Sign-in emails, everyone combined | `LOGIN_EMAIL_HOURLY_CAP`, 500 per hour | Sign-in fails and logs `login_email_cap_reached`. Raise it as real traffic grows |
 
 There are also per-address limits on sign-in email, and daily limits on reports and topic suggestions. Dev mode skips the sign-in limits, because the seed script signs in many people at once.
@@ -257,6 +258,7 @@ cd apps/api && npx wrangler d1 execute babillard --remote --file seed/seed.sql
 - **Location stays on the phone.** The location button finds the nearest city on the device and sends only that city.
 - **Moving city carries your picks.** Your right-swiped topics join the cohorts in the new city, so you can land in a group there. The topics you already joined stay yours, and existing chats stay open.
 - **Topics have a place.** A topic's `place` is empty for everywhere, a country code (`CA`), a province (`CA:Ontario`), or a city ID (`ottawa-08-ca`). The deck and swipes only reach people inside it. Suggested topics stay in the suggester's city, approved or not, so each area's deck grows from what people there propose. The seeded questions lean toward Ottawa, Ontario, and Canada, since that's where the app starts, and worldwide debates stay worldwide.
+- **AI only helps with topic wording.** With the `OPENAI_API_KEY` secret set, someone suggesting a topic can ask for clearer wording, and moderators get a "Draft with AI" link that fills in tidier English, French, openers, and a recommended place. Only the topic's text goes to OpenAI, with `store: false`, never messages or anything about a person. People never pick a topic's place themselves: suggestions start in their city, and the moderator widens it when approving. `OPENAI_MODEL` picks the model.
 - **Newcomers share an opening deck.** Until someone has swiped 20 topics, their deck leads with a fixed set of broad starter topics (`starter` in `seed/topics.json`). The first people in a city then overlap within minutes instead of scattering across 250 topics, before field overlap and nearby groups take over the ranking.
 - **Stance never decides who meets whom.** People gather around topics. A question's stance only feeds the group's overall spread, and later the policy consultation export.
 - **"Open to dating" is private unless mutual.** Every response showing someone's chips goes through `visibleLookingFor`.

@@ -1,4 +1,4 @@
-import { defaultOpeners, FIELD_LABELS, FIELDS } from "@babillard/shared";
+import { defaultOpeners, FIELD_LABELS, FIELDS, type Field } from "@babillard/shared";
 import { and, desc, eq, gt, inArray, isNotNull, isNull, like, or, sql } from "drizzle-orm";
 import { Hono } from "hono";
 import { csrf } from "hono/csrf";
@@ -9,6 +9,7 @@ import { getDb, schema } from "../db";
 import { isDevMode } from "../lib/config";
 import { fail } from "../lib/http";
 import { avatarUrl } from "../lib/config";
+import { aiAvailable, draftForModerator, type PlaceChoice } from "../lib/ai";
 import { banUser, isUrgentReason, logModeration, REASON_LABELS, sendConductWarning } from "../lib/moderation";
 import { sendPush } from "../lib/push";
 import type { AppEnv } from "../types";
@@ -388,19 +389,63 @@ admin.post("/users/:id/unban", async (c) => {
 const MAX_OPENERS = 5;
 const TOPIC_ERRORS: Record<string, string> = { invalid: "A topic needs a title of 4 to 120 characters, at least one field, and at least one opener." };
 
+/** Where an approved suggestion can appear, from narrowest to widest. Suggestions start in the suggester's city. */
+function placeOptions(origin: { cityId: string | null; cityName: string | null; region: string | null; countryCode: string | null }) {
+  const options: { value: string; label: string; choice: PlaceChoice }[] = [];
+  if (origin.cityId) options.push({ value: origin.cityId, label: `Only ${origin.cityName ?? origin.cityId}`, choice: "city" });
+  if (origin.region && origin.countryCode) options.push({ value: `${origin.countryCode}:${origin.region}`, label: `All of ${origin.region}`, choice: "province" });
+  if (origin.countryCode) options.push({ value: origin.countryCode, label: `All of ${origin.countryCode === "CA" ? "Canada" : origin.countryCode}`, choice: "country" });
+  options.push({ value: "", label: "Everywhere", choice: "everywhere" });
+  return options;
+}
+
+async function pendingTopics(db: ReturnType<typeof getDb>) {
+  return db
+    .select({ topic: schema.topics, cityId: schema.localities.id, cityName: schema.localities.name, region: schema.localities.region, countryCode: schema.localities.countryCode })
+    .from(schema.topics)
+    .leftJoin(schema.users, eq(schema.users.id, schema.topics.createdBy))
+    .leftJoin(schema.localities, eq(schema.localities.id, schema.users.cityId))
+    .where(eq(schema.topics.status, "pending"))
+    .orderBy(desc(schema.topics.createdAt))
+    .limit(100);
+}
+
 admin.get("/topics", async (c) => {
-  const rows = await getDb(c.env).select().from(schema.topics).where(eq(schema.topics.status, "pending")).orderBy(desc(schema.topics.createdAt)).limit(100);
+  const rows = await pendingTopics(getDb(c.env));
   const error = TOPIC_ERRORS[c.req.query("error") ?? ""];
-  const items = rows.map((topic) => {
-    const openers = topic.openers.length ? topic.openers : defaultOpeners(topic.kind, topic.title);
-    return html`<article>
+  // A draft is only requested for one topic at a time, when the moderator asks for it.
+  const draftId = c.req.query("draft");
+  const draftRow = draftId ? rows.find((row) => row.topic.id === draftId) : undefined;
+  const draft = draftRow
+    ? await draftForModerator(c.env, {
+        kind: draftRow.topic.kind,
+        title: draftRow.topic.title,
+        blurb: draftRow.topic.blurb,
+        fieldTags: draftRow.topic.fieldTags as Field[],
+        city: draftRow.cityName ?? "",
+        province: draftRow.region ?? "",
+      })
+    : null;
+  const items = rows.map((row) => {
+    const topic = row.topic;
+    const drafted = draft && draftRow?.topic.id === topic.id ? draft : null;
+    const kind = drafted?.kind ?? topic.kind;
+    const title = drafted?.title ?? topic.title;
+    const openers = drafted?.openers.length ? drafted.openers : topic.openers.length ? topic.openers : defaultOpeners(topic.kind, topic.title);
+    const fr = drafted?.fr ?? topic.fr ?? { title: "", blurb: "", openers: [] };
+    const options = placeOptions(row);
+    const chosen = drafted ? options.find((option) => option.choice === drafted.place) : undefined;
+    const selected = chosen?.value ?? topic.place ?? options[0]?.value ?? "";
+    return html`<article id="topic-${topic.id}">
       <form method="post" action="/admin/topics/${topic.id}" class="stack">
-        <label>Title <input name="title" value="${topic.title}" maxlength="120" required /></label>
-        <label>Blurb <textarea name="blurb" rows="2" maxlength="400">${topic.blurb}</textarea></label>
+        ${drafted ? html`<p class="notice">Drafted with AI. Check it before approving. Suggested place: ${chosen?.label ?? "Everywhere"}. ${drafted.placeReason}</p>` : ""}
+        ${draftId === topic.id && !drafted ? html`<p class="notice">The AI draft didn't come back. Fill it in by hand.</p>` : ""}
+        <label>Title <input name="title" value="${title}" maxlength="120" required /></label>
+        <label>Blurb <textarea name="blurb" rows="2" maxlength="400">${drafted?.blurb ?? topic.blurb}</textarea></label>
         <label>Kind
           <select name="kind">
-            <option value="interest" ${topic.kind === "interest" ? "selected" : ""}>Interest</option>
-            <option value="question" ${topic.kind === "question" ? "selected" : ""}>Question</option>
+            <option value="interest" ${kind === "interest" ? "selected" : ""}>Interest</option>
+            <option value="question" ${kind === "question" ? "selected" : ""}>Question</option>
           </select>
         </label>
         <fieldset>
@@ -408,9 +453,21 @@ admin.get("/topics", async (c) => {
           ${FIELDS.map((field) => html`<label class="check"><input type="checkbox" name="fieldTags" value="${field}" ${topic.fieldTags.includes(field) ? "checked" : ""} /> ${FIELD_LABELS[field]}</label>`)}
         </fieldset>
         <label>Conversation openers, one per line <textarea name="openers" rows="3">${openers.join("\n")}</textarea></label>
+        <fieldset>
+          <legend>French</legend>
+          <label>Titre <input name="frTitle" value="${fr.title}" maxlength="120" /></label>
+          <label>Description <textarea name="frBlurb" rows="2" maxlength="400">${fr.blurb}</textarea></label>
+          <label>Amorces de conversation, une par ligne <textarea name="frOpeners" rows="3">${fr.openers.join("\n")}</textarea></label>
+        </fieldset>
+        <label>Where it appears
+          <select name="place">
+            ${options.map((option) => html`<option value="${option.value}" ${option.value === selected ? "selected" : ""}>${option.label}</option>`)}
+          </select>
+        </label>
         <p>
           <button name="action" value="approved">Approve</button>
           <button name="action" value="rejected">Reject</button>
+          ${aiAvailable(c.env) ? html`<a href="/admin/topics?draft=${topic.id}#topic-${topic.id}">Draft with AI</a>` : ""}
         </p>
       </form>
     </article>`;
@@ -443,9 +500,18 @@ admin.post("/topics/:id", async (c) => {
   const openers = submittedOpeners.split("\n").map((line) => line.trim()).filter(Boolean).slice(0, MAX_OPENERS).map((line) => line.slice(0, 200));
   if (title.length < 4 || title.length > 120 || fieldTags.length === 0 || openers.length === 0) return c.redirect("/admin/topics?error=invalid");
 
-  const [topic] = await db.update(schema.topics).set({ status: "approved", title, blurb, kind, fieldTags, openers }).where(eq(schema.topics.id, id)).returning();
-  const edits = [title !== existing.title && "title", blurb !== existing.blurb && "blurb", kind !== existing.kind && "kind", fieldTags.join() !== existing.fieldTags.join() && "fields"].filter(Boolean);
-  await logModeration(db, c.get("adminEmail"), "approved", "topic", id, `${title}${edits.length ? ` (edited ${edits.join(", ")})` : ""}`);
+  const lines = (value: unknown) => String(value ?? "").split("\n").map((line) => line.trim()).filter(Boolean).slice(0, MAX_OPENERS).map((line) => line.slice(0, 200));
+  const frTitle = String(form.frTitle ?? "").trim().slice(0, 120);
+  const fr = frTitle ? { title: frTitle, blurb: String(form.frBlurb ?? "").trim().slice(0, 400), openers: lines(form.frOpeners) } : existing.fr;
+  const [origin] = (await pendingTopics(db)).filter((row) => row.topic.id === id);
+  const allowed = origin ? placeOptions(origin) : [];
+  const requested = form.place === undefined ? existing.place ?? "" : String(form.place);
+  const placeOption = allowed.find((option) => option.value === requested);
+  const place = placeOption ? placeOption.value || null : existing.place;
+
+  const [topic] = await db.update(schema.topics).set({ status: "approved", title, blurb, kind, fieldTags, openers, fr, place }).where(eq(schema.topics.id, id)).returning();
+  const edits = [title !== existing.title && "title", blurb !== existing.blurb && "blurb", kind !== existing.kind && "kind", fieldTags.join() !== existing.fieldTags.join() && "fields", JSON.stringify(fr) !== JSON.stringify(existing.fr) && "French"].filter(Boolean);
+  await logModeration(db, c.get("adminEmail"), "approved", "topic", id, `${title}${edits.length ? ` (edited ${edits.join(", ")})` : ""}, shown ${placeOption?.label.toLowerCase() ?? "where it was"}`);
 
   // The submitter may have swiped right while it was pending. That swipe counts once it's approved.
   const swipers = await db

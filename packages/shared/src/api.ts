@@ -193,3 +193,9 @@ export interface PushData {
   screen: "chat" | "meetup";
   id: string;
 }
+
+/** A clearer wording for a topic someone is suggesting. They can use it or ignore it. */
+export interface WordingSuggestion {
+  title: string;
+  blurb: string;
+}

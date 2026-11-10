@@ -1,4 +1,5 @@
-import { DECK_PAGE_SIZE, FIELD_GROUPS, NEWCOMER_SWIPES, leanSummary, MEETUPS_HELD_MIN_SHOWN, outcomeSummary, rankTopics, type OutcomeCounts, topicSwipeSchema, topicSubmissionSchema, type TopicCard, type TopicSwipeResult } from "@babillard/shared";
+import { DECK_PAGE_SIZE, FIELD_GROUPS, NEWCOMER_SWIPES, wordingRequestSchema, leanSummary, MEETUPS_HELD_MIN_SHOWN, outcomeSummary, rankTopics, type OutcomeCounts, topicSwipeSchema, topicSubmissionSchema, type TopicCard, type TopicSwipeResult } from "@babillard/shared";
+import { suggestWording } from "../lib/ai";
 import { localizeTopic, requestLanguage } from "../lib/language";
 import { and, eq, gt, inArray, isNotNull, isNull, or, sql } from "drizzle-orm";
 import { Hono } from "hono";
@@ -145,6 +146,17 @@ deck.get("/topics", async (c) => {
     outcomes: outcomeCounts.has(topic.id) ? outcomeSummary(outcomeCounts.get(topic.id)!) : null,
   }));
   return c.json(cards);
+});
+
+/** Offers clearer wording for a topic someone is about to suggest. They decide whether to use it. */
+deck.post("/topics/wording", async (c) => {
+  const user = c.get("user");
+  const input = await parseJson(c, wordingRequestSchema);
+  const { success } = await c.env.AI_LIMIT.limit({ key: user.id });
+  if (!success) throw fail(429, "too_many_attempts");
+  const suggestion = await suggestWording(c.env, { ...input, language: requestLanguage(c) });
+  if (!suggestion) throw fail(503, "wording_unavailable");
+  return c.json({ title: suggestion.title.trim().slice(0, 120), blurb: suggestion.blurb.trim().slice(0, 400) });
 });
 
 deck.post("/topics/:id/swipe", async (c) => {

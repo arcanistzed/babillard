@@ -80,6 +80,7 @@ export function friendlyError(error: unknown): string {
     under_age: t("Babillard is for people 18 and over.", "Babillard est réservé aux personnes de 18 ans et plus."),
     email_unavailable: t("We couldn't send your email just now. Try again in a minute.", "Impossible d'envoyer le courriel pour le moment. Réessayez dans une minute."),
     too_many_attempts: t("Too many tries. Wait a minute and try again.", "Trop d'essais. Attendez une minute et réessayez."),
+    wording_unavailable: t("Wording help isn't available right now. Your own wording is fine.", "L'aide à la formulation n'est pas disponible pour l'instant. Votre formulation convient très bien."),
     too_many_submissions: t("That's the limit for today. Suggest more tomorrow.", "C'est la limite pour aujourd'hui. Suggérez-en d'autres demain."),
     too_many_reports: t("That's the limit for today. If you're in danger, contact local emergency services.", "C'est la limite pour aujourd'hui. Si vous êtes en danger, appelez les services d'urgence."),
     invalid_request: t("Some of that isn't quite right. Check it and try again.", "Quelque chose ne va pas. Vérifiez et réessayez."),

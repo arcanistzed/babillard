@@ -99,6 +99,13 @@ export const topicSubmissionSchema = z.object({
   fieldTags: z.array(z.enum(FIELDS)).min(1).max(4),
 });
 
+/** The draft someone wants help wording. Only the topic text, nothing about the person. */
+export const wordingRequestSchema = z.object({
+  kind: z.enum(["interest", "question"]),
+  title: z.string().trim().min(4).max(120),
+  blurb: z.string().trim().max(400).default(""),
+});
+
 export const clientErrorSchema = z.object({
   message: z.string().max(1000),
   stack: z.string().max(8000).default(""),

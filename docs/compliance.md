@@ -49,6 +49,7 @@ Regulated services are defined by a user count that regulations will set, or by 
 | Cloudflare | The database, encrypted messages, photos, and request logs | Global, possibly the United States | Messages are ciphertext. The rest is what the service needs, and the policy says so |
 | Amazon SES | Email addresses and email text | The region set in `SES_REGION` | Needed for sign-in. Report alerts carry no names |
 | Expo, Google, Apple | Push tokens, sender names, and "New message" | United States | Push text never holds the message |
+| OpenAI | The text of suggested topics, and a city and province name for the moderator's scope suggestion | United States | Never messages, names, or contact details. Requests ask OpenAI not to store them |
 
 ## Retention
 

@@ -1329,6 +1329,36 @@ describe("submitted topics", () => {
     expect((await submitter.get(`/conversations/${groupId}`)).members).toHaveLength(4);
   });
 
+  it("offers clearer wording, and says so when the AI doesn't answer", async () => {
+    const client = await person("toronto");
+    const suggestion = await client.post("/deck/topics/wording", { kind: "question", title: "jury duty pay??", blurb: "" });
+    expect(suggestion).toEqual({ title: "Clearer: jury duty pay??", blurb: "A tidier line." });
+    expect(await status(client.post("/deck/topics/wording", { kind: "question", title: "fail-ai please", blurb: "" }))).toBe(503);
+  });
+
+  it("drafts French and a place for the moderator, and approval widens the topic", async () => {
+    const submitter = await person("toronto", { fields: ["law"] });
+    const { id } = await submitter.post("/deck/topics", { kind: "question", title: "Should provinces fund legal aid properly?", fieldTags: ["law"] });
+    const plain = await (await fetch(`${BASE}/admin/topics`)).text();
+    expect(plain).toContain(`draft=${id}`);
+    expect(plain).toContain("Only Toronto");
+
+    const drafted = await (await fetch(`${BASE}/admin/topics?draft=${id}`)).text();
+    expect(drafted).toContain("Plus clair: Should provinces fund legal aid properly?");
+    expect(drafted).toContain("Suggested place: All of Canada");
+
+    const approve = await fetch(`${BASE}/admin/topics/${id}`, {
+      method: "POST",
+      redirect: "manual",
+      headers: { "content-type": "application/x-www-form-urlencoded", origin: BASE },
+      body: new URLSearchParams({ action: "approved", title: "Should provinces fund legal aid properly?", fieldTags: "law", openers: "Have you needed a lawyer?", frTitle: "Les provinces devraient-elles mieux financer l'aide juridique?", frBlurb: "", frOpeners: "Avez-vous déjà eu besoin d'un avocat?", place: "CA" }),
+    });
+    expect(approve.status).toBe(302);
+    const swipe = (client: any) => status(client.post(`/deck/topics/${id}/swipe`, { direction: "left" }));
+    expect(await swipe(await person("montreal-10-ca"))).toBe(200);
+    expect(await swipe(await person("london"))).toBe(404);
+  });
+
   it("always puts someone's own suggestion in the first page, even with many ranked above it", async () => {
     const client = await person("san-francisco", { fields: ["economics", "politics", "law", "history", "philosophy", "sociology", "psychology", "medicine"] });
     const { id } = await client.post("/deck/topics", { kind: "interest", title: "A very niche corner of chemistry", fieldTags: ["chemistry"] });
