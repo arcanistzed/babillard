@@ -1,4 +1,8 @@
 import type { ExpoConfig } from "expo/config";
+import { versionCode } from "../../packages/shared/src/version.ts";
+
+// The one number to change for a release. Android's build code comes from it (0.2.0 is 200).
+const version = "0.2.0";
 
 // The API domain hosts the Universal Link and App Link association files.
 const apiHost = new URL(process.env.EXPO_PUBLIC_API_URL ?? "https://babillard.app").hostname;
@@ -8,13 +12,14 @@ const config: ExpoConfig = {
   name: "Babillard",
   slug: "babillard",
   owner: "arcanistzed",
-  version: "0.1.0",
+  version,
   orientation: "portrait",
   scheme: "babillard",
   userInterfaceStyle: "automatic",
   icon: "./assets/icon.png",
   ios: {
     bundleIdentifier: "com.babillard",
+    buildNumber: String(versionCode(version)),
     supportsTablet: false,
     // Standard HTTPS only, so TestFlight doesn't ask about export compliance on every build.
     config: { usesNonExemptEncryption: false },
@@ -22,6 +27,7 @@ const config: ExpoConfig = {
   },
   android: {
     package: "com.babillard",
+    versionCode: versionCode(version),
     softwareKeyboardLayoutMode: "resize",
     googleServicesFile: "./google-services.json",
     adaptiveIcon: { foregroundImage: "./assets/adaptive-icon.png", monochromeImage: "./assets/monochrome-icon.png", backgroundColor: "#FF5FAE" },

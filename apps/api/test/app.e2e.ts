@@ -1659,7 +1659,8 @@ describe("crash reports and public pages", () => {
 describe("app updates", () => {
   it("tells the app its newest and oldest supported builds, without sign-in", async () => {
     const info = await (await fetch(`${BASE}/app/version`)).json();
-    expect(info.android).toEqual({ latest: 1, minimum: 1, url: `${BASE}/download/android` });
+    // Version 0.2.1 is Android build 201. No minimum means every build still works.
+    expect(info.android).toEqual({ latest: 201, minimum: 1, url: `${BASE}/download/android` });
   });
 });
 

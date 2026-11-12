@@ -11,3 +11,4 @@ export * from "./rules/jobs";
 export * from "./rules/identity";
 export * from "./rules/slots";
 export * from "./rules/cities";
+export * from "./version";

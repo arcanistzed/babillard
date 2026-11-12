@@ -128,6 +128,7 @@ export default async function setup() {
     PUBLIC_ORIGIN: `http://localhost:${DEV_PORT}`,
     OPENAI_API_KEY: "e2e-fake-openai-key",
     OPENAI_ENDPOINT: `http://localhost:${OPENAI_PORT}`,
+    ANDROID_LATEST_VERSION: "0.2.1",
     NUDGE_AFTER_MS: "2000",
     MATCH_EXPIRY_MS: "4000",
     MEETUP_CHECKIN_DELAY_MS: "500",

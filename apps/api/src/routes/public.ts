@@ -1,4 +1,4 @@
-import { outcomeSummary, VENUE_LABELS, type AppVersionInfo, type OutcomeCounts, type TopicOutcomes } from "@babillard/shared";
+import { outcomeSummary, VENUE_LABELS, type AppVersionInfo, versionCode, type OutcomeCounts, type TopicOutcomes } from "@babillard/shared";
 import { and, desc, eq, inArray, sql } from "drizzle-orm";
 import { Hono } from "hono";
 import { html, raw } from "hono/html";
@@ -98,9 +98,10 @@ publicRoutes.get("/healthz", (c) => c.json({ ok: true }));
 
 /** Open to everyone, since an outdated build may not be able to sign in. */
 publicRoutes.get("/app/version", (c) => {
-  const number = (value: string | undefined) => Math.max(Number.parseInt(value ?? "", 10) || 1, 1);
+  // Installs compare Android build codes, which come from the version (0.2.0 is 200).
+  const code = (version: string | undefined) => (version ? versionCode(version) : 1);
   const info: AppVersionInfo = {
-    android: { latest: number(c.env.ANDROID_LATEST_BUILD), minimum: number(c.env.ANDROID_MIN_BUILD), url: `${c.env.PUBLIC_ORIGIN}/download/android` },
+    android: { latest: code(c.env.ANDROID_LATEST_VERSION), minimum: code(c.env.ANDROID_MIN_VERSION), url: `${c.env.PUBLIC_ORIGIN}/download/android` },
   };
   return c.json(info, 200, { "cache-control": "public, max-age=300" });
 });

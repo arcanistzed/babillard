@@ -70,11 +70,7 @@ Android testers don't need any of the setup above. This makes an APK and a link 
 cd apps/mobile && npx eas-cli build --platform android --profile preview
 ```
 
-EAS removes its copy after about two weeks, so invite pages serve the APK from R2 at `/download/android`. After each new build, download the APK and upload it:
-
-```bash
-cd apps/api && npx wrangler r2 object put babillard/releases/babillard.apk --file <path-to-apk> --remote
-```
+EAS removes its copy after about two weeks, so invite pages serve the APK from R2 at `/download/android`. The release script uploads it there (see Deploy below).
 
 ### iPhone testing without an Apple Developer account
 
@@ -206,7 +202,13 @@ pnpm --filter @babillard/api deploy
 
 The deploy also publishes the landing page. The API Worker serves the files in `apps/site/public` at `/`, `/fr/`, and `/site/*`, and every other path goes to the API. Edit the page text in `apps/site/src/copy.ts`, not the generated HTML.
 
-To release a new Android build, build the `preview` profile (EAS numbers each build), upload the APK to R2 as `releases/babillard.apk`, then set `ANDROID_LATEST_BUILD` in `wrangler.jsonc` to its build number and deploy. Older installs then offer the update once per launch. Raise `ANDROID_MIN_BUILD` too when old builds would break against the API; installs below it show a screen that only offers the download.
+To release a new Android version:
+
+1. Raise `version` in `apps/mobile/app.config.ts`. Android's build code comes from it (0.2.0 is 200, 1.0.0 is 10000), so it's the only number to change. Commit it.
+2. Build: `npx eas-cli build --platform android --profile preview` from `apps/mobile`.
+3. Release: `node scripts/release-android.ts` from `apps/mobile`. It refuses a version that isn't newer than the one out, uploads the APK to R2 as `releases/babillard.apk`, sets `ANDROID_LATEST_VERSION` in `apps/api/wrangler.jsonc`, and deploys. Commit that change.
+
+Older installs then offer the update once per launch. When old versions would break against the API, set `ANDROID_MIN_VERSION` too; installs below it show a screen that only offers the download.
 
 When topics or cities change, run `pnpm --filter @babillard/api seed:sql`, then load the result. It's safe to run again, and it moves people out of any city that was merged into another. Seeded topics take their wording, place, and starter order from `seed/topics.json` on every load, and a seeded topic removed from the file becomes `retired` rather than deleted, so its groups keep working.
 

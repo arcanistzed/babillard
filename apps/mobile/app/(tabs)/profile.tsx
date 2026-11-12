@@ -1,3 +1,4 @@
+import * as Application from "expo-application";
 import { router } from "expo-router";
 import { useState } from "react";
 import { Alert, Pressable, ScrollView, StyleSheet, View } from "react-native";
@@ -103,6 +104,12 @@ export default function Profile() {
             </Pressable>
           ))}
         </View>
+        {Application.nativeApplicationVersion ? (
+          <T variant="small" muted style={styles.version} selectable>
+            {/* The same word in English and French. */}
+            Version {Application.nativeApplicationVersion}
+          </T>
+        ) : null}
       </ScrollView>
     </SafeAreaView>
   );
@@ -116,4 +123,5 @@ const styles = StyleSheet.create({
   section: { gap: 8 },
   actions: { gap: 10 },
   legal: { flexDirection: "row", flexWrap: "wrap", justifyContent: "center", gap: 18, paddingVertical: 6 },
+  version: { textAlign: "center" },
 });

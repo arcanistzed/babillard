@@ -1,7 +1,7 @@
 {
   "cli": {
     "version": ">= 16.0.0",
-    "appVersionSource": "remote"
+    "appVersionSource": "local"
   },
   "build": {
     "development": {
@@ -22,13 +22,11 @@
       },
       "env": {
         "EXPO_PUBLIC_API_URL": "https://babillard.app"
-      },
-      "autoIncrement": true
+      }
     },
     "production": {
       "node": "24.18.1",
       "pnpm": "11.1.3",
-      "autoIncrement": true,
       "env": {
         "EXPO_PUBLIC_API_URL": "https://babillard.app"
       }
