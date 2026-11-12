@@ -68,8 +68,8 @@ export function UpdateRequired({ url }: { url: string }) {
         <T variant="display">{t("Time to update", "Il est temps de mettre à jour")}</T>
         <T>
           {t(
-            "This version of Babillard no longer works. Download the new one, then open the file to install it over this one. You'll stay signed in, and your messages stay on your phone.",
-            "Cette version de Babillard ne fonctionne plus. Téléchargez la nouvelle, puis ouvrez le fichier pour l'installer par-dessus celle-ci. Vous resterez connecté, et vos messages restent sur votre téléphone.",
+            "This version no longer works. Download the new one and open the file to install it.",
+            "Cette version ne fonctionne plus. Téléchargez la nouvelle et ouvrez le fichier pour l'installer.",
           )}
         </T>
       </View>
@@ -84,7 +84,7 @@ export function useUpdateOffer(state: UpdateState) {
   useEffect(() => {
     if (state.kind !== "available" || offered.current) return;
     offered.current = true;
-    Alert.alert(t("A new version is ready", "Une nouvelle version est prête"), t("Download it from babillard.app and open the file to install it. You'll stay signed in.", "Téléchargez-la sur babillard.app et ouvrez le fichier pour l'installer. Vous resterez connecté."), [
+    Alert.alert(t("A new version is ready", "Une nouvelle version est prête"), t("Download it, then open the file to install it.", "Téléchargez-la, puis ouvrez le fichier pour l'installer."), [
       { text: t("Not now", "Plus tard"), style: "cancel" },
       { text: t("Download", "Télécharger"), onPress: () => download(state.url) },
     ]);

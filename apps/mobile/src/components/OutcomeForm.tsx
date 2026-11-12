@@ -40,7 +40,7 @@ export function OutcomeForm({ meetup }: { meetup: MeetupSummary }) {
   if (!editing) {
     return (
       <View style={styles.form}>
-        <T muted>{t("Thanks. Your answers help show what these conversations lead to.", "Merci. Vos réponses montrent ce que ces conversations donnent.")}</T>
+        <T muted>{t("Thanks for answering.", "Merci d'avoir répondu.")}</T>
         <Button label={t("Change my answers", "Modifier mes réponses")} kind="secondary" onPress={() => setEditing(true)} />
       </View>
     );
@@ -51,7 +51,7 @@ export function OutcomeForm({ meetup }: { meetup: MeetupSummary }) {
     <View style={styles.form}>
       <T variant="title">{t("How did it go?", "Comment ça s'est passé?")}</T>
       <T variant="small" muted>
-        {t("Your answers stay private. The app only shows percentages for each topic, once enough people have answered.", "Vos réponses restent privées. L'application affiche seulement des pourcentages par sujet, une fois qu'assez de gens ont répondu.")}
+        {t("Your answers are private. Others see only percentages for the topic.", "Vos réponses sont privées. Les autres ne voient que des pourcentages pour le sujet.")}
       </T>
       <Question
         label={t("Did anyone change their mind?", "Quelqu'un a-t-il changé d'avis?")}
@@ -92,8 +92,8 @@ export function OutcomeForm({ meetup }: { meetup: MeetupSummary }) {
       />
       <T variant="small" muted>
         {t(
-          "This line isn't encrypted. A moderator reads it, and if approved it appears on the topic's public page without your name. Leave out names and anything that could identify someone.",
-          "Cette phrase n'est pas chiffrée. Un modérateur la lit et, si elle est approuvée, elle paraît sur la page publique du sujet, sans votre nom. N'y mettez ni noms ni détails qui permettraient d'identifier quelqu'un.",
+          "This isn't encrypted. If a moderator approves it, it appears on the topic's public page without your name. Leave out anything that identifies someone.",
+          "Cette phrase n'est pas chiffrée. Si un modérateur l'approuve, elle paraît sur la page publique du sujet, sans votre nom. N'y mettez rien qui identifie quelqu'un.",
         )}
       </T>
       <Button

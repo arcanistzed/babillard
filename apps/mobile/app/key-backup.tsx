@@ -43,7 +43,7 @@ export default function KeyBackup() {
       }
       setPassphrase("");
       setConfirm("");
-      setNotice(t("Backup ready. Keep the file and your passphrase somewhere safe.", "Sauvegarde prête. Gardez le fichier et votre phrase secrète en lieu sûr."));
+      setNotice(t("Backup ready. Keep the file and passphrase safe.", "Sauvegarde prête. Gardez le fichier et la phrase secrète en lieu sûr."));
     } catch {
       setError(t("Couldn't save the backup. Try again.", "Impossible d'enregistrer la sauvegarde. Réessayez."));
     } finally {
@@ -78,13 +78,13 @@ export default function KeyBackup() {
   const canSave = busy === null && passphrase.length >= MIN_PASSPHRASE && passphrase === confirm;
   return (
     <FormScreen>
-      <T>{t("Your messages can only be opened with a key on this phone. Save a backup to read them on a new phone. Your passphrase protects the file.", "Vos messages ne s'ouvrent qu'avec une clé sur ce téléphone. Faites une sauvegarde pour les lire sur un nouveau téléphone. Votre phrase secrète protège le fichier.")}</T>
+      <T>{t("Messages open only with a key on this phone. Back it up to read them on a new phone.", "Les messages ne s'ouvrent qu'avec une clé sur ce téléphone. Sauvegardez-la pour les lire sur un nouveau téléphone.")}</T>
       <View style={styles.section}>
         <T variant="heading">{t("Save a backup", "Faire une sauvegarde")}</T>
         <Field label={t("Passphrase, at least 8 characters", "Phrase secrète, au moins 8 caractères")} value={passphrase} onChangeText={setPassphrase} secureTextEntry autoCapitalize="none" autoComplete="new-password" />
         <Field label={t("Type it again", "Retapez-la")} value={confirm} onChangeText={setConfirm} secureTextEntry autoCapitalize="none" error={mismatch ? t("These don't match.", "Elles ne correspondent pas.") : null} />
         <T variant="small" muted>
-          {t("We can't recover a lost passphrase. Save a new backup after you sign in on a new phone.", "Nous ne pouvons pas récupérer une phrase secrète perdue. Refaites une sauvegarde après une connexion sur un nouveau téléphone.")}
+          {t("We can't recover a lost passphrase. Back up again on each new phone.", "Nous ne pouvons pas récupérer une phrase secrète perdue. Refaites une sauvegarde sur chaque nouveau téléphone.")}
         </T>
         <Button label={t("Save to Google Drive or another app", "Enregistrer dans Google Drive ou une autre application")} onPress={() => save("share")} busy={busy === "save"} disabled={!canSave} />
         {Platform.OS === "android" ? <Button label={t("Save to a folder on this phone", "Enregistrer dans un dossier du téléphone")} kind="secondary" onPress={() => save("folder")} disabled={!canSave} /> : null}

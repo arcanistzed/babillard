@@ -73,16 +73,16 @@ export function openConversationSocket(conversationId: string): WebSocket {
 export function friendlyError(error: unknown): string {
   if (!(error instanceof ApiError)) return t("Something went wrong. Try again.", "Un problème est survenu. Réessayez.");
   const messages: Record<string, string> = {
-    network: t("Can't reach Babillard. Check your connection and try again.", "Impossible de joindre Babillard. Vérifiez votre connexion et réessayez."),
+    network: t("Can't reach Babillard. Check your connection.", "Impossible de joindre Babillard. Vérifiez votre connexion."),
     did_not_meet: t("Only people who met can answer these questions.", "Seules les personnes qui se sont rencontrées peuvent répondre à ces questions."),
     invalid_or_expired: t("That code didn't work. Check it, or ask for a new one.", "Ce code n'a pas fonctionné. Vérifiez-le ou demandez-en un nouveau."),
     account_unavailable: t("This account has been closed.", "Ce compte a été fermé."),
     under_age: t("Babillard is for people 18 and over.", "Babillard est réservé aux personnes de 18 ans et plus."),
-    email_unavailable: t("We couldn't send your email just now. Try again in a minute.", "Impossible d'envoyer le courriel pour le moment. Réessayez dans une minute."),
+    email_unavailable: t("Couldn't send the email. Try again in a minute.", "Impossible d'envoyer le courriel. Réessayez dans une minute."),
     too_many_attempts: t("Too many tries. Wait a minute and try again.", "Trop d'essais. Attendez une minute et réessayez."),
-    wording_unavailable: t("Wording help isn't available right now. Your own wording is fine.", "L'aide à la formulation n'est pas disponible pour l'instant. Votre formulation convient très bien."),
+    wording_unavailable: t("Wording help isn't available right now.", "L'aide à la formulation n'est pas disponible pour l'instant."),
     too_many_submissions: t("That's the limit for today. Suggest more tomorrow.", "C'est la limite pour aujourd'hui. Suggérez-en d'autres demain."),
-    too_many_reports: t("That's the limit for today. If you're in danger, contact local emergency services.", "C'est la limite pour aujourd'hui. Si vous êtes en danger, appelez les services d'urgence."),
+    too_many_reports: t("That's the limit for today. If you're in danger, call 911.", "C'est la limite pour aujourd'hui. Si vous êtes en danger, composez le 911."),
     invalid_request: t("Some of that isn't quite right. Check it and try again.", "Quelque chose ne va pas. Vérifiez et réessayez."),
     conversation_closed: t("This conversation has ended.", "Cette conversation est terminée."),
     starts_in_the_past: t("That time has already passed. Pick another.", "Cette heure est déjà passée. Choisissez-en une autre."),

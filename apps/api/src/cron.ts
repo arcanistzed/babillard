@@ -95,8 +95,8 @@ async function remindMeetups(env: Env, db: Db, now: number): Promise<number> {
     if (claimed.length === 0) continue;
     await sendPush(env, await responders(db, meetup.id, ["yes", "maybe"]), {
       title: "Your meetup is coming up",
-      body: meetup.venueNote ? `Soon at ${meetup.venueNote}` : "It starts soon. See you there.",
-      fr: { title: "Votre rencontre approche", body: meetup.venueNote ? `Bientôt à ${meetup.venueNote}` : "Ça commence bientôt. À tout de suite." },
+      body: meetup.venueNote ? `Soon at ${meetup.venueNote}` : "It starts soon.",
+      fr: { title: "Votre rencontre approche", body: meetup.venueNote ? `Bientôt à ${meetup.venueNote}` : "Ça commence bientôt." },
       data: { screen: "meetup", id: meetup.id },
     });
     handled += 1;

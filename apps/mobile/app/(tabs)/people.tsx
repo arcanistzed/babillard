@@ -128,7 +128,7 @@ export default function People() {
   return (
     <SafeAreaView edges={["top"]} style={styles.screen}>
       <View style={styles.header}>
-        {swipeFailed ? <ErrorText>{t("That didn't save, so they'll come back. Check your connection.", "Ce choix n'a pas été enregistré. Cette personne reviendra. Vérifiez votre connexion.")}</ErrorText> : <T variant="title" numberOfLines={2}>{t("People who picked your topics", "Ils ont choisi vos sujets")}</T>}
+        {swipeFailed ? <ErrorText>{t("That didn't save. Check your connection.", "Ce choix n'a pas été enregistré. Vérifiez votre connexion.")}</ErrorText> : <T variant="title" numberOfLines={2}>{t("People who picked your topics", "Ils ont choisi vos sujets")}</T>}
       </View>
 
       <View style={styles.deck}>

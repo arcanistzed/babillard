@@ -86,7 +86,7 @@ export default function ChatInfo() {
           {securityCode(detail.members.flatMap((member) => member.deviceKeys))}
         </T>
         <T variant="small" muted>
-          {t("Messages here are end-to-end encrypted. Compare this code when you meet. If it matches, only the people in this chat can read them.", "Les messages sont chiffrés de bout en bout. Comparez ce code quand vous vous rencontrez. S'il est identique, seules les personnes de cette conversation peuvent les lire.")}
+          {t("Compare this code when you meet. If it matches, only the people in this chat can read the messages.", "Comparez ce code quand vous vous rencontrez. S'il est identique, seules les personnes de cette conversation peuvent lire les messages.")}
         </T>
       </View>
 

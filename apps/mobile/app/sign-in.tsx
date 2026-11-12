@@ -30,7 +30,7 @@ export default function SignIn() {
       <KeyboardScreen style={styles.body}>
         <View style={styles.pitch}>
           <T variant="display">{t("Find people who want to talk about the same things.", "Trouvez des gens qui veulent parler des mêmes choses.")}</T>
-          <T muted>{t("Pick the ideas you care about, match with people in your city, and meet up in person.", "Choisissez les idées qui vous tiennent à cœur, trouvez des gens de votre ville et rencontrez-les en personne.")}</T>
+          <T muted>{t("Pick topics, match with people in your city, and meet in person.", "Choisissez des sujets, trouvez des gens de votre ville et rencontrez-les en personne.")}</T>
         </View>
         <View style={styles.form}>
           <Field

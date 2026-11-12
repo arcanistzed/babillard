@@ -89,7 +89,7 @@ export default function Deck() {
     <SafeAreaView edges={["top"]} style={styles.screen}>
       <View style={styles.header}>
         {swipeFailed ? (
-          <ErrorText>{t("That didn't save, so it'll come back. Check your connection.", "Ce choix n'a pas été enregistré et reviendra. Vérifiez votre connexion.")}</ErrorText>
+          <ErrorText>{t("That didn't save. Check your connection.", "Ce choix n'a pas été enregistré. Vérifiez votre connexion.")}</ErrorText>
         ) : nudge ? (
           <Animated.View key={nudge.topic.id} entering={FadeIn.duration(180)} exiting={FadeOut.duration(120)} style={styles.nudge}>
             <T variant="bodyBold" numberOfLines={2} style={styles.nudgeText}>
