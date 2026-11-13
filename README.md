@@ -68,7 +68,7 @@ Android testers don't need any of the setup above. This makes an APK and a link 
 cd apps/mobile && npx eas-cli build --platform android --profile preview
 ```
 
-EAS deletes its copy after about two weeks, so invite pages serve the APK from R2 at `/download/android`. The release script puts it there (see Deploy).
+EAS deletes its copy after about two weeks, so invite pages serve the APK from R2 at `/download/android`. The release script puts it there, and every released version is also kept on [GitHub Releases](https://github.com/arcanistzed/babillard/releases) (see Deploy).
 
 ### iPhone without an Apple Developer account
 
@@ -205,7 +205,7 @@ To release a new Android version:
 
 1. Raise `version` in `apps/mobile/app.config.ts` and commit it. Android's version code comes from it (0.3.2 is 302, 1.0.0 is 10000), so it's the only number to change.
 2. Build: `npx eas-cli build --platform android --profile preview` from `apps/mobile`.
-3. Release: `node scripts/release-android.ts` from `apps/mobile`. It refuses a version that isn't newer than the one out, uploads the APK to R2 as `releases/babillard.apk`, sets `ANDROID_LATEST_VERSION` in `apps/api/wrangler.jsonc`, and deploys. Commit that change.
+3. Release: `node scripts/release-android.ts` from `apps/mobile`. It refuses a version that isn't newer than the one out, uploads the APK to R2 as `releases/babillard.apk`, sets `ANDROID_LATEST_VERSION` in `apps/api/wrangler.jsonc`, and deploys. Then it publishes the APK as a [GitHub release](https://github.com/arcanistzed/babillard/releases), tagged on the build's commit, with notes from the `feat` and `fix` commits since the last one. That step needs the GitHub CLI signed in and the commit pushed. Commit the `wrangler.jsonc` change.
 
 Older installs then offer the update once per launch. When old versions would break against the API, also set `ANDROID_MIN_VERSION`. Installs below it show a screen that only offers the download.
 
