@@ -1,5 +1,6 @@
 import { html, raw } from "hono/html";
 import { LEGAL_PATHS, type Language, type LegalPage } from "../legal/content";
+import { SOURCE_URL } from "@babillard/shared";
 
 /**
  * The frame for every page the API serves to browsers: the policies, invites, and share
@@ -69,7 +70,10 @@ export function page(title: string, body: unknown, language: Language = "en", op
   const fr = language === "fr";
   const other: Language = fr ? "en" : "fr";
   const home = fr ? "/fr/" : "/";
-  const legal = (Object.keys(LEGAL_PATHS) as LegalPage[]).map((name) => html`<li><a href="${LEGAL_PATHS[name][language]}">${LEGAL_NAMES[name][language]}</a></li>`);
+  const legal = [
+    ...(Object.keys(LEGAL_PATHS) as LegalPage[]).map((name) => html`<li><a href="${LEGAL_PATHS[name][language]}">${LEGAL_NAMES[name][language]}</a></li>`),
+    html`<li><a href="${SOURCE_URL}">${fr ? "Code source" : "Source code"}</a></li>`,
+  ];
   return html`<!doctype html>
     <html lang="${fr ? "fr-CA" : "en-CA"}">
       <head>

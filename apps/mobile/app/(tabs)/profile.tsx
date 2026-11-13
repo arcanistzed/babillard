@@ -8,7 +8,7 @@ import { useAuth } from "@/auth";
 import { useLocalities } from "@/components/CityPicker";
 import { pickAndResizePhoto } from "@/components/PhotoPicker";
 import { inviteToApp } from "@/invite";
-import { openLegalPage } from "@/legal";
+import { openLegalPage, openSourceCode } from "@/legal";
 import { fonts, useTheme } from "@/theme";
 import { Avatar, Button, Chip, ChipRow, ErrorText, T } from "@/ui";
 import { lookingForLabel, nameWithAge, roleLabel, t } from "@/i18n";
@@ -103,6 +103,11 @@ export default function Profile() {
               </T>
             </Pressable>
           ))}
+          <Pressable accessibilityRole="link" hitSlop={8} onPress={openSourceCode}>
+            <T variant="small" muted>
+              {t("Source code", "Code source")}
+            </T>
+          </Pressable>
         </View>
         {Application.nativeApplicationVersion ? (
           <T variant="small" muted style={styles.version} selectable>

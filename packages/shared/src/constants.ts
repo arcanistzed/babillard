@@ -163,5 +163,8 @@ export const VENUE_LABELS: Record<VenueKind, string> = {
 export const REPORT_REASONS = ["harassment", "spam", "fake_profile", "underage", "intimate_images", "safety", "other"] as const;
 export type ReportReason = (typeof REPORT_REASONS)[number];
 
+/** Where the source is published. The AGPL requires offering it to everyone who uses the app. */
+export const SOURCE_URL = "https://github.com/arcanistzed/babillard";
+
 /** Bump this when the terms or policy change enough that people must agree again. */
 export const LEGAL_VERSION = "2026-11-13";

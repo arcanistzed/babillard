@@ -1,3 +1,4 @@
+import { SOURCE_URL } from "@babillard/shared";
 import * as WebBrowser from "expo-web-browser";
 import { Linking } from "react-native";
 import { BASE_URL } from "./api";
@@ -16,6 +17,14 @@ const PATHS: Record<LegalPage, { en: string; fr: string }> = {
  * in the app's own task: in a task of its own (the library's default), closing it lands on the home screen.
  */
 export function openLegalPage(page: LegalPage): void {
-  const url = `${BASE_URL}${PATHS[page][languageTag]}`;
+  openInApp(`${BASE_URL}${PATHS[page][languageTag]}`);
+}
+
+/** The AGPL requires offering the source to everyone who uses the app. */
+export function openSourceCode(): void {
+  openInApp(SOURCE_URL);
+}
+
+function openInApp(url: string): void {
   void WebBrowser.openBrowserAsync(url, { createTask: false }).catch(() => Linking.openURL(url));
 }

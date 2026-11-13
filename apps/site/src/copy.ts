@@ -76,6 +76,7 @@ export const copy = {
       ["Privacy", "/privacy"],
       ["Terms", "/terms"],
       ["Safety", "/safety"],
+      ["Source code", "https://github.com/arcanistzed/babillard"],
     ],
     phone: {
       chips: ["All", "Society", "Humanities", "Science"],
@@ -147,6 +148,7 @@ export const copy = {
       ["Confidentialité", "/confidentialite"],
       ["Conditions", "/conditions"],
       ["Sécurité", "/securite"],
+      ["Code source", "https://github.com/arcanistzed/babillard"],
     ],
     phone: {
       chips: ["Tout", "Société", "Humanités", "Sciences"],
