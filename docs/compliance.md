@@ -73,3 +73,12 @@ Ban the account, keep the evidence, and report it to Cybertip.ca, as the mandato
 - City and region names are English only, and topics people suggest appear as written.
 - A lawyer hasn't reviewed the French or English text.
 - The policy doesn't mention the right to complain to a privacy regulator. That was a deliberate choice, and the right exists either way. If someone complains to us, tell them about it, since PIPEDA expects that. Ask the lawyer whether the policy should say so too.
+
+## Before the repository goes public
+
+The code is licensed AGPL-3.0-or-later, with a contributor agreement (`CLA.md`) and a name and logo note (`TRADEMARKS.md`). The repository is still private. Before making it public:
+
+- **Offer the source.** AGPL section 13 means people using the app over the network must be offered its source. Add a "Source code" link on the You tab and the website footer that points at the public repository.
+- **Purge old commits.** The history was rewritten on 2026-11-13 to replace a personal email with the GitHub noreply address. GitHub can keep the old commits reachable by their IDs, so ask GitHub Support to remove them, or publish from a fresh repository.
+- **Have a lawyer read `CLA.md`.** It's a plain-language draft meant to keep the right to relicense.
+- **Check for secrets.** No secret has been committed, but scan the history again right before publishing.

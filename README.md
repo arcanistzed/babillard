@@ -274,3 +274,7 @@ cd apps/api && npx wrangler d1 execute babillard --remote --file seed/seed.sql
 ## Not built yet
 
 The policy consultation export comes next. Stances are already being collected, so it's reporting on data the app already has. Also deferred: a web client, institution-only communities, and a public events feed.
+
+## Licence
+
+Copyright (C) 2026 Daniel Thorp. Babillard is free software under the [GNU Affero General Public License](LICENSE), version 3 or later. Anyone who runs a modified version as a service has to publish their changes. Contributions are covered by the [contributor licence agreement](CLA.md), and the name and logo by [TRADEMARKS.md](TRADEMARKS.md).
