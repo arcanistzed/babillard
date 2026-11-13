@@ -14,7 +14,7 @@ export function TermsAgreement({ agreed, onChange }: { agreed: boolean; onChange
       <Pressable
         accessibilityRole="checkbox"
         accessibilityState={{ checked: agreed }}
-        accessibilityLabel={t("I'm 18 or older, and I agree to the Terms of use and Privacy policy", "J'ai 18 ans ou plus, et j'accepte les Conditions d'utilisation et la Politique de confidentialité")}
+        accessibilityLabel={t("I agree to the Terms of use and Privacy policy", "J'accepte les Conditions d'utilisation et la Politique de confidentialité")}
         hitSlop={8}
         onPress={() => {
           haptics.select();
@@ -24,7 +24,7 @@ export function TermsAgreement({ agreed, onChange }: { agreed: boolean; onChange
         <Ionicons name={agreed ? "checkbox" : "square-outline"} size={28} color={agreed ? theme.accent : theme.ink} />
       </Pressable>
       <T style={styles.text}>
-        {t("I'm 18 or older, and I agree to the", "J'ai 18 ans ou plus, et j'accepte les")}{" "}
+        {t("I agree to the", "J'accepte les")}{" "}
         <T accessibilityRole="link" style={link} onPress={() => openLegalPage("terms")}>
           {t("Terms of use", "Conditions d'utilisation")}
         </T>{" "}
