@@ -5,6 +5,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { ActivityIndicator, Pressable, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { api } from "@/api";
+import { useAuth } from "@/auth";
 import { Celebration } from "@/components/Celebration";
 import { DeckControls } from "@/components/DeckControls";
 import { SwipeDeck, type SwipeDeckHandle, type SwipeDirection } from "@/components/SwipeDeck";
@@ -73,6 +74,16 @@ function PersonFlyer({ person }: { person: PersonCard }) {
 const TALK_LABEL = t("Let's talk", "Parlons-en");
 const PASS_LABEL = t("Pass", "Passer");
 
+/** "aged 20 to 25", "aged 20 and over", or "aged 25 and under". */
+function agesPhrase(ageMin: number | null, ageMax: number | null, language: "en" | "fr"): string {
+  if (language === "fr") {
+    if (ageMin !== null && ageMax !== null) return `de ${ageMin} à ${ageMax} ans`;
+    return ageMin !== null ? `de ${ageMin} ans et plus` : `de ${ageMax} ans et moins`;
+  }
+  if (ageMin !== null && ageMax !== null) return `aged ${ageMin} to ${ageMax}`;
+  return ageMin !== null ? `aged ${ageMin} and over` : `aged ${ageMax} and under`;
+}
+
 export default function People() {
   const queryClient = useQueryClient();
   const deck = useRef<SwipeDeckHandle>(null);
@@ -81,6 +92,10 @@ export default function People() {
   const [swipeFailed, setSwipeFailed] = useState(false);
   const swiped = useRef(new Set<string>());
   const people = useQuery({ queryKey: ["people"], queryFn: () => api.get<PersonCard[]>("/people"), staleTime: 0 });
+  const { me } = useAuth();
+  const ageMin = me?.profile?.ageMin ?? null;
+  const ageMax = me?.profile?.ageMax ?? null;
+  const rangeSet = ageMin !== null || ageMax !== null;
 
   useFocusEffect(
     useCallback(() => {
@@ -145,6 +160,14 @@ export default function People() {
               ) : (
                 <>
                   <T variant="title">{t("Nobody new right now", "Personne de nouveau pour l'instant")}</T>
+                  {rangeSet ? (
+                    <>
+                      <T muted>
+                        {t(`You're only seeing people ${agesPhrase(ageMin, ageMax, "en")}. A wider range may show more.`, `Vous ne voyez que les personnes ${agesPhrase(ageMin, ageMax, "fr")}. Une tranche plus large pourrait en montrer davantage.`)}
+                      </T>
+                      <Button label={t("Change ages", "Modifier les âges")} kind="secondary" onPress={() => router.push("/profile-edit")} />
+                    </>
+                  ) : null}
                   <Button label={t("Invite a friend", "Inviter quelqu'un")} onPress={inviteToApp} />
                   <Button label={t("Pick more topics", "Choisir d'autres sujets")} kind="secondary" onPress={() => router.navigate("/deck")} />
                 </>

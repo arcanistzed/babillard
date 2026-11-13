@@ -14,6 +14,7 @@ import { StyleSheet, useColorScheme, View } from "react-native";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { AuthProvider, useAuth } from "@/auth";
 import { UpdateRequired, useAppUpdate, useUpdateOffer } from "@/components/AppUpdate";
+import { Unreachable } from "@/components/Unreachable";
 import { installCrashReporter, reportCrash } from "@/crashReporter";
 import { fonts, useTheme } from "@/theme";
 import { Button, T } from "@/ui";
@@ -46,11 +47,12 @@ const SIGNED_OUT_ROUTES = new Set(["sign-in", "check-inbox", "auth"]);
 
 /** Sends people to the one place they belong: sign-in, onboarding, or the app. */
 function useRouteGuard() {
-  const { ready, me } = useAuth();
+  const { ready, me, unreachable } = useAuth();
   const segments = useSegments();
 
   useEffect(() => {
-    if (!ready) return;
+    // A session that couldn't be checked is still a session, so it never goes to sign-in.
+    if (!ready || unreachable) return;
     const first = segments[0] as string | undefined;
     const inSignedOutRoute = first !== undefined && SIGNED_OUT_ROUTES.has(first);
     if (!me) {
@@ -62,7 +64,7 @@ function useRouteGuard() {
     } else if (inSignedOutRoute || first === "onboard" || first === "agree" || first === undefined) {
       router.replace("/deck");
     }
-  }, [ready, me, segments]);
+  }, [ready, me, unreachable, segments]);
 }
 
 function usePushRouting() {
@@ -79,7 +81,7 @@ function usePushRouting() {
 
 function Navigator() {
   const theme = useTheme();
-  const { ready } = useAuth();
+  const { ready, me, unreachable } = useAuth();
   useRouteGuard();
   usePushRouting();
 
@@ -88,34 +90,37 @@ function Navigator() {
   }, [ready]);
 
   return (
-    <Stack
-      screenOptions={{
-        headerStyle: { backgroundColor: theme.paper },
-        headerShadowVisible: false,
-        headerTintColor: theme.ink,
-        headerTitleStyle: { fontFamily: fonts.displayMedium, fontSize: 18 },
-        headerBackButtonDisplayMode: "minimal",
-        contentStyle: { backgroundColor: theme.paper },
-      }}
-    >
-      <Stack.Screen name="index" options={{ headerShown: false }} />
-      <Stack.Screen name="sign-in" options={{ headerShown: false }} />
-      <Stack.Screen name="check-inbox" options={{ title: "" }} />
-      <Stack.Screen name="auth/link" options={{ headerShown: false }} />
-      <Stack.Screen name="onboard" options={{ headerShown: false }} />
-      <Stack.Screen name="agree" options={{ headerShown: false }} />
-      <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-      <Stack.Screen name="chat/[id]/index" options={{ title: "" }} />
-      <Stack.Screen name="chat/[id]/info" options={{ title: t("About this chat", "À propos") }} />
-      <Stack.Screen name="meetup/new" options={{ title: t("Propose a meetup", "Proposer une rencontre"), presentation: "modal" }} />
-      <Stack.Screen name="meetup/[id]" options={{ title: t("Meetup", "Rencontre") }} />
-      <Stack.Screen name="member/[conversationId]/[userId]" options={{ title: "" }} />
-      <Stack.Screen name="report" options={{ title: t("Report", "Signaler"), presentation: "modal" }} />
-      <Stack.Screen name="topic/new" options={{ title: t("Suggest a topic", "Suggérer un sujet"), presentation: "modal" }} />
-      <Stack.Screen name="key-backup" options={{ title: t("Back up messages", "Sauvegarder les messages") }} />
-      <Stack.Screen name="blocked" options={{ title: t("Blocked people", "Personnes bloquées") }} />
-      <Stack.Screen name="profile-edit" options={{ title: t("Edit profile", "Modifier le profil") }} />
-    </Stack>
+    <>
+      <Stack
+        screenOptions={{
+          headerStyle: { backgroundColor: theme.paper },
+          headerShadowVisible: false,
+          headerTintColor: theme.ink,
+          headerTitleStyle: { fontFamily: fonts.displayMedium, fontSize: 18 },
+          headerBackButtonDisplayMode: "minimal",
+          contentStyle: { backgroundColor: theme.paper },
+        }}
+      >
+        <Stack.Screen name="index" options={{ headerShown: false }} />
+        <Stack.Screen name="sign-in" options={{ headerShown: false }} />
+        <Stack.Screen name="check-inbox" options={{ title: "" }} />
+        <Stack.Screen name="auth/link" options={{ headerShown: false }} />
+        <Stack.Screen name="onboard" options={{ headerShown: false }} />
+        <Stack.Screen name="agree" options={{ headerShown: false }} />
+        <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+        <Stack.Screen name="chat/[id]/index" options={{ title: "" }} />
+        <Stack.Screen name="chat/[id]/info" options={{ title: t("About this chat", "À propos") }} />
+        <Stack.Screen name="meetup/new" options={{ title: t("Propose a meetup", "Proposer une rencontre"), presentation: "modal" }} />
+        <Stack.Screen name="meetup/[id]" options={{ title: t("Meetup", "Rencontre") }} />
+        <Stack.Screen name="member/[conversationId]/[userId]" options={{ title: "" }} />
+        <Stack.Screen name="report" options={{ title: t("Report", "Signaler"), presentation: "modal" }} />
+        <Stack.Screen name="topic/new" options={{ title: t("Suggest a topic", "Suggérer un sujet"), presentation: "modal" }} />
+        <Stack.Screen name="key-backup" options={{ title: t("Back up messages", "Sauvegarder les messages") }} />
+        <Stack.Screen name="blocked" options={{ title: t("Blocked people", "Personnes bloquées") }} />
+        <Stack.Screen name="profile-edit" options={{ title: t("Edit profile", "Modifier le profil") }} />
+      </Stack>
+      {ready && unreachable && !me ? <Unreachable /> : null}
+    </>
   );
 }
 

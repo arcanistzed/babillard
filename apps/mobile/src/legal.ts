@@ -1,3 +1,4 @@
+import * as WebBrowser from "expo-web-browser";
 import { Linking } from "react-native";
 import { BASE_URL } from "./api";
 import { languageTag } from "./i18n";
@@ -10,6 +11,8 @@ const PATHS: Record<LegalPage, { en: string; fr: string }> = {
   safety: { en: "/safety", fr: "/securite" },
 };
 
+/** Opens over the app, so closing it returns to the same screen, mid sign-up included. */
 export function openLegalPage(page: LegalPage): void {
-  void Linking.openURL(`${BASE_URL}${PATHS[page][languageTag]}`);
+  const url = `${BASE_URL}${PATHS[page][languageTag]}`;
+  void WebBrowser.openBrowserAsync(url).catch(() => Linking.openURL(url));
 }
