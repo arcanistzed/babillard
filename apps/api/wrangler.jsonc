@@ -48,7 +48,7 @@
     // The release script (apps/mobile/scripts/release-android.ts) raises LATEST, so older
     // installs offer the update. Raise MINIMUM by hand when an old version would break, which
     // makes the update required. Empty means no update to offer, or no version too old.
-    "ANDROID_LATEST_VERSION": "0.2.1",
+    "ANDROID_LATEST_VERSION": "0.3.0",
     "ANDROID_MIN_VERSION": "",
     // Must be an address on a domain verified in SES.
     "EMAIL_FROM": "Babillard <login@babillard.app>",
