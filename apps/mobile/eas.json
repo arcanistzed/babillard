@@ -28,7 +28,8 @@
       "node": "24.18.1",
       "pnpm": "11.1.3",
       "env": {
-        "EXPO_PUBLIC_API_URL": "https://babillard.app"
+        "EXPO_PUBLIC_API_URL": "https://babillard.app",
+        "EXPO_PUBLIC_DISTRIBUTION": "play"
       }
     },
     "ios-simulator": {
@@ -39,6 +40,11 @@
     }
   },
   "submit": {
-    "production": {}
+    "production": {
+      "android": {
+        "serviceAccountKeyPath": "./play-service-account.json",
+        "track": "internal"
+      }
+    }
   }
 }

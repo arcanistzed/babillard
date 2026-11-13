@@ -11,3 +11,6 @@ expo-env.d.ts
 coverage/
 apps/api/seed/seed.sql
 apps/mobile/.env
+
+# Google Play upload key for eas submit. Never commit it.
+apps/mobile/play-service-account.json

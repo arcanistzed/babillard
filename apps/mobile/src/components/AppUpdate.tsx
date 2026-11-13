@@ -15,8 +15,14 @@ const RECHECK_MS = 60 * 60 * 1000;
 export type UpdateState = { kind: "current" } | { kind: "available" | "required"; url: string };
 
 /**
- * The Android app is installed from babillard.app, not a store, so nothing updates it for
- * people. The server says which build is newest and which is the oldest that still works,
+ * Set on the Google Play build. Play's policy forbids an app from updating itself any other way, so
+ * that build never offers the download from babillard.app, and a build too old to work sends people to Play.
+ */
+const FROM_PLAY = process.env.EXPO_PUBLIC_DISTRIBUTION === "play";
+const PLAY_URL = "https://play.google.com/store/apps/details?id=com.babillard";
+
+/**
+ * The Android app installed from babillard.app has no store to update it. The server says which build is newest and which is the oldest that still works,
  * and the app compares those with its own build number.
  */
 export function useAppUpdate(): UpdateState {
@@ -29,8 +35,8 @@ export function useAppUpdate(): UpdateState {
       const response = await fetch(`${BASE_URL}/app/version`);
       if (!response.ok) return;
       const { android } = (await response.json()) as AppVersionInfo;
-      if (installed < android.minimum) setState({ kind: "required", url: android.url });
-      else if (installed < android.latest) setState({ kind: "available", url: android.url });
+      if (installed < android.minimum) setState({ kind: "required", url: FROM_PLAY ? PLAY_URL : android.url });
+      else if (installed < android.latest && !FROM_PLAY) setState({ kind: "available", url: android.url });
       else setState({ kind: "current" });
     } catch {
       // Offline or the server is down. The app keeps working with what it has.
@@ -67,13 +73,18 @@ export function UpdateRequired({ url }: { url: string }) {
       <View style={styles.requiredCopy}>
         <T variant="display">{t("Time to update", "Il est temps de mettre à jour")}</T>
         <T>
-          {t(
-            "This version no longer works. Download the new one and open the file to install it.",
-            "Cette version ne fonctionne plus. Téléchargez la nouvelle et ouvrez le fichier pour l'installer.",
-          )}
+          {FROM_PLAY
+            ? t("This version no longer works. Update it from Google Play.", "Cette version ne fonctionne plus. Mettez-la à jour depuis Google Play.")
+            : t(
+                "This version no longer works. Download the new one and open the file to install it.",
+                "Cette version ne fonctionne plus. Téléchargez la nouvelle et ouvrez le fichier pour l'installer.",
+              )}
         </T>
       </View>
-      <Button label={t("Download the update", "Télécharger la mise à jour")} onPress={() => download(url)} />
+      <Button
+        label={FROM_PLAY ? t("Open Google Play", "Ouvrir Google Play") : t("Download the update", "Télécharger la mise à jour")}
+        onPress={() => download(url)}
+      />
     </SafeAreaView>
   );
 }

@@ -116,7 +116,12 @@ publicRoutes.get("/.well-known/assetlinks.json", (c) =>
       ? [
           {
             relation: ["delegate_permission/common.handle_all_urls"],
-            target: { namespace: "android_app", package_name: c.env.ANDROID_PACKAGE, sha256_cert_fingerprints: [c.env.ANDROID_CERT_SHA256] },
+            // Comma-separated: the key EAS signs the website's APK with, and Google Play's own signing key.
+            target: {
+              namespace: "android_app",
+              package_name: c.env.ANDROID_PACKAGE,
+              sha256_cert_fingerprints: c.env.ANDROID_CERT_SHA256.split(",").map((print) => print.trim()).filter(Boolean),
+            },
           },
         ]
       : [],
