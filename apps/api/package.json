@@ -17,6 +17,7 @@
     "test:e2e": "vitest run --config vitest.e2e.config.ts"
   },
   "dependencies": {
+    "@anthropic-ai/sdk": "^1.8.0",
     "@babillard/shared": "workspace:*",
     "aws4fetch": "^1.0.20",
     "drizzle-orm": "^0.45.4",

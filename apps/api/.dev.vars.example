@@ -9,5 +9,5 @@ SES_ACCESS_KEY_ID=not-used-in-dev-mode
 SES_SECRET_ACCESS_KEY=not-used-in-dev-mode
 # Where new report alerts go. Set with `wrangler secret put ADMIN_EMAIL` in production.
 ADMIN_EMAIL=admin@example.test
-# Optional. Turns on wording suggestions for topics. Set with `wrangler secret put OPENAI_API_KEY` in production.
-OPENAI_API_KEY=
+# Optional. Turns on wording suggestions for topics. Set with `wrangler secret put ANTHROPIC_API_KEY` in production.
+ANTHROPIC_API_KEY=

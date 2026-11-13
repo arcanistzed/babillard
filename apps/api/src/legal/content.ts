@@ -12,7 +12,7 @@ export const LEGAL_PATHS: Record<LegalPage, Record<Language, string>> = {
 
 const privacyEn = `# Privacy policy
 
-Last updated: November 9, 2026
+Last updated: November 12, 2026
 
 Babillard helps people find others nearby who want to talk about the same topics, then meet in person. In this policy, "we" means the operator of Babillard, named in our Terms of use. We're based in Canada. Our privacy officer is responsible for how we handle your information. Questions and requests go to privacy@babillard.app.
 
@@ -65,7 +65,7 @@ We use these companies to run the service, and only for that purpose:
 - Cloudflare hosts the app, the database, encrypted messages, and photos.
 - Amazon Web Services sends sign-in and moderation emails, so it handles your email address.
 - Expo, Google, and Apple deliver push notifications, so they handle your device token and the notification text, which says who wrote to you but not what they said.
-- OpenAI suggests clearer wording and French translations for topics people suggest, so it handles the text of those topics and nothing else: never messages, names, or contact details. We ask it not to keep that text.
+- Anthropic suggests clearer wording and French translations for topics people suggest, so it handles the text of those topics and nothing else: never messages, names, or contact details. It doesn't use that text to train its models.
 
 These companies may process information outside Canada, including in the United States, where other laws apply. We also disclose information if the law requires it, or if we believe it's needed to protect someone from serious harm. If Babillard moves to a company or a new owner, your information moves with it under this policy, and we'll tell you.
 
@@ -200,7 +200,7 @@ Safety concerns, including anything involving a child: safety@babillard.app. Hel
 
 const privacyFr = `# Politique de confidentialité
 
-Dernière mise à jour: 9 novembre 2026
+Dernière mise à jour: 12 novembre 2026
 
 Babillard aide les gens à trouver des personnes près de chez eux qui veulent parler des mêmes sujets, puis à se rencontrer en personne. Dans cette politique, « nous » désigne l'exploitant de Babillard, nommé dans nos Conditions d'utilisation. Nous sommes établis au Canada. Notre responsable de la protection des renseignements personnels répond de la façon dont nous traitons vos renseignements. Adressez vos questions et demandes à privacy@babillard.app.
 
@@ -253,7 +253,7 @@ Nous faisons appel à ces entreprises pour faire fonctionner le service, et seul
 - Cloudflare héberge l'application, la base de données, les messages chiffrés et les photos.
 - Amazon Web Services envoie les courriels de connexion et de modération, et traite donc votre adresse courriel.
 - Expo, Google et Apple livrent les notifications, et traitent donc le jeton de votre appareil et le texte de la notification, qui indique qui vous a écrit mais pas ce qui a été écrit.
-- OpenAI suggère des formulations plus claires et des traductions françaises pour les sujets proposés, et traite donc le texte de ces sujets et rien d'autre: jamais les messages, les noms ou les coordonnées. Nous lui demandons de ne pas conserver ce texte.
+- Anthropic suggère des formulations plus claires et des traductions françaises pour les sujets proposés, et traite donc le texte de ces sujets et rien d'autre: jamais les messages, les noms ou les coordonnées. Elle n'utilise pas ce texte pour entraîner ses modèles.
 
 Ces entreprises peuvent traiter des renseignements à l'extérieur du Canada, y compris aux États-Unis, où d'autres lois s'appliquent. Nous communiquons aussi des renseignements si la loi l'exige, ou si nous croyons que c'est nécessaire pour protéger quelqu'un d'un préjudice grave. Si Babillard passe à une société ou à un nouveau propriétaire, vos renseignements suivent sous cette politique, et nous vous en informerons.
 

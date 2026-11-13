@@ -41,9 +41,9 @@
   "triggers": { "crons": ["*/5 * * * *"] },
   "vars": {
     "PUBLIC_ORIGIN": "https://babillard.app",
-    // Drafting help for topic wording. The key is the OPENAI_API_KEY secret; empty turns the feature off.
-    "OPENAI_MODEL": "gpt-5-mini",
-    "OPENAI_ENDPOINT": "",
+    // Drafting help for topic wording, from Claude. The key is the ANTHROPIC_API_KEY secret; without it the feature is off.
+    "ANTHROPIC_MODEL": "claude-opus-5-5",
+    "ANTHROPIC_BASE_URL": "",
     // The newest Android version on babillard.app, and the oldest one the API still works with.
     // The release script (apps/mobile/scripts/release-android.ts) raises LATEST, so older
     // installs offer the update. Raise MINIMUM by hand when an old version would break, which
