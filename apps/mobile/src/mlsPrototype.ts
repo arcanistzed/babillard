@@ -26,7 +26,7 @@ function ensureGetRandomValues(): void {
 
 export async function runDemo() {
   ensureGetRandomValues();
-  // Loaded only when the flag is on and someone presses Run.
+  // Runs only when the flag is on and someone presses Run. Metro still bundles it into every build.
   const { runTwoMemberDemo } = await import("@babillard/shared/mls");
   return runTwoMemberDemo(random, () => performance.now());
 }

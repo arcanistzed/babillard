@@ -39,10 +39,10 @@ Sources: the [OpenMLS audit post](https://blog.openmls.tech/posts/2026-05-27-ind
 
 - It doesn't run on Hermes out of the box. Both of its crypto providers, including the one called `nobleCryptoProvider`, go through `@hpke/core`. That library does X25519 key generation and HKDF through `crypto.subtle`, and Hermes has no `crypto.subtle`. The prototype's canary test pins this down. With only `getRandomValues` available, ts-mls's own provider fails at the first step: `Cannot read properties of undefined (reading 'generateKey')`.
 - So we wrote `packages/shared/src/mls/provider.ts`, about 150 lines. It uses `@noble` for signatures, hashing, HKDF and the AEAD, the same audited code v1 uses. For HPKE it keeps `@hpke/core`'s key schedule, swaps in `@hpke/dhkem-x25519`'s pure-JS X25519, and replaces the WebCrypto HMAC inside HKDF with `@noble/hashes`. A test runs it against ts-mls's WebCrypto provider in both directions, which shows the two produce the same protocol.
-- That provider is our own code doing cryptographic plumbing, and it depends on two `@hpke/common` internals, `HkdfSha256Native` and `Dhkem`. A ts-mls or `@hpke` upgrade could break it quietly. Pin exact versions, as the branch does, and keep the interop test.
+- That provider is our own code doing cryptographic plumbing, and it depends on two `@hpke/common` internals, `HkdfSha256Native` and `Dhkem`. A ts-mls or `@hpke` upgrade could break it quietly. Pin exact versions, as the branch does, and keep the interop test. ts-mls 1.6.4 also lists exact `@noble` versions as peers, `@noble/curves` 2.0.1 and `@noble/ciphers` 2.1.1, while the repo uses 2.4.0. pnpm warns about it. Our provider calls `@noble` directly, and the ts-mls code that would import those peers never runs, so it's only a warning for now.
 - It runs anywhere JavaScript runs: Expo Go, dev builds, Node tests, and the Worker if we ever need it there.
-- ts-mls's default authentication service accepts **any** credential. `clientConfig()` in `group.ts` replaces it, and a test checks that a key the server's device list doesn't vouch for gets refused. Forgetting this anywhere would let anyone the server introduces join silently. It's the most dangerous default in the library.
-- A ts-mls review should look hardest at secret-tree handling, epoch key retention, commit validation, and the ratchet-tree checks in `joinGroup`. OpenMLS's own advisories in 2025 and 2026 were in these areas, secret-tree persistence and an authentication-tag check. That's where a newer library is most likely to be wrong too.
+- ts-mls's default authentication service accepts **any** credential. `clientConfig()` in `group.ts` replaces it. Tests check that ts-mls really calls it in all three places: the phone adding someone, every other member applying that commit, and a new phone joining from a Welcome. Forgetting this anywhere would let anyone the server introduces join silently. It's the most dangerous default in the library.
+- A ts-mls review should look hardest at secret-tree handling, epoch key retention, commit validation, and the ratchet-tree checks in `joinGroup`. OpenMLS's own problems were in these areas: a 2025 advisory about persisting the secret tree, and MAC checking, which was the audit's one High finding. That's where a newer library is most likely to be wrong too.
 
 **OpenMLS through a native module.** It's the most trustworthy core, with real build and maintenance cost.
 
@@ -142,11 +142,11 @@ An MLS member can't commit their own removal. So:
 1. The server removes the D1 row, kicks their sockets, and stops serving them the log, as it does now. It writes an `mls_pending` removal.
 2. While a removal is pending, the Durable Object refuses **application** messages with `pending_removal`. The next phone that tries to send first commits the removal, then sends.
 
-So a departed member's keys stop opening anything new from the first message after they leave. Between the leave and that next message, nothing new is sent. Until then the removed phone could decrypt only if it got ciphertext from somewhere, and the server no longer gives it any. The test "shuts out someone who was removed" checks the cryptographic half.
+So a departed member's keys stop opening anything new from the first message after they leave. Between the leave and that next message, nothing new is sent. Until then the removed phone could decrypt only if it got ciphertext from somewhere, and the server no longer gives it any. The test "shuts out someone who was removed" checks the cryptographic half: after Carol's phone applies her own removal, it can't open the next message.
 
 An alternative is to make the Durable Object an MLS external sender with its own signing key, allowed to propose removals. It removes the dependence on a member sending, but it puts a signing key on the server, and phones still have to commit the proposal. Not worth it for now.
 
-Blocking doesn't change membership in groups, the same as today. The blocked person's application messages are left out of the blocker's log, as `history()` does now. Commits from the blocked person are always delivered, because skipping one would break the blocker's copy of the group.
+Blocking doesn't change membership in groups, the same as today. Today the server leaves the blocked person's messages out of the blocker's history. Under MLS that's risky. Each sender's messages form a chain, and ts-mls will skip ahead at most 200 steps in one chain. If the server hid 201 messages and the person was later unblocked, their next message wouldn't open. So the server should deliver everything, and the blocker's phone should process the blocked person's messages and throw the text away. Commits always have to be delivered anyway, because skipping one breaks the blocker's copy of the group.
 
 ### Several phones per person
 
@@ -160,9 +160,9 @@ This is the biggest change for the app, and the brief didn't list it. MLS delete
 
 Today `useChat` and the inbox fetch ciphertext again and decrypt it every time the screen opens. Under MLS the phone needs:
 
-- **Stored group state.** About a kilobyte for two members in the prototype, and it grows with the group. It holds private keys. SecureStore is meant for values under about 2 KB, so store it in a file encrypted under a key kept in SecureStore, and save it after every message processed.
+- **Stored group state.** About a kilobyte for two members in the prototype, and it grows with the group. It holds private keys. SecureStore is meant for values under about 2 KB, so encrypt the state under a key kept in SecureStore and store the result in the message database, saving it after every message processed.
 - **A local message store.** `expo-sqlite` holding the text each phone decrypted, read by the chat screen and the inbox. The server's copy only feeds phones that haven't caught up.
-- **A sync loop.** Read the log from the phone's last `seq`, apply each entry in order, save state and text in one transaction, then advance the cursor. If the app dies halfway through, the same entry gets applied again, which fails, so the save has to be atomic.
+- **A sync loop.** Read the log from the phone's last `seq`, apply each entry in order, then save the new state, the text, and the cursor in one SQLite transaction. If the app dies halfway through, the same entry gets applied again, which fails, so the save has to be atomic. That means the encrypted state blob lives in the same database as the messages, not in a separate file.
 
 ts-mls keeps keys for 4 past epochs and 10 generations by default, so messages that arrive a little out of order still open. Within one sender it will skip ahead at most 200 messages. Phones read the log in order, so they don't hit that limit.
 
@@ -215,18 +215,18 @@ Branch `mls-prototype`. Nothing in the normal app paths changed.
 - `packages/shared/src/mls/group.ts` wraps ts-mls: devices, key packages, groups, add, remove, Welcome, encrypt, receive, save and load state, roster code, and a header reader for the server.
 - `packages/shared/src/mls/delivery.ts` has the ordering rule and an in-memory stand-in for the Durable Object.
 - `packages/shared/src/mls/demo.ts` runs two phones through that stand-in, with a save and reload in the middle.
-- `packages/shared/test/mls.test.ts` has nine tests:
+- `packages/shared/test/mls.test.ts` has ten tests:
   - the two-member demo with `crypto.subtle` removed, as on Hermes
   - a canary showing ts-mls's own noble provider still fails without WebCrypto
   - interop with ts-mls's WebCrypto provider, in both directions
   - each message opens once
-  - a removed member can't read what follows
+  - a removed member can't read what follows, whether or not their phone applied the removal
   - two commits racing for one epoch: the second is refused, catches up, and gets in
-  - a forged credential is refused
+  - a credential the device list doesn't vouch for is refused by the committer, by other members, and by a phone joining from a Welcome
   - the roster code holds across epochs and changes when someone joins
   - the server refuses foreign, wrong-chat, and stale messages
-- `apps/mobile/app/dev-mls.tsx` is a screen that runs the demo on a phone. It shows nothing unless the build sets `EXPO_PUBLIC_MLS_PROTOTYPE=1`. It's reachable only by deep link, `exp://<metro>/--/dev-mls`, and isn't linked from anywhere.
-- `apps/mobile/metro.config.js` maps five modules that ts-mls and `@hpke` import dynamically for unused cipher suites, or as a Node fallback, to empty modules. Without that Metro can't bundle.
+- `apps/mobile/app/dev-mls.tsx` is a screen that runs the demo on a phone. It redirects home unless the build sets `EXPO_PUBLIC_MLS_PROTOTYPE=1`. It's reachable only by deep link, `exp://<metro>/--/dev-mls`, and isn't linked from anywhere. The flag hides the screen but doesn't keep code out of the build. Metro bundles every route, and the route's `import()` with it, so merging this branch as it stands would ship ts-mls inside the app, unused. Delete the route before merging, or accept that.
+- `apps/mobile/metro.config.js` maps five modules to empty modules. ts-mls and `@hpke` import them dynamically for unused cipher suites, or as a Node fallback. Without that Metro can't bundle. The mapping applies to every build, flag or not, which is harmless because nothing else imports those names.
 
 On the `Local_Reader_API_36` emulator in Expo Go 58, the screen reported `Hermes: true`, `crypto.getRandomValues: false`, `crypto.subtle: false`. So Hermes really does lack both, and the app supplies `getRandomValues` from expo-crypto. The demo passed there. Timings on the emulator:
 

@@ -112,8 +112,34 @@ describe("MLS group behaviour", () => {
 
     await bob.catchUp(server);
     expect(bob.inbox).toEqual(["after Carol left"]);
-    // Carol's phone, whether or not it saw the removal, can't open what came after.
-    await expect(receive(carolsLastState, server.log.at(-1)!.bytes, carol.cs)).rejects.toThrow();
+
+    // Carol's phone applies its own removal, as an honest phone would, and still can't open what follows.
+    const [removalEntry, afterEntry] = server.log.slice(-2);
+    const removed = await receive(carolsLastState, removalEntry!.bytes, carol.cs);
+    expect(removed.kind).toBe("commit");
+    await expect(receive(removed.state, afterEntry!.bytes, carol.cs)).rejects.toThrow();
+    // A phone that skipped the removal is a whole epoch behind and can't open it either.
+    await expect(receive(carolsLastState, afterEntry!.bytes, carol.cs)).rejects.toThrow();
+  });
+
+  it("checks credentials on every phone, not just the one that commits", async () => {
+    const { server, person, add } = await chat("receivers");
+    const [alice, bob, carol, dave] = [await person("alice"), await person("bob"), await person("carol"), await person("dave")];
+    alice.state = await startGroup("receivers", alice.device, alice.cs, alice.config);
+    await add(alice, bob);
+
+    // Bob's list of devices is missing Carol, so a commit adding her must fail on his phone.
+    const bobsView = new DemoDirectory();
+    for (const member of [alice, bob]) bobsView.register(member.device);
+    bob.state = { ...bob.state!, clientConfig: bobsView.config() };
+    await add(alice, carol);
+    await expect(bob.catchUp(server)).rejects.toThrow(/Could not validate credential/);
+
+    // Dave's list is missing Bob, so he must refuse a Welcome into a group with Bob in it.
+    const output = await addDevices(alice.state!, [encodeKeyPackage(dave.device)], alice.cs);
+    const davesView = new DemoDirectory();
+    for (const member of [alice, carol, dave]) davesView.register(member.device);
+    await expect(joinFromWelcome(output.welcome!, dave.device, dave.cs, davesView.config())).rejects.toThrow(/Could not validate credential/);
   });
 
   it("lets only one commit per epoch in, and the loser catches up and retries", async () => {
@@ -144,7 +170,7 @@ describe("MLS group behaviour", () => {
     // Someone else's key, presented under Bob's name.
     const impostor = await createDevice("bob", "bob-phone", alice.cs);
     expect(directory.keys.get("bob/bob-phone")).toBeDefined();
-    await expect(addDevices(alice.state, [encodeKeyPackage(impostor)], alice.cs)).rejects.toThrow();
+    await expect(addDevices(alice.state, [encodeKeyPackage(impostor)], alice.cs)).rejects.toThrow(/Could not validate credential/);
   });
 
   it("keeps the security code steady across epochs and changes it when someone joins", async () => {
