@@ -11,8 +11,11 @@ const PATHS: Record<LegalPage, { en: string; fr: string }> = {
   safety: { en: "/safety", fr: "/securite" },
 };
 
-/** Opens over the app, so closing it returns to the same screen, mid sign-up included. */
+/**
+ * Opens over the app, so closing it returns to the same screen, mid sign-up included. The page has to open
+ * in the app's own task: in a task of its own (the library's default), closing it lands on the home screen.
+ */
 export function openLegalPage(page: LegalPage): void {
   const url = `${BASE_URL}${PATHS[page][languageTag]}`;
-  void WebBrowser.openBrowserAsync(url).catch(() => Linking.openURL(url));
+  void WebBrowser.openBrowserAsync(url, { createTask: false }).catch(() => Linking.openURL(url));
 }
