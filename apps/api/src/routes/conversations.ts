@@ -1,4 +1,4 @@
-import { sendMessageSchema, visibleLookingFor, type ChatMessage, type ConversationDetail, type InboxItem, type Stance } from "@babillard/shared";
+import { ageOn, sendMessageSchema, visibleLookingFor, type ChatMessage, type ConversationDetail, type InboxItem, type Stance } from "@babillard/shared";
 import { localizeTopic, requestLanguage } from "../lib/language";
 import { and, desc, eq, gt, inArray, or, sql } from "drizzle-orm";
 import { Hono } from "hono";
@@ -235,12 +235,13 @@ conversations.get("/:id/members/:userId", async (c) => {
   const [[profile], [mine], [target]] = await Promise.all([
     db.select().from(schema.profiles).where(eq(schema.profiles.userId, c.req.param("userId"))),
     db.select({ lookingFor: schema.profiles.lookingFor }).from(schema.profiles).where(eq(schema.profiles.userId, user.id)),
-    db.select({ verified: schema.users.verifiedInstitution }).from(schema.users).where(eq(schema.users.id, c.req.param("userId"))),
+    db.select({ verified: schema.users.verifiedInstitution, dob: schema.users.dob }).from(schema.users).where(eq(schema.users.id, c.req.param("userId"))),
   ]);
   if (!profile) throw fail(404, "person_not_found");
   return c.json({
     id: profile.userId,
     displayName: profile.displayName,
+    age: target?.dob ? ageOn(target.dob) : null,
     bio: profile.bio,
     role: profile.role,
     avatarUrl: avatarUrl(c.env, profile.avatarKey),

@@ -1,5 +1,5 @@
 import { DurableObject } from "cloudflare:workers";
-import { GROUP_MAX_SIZE, canJoin, formGroups, topicPhrase, type Stance, type Waiter } from "@babillard/shared";
+import { GROUP_MAX_SIZE, ageOn, canJoin, formGroups, topicPhrase, type Stance, type Waiter } from "@babillard/shared";
 import { and, eq, inArray, isNotNull } from "drizzle-orm";
 import { getDb, schema } from "../db";
 import { blocksBetween, blockedWith } from "../lib/blocks";
@@ -128,7 +128,7 @@ export class Cohort extends DurableObject<Env> {
 
     const db = getDb(this.env);
     const eligible = await db
-      .select({ id: schema.users.id })
+      .select({ id: schema.users.id, dob: schema.users.dob })
       .from(schema.users)
       .where(
         and(
@@ -138,10 +138,13 @@ export class Cohort extends DurableObject<Env> {
           isNotNull(schema.users.onboardedAt),
         ),
       );
-    const eligibleIds = new Set(eligible.map((row) => row.id));
+    const dobs = new Map(eligible.map((row) => [row.id, row.dob]));
     const waiting: Waiter[] = waitingRows
-      .filter((row) => eligibleIds.has(row.user_id))
-      .map((row) => ({ userId: row.user_id, stance: row.stance as Stance | null, joinedAt: row.joined_at }));
+      .filter((row) => dobs.has(row.user_id))
+      .map((row) => {
+        const dob = dobs.get(row.user_id);
+        return { userId: row.user_id, stance: row.stance as Stance | null, joinedAt: row.joined_at, age: dob ? ageOn(dob) : null };
+      });
 
     const blocks = await blocksBetween(db, waiting.map((waiter) => waiter.userId));
     const memberIds = formGroups({ waiting, topicKind: input.topicKind, blocks });

@@ -5,6 +5,7 @@ import { useCallback, useState } from "react";
 import { ScrollView, StyleSheet, View } from "react-native";
 import { api, friendlyError } from "@/api";
 import { useAuth } from "@/auth";
+import { AgeRangeField, ageRangeText, parseAgeRange } from "@/components/AgeRangeField";
 import { CityPicker } from "@/components/CityPicker";
 import { FieldPicker } from "@/components/FieldPicker";
 import { LookingForPicker } from "@/components/LookingForPicker";
@@ -23,6 +24,8 @@ export default function ProfileEdit() {
   const [lookingFor, setLookingFor] = useState(profile?.lookingFor ?? []);
   const [cityId, setCityId] = useState<string | null>(me?.cityId ?? null);
   const [campusId, setCampusId] = useState<string | null>(me?.campusId ?? null);
+  const [ageRange, setAgeRange] = useState(ageRangeText(profile?.ageMin, profile?.ageMax));
+  const range = parseAgeRange(ageRange);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -35,7 +38,7 @@ export default function ProfileEdit() {
     setBusy(true);
     setError(null);
     try {
-      setMe(await api.put<Me>("/me/profile", { displayName: displayName.trim(), bio: bio.trim(), role, fields, lookingFor, cityId, campusId }));
+      setMe(await api.put<Me>("/me/profile", { displayName: displayName.trim(), bio: bio.trim(), role, fields, lookingFor, cityId, campusId, ageMin: range.ageMin, ageMax: range.ageMax }));
       await queryClient.invalidateQueries({ queryKey: ["people"] });
       await queryClient.invalidateQueries({ queryKey: ["topics"] });
       router.back();
@@ -54,6 +57,7 @@ export default function ProfileEdit() {
         <ChipRow>{ROLES.map((value) => <Chip key={value} label={roleLabel(value)} selected={role === value} onPress={() => setRole(value)} />)}</ChipRow>
         <T variant="heading">{t("What are you looking for?", "Que recherchez-vous?")}</T>
         <LookingForPicker value={lookingFor} onChange={setLookingFor} />
+        <AgeRangeField value={ageRange} onChange={setAgeRange} error={range.error} />
         <T variant="heading">{t("Where can you meet people?", "Où pouvez-vous rencontrer des gens?")}</T>
         <CityPicker cityId={cityId} campusId={campusId} onChange={setLocation} />
         <T variant="heading">{t("Fields you care about", "Domaines qui vous intéressent")}</T>
@@ -61,7 +65,7 @@ export default function ProfileEdit() {
         {error ? <ErrorText>{error}</ErrorText> : null}
       </ScrollView>
       <View style={[styles.actions, { paddingBottom: bottomPadding }]}>
-        <Button label={t("Save changes", "Enregistrer")} onPress={save} busy={busy} disabled={!displayName.trim() || fields.length === 0 || lookingFor.length === 0 || !cityId} />
+        <Button label={t("Save changes", "Enregistrer")} onPress={save} busy={busy} disabled={!displayName.trim() || fields.length === 0 || lookingFor.length === 0 || !cityId || range.error !== null} />
       </View>
     </KeyboardScreen>
   );

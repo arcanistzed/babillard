@@ -11,7 +11,7 @@ import { inviteToApp } from "@/invite";
 import { openLegalPage } from "@/legal";
 import { fonts, useTheme } from "@/theme";
 import { Avatar, Button, Chip, ChipRow, ErrorText, T } from "@/ui";
-import { lookingForLabel, roleLabel, t } from "@/i18n";
+import { lookingForLabel, nameWithAge, roleLabel, t } from "@/i18n";
 
 const LEGAL_LINKS = [
   [t("Privacy policy", "Confidentialité"), "privacy"],
@@ -67,7 +67,7 @@ export default function Profile() {
         <Pressable accessibilityRole="button" accessibilityLabel={t("Change your photo", "Changer votre photo")} onPress={changePhoto} style={styles.identity}>
           <Avatar name={profile.displayName} url={profile.avatarUrl} size={96} />
           <View style={styles.identityText}>
-            <T variant="title">{profile.displayName}</T>
+            <T variant="title">{nameWithAge(profile.displayName, me.age)}</T>
             <T muted>{roleLabel(profile.role)}</T>
             {place ? <T muted>{place}</T> : null}
             {me.verifiedInstitution ? (

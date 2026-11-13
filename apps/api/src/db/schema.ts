@@ -34,6 +34,9 @@ export const profiles = sqliteTable("profiles", {
   role: text("role").$type<Role>().notNull(),
   fields: text("fields", { mode: "json" }).$type<Field[]>().notNull(),
   lookingFor: text("looking_for", { mode: "json" }).$type<LookingFor[]>().notNull(),
+  /** The ages this person wants to meet. Null means no limit at that end. */
+  ageMin: integer("age_min"),
+  ageMax: integer("age_max"),
 });
 
 export const localities = sqliteTable("localities", {

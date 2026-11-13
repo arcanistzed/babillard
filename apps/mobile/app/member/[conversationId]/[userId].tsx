@@ -5,11 +5,12 @@ import { ActivityIndicator, ScrollView, StyleSheet, View } from "react-native";
 import { api } from "@/api";
 import { fonts, useTheme } from "@/theme";
 import { Avatar, Button, Chip, ChipRow, ErrorText, T } from "@/ui";
-import { fieldLabel, lookingForLabel, roleLabel, t } from "@/i18n";
+import { fieldLabel, lookingForLabel, nameWithAge, roleLabel, t } from "@/i18n";
 
 interface MemberProfile {
   id: string;
   displayName: string;
+  age: number | null;
   bio: string;
   role: Role;
   avatarUrl: string | null;
@@ -32,7 +33,7 @@ export default function Member() {
       <Stack.Screen options={{ title: person.displayName }} />
       <Avatar name={person.displayName} url={person.avatarUrl} size={110} />
       <View>
-        <T variant="title">{person.displayName}</T>
+        <T variant="title">{nameWithAge(person.displayName, person.age)}</T>
         <T muted>{roleLabel(person.role)}</T>
         {person.verifiedInstitution ? (
           <T variant="small" style={{ color: theme.good, fontFamily: fonts.bodyBold }}>

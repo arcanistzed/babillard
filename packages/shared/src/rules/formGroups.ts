@@ -1,9 +1,11 @@
-import { GROUP_MAX_SIZE, GROUP_MIN_SIZE, type Stance } from "../constants";
+import { GROUP_AGE_SPREAD, GROUP_MAX_SIZE, GROUP_MIN_SIZE, type Stance } from "../constants";
 
 export interface Waiter {
   userId: string;
   stance: Stance | null;
   joinedAt: number;
+  /** Null or missing when unknown, which leaves the person out of the age preference. */
+  age?: number | null;
 }
 
 export type BlockPair = readonly [string, string];
@@ -33,7 +35,9 @@ export function canJoin(userId: string, members: string[], blocks: BlockPair[]):
  * People join in the order they arrived, skipping anyone who has a block with
  * someone already picked. Stance is only a soft preference: when a question's
  * group would be unanimous and someone with a different view is waiting, that
- * person replaces the newest member. It never holds a group back.
+ * person replaces the newest member. Age is a soft preference too: someone far
+ * from the group's middle age is swapped for a closer-aged person who is waiting.
+ * Neither ever holds a group back.
  */
 export function formGroups(input: FormGroupsInput): string[] | null {
   const minSize = input.minSize ?? GROUP_MIN_SIZE;
@@ -47,6 +51,7 @@ export function formGroups(input: FormGroupsInput): string[] | null {
   }
   if (picked.length < minSize) return null;
 
+  preferSimilarAges(picked, ordered, input.blocks);
   if (input.topicKind === "question") diversifyStances(picked, ordered, input.blocks);
   return picked.map((waiter) => waiter.userId);
 }
@@ -66,4 +71,30 @@ function diversifyStances(picked: Waiter[], ordered: Waiter[], blocks: BlockPair
       canJoin(waiter.userId, others, blocks),
   );
   if (replacement) picked[picked.length - 1] = replacement;
+}
+
+function middleAge(waiters: Waiter[]): number | null {
+  const ages = waiters.map((waiter) => waiter.age).filter((age): age is number => age != null).sort((a, b) => a - b);
+  if (ages.length === 0) return null;
+  const mid = Math.floor(ages.length / 2);
+  return ages.length % 2 ? ages[mid]! : (ages[mid - 1]! + ages[mid]!) / 2;
+}
+
+/** Swaps the member furthest from the group's middle age for a waiting person within the spread, one at a time. */
+function preferSimilarAges(picked: Waiter[], ordered: Waiter[], blocks: BlockPair[]): void {
+  for (let round = 0; round < picked.length; round++) {
+    const middle = middleAge(picked);
+    if (middle === null) return;
+    const distance = (waiter: Waiter) => (waiter.age == null ? 0 : Math.abs(waiter.age - middle));
+    const outlierIndex = picked.reduce((worst, waiter, index) => (distance(waiter) > distance(picked[worst]!) ? index : worst), 0);
+    if (distance(picked[outlierIndex]!) <= GROUP_AGE_SPREAD) return;
+
+    const pickedIds = new Set(picked.map((waiter) => waiter.userId));
+    const others = picked.filter((_, index) => index !== outlierIndex).map((waiter) => waiter.userId);
+    const replacement = ordered.find(
+      (waiter) => !pickedIds.has(waiter.userId) && waiter.age != null && distance(waiter) <= GROUP_AGE_SPREAD && canJoin(waiter.userId, others, blocks),
+    );
+    if (!replacement) return;
+    picked[outlierIndex] = replacement;
+  }
 }

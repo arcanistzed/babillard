@@ -11,7 +11,7 @@ import { SwipeDeck, type SwipeDeckHandle, type SwipeDirection } from "@/componen
 import { inviteToApp } from "@/invite";
 import { fonts, useTheme } from "@/theme";
 import { Avatar, Button, Chip, ChipRow, ErrorText, T } from "@/ui";
-import { fieldLabel, lookingForLabel, roleLabel, t } from "@/i18n";
+import { fieldLabel, lookingForLabel, nameWithAge, roleLabel, t } from "@/i18n";
 
 function PersonFlyer({ person }: { person: PersonCard }) {
   const theme = useTheme();
@@ -32,7 +32,7 @@ function PersonFlyer({ person }: { person: PersonCard }) {
       <View style={styles.identity}>
         <Avatar name={person.displayName} url={person.avatarUrl} size={92} />
         <View style={styles.identityText}>
-          <Text style={[styles.name, { color: theme.ink }]}>{person.displayName}</Text>
+          <Text style={[styles.name, { color: theme.ink }]}>{nameWithAge(person.displayName, person.age)}</Text>
           <T muted>{subtitle}</T>
           {person.verifiedInstitution ? (
             <T variant="small" style={{ color: theme.good, fontFamily: fonts.bodyBold }}>
@@ -159,7 +159,7 @@ export default function People() {
             onSwipe={onSwipe}
             rightLabel={TALK_LABEL}
             leftLabel={PASS_LABEL}
-            describeCard={(person) => `${person.displayName}. ${t("You both picked", "Vous avez tous deux choisi")} ${person.sharedTopics.map((topic) => topic.title).join(", ")}.`}
+            describeCard={(person) => `${nameWithAge(person.displayName, person.age)}. ${t("You both picked", "Vous avez tous deux choisi")} ${person.sharedTopics.map((topic) => topic.title).join(", ")}.`}
             renderCard={(person) => <PersonFlyer person={person} />}
           />
         )}

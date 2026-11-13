@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { ENDED_UP, FIELDS, LOOKING_FOR, MEET_AGAIN, MIND_CHANGED, REPORT_REASONS, ROLES, STANCES, TAKEAWAY_MAX_LENGTH, VENUE_KINDS } from "./constants";
+import { ENDED_UP, FIELDS, LOOKING_FOR, MAX_AGE_YEARS, MEET_AGAIN, MIN_AGE_YEARS, MIND_CHANGED, REPORT_REASONS, ROLES, STANCES, TAKEAWAY_MAX_LENGTH, VENUE_KINDS } from "./constants";
 
 export const emailSchema = z.string().trim().toLowerCase().email().max(254);
 
@@ -30,10 +30,17 @@ export const locationSchema = z.object({
   campusId: z.string().min(1).nullable().default(null),
 });
 
-export const profileSaveSchema = profileSchema.extend({
-  cityId: z.string().min(1).optional(),
-  campusId: z.string().min(1).nullable().optional(),
-});
+const rangeAgeSchema = z.number().int().min(MIN_AGE_YEARS).max(MAX_AGE_YEARS).nullable();
+
+/** Builds before age ranges leave both out, which keeps whatever was saved. */
+export const profileSaveSchema = profileSchema
+  .extend({
+    cityId: z.string().min(1).optional(),
+    campusId: z.string().min(1).nullable().optional(),
+    ageMin: rangeAgeSchema.optional(),
+    ageMax: rangeAgeSchema.optional(),
+  })
+  .refine((input) => input.ageMin == null || input.ageMax == null || input.ageMin <= input.ageMax, { message: "The youngest age can't be above the oldest", path: ["ageMin"] });
 
 export const topicSwipeSchema = z.object({
   direction: z.enum(["right", "left"]),

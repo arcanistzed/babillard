@@ -2,6 +2,12 @@ export const GROUP_MIN_SIZE = 4;
 export const GROUP_MAX_SIZE = 8;
 export const GROUP_MEETUP_CONFIRM_YES = 3;
 export const MIN_AGE_YEARS = 18;
+/** The oldest age someone can type as the top of the range of ages they want to meet. */
+export const MAX_AGE_YEARS = 99;
+/** People this many years apart or closer rank a little higher among suggestions. */
+export const NEAR_AGE_YEARS = 3;
+/** A group member further than this from the group's middle age is swapped for a closer-aged person, if one is waiting. */
+export const GROUP_AGE_SPREAD = 8;
 export const DECK_PAGE_SIZE = 20;
 /** Below this many topic swipes, someone sees the shared starter topics first. */
 export const NEWCOMER_SWIPES = 20;
@@ -158,4 +164,4 @@ export const REPORT_REASONS = ["harassment", "spam", "fake_profile", "underage",
 export type ReportReason = (typeof REPORT_REASONS)[number];
 
 /** Bump this when the terms or policy change enough that people must agree again. */
-export const LEGAL_VERSION = "2026-11-07";
+export const LEGAL_VERSION = "2026-11-13";

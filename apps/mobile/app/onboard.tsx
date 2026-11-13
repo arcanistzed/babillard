@@ -91,7 +91,7 @@ export default function Onboard() {
                 <Field label={t("Your first name", "Votre prénom")} value={displayName} onChangeText={setDisplayName} autoComplete="given-name" maxLength={50} autoFocus />
                 <DateOfBirthField onChange={setDob} />
                 <T variant="small" muted>
-                  {t("Your date of birth stays private.", "Votre date de naissance reste privée.")}
+                  {t("Others see your age, never your date of birth.", "Les autres voient votre âge, jamais votre date de naissance.")}
                 </T>
                 <TermsAgreement agreed={agreed} onChange={setAgreed} />
               </>

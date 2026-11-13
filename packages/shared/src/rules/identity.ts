@@ -11,6 +11,17 @@ export function isAdult(dob: string, now: Date = new Date()): boolean {
   return parsed.getTime() <= cutoff;
 }
 
+/** Whole years since `dob` (YYYY-MM-DD), or null if it isn't a real date. Like isAdult, a birthday counts from the day itself. */
+export function ageOn(dob: string, now: Date = new Date()): number | null {
+  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(dob);
+  if (!match) return null;
+  const [year, month, day] = [Number(match[1]), Number(match[2]), Number(match[3])];
+  const parsed = new Date(Date.UTC(year, month - 1, day));
+  if (parsed.getUTCFullYear() !== year || parsed.getUTCMonth() !== month - 1 || parsed.getUTCDate() !== day) return null;
+  const hadBirthday = now.getUTCMonth() > month - 1 || (now.getUTCMonth() === month - 1 && now.getUTCDate() >= day);
+  return now.getUTCFullYear() - year - (hadBirthday ? 0 : 1);
+}
+
 const INSTITUTION_SUFFIXES = [".edu", ".ac.uk", ".ac.nz", ".ac.jp", ".ac.kr", ".ac.za", ".ac.in", ".ac.il", ".edu.au", ".edu.cn", ".edu.sg", ".edu.hk"];
 const INSTITUTION_DOMAINS = [
   // Canada

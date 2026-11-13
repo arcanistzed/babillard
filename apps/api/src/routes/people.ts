@@ -1,4 +1,4 @@
-import { topicPhrase, isMutualMatch, matchExpiresAt, matchOpenerMessage, orderedPair, peopleSwipeSchema, pickBilingualOpener, rankPeople, visibleLookingFor, type Field, type LookingFor, type PeopleSwipeResult, type PersonCard, type Role } from "@babillard/shared";
+import { ageOn, inAgeRange, topicPhrase, isMutualMatch, matchExpiresAt, matchOpenerMessage, orderedPair, peopleSwipeSchema, pickBilingualOpener, rankPeople, visibleLookingFor, type Field, type LookingFor, type PeopleSwipeResult, type PersonCard, type Role } from "@babillard/shared";
 import { requestLanguage } from "../lib/language";
 import { and, eq, sql } from "drizzle-orm";
 import { Hono } from "hono";
@@ -25,13 +25,25 @@ interface CandidateRow {
   verified_institution: number;
   campus_id: string | null;
   campus_name: string | null;
+  dob: string | null;
+  age_min: number | null;
+  age_max: number | null;
 }
 
 const MAX_CANDIDATE_ROWS = 2000;
 
-async function viewerLookingFor(db: Db, userId: string): Promise<LookingFor[]> {
-  const [profile] = await db.select({ lookingFor: schema.profiles.lookingFor }).from(schema.profiles).where(eq(schema.profiles.userId, userId));
-  return profile?.lookingFor ?? [];
+/** What the viewer is looking for, and their age and range, for ranking and the two-way age check. */
+async function viewerProfile(db: Db, user: { id: string; dob: string | null }) {
+  const [profile] = await db
+    .select({ lookingFor: schema.profiles.lookingFor, ageMin: schema.profiles.ageMin, ageMax: schema.profiles.ageMax })
+    .from(schema.profiles)
+    .where(eq(schema.profiles.userId, user.id));
+  return {
+    lookingFor: profile?.lookingFor ?? ([] as LookingFor[]),
+    age: user.dob ? ageOn(user.dob) : null,
+    ageMin: profile?.ageMin ?? null,
+    ageMax: profile?.ageMax ?? null,
+  };
 }
 
 const people = new Hono<AppEnv>();
@@ -42,7 +54,7 @@ people.get("/", async (c) => {
   const db = getDb(c.env);
   const { results } = await c.env.DB.prepare(
     `SELECT theirs.user_id, mine.topic_id, t.title AS topic_title, t.fr AS topic_fr, p.display_name, p.bio, p.role, p.avatar_key,
-            p.fields, p.looking_for, u.verified_institution, u.campus_id, campus.name AS campus_name
+            p.fields, p.looking_for, u.verified_institution, u.campus_id, campus.name AS campus_name, u.dob, p.age_min, p.age_max
      FROM topic_swipes mine
      JOIN topic_swipes theirs ON theirs.topic_id = mine.topic_id AND theirs.direction = 'right' AND theirs.user_id != mine.user_id
      JOIN users u ON u.id = theirs.user_id AND u.status = 'active' AND u.city_id = ?1 AND u.onboarded_at IS NOT NULL
@@ -66,22 +78,27 @@ people.get("/", async (c) => {
     byUser.set(row.user_id, entry);
   }
 
-  const viewerChips = await viewerLookingFor(db, user.id);
+  const viewer = await viewerProfile(db, user);
+  const viewerChips = viewer.lookingFor;
   const ranked = rankPeople(
     [...byUser.values()].map(({ row, topics }) => ({
       userId: row.user_id,
       sharedTopicIds: topics.map((topic) => topic.id),
       lookingFor: JSON.parse(row.looking_for) as LookingFor[],
       campusId: row.campus_id,
+      age: row.dob ? ageOn(row.dob) : null,
+      ageMin: row.age_min,
+      ageMax: row.age_max,
       row,
       topics,
     })),
-    { lookingFor: viewerChips, campusId: user.campusId },
+    { ...viewer, campusId: user.campusId },
   );
 
-  const cards: PersonCard[] = ranked.map(({ userId, row, topics, lookingFor }) => ({
+  const cards: PersonCard[] = ranked.map(({ userId, row, topics, lookingFor, age }) => ({
     id: userId,
     displayName: row.display_name,
+    age,
     bio: row.bio,
     role: row.role as Role,
     avatarUrl: avatarUrl(c.env, row.avatar_key),
@@ -160,6 +177,14 @@ people.post("/:id/swipe", async (c) => {
   const [target] = await db.select().from(schema.users).where(eq(schema.users.id, targetId));
   if (!target || target.status !== "active" || target.cityId !== user.cityId) throw fail(404, "person_not_found");
   if ((await blockedWith(db, user.id)).has(targetId)) throw fail(404, "person_not_found");
+  const [targetProfile] = await db
+    .select({ ageMin: schema.profiles.ageMin, ageMax: schema.profiles.ageMax })
+    .from(schema.profiles)
+    .where(eq(schema.profiles.userId, targetId));
+  const viewer = await viewerProfile(db, user);
+  const them = { age: target.dob ? ageOn(target.dob) : null, ageMin: targetProfile?.ageMin ?? null, ageMax: targetProfile?.ageMax ?? null };
+  // The same check as the suggestions, so someone outside either range can't be reached by calling the API directly.
+  if (!inAgeRange(viewer, them)) throw fail(404, "person_not_found");
 
   const viaTopicId = await sharedTopicId(db, user.id, targetId);
   if (!viaTopicId) throw fail(409, "no_shared_topic");

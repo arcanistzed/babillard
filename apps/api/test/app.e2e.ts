@@ -2,7 +2,7 @@ import { execFileSync } from "node:child_process";
 import { readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
-import { NEWCOMER_SWIPES } from "@babillard/shared";
+import { NEWCOMER_SWIPES, ageOn } from "@babillard/shared";
 import { describe, expect, it } from "vitest";
 import { ApiError, Client, createPerson, type PersonSeed } from "../scripts/api-client.ts";
 import { canLinkInEmail, loginEmailContent } from "../src/lib/loginEmailContent.ts";
@@ -481,6 +481,58 @@ describe("people and matching", () => {
     expect(JSON.stringify(card)).not.toContain("@example.test");
     expect(card).not.toHaveProperty("dob");
     expect(card).not.toHaveProperty("email");
+  });
+
+  it("shows age on a card and in /me, never the date of birth", async () => {
+    const viewer = await person("new-york");
+    const other = await person("new-york", { dob: "2001-03-15" });
+    for (const client of [viewer, other]) await client.post("/deck/topics/film-as-an-art-form/swipe", { direction: "right" });
+    const card = (await viewer.get("/people")).find((entry: any) => entry.id === other.id);
+    expect(card.age).toBe(ageOn("2001-03-15"));
+    expect(JSON.stringify(card)).not.toContain("2001-03-15");
+    const me = await other.get("/me");
+    expect(me.age).toBe(ageOn("2001-03-15"));
+    expect(me.profile).toMatchObject({ ageMin: null, ageMax: null });
+  });
+
+  it("only suggests people when each is in the other's age range, and refuses swipes outside it", async () => {
+    const thisYear = new Date().getUTCFullYear();
+    const young = await person("new-york", { dob: `${thisYear - 22}-01-01` });
+    const older = await person("new-york", { dob: `${thisYear - 40}-01-01` });
+    const topicId = "photography-and-visual-culture";
+    for (const client of [young, older]) await client.post(`/deck/topics/${topicId}/swipe`, { direction: "right" });
+    const sees = async (viewer: Client, target: Client) => (await viewer.get("/people")).some((card: any) => card.id === target.id);
+    expect(await sees(young, older)).toBe(true);
+
+    const profile = { displayName: "Young", bio: "", role: "undergrad", fields: ["law"], lookingFor: ["friends"] };
+    const saved = await young.put("/me/profile", { ...profile, ageMin: 20, ageMax: 30 });
+    expect(saved.profile).toMatchObject({ ageMin: 20, ageMax: 30 });
+    expect(await sees(young, older)).toBe(false);
+    expect(await sees(older, young)).toBe(false);
+    expect(await status(older.post(`/people/${young.id}/swipe`, { direction: "right" }))).toBe(404);
+
+    // A save from a build without age ranges leaves the range alone.
+    await young.put("/me/profile", profile);
+    expect((await young.get("/me")).profile).toMatchObject({ ageMin: 20, ageMax: 30 });
+
+    await young.put("/me/profile", { ...profile, ageMin: 20, ageMax: null });
+    expect(await sees(older, young)).toBe(true);
+  });
+
+  it("shows a match's age on their profile, not their date of birth", async () => {
+    const a = await person("new-york");
+    const b = await person("new-york", { dob: "1998-07-20" });
+    const conversationId = await match(a, b, "music-theory-and-listening");
+    const profile = await a.get(`/conversations/${conversationId}/members/${b.id}`);
+    expect(profile.age).toBe(ageOn("1998-07-20"));
+    expect(JSON.stringify(profile)).not.toContain("1998-07-20");
+  });
+
+  it("rejects an age range that is upside down or under 18", async () => {
+    const someone = await person("new-york");
+    const profile = { displayName: "Range", bio: "", role: "undergrad", fields: ["law"], lookingFor: ["friends"] };
+    expect(await status(someone.put("/me/profile", { ...profile, ageMin: 30, ageMax: 25 }))).toBe(400);
+    expect(await status(someone.put("/me/profile", { ...profile, ageMin: 17 }))).toBe(400);
   });
 
   it("shows more-than-friends only when both people set it", async () => {

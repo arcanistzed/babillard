@@ -74,6 +74,8 @@ export const fieldGroupLabel = (group: FieldGroupId) => FIELD_GROUP_LABELS[group
 export const shortGroupLabel = (group: FieldGroupId) => SHORT_GROUP_LABELS[group][isFrench ? 1 : 0];
 export const fieldLabel = (field: Field) => (isFrench ? FIELD_LABELS_FR[field] : FIELD_LABELS[field]);
 export const lookingForLabel = (item: LookingFor) => (isFrench ? LOOKING_FOR_LABELS_FR[item] : LOOKING_FOR_LABELS[item]);
+/** How a person's name shows to others, like "Dana, 24". */
+export const nameWithAge = (name: string, age: number | null) => (age === null ? name : `${name}, ${age}`);
 export const roleLabel = (role: Role) => (isFrench ? ROLE_LABELS_FR[role] : ROLE_LABELS[role]);
 export const venueLabel = (venue: VenueKind) => (isFrench ? VENUE_LABELS_FR[venue] : VENUE_LABELS[venue]);
 

@@ -1,4 +1,4 @@
-import { deviceKeySchema, isAdult, LEGAL_VERSION, locationSchema, onboardingSchema, profileSaveSchema, pushTokenSchema, type Locality, type Me } from "@babillard/shared";
+import { ageOn, deviceKeySchema, isAdult, LEGAL_VERSION, locationSchema, onboardingSchema, profileSaveSchema, pushTokenSchema, type Locality, type Me } from "@babillard/shared";
 import { and, desc, eq, inArray, isNull } from "drizzle-orm";
 import { Hono } from "hono";
 import { getDb, schema } from "../db";
@@ -37,6 +37,7 @@ export async function loadMe(env: Env, user: UserRow): Promise<Me> {
     termsAccepted: user.termsVersion === LEGAL_VERSION,
     cityId: user.cityId,
     campusId: user.campusId,
+    age: user.dob ? ageOn(user.dob) : null,
     profile: profile
       ? {
           displayName: profile.displayName,
@@ -45,6 +46,8 @@ export async function loadMe(env: Env, user: UserRow): Promise<Me> {
           fields: profile.fields,
           lookingFor: profile.lookingFor,
           avatarUrl: avatarUrl(env, profile.avatarKey),
+          ageMin: profile.ageMin,
+          ageMax: profile.ageMax,
         }
       : null,
   };

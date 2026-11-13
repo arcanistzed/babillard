@@ -12,7 +12,7 @@ export const LEGAL_PATHS: Record<LegalPage, Record<Language, string>> = {
 
 const privacyEn = `# Privacy policy
 
-Last updated: November 12, 2026
+Last updated: November 13, 2026
 
 Babillard helps people find others nearby who want to talk about the same topics, then meet in person. In this policy, "we" means the operator of Babillard, named in our Terms of use. We're based in Canada. Our privacy officer is responsible for how we handle your information. Questions and requests go to privacy@babillard.app.
 
@@ -28,7 +28,7 @@ Babillard helps people find others nearby who want to talk about the same topics
 
 ## Your consent
 
-You agree to this policy by ticking the box when you sign up. Some of what you tell us is sensitive: your date of birth, your stance on questions, and whether you're open to dating. We require your date of birth because the app is only for adults. You can withdraw your consent at any time by deleting your account, but you can't use the app without one.
+You agree to this policy by ticking the box when you sign up. Some of what you tell us is sensitive: your date of birth, your stance on questions, and whether you're open to dating. We require your date of birth because the app is only for adults, and other people see the age it gives. You can withdraw your consent at any time by deleting your account, but you can't use the app without one.
 
 ## Your location
 
@@ -36,19 +36,19 @@ If you tap the location icon, the app asks your phone for your rough location on
 
 ## What other people see
 
-People in your city who share a topic with you can see your first name, photo, line about yourself, role, campus, fields, what you're looking for, and the topics you share. If your school email verified you, they see that too, but not the address.
+People in your city who share a topic with you can see your first name, age, photo, line about yourself, role, campus, fields, what you're looking for, and the topics you share. If your school email verified you, they see that too, but not the address.
 
-Your date of birth and email address are never shown to other people. Your stance on a question is never shown as yours. A group only sees the total number of people with each stance. People in your city can see percentages for a question once at least 10 people have answered and they don't all agree.
+Your date of birth and email address are never shown to other people. They see your age, not the date. Your stance on a question is never shown as yours. A group only sees the total number of people with each stance. People in your city can see percentages for a question once at least 10 people have answered and they don't all agree.
 
 People in a chat with you can see your messages and profile. Anyone with a meetup's share link can see its topic, time, and place, but not who's going. Your answers about how a meetup went only appear as percentages for its topic, once enough people have answered. If a moderator approves a takeaway line you wrote, it appears on the topic's public page without your name. If you report someone, we don't tell them it was you.
 
 ## How we use it
 
-We use your information to sign you in, show you topics and people, form matches and groups, deliver messages, remind you about meetups, keep people safe, and fix problems. Your date of birth is there to confirm you're 18 or older. We don't sell your information and we don't show ads.
+We use your information to sign you in, show you topics and people, form matches and groups, deliver messages, remind you about meetups, keep people safe, and fix problems. Your date of birth confirms you're 18 or older and gives the age shown on your profile. If you set the ages you want to meet, we only suggest people in that range whose own range includes you, and we lean toward similar ages when forming groups. We don't sell your information and we don't show ads.
 
 ## How we choose what you see
 
-The app ranks topics and people automatically, using your fields, the topics you pick, what you're looking for, your campus, and how many people nearby picked a topic. A person, not the app, makes moderation decisions.
+The app ranks topics and people automatically, using your fields, the topics you pick, what you're looking for, your campus, your age, and how many people nearby picked a topic. A person, not the app, makes moderation decisions.
 
 ## Your messages
 
@@ -200,7 +200,7 @@ Safety concerns, including anything involving a child: safety@babillard.app. Hel
 
 const privacyFr = `# Politique de confidentialité
 
-Dernière mise à jour: 12 novembre 2026
+Dernière mise à jour: 13 novembre 2026
 
 Babillard aide les gens à trouver des personnes près de chez eux qui veulent parler des mêmes sujets, puis à se rencontrer en personne. Dans cette politique, « nous » désigne l'exploitant de Babillard, nommé dans nos Conditions d'utilisation. Nous sommes établis au Canada. Notre responsable de la protection des renseignements personnels répond de la façon dont nous traitons vos renseignements. Adressez vos questions et demandes à privacy@babillard.app.
 
@@ -216,7 +216,7 @@ Babillard aide les gens à trouver des personnes près de chez eux qui veulent p
 
 ## Votre consentement
 
-Vous acceptez cette politique en cochant la case à l'inscription. Certains renseignements que vous nous donnez sont sensibles: votre date de naissance, votre position sur les questions, et le fait que vous êtes ouvert ou ouverte aux rencontres amoureuses. Nous exigeons votre date de naissance parce que l'application est réservée aux adultes. Vous pouvez retirer votre consentement à tout moment en supprimant votre compte, mais vous ne pouvez pas utiliser l'application sans compte.
+Vous acceptez cette politique en cochant la case à l'inscription. Certains renseignements que vous nous donnez sont sensibles: votre date de naissance, votre position sur les questions, et le fait que vous êtes ouvert ou ouverte aux rencontres amoureuses. Nous exigeons votre date de naissance parce que l'application est réservée aux adultes, et les autres voient l'âge qui en découle. Vous pouvez retirer votre consentement à tout moment en supprimant votre compte, mais vous ne pouvez pas utiliser l'application sans compte.
 
 ## Votre emplacement
 
@@ -224,19 +224,19 @@ Si vous touchez l'icône d'emplacement, l'application demande une seule fois vot
 
 ## Ce que les autres voient
 
-Les personnes de votre ville qui partagent un sujet avec vous peuvent voir votre prénom, votre photo, votre phrase de présentation, votre rôle, votre campus, vos domaines, ce que vous recherchez et les sujets en commun. Si votre courriel scolaire vous a vérifié, elles le voient aussi, mais pas l'adresse.
+Les personnes de votre ville qui partagent un sujet avec vous peuvent voir votre prénom, votre âge, votre photo, votre phrase de présentation, votre rôle, votre campus, vos domaines, ce que vous recherchez et les sujets en commun. Si votre courriel scolaire vous a vérifié, elles le voient aussi, mais pas l'adresse.
 
-Votre date de naissance et votre adresse courriel ne sont jamais montrées aux autres. Votre position sur une question n'est jamais présentée comme la vôtre. Un groupe voit seulement le nombre total de personnes par position. Les gens de votre ville peuvent voir des pourcentages pour une question lorsqu'au moins 10 personnes ont répondu et qu'elles ne sont pas toutes du même avis.
+Votre date de naissance et votre adresse courriel ne sont jamais montrées aux autres. Ils voient votre âge, pas la date. Votre position sur une question n'est jamais présentée comme la vôtre. Un groupe voit seulement le nombre total de personnes par position. Les gens de votre ville peuvent voir des pourcentages pour une question lorsqu'au moins 10 personnes ont répondu et qu'elles ne sont pas toutes du même avis.
 
 Les personnes d'une conversation peuvent voir vos messages et votre profil. Toute personne qui a le lien de partage d'une rencontre peut en voir le sujet, l'heure et le lieu, mais pas qui y va. Vos réponses sur le déroulement d'une rencontre ne paraissent qu'en pourcentages pour son sujet, une fois qu'assez de gens ont répondu. Si un modérateur approuve une phrase à retenir que vous avez écrite, elle paraît sur la page publique du sujet, sans votre nom. Si vous signalez quelqu'un, nous ne lui disons pas que c'est vous.
 
 ## Comment nous les utilisons
 
-Nous utilisons vos renseignements pour vous connecter, vous montrer des sujets et des personnes, former des jumelages et des groupes, livrer les messages, vous rappeler les rencontres, assurer la sécurité et corriger les problèmes. Votre date de naissance sert à confirmer que vous avez 18 ans ou plus. Nous ne vendons pas vos renseignements et nous n'affichons pas de publicité.
+Nous utilisons vos renseignements pour vous connecter, vous montrer des sujets et des personnes, former des jumelages et des groupes, livrer les messages, vous rappeler les rencontres, assurer la sécurité et corriger les problèmes. Votre date de naissance confirme que vous avez 18 ans ou plus et donne l'âge affiché sur votre profil. Si vous indiquez les âges des personnes que vous voulez rencontrer, nous ne vous suggérons que des personnes dans cette tranche dont la propre tranche vous inclut, et nous privilégions des âges semblables pour former les groupes. Nous ne vendons pas vos renseignements et nous n'affichons pas de publicité.
 
 ## Comment nous choisissons ce que vous voyez
 
-L'application classe automatiquement les sujets et les personnes selon vos domaines, les sujets que vous choisissez, ce que vous recherchez, votre campus et le nombre de personnes à proximité qui ont choisi un sujet. Les décisions de modération sont prises par une personne, pas par l'application.
+L'application classe automatiquement les sujets et les personnes selon vos domaines, les sujets que vous choisissez, ce que vous recherchez, votre campus, votre âge et le nombre de personnes à proximité qui ont choisi un sujet. Les décisions de modération sont prises par une personne, pas par l'application.
 
 ## Vos messages
 

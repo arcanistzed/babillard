@@ -22,7 +22,7 @@ Check both bills on [LEGISinfo](https://www.parl.ca/legisinfo/en/bills?parlsessi
 |---|---|---|
 | Consent in plain language, with express consent as the default | A tick box at sign-up, linking to a plain-language policy | Nothing |
 | A right to have personal information deleted | Delete account in the app, and by email request | Nothing |
-| An explanation of automated decisions with a significant effect | Ranking is explained in the policy, and moderation decisions are made by people | Nothing unless ranking starts to have significant effects |
+| An explanation of automated decisions with a significant effect | Ranking is explained in the policy, and moderation decisions are made by people. Age only filters suggestions through ranges each person sets themselves, and a range starts open | Nothing unless ranking starts to have significant effects |
 | A documented privacy program, scaled to the data held | This file | Review it once a year |
 | A privacy impact assessment before sending data outside Canada | The transfer notes below | Redo them if a provider changes |
 | Higher standards for children's data | The app is 18 and over, and closes accounts of anyone younger | Nothing |

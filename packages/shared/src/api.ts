@@ -14,6 +14,8 @@ export interface Me {
   termsAccepted: boolean;
   cityId: string | null;
   campusId: string | null;
+  /** From the date of birth. Others see it; the date itself stays hidden. */
+  age: number | null;
   profile: {
     displayName: string;
     bio: string;
@@ -21,6 +23,9 @@ export interface Me {
     fields: Field[];
     lookingFor: LookingFor[];
     avatarUrl: string | null;
+    /** The ages this person wants to meet. Null means no limit at that end. */
+    ageMin: number | null;
+    ageMax: number | null;
   } | null;
 }
 
@@ -81,6 +86,7 @@ export interface TopicSwipeResult {
 export interface PersonCard {
   id: string;
   displayName: string;
+  age: number | null;
   bio: string;
   role: Role;
   avatarUrl: string | null;
