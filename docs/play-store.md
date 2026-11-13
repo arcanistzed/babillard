@@ -1,25 +1,25 @@
 # Google Play
 
-The app is ready for Play, apart from the parts only the account owner can do. The `production` build profile makes the App Bundle Play needs. That build never offers the APK from babillard.app, because Play forbids apps from updating themselves outside Play. Instead, a version too old to work sends people to the Play listing.
+How to publish the Android app on Google Play. The `production` build profile makes the App Bundle Play needs. That build never offers the APK from babillard.app, because Play forbids apps from updating themselves outside Play. A version too old to work sends people to the Play listing instead.
 
 ## Steps
 
-1. **Register** at play.google.com/console as a personal developer: a one-time US$25 fee and an identity check. The same registration covers Android's developer verification for sideloaded apps.
-2. **Create the app.** Name: Babillard. Default language: English (Canada), with a French (Canada) translation. It's an app, free, with no ads.
-3. **Build the bundle:**
+1. **Register** at play.google.com/console as a personal developer. It costs US$25 once and needs an identity check. The same registration covers Android's developer verification for sideloaded apps.
+2. **Create the app** as Babillard, a free app with no ads, in English (Canada) with a French (Canada) translation.
+3. **Build the bundle.**
    ```bash
    cd apps/mobile && npx eas-cli build --platform android --profile production
    ```
-   Upload the first bundle by hand in the Console: Google's API can't create an app's first release.
-4. **Add Play's signing key to two places.** Play re-signs the app with its own key, so the fingerprints change:
+   Upload the first bundle by hand in the Console, because Google's API can't create an app's first release.
+4. **Add Play's signing key in two places.** Play re-signs the app with its own key, so the fingerprints change.
    - Copy the SHA-256 under Test and release > App integrity > App signing into `ANDROID_CERT_SHA256` in `apps/api/wrangler.jsonc`, after the current one and a comma, and deploy. Otherwise sign-in links won't open the app.
    - Add its SHA-1 to the Android API key's restrictions in Google Cloud > Credentials. Otherwise push token registration fails.
 5. **Run the closed test.** A new personal account needs 12 testers opted in for 14 days in a row before the app can go public, so about three weeks.
-6. **Let EAS upload later builds.** In Google Cloud, create a service account with access to the app in Play Console, download its JSON key, and save it as `apps/mobile/play-service-account.json`. Git ignores that file. Then:
+6. **Let EAS upload later builds.** In Google Cloud, create a service account with access to the app in Play Console, download its JSON key, and save it as `apps/mobile/play-service-account.json`, which Git ignores.
    ```bash
    cd apps/mobile && npx eas-cli submit --platform android --profile production
    ```
-   That uploads to the internal track, and you promote it in the Console.
+   That uploads to the internal track, and you promote the release in the Console.
 
 People who installed the APK from babillard.app can't update to the Play version in place, because the signatures differ. They uninstall and install from Play, then sign in again. Messages from before only come back if they saved a backup.
 
@@ -66,9 +66,9 @@ Babillard est réservé aux personnes de 18 ans et plus. L'application est gratu
 ## App content answers
 
 - **Target audience:** 18 and over only.
-- **Content rating:** people can talk to each other, meet in person, and share photos. No violence, gambling, or purchases.
+- **Content rating:** people can talk to each other, meet in person, and share photos. There's no violence, gambling, or purchasing.
 - **Ads:** none.
-- **Data safety:** these come from the privacy policy. Check them against it before submitting.
+- **Data safety** answers come from the privacy policy. Check them against it before submitting.
 
 | Data | Collected | Why | Optional |
 | --- | --- | --- | --- |
