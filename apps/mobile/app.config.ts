@@ -2,7 +2,7 @@ import type { ExpoConfig } from "expo/config";
 import { versionCode } from "../../packages/shared/src/version.ts";
 
 // The one number to change for a release. Android's build code comes from it (0.2.0 is 200).
-const version = "0.3.0";
+const version = "0.3.1";
 
 // The API domain hosts the Universal Link and App Link association files.
 const apiHost = new URL(process.env.EXPO_PUBLIC_API_URL ?? "https://babillard.app").hostname;
