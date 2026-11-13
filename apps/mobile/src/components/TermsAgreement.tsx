@@ -32,7 +32,7 @@ export function TermsAgreement({ agreed, onChange }: { agreed: boolean; onChange
         <T accessibilityRole="link" style={link} onPress={() => openLegalPage("privacy")}>
           {t("Privacy policy", "Politique de confidentialité")}
         </T>
-        {t(", including how my date of birth and other sensitive details are used.", ", y compris l'utilisation de ma date de naissance et d'autres renseignements sensibles.")}
+        .
       </T>
     </View>
   );

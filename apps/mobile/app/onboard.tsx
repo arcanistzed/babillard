@@ -1,4 +1,4 @@
-import { ROLES, isAdult, type Field as FieldName, type LookingFor, type Me, type Role } from "@babillard/shared";
+import { ROLES, type Field as FieldName, type LookingFor, type Me, type Role } from "@babillard/shared";
 import { useCallback, useState } from "react";
 import { ScrollView, StyleSheet, View } from "react-native";
 import Animated, { FadeInLeft, FadeInRight, useAnimatedStyle, withTiming } from "react-native-reanimated";
@@ -6,6 +6,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { api, friendlyError, uploadAvatar } from "@/api";
 import { useAuth } from "@/auth";
 import { CityPicker } from "@/components/CityPicker";
+import { DateOfBirthField } from "@/components/DateOfBirthField";
 import { FieldPicker } from "@/components/FieldPicker";
 import { TermsAgreement } from "@/components/TermsAgreement";
 import { LookingForPicker } from "@/components/LookingForPicker";
@@ -15,12 +16,6 @@ import { Button, Chip, ChipRow, ErrorText, Field, KeyboardScreen, T, useKeyboard
 import { roleLabel, t } from "@/i18n";
 
 const STEP_COUNT = 5;
-
-/** Accepts the digits as typed and shows them as YYYY-MM-DD. */
-function formatDob(raw: string): string {
-  const digits = raw.replace(/\D/g, "").slice(0, 8);
-  return [digits.slice(0, 4), digits.slice(4, 6), digits.slice(6, 8)].filter(Boolean).join("-");
-}
 
 function StepProgress({ step }: { step: number }) {
   const theme = useTheme();
@@ -62,10 +57,8 @@ export default function Onboard() {
 
   // While someone is typing a city, the results need the room, and Continue can't be tapped yet anyway.
   const searchingForCity = step === 3 && cityId === null && keyboardOpen;
-  const dobComplete = /^\d{4}-\d{2}-\d{2}$/.test(dob);
-  const dobError = dobComplete && !isAdult(dob) ? t("Babillard is for people 18 and over.", "Babillard est réservé aux personnes de 18 ans et plus.") : null;
   const canContinue = [
-    displayName.trim().length > 0 && dobComplete && !dobError && agreed,
+    displayName.trim().length > 0 && dob !== "" && agreed,
     role !== null && fields.length > 0,
     lookingFor.length > 0,
     cityId !== null,
@@ -96,14 +89,7 @@ export default function Onboard() {
               <>
                 <T variant="title">{t("Who are you?", "Qui êtes-vous?")}</T>
                 <Field label={t("Your first name", "Votre prénom")} value={displayName} onChangeText={setDisplayName} autoComplete="given-name" maxLength={50} autoFocus />
-                <Field
-                  label={t("Date of birth", "Date de naissance")}
-                  value={dob}
-                  onChangeText={(value) => setDob(formatDob(value))}
-                  keyboardType="number-pad"
-                  placeholder={t("YYYY-MM-DD", "AAAA-MM-JJ")}
-                  error={dobError}
-                />
+                <DateOfBirthField onChange={setDob} />
                 <T variant="small" muted>
                   {t("Your date of birth stays private.", "Votre date de naissance reste privée.")}
                 </T>
