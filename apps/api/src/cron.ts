@@ -1,4 +1,4 @@
-import { MEETUP_REPEAT_MS, isCheckinDue, isMatchExpired, isNudgeDue, isProposalStale, isReminderDue, pickBilingualOpener, settledMeetupState } from "@babillard/shared";
+import { GROUP_MEETUP_CONFIRM_YES, MEETUP_REPEAT_MS, isCheckinDue, isMatchExpired, isNudgeDue, isProposalStale, isReminderDue, pickBilingualOpener, settledMeetupState } from "@babillard/shared";
 import { deleteAccount } from "./lib/accounts";
 import { sendEmail } from "./lib/email";
 import { settleMeetup } from "./lib/meetupState";
@@ -85,15 +85,24 @@ async function responders(db: Db, meetup: { id: string; conversationId: string }
  * This catches those within one sweep. Only meetups that need to change are touched.
  */
 async function settleMeetups(env: Env, db: Db, now: number): Promise<number> {
-  const yes = sql<number>`(select count(*) from ${schema.meetupResponses} inner join ${schema.conversationMembers} on ${schema.conversationMembers.userId} = ${schema.meetupResponses.userId} and ${schema.conversationMembers.conversationId} = ${schema.meetups.conversationId} where ${schema.meetupResponses.meetupId} = ${schema.meetups.id} and ${schema.meetupResponses.response} = 'yes')`;
-  const members = sql<number>`(select count(*) from ${schema.conversationMembers} where ${schema.conversationMembers.conversationId} = ${schema.meetups.conversationId})`;
+  const yes = sql<number>`(select count(*) from meetup_responses as yes_r inner join conversation_members as yes_m on yes_m.user_id = yes_r.user_id and yes_m.conversation_id = "meetups"."conversation_id" where yes_r.meetup_id = "meetups"."id" and yes_r.response = 'yes')`;
+  const members = sql<number>`(select count(*) from conversation_members as all_m where all_m.conversation_id = "meetups"."conversation_id")`;
+  // requiredYesCount in SQL: two in a direct chat, otherwise three or everyone left if fewer.
+  const required = sql<number>`(case when "conversations"."kind" = 'direct' then 2 else min(${GROUP_MEETUP_CONFIRM_YES}, max(${members}, 2)) end)`;
   const candidates = await db
     .select({ meetup: schema.meetups, kind: schema.conversations.kind, yes, members })
     .from(schema.meetups)
     .innerJoin(schema.conversations, eq(schema.conversations.id, schema.meetups.conversationId))
-    .where(and(inArray(schema.meetups.state, ["proposed", "confirmed"]), gt(schema.meetups.startsAt, now)))
+    .where(
+      and(
+        inArray(schema.meetups.state, ["proposed", "confirmed"]),
+        gt(schema.meetups.startsAt, now),
+        // Only meetups whose state is wrong, so ones that are fine never fill the batch. settledMeetupState below has the final say.
+        sql`(${schema.meetups.state} = 'confirmed') = (${yes} < ${required})`,
+      ),
+    )
     .orderBy(schema.meetups.startsAt)
-    .limit(SWEEP_BATCH * 5);
+    .limit(SWEEP_BATCH);
 
   let handled = 0;
   for (const { meetup, kind, yes: yesCount, members: memberCount } of candidates) {

@@ -156,18 +156,25 @@ meetups.post("/:id/respond", async (c) => {
   const { meetup, conversation } = await loadMeetup(db, c.req.param("id"), user.id);
   if (meetup.state === "cancelled" || meetup.state === "done") throw fail(409, "meetup_closed");
 
-  const [previous] = await db
-    .select({ response: schema.meetupResponses.response })
-    .from(schema.meetupResponses)
-    .where(and(eq(schema.meetupResponses.meetupId, meetup.id), eq(schema.meetupResponses.userId, user.id)));
   const now = Date.now();
-  await db
-    .insert(schema.meetupResponses)
-    .values({ meetupId: meetup.id, userId: user.id, response, respondedAt: now })
-    .onConflictDoUpdate({ target: [schema.meetupResponses.meetupId, schema.meetupResponses.userId], set: { response, respondedAt: now } });
+  // Changing away from yes claims the row, so a retried or double-tapped "can't make it" is announced once.
+  const backedOut =
+    response === "yes"
+      ? []
+      : await db
+          .update(schema.meetupResponses)
+          .set({ response, respondedAt: now })
+          .where(and(eq(schema.meetupResponses.meetupId, meetup.id), eq(schema.meetupResponses.userId, user.id), eq(schema.meetupResponses.response, "yes")))
+          .returning({ userId: schema.meetupResponses.userId });
+  if (backedOut.length === 0) {
+    await db
+      .insert(schema.meetupResponses)
+      .values({ meetupId: meetup.id, userId: user.id, response, respondedAt: now })
+      .onConflictDoUpdate({ target: [schema.meetupResponses.meetupId, schema.meetupResponses.userId], set: { response, respondedAt: now } });
+  }
 
   let backout: Backout | undefined;
-  if (previous?.response === "yes" && response !== "yes") {
+  if (backedOut.length > 0 && response !== "yes") {
     const [profile] = await db.select({ name: schema.profiles.displayName }).from(schema.profiles).where(eq(schema.profiles.userId, user.id));
     backout = { userId: user.id, name: { en: profile?.name ?? "Someone", fr: profile?.name ?? "Quelqu'un" }, response };
   }

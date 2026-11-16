@@ -64,7 +64,7 @@ conversations.get("/", async (c) => {
           eq(schema.meetups.state, "confirmed"),
           gt(schema.meetups.startsAt, now),
           // Someone who said they can't make it isn't meeting anyone, even if the others still are.
-          sql`not exists (select 1 from ${schema.meetupResponses} where ${schema.meetupResponses.meetupId} = ${schema.meetups.id} and ${schema.meetupResponses.userId} = ${user.id} and ${schema.meetupResponses.response} = 'no')`,
+          sql`not exists (select 1 from meetup_responses as mine where mine.meetup_id = "meetups"."id" and mine.user_id = ${user.id} and mine.response = 'no')`,
         ),
       )
       .groupBy(schema.meetups.conversationId),

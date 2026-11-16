@@ -982,6 +982,10 @@ describe("meetups", () => {
     const pushes = await waitFor(async () => pushesFor(meetup.id, "Your meetup isn't confirmed anymore"), (rows) => rows.length > 0, "push to proposer");
     expect(pushes[0]!.userIds).toEqual([a.id]);
     expect((await a.get("/conversations")).find((item: any) => item.id === conversationId).nextMeetupAt).toBeNull();
+
+    // A repeated "no" isn't announced twice.
+    await b.post(`/meetups/${meetup.id}/respond`, { response: "no" });
+    expect(await meetupMessages(a, conversationId, meetup.id)).toHaveLength(messages.length);
   });
 
   it("un-confirms on the next sweep when someone who said yes leaves the group", async () => {

@@ -16,7 +16,8 @@ export async function memberIds(db: Db, conversationId: string): Promise<string[
 
 /** Yeses from people still in the chat. Someone who left or deleted their account can't come. */
 function memberYesCount(meetupId: string, conversationId: string) {
-  return sql<number>`(select count(*) from ${schema.meetupResponses} inner join ${schema.conversationMembers} on ${schema.conversationMembers.userId} = ${schema.meetupResponses.userId} and ${schema.conversationMembers.conversationId} = ${conversationId} where ${schema.meetupResponses.meetupId} = ${meetupId} and ${schema.meetupResponses.response} = 'yes')`;
+  // Plain names with aliases: drizzle leaves columns unqualified in single-table statements, which would make user_id ambiguous here.
+  return sql<number>`(select count(*) from meetup_responses as yes_r inner join conversation_members as yes_m on yes_m.user_id = yes_r.user_id and yes_m.conversation_id = ${conversationId} where yes_r.meetup_id = ${meetupId} and yes_r.response = 'yes')`;
 }
 
 /** Current members who said yes or maybe: the people a change to the plan affects. */
@@ -86,17 +87,21 @@ export async function settleMeetup(env: Env, db: Db, meetup: MeetupRow, kind: Co
       backout.response === "no"
         ? { en: `${backout.name.en} can't make it anymore.`, fr: `${backout.name.fr} ne peut plus venir.` }
         : { en: `${backout.name.en} changed their answer to maybe.`, fr: `${backout.name.fr} a changé sa réponse pour peut-être.` };
-    const status = on
-      ? { en: `The meetup at ${where.en} is still on.`, fr: `La rencontre est toujours confirmée: ${where.fr}.` }
-      : { en: `The meetup at ${where.en} isn't confirmed anymore: ${more.en}.`, fr: `La rencontre n'est plus confirmée (${where.fr}): ${more.fr}.` };
-    const body = { en: `${changed.en} ${status.en}`, fr: `${changed.fr} ${status.fr}` };
+    // Once it has started a meetup stays confirmed, so "still on" could be false. Just say who changed.
+    const started = current.startsAt <= now;
+    const status = started
+      ? null
+      : on
+        ? { en: `The meetup at ${where.en} is still on.`, fr: `La rencontre est toujours confirmée: ${where.fr}.` }
+        : { en: `The meetup at ${where.en} isn't confirmed anymore: ${more.en}.`, fr: `La rencontre n'est plus confirmée (${where.fr}): ${more.fr}.` };
+    const body = status ? { en: `${changed.en} ${status.en}`, fr: `${changed.fr} ${status.fr}` } : changed;
     await stub.postSystem(meetup.conversationId, body.en, { fr: body.fr, kind: "meetup", meetupId: meetup.id });
     const told = (await attendees(db, meetup.id, meetup.conversationId)).filter((id) => id !== backout.userId);
     pushes.push(
       sendPush(env, told, {
-        title: on ? "A change to your meetup" : "Your meetup isn't confirmed anymore",
+        title: on || started ? "A change to your meetup" : "Your meetup isn't confirmed anymore",
         body: body.en,
-        fr: { title: on ? "Changement pour votre rencontre" : "Votre rencontre n'est plus confirmée", body: body.fr },
+        fr: { title: on || started ? "Changement pour votre rencontre" : "Votre rencontre n'est plus confirmée", body: body.fr },
         data: { screen: "meetup", id: meetup.id },
       }),
     );
