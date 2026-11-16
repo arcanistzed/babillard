@@ -856,7 +856,7 @@
 "Qu'est-ce qui fait durer une amitié, pour vous?"
 ]
 },
-"starter": 5
+"starter": 6
 },
 {
 "id": "clinical-psychology-and-therapy-research",
@@ -1823,7 +1823,7 @@
 "Quelle réglementation rédigeriez-vous d'abord?"
 ]
 },
-"starter": 11
+"starter": 13
 },
 {
 "id": "open-source-communities",
@@ -2022,7 +2022,7 @@
 "Des robots ou des humains?"
 ]
 },
-"starter": 10
+"starter": 12
 },
 {
 "id": "climate-adaptation",
@@ -2097,7 +2097,8 @@
 "blurb": "How we feed ourselves, and at what cost.",
 "fieldTags": [
 "environment",
-"economics"
+"economics",
+"food"
 ],
 "openers": [
 "What would you change about how we farm?",
@@ -2553,7 +2554,7 @@
 "Qu'est-ce qui est le plus mal compris au sujet des loyers?"
 ]
 },
-"starter": 8
+"starter": 10
 },
 {
 "id": "inequality-research",
@@ -2673,7 +2674,8 @@
 "blurb": "Why we care so much about games.",
 "fieldTags": [
 "philosophy",
-"sociology"
+"sociology",
+"sports"
 ],
 "openers": [
 "What do you play?",
@@ -2799,7 +2801,7 @@
 "Le service ou le prix: qu'est-ce qui compte le plus?"
 ]
 },
-"starter": 9
+"starter": 11
 },
 {
 "id": "should-cars-be-banned-from-city-centers",
@@ -2911,7 +2913,7 @@
 "À quoi devrait ressembler un travail aujourd'hui?"
 ]
 },
-"starter": 7
+"starter": 8
 },
 {
 "id": "should-the-voting-age-be-lowered-to-16",
@@ -3870,7 +3872,8 @@
 "blurb": "Civic priorities, and who gets to set them.",
 "fieldTags": [
 "urbanism",
-"economics"
+"economics",
+"sports"
 ],
 "openers": [
 "What did your city last spend big on?",
@@ -3892,7 +3895,8 @@
 "blurb": "Public health against personal choice.",
 "fieldTags": [
 "medicine",
-"politics"
+"politics",
+"food"
 ],
 "openers": [
 "What would regulation look like?",
@@ -4909,7 +4913,8 @@
 "title": "The chemistry of cooking",
 "blurb": "What really happens in the pan.",
 "fieldTags": [
-"chemistry"
+"chemistry",
+"food"
 ],
 "openers": [
 "What cooking myth should die?",
@@ -5302,7 +5307,7 @@
 ]
 },
 "place": "ottawa-08-ca",
-"starter": 6
+"starter": 7
 },
 {
 "id": "should-the-federal-public-service-shrink",
@@ -5489,7 +5494,7 @@
 ]
 },
 "place": "CA",
-"starter": 12
+"starter": 14
 },
 {
 "id": "should-tipping-be-replaced-with-higher-wages",
@@ -5513,7 +5518,7 @@
 "Qui y gagnerait si le pourboire disparaissait?"
 ]
 },
-"starter": 4
+"starter": 5
 },
 {
 "id": "should-sports-betting-ads-be-banned",
@@ -5523,7 +5528,8 @@
 "fieldTags": [
 "psychology",
 "media",
-"law"
+"law",
+"sports"
 ],
 "openers": [
 "Do you know anyone who bets on games?",
@@ -5559,6 +5565,546 @@
 "openers": [
 "Qu'est-ce qui vous ferait changer d'avis?",
 "Qui écoperait si elle éclatait?"
+]
+}
+},
+{
+"id": "sports-analytics",
+"kind": "interest",
+"title": "Sports analytics",
+"blurb": "What the numbers see that scouts miss, and the reverse.",
+"fieldTags": [
+"sports",
+"mathematics"
+],
+"openers": [
+"Which stat do you trust most in your sport?",
+"Has analytics made any game less fun to watch?",
+"What still can't be measured?"
+],
+"fr": {
+"title": "L'analytique sportive",
+"blurb": "Ce que les chiffres voient et que les recruteurs ratent, et l'inverse.",
+"openers": [
+"À quelle statistique faites-vous le plus confiance dans votre sport?",
+"L'analytique a-t-elle rendu un sport moins agréable à regarder?",
+"Qu'est-ce qui ne se mesure toujours pas?"
+]
+}
+},
+{
+"id": "should-fighting-be-banned-in-the-nhl",
+"kind": "question",
+"title": "Should fighting be banned in the NHL?",
+"blurb": "Tradition and self-policing against concussions.",
+"fieldTags": [
+"sports",
+"medicine"
+],
+"openers": [
+"Does fighting protect skilled players, or just hurt people?",
+"Would you watch less without it?"
+],
+"fr": {
+"title": "Faut-il interdire les bagarres dans la LNH?",
+"blurb": "La tradition et l'autodiscipline contre les commotions.",
+"openers": [
+"Les bagarres protègent-elles les joueurs habiles, ou blessent-elles seulement?",
+"En regarderiez-vous moins sans elles?"
+]
+},
+"place": "CA"
+},
+{
+"id": "the-rise-of-womens-pro-sports",
+"kind": "interest",
+"title": "The rise of women's pro sports",
+"blurb": "Why the PWHL and other leagues are filling arenas now.",
+"fieldTags": [
+"sports",
+"business",
+"media"
+],
+"openers": [
+"What finally changed for women's leagues?",
+"Which team or player got you watching?",
+"What would help them last?"
+],
+"fr": {
+"title": "L'essor du sport professionnel féminin",
+"blurb": "Pourquoi la LPHF et d'autres ligues remplissent les arénas maintenant.",
+"openers": [
+"Qu'est-ce qui a enfin changé pour les ligues féminines?",
+"Quelle équipe ou joueuse vous a fait regarder?",
+"Qu'est-ce qui les aiderait à durer?"
+]
+}
+},
+{
+"id": "should-the-olympics-have-a-permanent-home",
+"kind": "question",
+"title": "Should the Olympics get a permanent home?",
+"blurb": "Lower costs and less waste against sharing the Games around.",
+"fieldTags": [
+"sports",
+"economics"
+],
+"openers": [
+"Which city could host every time?",
+"What would be lost if the Games stopped moving?"
+],
+"fr": {
+"title": "Les Jeux olympiques devraient-ils avoir un site permanent?",
+"blurb": "Moins de coûts et de gaspillage contre le partage des Jeux.",
+"openers": [
+"Quelle ville pourrait les accueillir chaque fois?",
+"Que perdrait-on si les Jeux ne voyageaient plus?"
+]
+}
+},
+{
+"id": "has-video-review-made-sports-worse",
+"kind": "question",
+"title": "Has video review made sports worse?",
+"blurb": "Getting calls right against the flow of the game.",
+"fieldTags": [
+"sports"
+],
+"openers": [
+"Which review decision still annoys you?",
+"Should some calls just stay human?"
+],
+"fr": {
+"title": "L'arbitrage vidéo a-t-il nui au sport?",
+"blurb": "Des décisions justes contre le rythme du match.",
+"openers": [
+"Quelle décision vidéo vous agace encore?",
+"Certaines décisions devraient-elles rester humaines?"
+]
+}
+},
+{
+"id": "sport-and-national-identity",
+"kind": "interest",
+"title": "Sport and national identity",
+"blurb": "From hockey to cricket, why a game can stand for a country.",
+"fieldTags": [
+"sports",
+"history",
+"sociology"
+],
+"openers": [
+"Is hockey still Canada's game?",
+"Which rivalry is really about history?",
+"Do you cheer for where you live or where you're from?"
+],
+"fr": {
+"title": "Le sport et l'identité nationale",
+"blurb": "Du hockey au cricket, pourquoi un jeu peut représenter un pays.",
+"openers": [
+"Le hockey est-il toujours le sport du Canada?",
+"Quelle rivalité parle en fait d'histoire?",
+"Encouragez-vous l'endroit où vous vivez ou celui d'où vous venez?"
+]
+}
+},
+{
+"id": "should-gym-class-be-graded",
+"kind": "question",
+"title": "Should gym class be graded?",
+"blurb": "Motivation against shaming kids who aren't athletic.",
+"fieldTags": [
+"sports",
+"education"
+],
+"openers": [
+"What do you remember about gym class?",
+"What should it teach instead?"
+],
+"fr": {
+"title": "Le cours d'éducation physique devrait-il être noté?",
+"blurb": "La motivation contre l'humiliation des jeunes moins sportifs.",
+"openers": [
+"Que retenez-vous de vos cours d'éducation physique?",
+"Que devrait-il enseigner plutôt?"
+]
+}
+},
+{
+"id": "board-game-design",
+"kind": "interest",
+"title": "Board game design",
+"blurb": "What makes a game easy to learn and hard to put down.",
+"fieldTags": [
+"games",
+"art"
+],
+"openers": [
+"Which game do you keep teaching to friends?",
+"What's the best rule you've ever seen?",
+"What would you design for this group?"
+],
+"fr": {
+"title": "La conception de jeux de société",
+"blurb": "Ce qui rend un jeu facile à apprendre et difficile à lâcher.",
+"openers": [
+"Quel jeu enseignez-vous sans cesse à vos amis?",
+"Quelle est la meilleure règle que vous ayez vue?",
+"Que concevriez-vous pour ce groupe?"
+]
+}
+},
+{
+"id": "should-esports-count-as-sports",
+"kind": "question",
+"title": "Should esports count as sports?",
+"blurb": "Skill and competition against sweat and bodies.",
+"fieldTags": [
+"games",
+"sports"
+],
+"openers": [
+"What makes something a sport?",
+"Would you watch an esports final?"
+],
+"fr": {
+"title": "Les sports électroniques devraient-ils compter comme des sports?",
+"blurb": "L'habileté et la compétition contre l'effort physique.",
+"openers": [
+"Qu'est-ce qui fait d'une activité un sport?",
+"Regarderiez-vous une finale de sports électroniques?"
+]
+},
+"starter": 4
+},
+{
+"id": "video-games-as-storytelling",
+"kind": "interest",
+"title": "Video games as storytelling",
+"blurb": "How games tell stories that books and films can't.",
+"fieldTags": [
+"games",
+"literature",
+"music_film"
+],
+"openers": [
+"Which game's story stayed with you?",
+"Do choices make a story stronger or weaker?",
+"What game would you give someone who never plays?"
+],
+"fr": {
+"title": "Le jeu vidéo comme art du récit",
+"blurb": "Comment les jeux racontent ce que les livres et les films ne peuvent pas.",
+"openers": [
+"Quelle histoire de jeu vous est restée?",
+"Les choix rendent-ils un récit plus fort ou plus faible?",
+"Quel jeu offririez-vous à quelqu'un qui ne joue jamais?"
+]
+}
+},
+{
+"id": "should-loot-boxes-be-regulated-as-gambling",
+"kind": "question",
+"title": "Should loot boxes be regulated as gambling?",
+"blurb": "Fun surprises against hooking players on chance.",
+"fieldTags": [
+"games",
+"law"
+],
+"openers": [
+"Have you ever spent more than you meant to?",
+"Where's the line between a game and a casino?"
+],
+"fr": {
+"title": "Les coffres à butin devraient-ils être encadrés comme des jeux de hasard?",
+"blurb": "Des surprises amusantes contre l'accoutumance au hasard.",
+"openers": [
+"Avez-vous déjà dépensé plus que prévu?",
+"Où passe la limite entre un jeu et un casino?"
+]
+}
+},
+{
+"id": "chess-and-strategy-games",
+"kind": "interest",
+"title": "Chess and strategy games",
+"blurb": "Thinking moves ahead, on the board and off it.",
+"fieldTags": [
+"games",
+"mathematics"
+],
+"openers": [
+"What game taught you the most about thinking ahead?",
+"Have computers changed how you play?",
+"Do you play to win or to learn?"
+],
+"fr": {
+"title": "Les échecs et les jeux de stratégie",
+"blurb": "Penser plusieurs coups d'avance, sur l'échiquier et ailleurs.",
+"openers": [
+"Quel jeu vous a le plus appris à anticiper?",
+"L'ordinateur a-t-il changé votre façon de jouer?",
+"Jouez-vous pour gagner ou pour apprendre?"
+]
+}
+},
+{
+"id": "are-video-games-good-for-kids",
+"kind": "question",
+"title": "Are video games good for kids?",
+"blurb": "Problem solving and friendships against screen time and sleep.",
+"fieldTags": [
+"games",
+"psychology",
+"education"
+],
+"openers": [
+"What did games teach you growing up?",
+"How much is too much?"
+],
+"fr": {
+"title": "Les jeux vidéo sont-ils bons pour les enfants?",
+"blurb": "Résoudre des problèmes et se faire des amis contre l'écran et le sommeil.",
+"openers": [
+"Qu'est-ce que les jeux vous ont appris en grandissant?",
+"À partir de combien est-ce trop?"
+]
+}
+},
+{
+"id": "home-cooking",
+"kind": "interest",
+"title": "Home cooking",
+"blurb": "Dishes worth learning, and who taught you to cook.",
+"fieldTags": [
+"food"
+],
+"openers": [
+"What do you make when you want to impress?",
+"Which recipe came from your family?",
+"What do you wish you could cook?"
+],
+"fr": {
+"title": "La cuisine à la maison",
+"blurb": "Les plats qui valent la peine, et qui vous a appris à cuisiner.",
+"openers": [
+"Que préparez-vous pour impressionner?",
+"Quelle recette vient de votre famille?",
+"Qu'aimeriez-vous savoir cuisiner?"
+]
+}
+},
+{
+"id": "food-and-immigration",
+"kind": "interest",
+"title": "Food and immigration",
+"blurb": "How dishes travel, change, and become local.",
+"fieldTags": [
+"food",
+"history",
+"sociology"
+],
+"openers": [
+"Which Canadian favourite came from somewhere else?",
+"Where's the best food from home in this city?",
+"Is fusion cooking respectful or lazy?"
+],
+"fr": {
+"title": "La cuisine et l'immigration",
+"blurb": "Comment les plats voyagent, changent et deviennent d'ici.",
+"openers": [
+"Quel plat bien canadien vient d'ailleurs?",
+"Où trouve-t-on la meilleure cuisine de chez vous en ville?",
+"La cuisine fusion est-elle respectueuse ou paresseuse?"
+]
+}
+},
+{
+"id": "should-cafeterias-serve-mostly-plant-based-food",
+"kind": "question",
+"title": "Should cafeterias serve mostly plant-based food?",
+"blurb": "Climate and cost against choice and habit.",
+"fieldTags": [
+"food",
+"environment"
+],
+"openers": [
+"Would you notice if the meat disappeared?",
+"Who should decide what's on the menu?"
+],
+"fr": {
+"title": "Les cafétérias devraient-elles servir surtout des plats végétaux?",
+"blurb": "Le climat et les coûts contre le choix et les habitudes.",
+"openers": [
+"Remarqueriez-vous si la viande disparaissait?",
+"Qui devrait décider du menu?"
+]
+}
+},
+{
+"id": "should-canada-cap-grocery-prices-on-staples",
+"kind": "question",
+"title": "Should Canada cap grocery prices on staples?",
+"blurb": "Relief for families against shortages and empty shelves.",
+"fieldTags": [
+"food",
+"economics"
+],
+"openers": [
+"What price shocked you most lately?",
+"Who's really to blame for food prices?"
+],
+"fr": {
+"title": "Le Canada devrait-il plafonner le prix des aliments de base?",
+"blurb": "Un répit pour les familles contre les pénuries et les tablettes vides.",
+"openers": [
+"Quel prix vous a le plus surpris dernièrement?",
+"Qui est vraiment responsable du prix des aliments?"
+]
+},
+"place": "CA",
+"starter": 9
+},
+{
+"id": "coffee-and-tea-culture",
+"kind": "interest",
+"title": "Coffee and tea culture",
+"blurb": "From farm to café, and why people argue about how to brew.",
+"fieldTags": [
+"food"
+],
+"openers": [
+"How do you take it, and why?",
+"Is a $7 latte worth it?",
+"Which café here is worth the walk?"
+],
+"fr": {
+"title": "La culture du café et du thé",
+"blurb": "De la ferme au café, et pourquoi on débat de l'infusion.",
+"openers": [
+"Comment le prenez-vous, et pourquoi?",
+"Un latte à 7 $ en vaut-il la peine?",
+"Quel café d'ici vaut le détour?"
+]
+}
+},
+{
+"id": "hiking-near-the-city",
+"kind": "interest",
+"title": "Hiking near the city",
+"blurb": "Where to go, how to start, and leaving no trace.",
+"fieldTags": [
+"outdoors",
+"environment"
+],
+"openers": [
+"What's your favourite trail within an hour?",
+"What got you into hiking, or kept you out?",
+"How crowded is too crowded?"
+],
+"fr": {
+"title": "La randonnée près de la ville",
+"blurb": "Où aller, comment commencer, et ne laisser aucune trace.",
+"openers": [
+"Quel est votre sentier préféré à moins d'une heure?",
+"Qu'est-ce qui vous a amené à la randonnée, ou vous en a tenu loin?",
+"À partir de quand est-ce trop achalandé?"
+]
+}
+},
+{
+"id": "running",
+"kind": "interest",
+"title": "Running",
+"blurb": "Why people run, and what it does to your head.",
+"fieldTags": [
+"outdoors",
+"psychology",
+"medicine"
+],
+"openers": [
+"What's the longest you've run, and why?",
+"Do you run with music, people, or nothing?",
+"How do you keep going in winter?"
+],
+"fr": {
+"title": "La course à pied",
+"blurb": "Pourquoi on court, et ce que ça fait à la tête.",
+"openers": [
+"Quelle est votre plus longue course, et pourquoi?",
+"Courez-vous avec de la musique, des gens, ou rien?",
+"Comment continuez-vous l'hiver?"
+]
+}
+},
+{
+"id": "should-popular-parks-require-reservations",
+"kind": "question",
+"title": "Should popular parks require reservations to enter?",
+"blurb": "Protecting nature against open access for everyone.",
+"fieldTags": [
+"outdoors",
+"environment"
+],
+"openers": [
+"Has a crowd ever ruined a trip for you?",
+"Who gets left out by reservations?"
+],
+"fr": {
+"title": "Les parcs populaires devraient-ils exiger une réservation pour entrer?",
+"blurb": "Protéger la nature contre l'accès libre pour tous.",
+"openers": [
+"Une foule vous a-t-elle déjà gâché une sortie?",
+"Qui les réservations laissent-elles de côté?"
+]
+},
+"place": "CA"
+},
+{
+"id": "making-the-most-of-winter",
+"kind": "interest",
+"title": "Making the most of winter",
+"blurb": "Skating, skiing, and liking the cold instead of waiting it out.",
+"fieldTags": [
+"outdoors",
+"sports"
+],
+"openers": [
+"What's your favourite thing to do outside in winter?",
+"Which outdoor rink is best around here?",
+"How did you learn to like winter, if you did?"
+],
+"fr": {
+"title": "Profiter de l'hiver",
+"blurb": "Patiner, skier, et aimer le froid au lieu de l'endurer.",
+"openers": [
+"Quelle activité d'hiver extérieure préférez-vous?",
+"Quelle patinoire extérieure est la meilleure près d'ici?",
+"Comment avez-vous appris à aimer l'hiver, si c'est le cas?"
+]
+},
+"place": "CA"
+},
+{
+"id": "do-fitness-trackers-do-more-good-than-harm",
+"kind": "question",
+"title": "Do fitness trackers do more good than harm?",
+"blurb": "Motivation and data against obsession and privacy.",
+"fieldTags": [
+"outdoors",
+"medicine",
+"psychology"
+],
+"openers": [
+"Has a tracker changed what you do?",
+"Who else sees your data?"
+],
+"fr": {
+"title": "Les montres d'entraînement font-elles plus de bien que de mal?",
+"blurb": "La motivation et les données contre l'obsession et la vie privée.",
+"openers": [
+"Une montre a-t-elle changé vos habitudes?",
+"Qui d'autre voit vos données?"
 ]
 }
 }

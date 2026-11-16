@@ -36,6 +36,10 @@ const FIELD_LABELS_FR: Record<Field, string> = {
   religion: "Religion",
   indigenous_studies: "Études autochtones",
   music_film: "Musique et cinéma",
+  sports: "Sports",
+  games: "Jeux et sports électroniques",
+  food: "Cuisine et alimentation",
+  outdoors: "Plein air et activité physique",
 };
 
 const LOOKING_FOR_LABELS_FR: Record<LookingFor, string> = {
@@ -62,12 +66,14 @@ const FIELD_GROUP_LABELS: Record<FieldGroupId, [string, string]> = {
   humanities: ["Humanities", "Sciences humaines"],
   arts: ["Arts", "Arts"],
   science: ["Science and technology", "Sciences et technologie"],
+  leisure: ["Sports and leisure", "Sports et loisirs"],
 };
 const SHORT_GROUP_LABELS: Record<FieldGroupId, [string, string]> = {
   society: ["Society", "Société"],
   humanities: ["Humanities", "Humanités"],
   arts: ["Arts", "Arts"],
   science: ["Science", "Sciences"],
+  leisure: ["Leisure", "Loisirs"],
 };
 
 export const fieldGroupLabel = (group: FieldGroupId) => FIELD_GROUP_LABELS[group][isFrench ? 1 : 0];

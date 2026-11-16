@@ -1692,6 +1692,9 @@ describe("crash reports and public pages", () => {
     const arts = await viewer.get("/deck/topics?group=arts");
     expect(arts.length).toBeGreaterThan(0);
     expect(arts.every((card: any) => card.fieldTags.some((tag: string) => ["art", "music_film"].includes(tag)))).toBe(true);
+    const leisure = await viewer.get("/deck/topics?group=leisure");
+    expect(leisure.length).toBeGreaterThan(0);
+    expect(leisure.every((card: any) => card.fieldTags.some((tag: string) => ["sports", "games", "food", "outdoors"].includes(tag)))).toBe(true);
   });
 
   it("rejects oversized crash reports", async () => {

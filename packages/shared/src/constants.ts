@@ -89,6 +89,10 @@ export const FIELDS = [
   "religion",
   "indigenous_studies",
   "music_film",
+  "sports",
+  "games",
+  "food",
+  "outdoors",
 ] as const;
 export type Field = (typeof FIELDS)[number];
 
@@ -119,6 +123,10 @@ export const FIELD_LABELS: Record<Field, string> = {
   religion: "Religion",
   indigenous_studies: "Indigenous studies",
   music_film: "Music & film",
+  sports: "Sports",
+  games: "Games & esports",
+  food: "Food & cooking",
+  outdoors: "Outdoors & fitness",
 };
 
 /** Broad groups, so that pickers and the deck aren't one long list of fields. */
@@ -127,6 +135,7 @@ export const FIELD_GROUPS = [
   { id: "humanities", fields: ["philosophy", "history", "literature", "linguistics", "religion", "indigenous_studies"] },
   { id: "arts", fields: ["art", "music_film"] },
   { id: "science", fields: ["psychology", "biology", "medicine", "physics", "chemistry", "mathematics", "computer_science", "engineering", "environment"] },
+  { id: "leisure", fields: ["sports", "games", "food", "outdoors"] },
 ] as const satisfies readonly { id: string; fields: readonly Field[] }[];
 export type FieldGroupId = (typeof FIELD_GROUPS)[number]["id"];
 

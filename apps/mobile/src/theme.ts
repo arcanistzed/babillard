@@ -68,6 +68,10 @@ const FLYER_INKS: Record<string, { bg: string; fg: string }> = {
   religion: { bg: "#5C3317", fg: WHITE },
   indigenous_studies: { bg: "#7A2E0E", fg: WHITE },
   music_film: { bg: "#2A0F45", fg: WHITE },
+  sports: { bg: "#B5122E", fg: WHITE },
+  games: { bg: "#4D7CFF", fg: DARK_INK },
+  food: { bg: "#F4E1C1", fg: DARK_INK },
+  outdoors: { bg: "#556B2F", fg: WHITE },
 };
 
 const FALLBACK_INK = { bg: "#FF5FAE", fg: DARK_INK };
