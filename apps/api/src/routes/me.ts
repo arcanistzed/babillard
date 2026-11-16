@@ -48,6 +48,7 @@ export async function loadMe(env: Env, user: UserRow): Promise<Me> {
           avatarUrl: avatarUrl(env, profile.avatarKey),
           ageMin: profile.ageMin,
           ageMax: profile.ageMax,
+          groupSize: profile.groupSize,
         }
       : null,
   };

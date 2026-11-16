@@ -8,7 +8,7 @@ import { createPerson, type Client } from "./api-client.ts";
 const BASE_URL = process.env.API_URL ?? "http://localhost:8787";
 
 const FIRST_NAMES = ["Ada", "Bo", "Cleo", "Dev", "Esi", "Finn", "Gia", "Hari", "Ines", "Jun", "Kai", "Lena", "Milo", "Noor", "Oren", "Priya", "Quinn", "Rafa", "Sana", "Theo", "Uma", "Vik", "Wren", "Xia", "Yusuf", "Zoe", "Amir", "Bea", "Cato", "Dara"];
-const ROLES = ["undergrad", "grad", "researcher", "other"];
+const ROLES = ["undergrad", "grad", "college", "working", "researcher", "other"];
 const FIELDS = [["economics", "politics"], ["philosophy", "literature"], ["computer_science", "mathematics"], ["urbanism", "environment"], ["psychology", "sociology"]];
 const LOOKING_FOR = [["learning", "friends"], ["research", "networking"], ["reading_group", "debate"], ["friends", "more_than_friends"], ["networking", "debate"]];
 const CITIES = [

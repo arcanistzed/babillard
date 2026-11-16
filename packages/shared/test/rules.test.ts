@@ -63,8 +63,8 @@ describe("rankTopics", () => {
   });
 
   it("caps cohort size at one short of a group", () => {
-    expect(scoreTopic({ id: "t", fieldTags: [], cohortSize: 3 }, [], 0)).toBe(3);
-    expect(scoreTopic({ id: "t", fieldTags: [], cohortSize: 500 }, [], 0)).toBe(3);
+    expect(scoreTopic({ id: "t", fieldTags: [], cohortSize: 2 }, [], 0)).toBe(2);
+    expect(scoreTopic({ id: "t", fieldTags: [], cohortSize: 500 }, [], 0)).toBe(2);
   });
 
   it("orders by score and respects the limit", () => {
@@ -167,12 +167,12 @@ describe("formGroups", () => {
   const waiter = (userId: string, joinedAt: number, stance: Waiter["stance"] = null): Waiter => ({ userId, joinedAt, stance });
   const people = (count: number): Waiter[] => Array.from({ length: count }, (_, i) => waiter(`u${i}`, i));
 
-  it("does not form below four", () => {
-    expect(formGroups({ waiting: people(3), topicKind: "interest", blocks: [] })).toBeNull();
+  it("does not form below three", () => {
+    expect(formGroups({ waiting: people(2), topicKind: "interest", blocks: [] })).toBeNull();
   });
 
-  it("forms at exactly four", () => {
-    expect(formGroups({ waiting: people(4), topicKind: "interest", blocks: [] })).toEqual(["u0", "u1", "u2", "u3"]);
+  it("forms at exactly three", () => {
+    expect(formGroups({ waiting: people(3), topicKind: "interest", blocks: [] })).toEqual(["u0", "u1", "u2"]);
   });
 
   it("caps at eight, oldest first", () => {
@@ -187,7 +187,7 @@ describe("formGroups", () => {
   });
 
   it("does not form when blocks leave too few compatible people", () => {
-    expect(formGroups({ waiting: people(4), topicKind: "interest", blocks: [["u0", "u3"]] })).toBeNull();
+    expect(formGroups({ waiting: people(3), topicKind: "interest", blocks: [["u0", "u2"]] })).toBeNull();
   });
 
   it("swaps in a different stance when a question's group would be unanimous", () => {

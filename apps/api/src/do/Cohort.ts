@@ -1,5 +1,5 @@
 import { DurableObject } from "cloudflare:workers";
-import { GROUP_MAX_SIZE, ageOn, canJoin, formGroups, topicPhrase, type Stance, type Waiter } from "@babillard/shared";
+import { GROUP_MAX_SIZE, ageOn, canJoin, formGroups, sizeBounds, topicPhrase, type Stance, type Waiter } from "@babillard/shared";
 import { and, eq, inArray, isNotNull } from "drizzle-orm";
 import { getDb, schema } from "../db";
 import { blocksBetween, blockedWith } from "../lib/blocks";
@@ -102,6 +102,14 @@ export class Cohort extends DurableObject<Env> {
     const memberIds = current.map((row) => row.userId);
     if (memberIds.length >= GROUP_MAX_SIZE) return null;
 
+    // The group can grow only while it stays within the largest size everyone in it, and the newcomer, asked for.
+    const sizes = await db
+      .select({ groupSize: schema.profiles.groupSize })
+      .from(schema.profiles)
+      .where(inArray(schema.profiles.userId, [...memberIds, input.userId]));
+    const { min, max } = sizeBounds(sizes.map((row) => row.groupSize));
+    if (min > max || memberIds.length + 1 > max) return null;
+
     const blocked = await blockedWith(db, input.userId);
     const blockPairs = [...blocked].map((other) => [input.userId, other] as const);
     if (!canJoin(input.userId, memberIds, blockPairs)) return null;
@@ -128,8 +136,9 @@ export class Cohort extends DurableObject<Env> {
 
     const db = getDb(this.env);
     const eligible = await db
-      .select({ id: schema.users.id, dob: schema.users.dob })
+      .select({ id: schema.users.id, dob: schema.users.dob, groupSize: schema.profiles.groupSize })
       .from(schema.users)
+      .leftJoin(schema.profiles, eq(schema.profiles.userId, schema.users.id))
       .where(
         and(
           inArray(schema.users.id, waitingRows.map((row) => row.user_id)),
@@ -138,12 +147,18 @@ export class Cohort extends DurableObject<Env> {
           isNotNull(schema.users.onboardedAt),
         ),
       );
-    const dobs = new Map(eligible.map((row) => [row.id, row.dob]));
+    const people = new Map(eligible.map((row) => [row.id, row]));
     const waiting: Waiter[] = waitingRows
-      .filter((row) => dobs.has(row.user_id))
+      .filter((row) => people.has(row.user_id))
       .map((row) => {
-        const dob = dobs.get(row.user_id);
-        return { userId: row.user_id, stance: row.stance as Stance | null, joinedAt: row.joined_at, age: dob ? ageOn(dob) : null };
+        const person = people.get(row.user_id)!;
+        return {
+          userId: row.user_id,
+          stance: row.stance as Stance | null,
+          joinedAt: row.joined_at,
+          age: person.dob ? ageOn(person.dob) : null,
+          groupSize: person.groupSize ?? "any",
+        };
       });
 
     const blocks = await blocksBetween(db, waiting.map((waiter) => waiter.userId));

@@ -740,8 +740,8 @@ describe("chat", () => {
 });
 
 describe("automatic groups", () => {
-  it("forms exactly one group of four from four simultaneous swipes", async () => {
-    const people = await Promise.all(Array.from({ length: 4 }, () => person("toronto")));
+  it("forms exactly one group of three from three simultaneous swipes", async () => {
+    const people = await Promise.all(Array.from({ length: 3 }, () => person("toronto")));
     const topicId = "contemporary-fiction";
     const results = await Promise.all(people.map((client) => client.post(`/deck/topics/${topicId}/swipe`, { direction: "right" })));
     const ids = new Set(results.map((result) => result.groupConversationId).filter(Boolean));
@@ -750,7 +750,7 @@ describe("automatic groups", () => {
     const groupId = [...ids][0];
     const detail = await people[0]!.get(`/conversations/${groupId}`);
     expect(detail.kind).toBe("group");
-    expect(detail.members).toHaveLength(4);
+    expect(detail.members).toHaveLength(3);
     expect(detail.title).toBe("Contemporary fiction");
 
     const messages = await people[1]!.get(`/conversations/${groupId}/messages`);
@@ -772,7 +772,7 @@ describe("automatic groups", () => {
     }
   });
 
-  it("waits at three, adds latecomers to eight, then starts a new list", async () => {
+  it("waits at two, adds latecomers to eight, then starts a new list", async () => {
     const topicId = "the-nineteenth-century-novel";
     const people = [];
     for (let i = 0; i < 12; i += 1) people.push(await person("toronto"));
@@ -780,17 +780,18 @@ describe("automatic groups", () => {
     const results = [];
     for (const client of people) results.push(await client.post(`/deck/topics/${topicId}/swipe`, { direction: "right" }));
 
-    expect(results.slice(0, 3).every((result) => result.groupConversationId === null)).toBe(true);
-    const firstGroup = results[3].groupConversationId;
+    expect(results.slice(0, 2).every((result) => result.groupConversationId === null)).toBe(true);
+    const firstGroup = results[2].groupConversationId;
     expect(firstGroup).toBeTruthy();
-    for (const result of results.slice(4, 8)) expect(result.groupConversationId).toBe(firstGroup);
+    for (const result of results.slice(3, 8)) expect(result.groupConversationId).toBe(firstGroup);
 
     expect((await people[0]!.get(`/conversations/${firstGroup}`)).members).toHaveLength(8);
-    expect(results.slice(8, 11).every((result) => result.groupConversationId === null)).toBe(true);
+    expect(results.slice(8, 10).every((result) => result.groupConversationId === null)).toBe(true);
 
-    const secondGroup = results[11].groupConversationId;
+    const secondGroup = results[10].groupConversationId;
     expect(secondGroup).toBeTruthy();
     expect(secondGroup).not.toBe(firstGroup);
+    expect(results[11].groupConversationId).toBe(secondGroup);
     expect((await people[8]!.get(`/conversations/${secondGroup}`)).members).toHaveLength(4);
   });
 
@@ -810,13 +811,31 @@ describe("automatic groups", () => {
     const swipe = (client: Client) => client.post(`/deck/topics/${topicId}/swipe`, { direction: "right" });
     await swipe(a!);
     await swipe(b!);
-    await swipe(c!);
-    expect((await swipe(d!)).groupConversationId).toBeNull();
-    const formed = (await swipe(e!)).groupConversationId;
+    // A and B can't be together, so three swipes aren't enough yet.
+    expect((await swipe(c!)).groupConversationId).toBeNull();
+    const formed = (await swipe(d!)).groupConversationId;
     expect(formed).toBeTruthy();
-    const ids = (await e!.get(`/conversations/${formed}`)).members.map((member: any) => member.id);
-    expect(ids).toHaveLength(4);
+    const ids = (await d!.get(`/conversations/${formed}`)).members.map((member: any) => member.id);
+    expect(ids).toHaveLength(3);
     expect(ids.includes(a!.id) && ids.includes(b!.id)).toBe(false);
+    // Someone with no blocks joins the open group.
+    expect((await swipe(e!)).groupConversationId).toBe(formed);
+  });
+
+  it("keeps a group within the size everyone in it chose", async () => {
+    const topicId = "philosophy-of-mind";
+    const profile = { displayName: "Small", bio: "", role: "other", fields: ["philosophy"], lookingFor: ["friends"], groupSize: "small" };
+    const small = await Promise.all(Array.from({ length: 3 }, () => person("toronto")));
+    for (const client of small) expect((await client.put("/me/profile", profile)).profile.groupSize).toBe("small");
+    const results = [];
+    for (const client of small) results.push(await client.post(`/deck/topics/${topicId}/swipe`, { direction: "right" }));
+    const group = results[2].groupConversationId;
+    expect(group).toBeTruthy();
+    const fourth = await person("toronto");
+    expect((await fourth.post(`/deck/topics/${topicId}/swipe`, { direction: "right" })).groupConversationId).toBe(group);
+    const fifth = await person("toronto");
+    expect((await fifth.post(`/deck/topics/${topicId}/swipe`, { direction: "right" })).groupConversationId).toBeNull();
+    expect((await small[0]!.get(`/conversations/${group}`)).members).toHaveLength(4);
   });
 
   it("does not add someone to an open group with a person they blocked", async () => {

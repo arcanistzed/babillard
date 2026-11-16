@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { ageOn, formGroups, inAgeRange, profileSaveSchema, rankPeople, scorePerson, type Waiter } from "../src";
+import { ageOn, formGroups, inAgeRange, profileSaveSchema, rankPeople, scorePerson, sizeBounds, sizeSuits, type Waiter } from "../src";
 
 const on = (date: string) => new Date(`${date}T12:00:00Z`);
 
@@ -102,5 +102,40 @@ describe("profileSaveSchema age range", () => {
   it("rejects a minimum above the maximum or an age under 18", () => {
     expect(profileSaveSchema.safeParse({ ...base, ageMin: 30, ageMax: 20 }).success).toBe(false);
     expect(profileSaveSchema.safeParse({ ...base, ageMin: 16 }).success).toBe(false);
+  });
+});
+
+describe("group sizes", () => {
+  const waiter = (userId: string, joinedAt: number, groupSize?: "small" | "medium" | "any"): Waiter => ({ userId, joinedAt, stance: null, groupSize });
+
+  it("knows which sizes suit everyone", () => {
+    expect(sizeBounds(["small", "any"])).toEqual({ min: 3, max: 4 });
+    expect(sizeBounds(["medium", undefined])).toEqual({ min: 5, max: 8 });
+    expect(sizeSuits(["small", "medium"], 4)).toBe(false);
+    expect(sizeSuits(["small", "any"], 4)).toBe(true);
+    expect(sizeSuits(["small", "any"], 5)).toBe(false);
+  });
+
+  it("stops a small group at four", () => {
+    const waiting = [waiter("a", 0, "small"), waiter("b", 1), waiter("c", 2), waiter("d", 3), waiter("e", 4)];
+    expect(formGroups({ waiting, topicKind: "interest", blocks: [] })).toEqual(["a", "b", "c", "d"]);
+  });
+
+  it("only puts someone who asked for medium in a group of five or more", () => {
+    const waiting = [waiter("a", 0, "medium"), waiter("b", 1), waiter("c", 2), waiter("d", 3)];
+    // The others take any size, so they don't wait for a fifth person.
+    expect(formGroups({ waiting, topicKind: "interest", blocks: [] })).toEqual(["b", "c", "d"]);
+    expect(formGroups({ waiting: [...waiting, waiter("e", 4)], topicKind: "interest", blocks: [] })).toEqual(["a", "b", "c", "d", "e"]);
+  });
+
+  it("forms a small group even when an earlier person asked for medium", () => {
+    const waiting = [waiter("m", 0, "medium"), waiter("a", 1, "small"), waiter("b", 2, "small"), waiter("c", 3, "small")];
+    expect(formGroups({ waiting, topicKind: "interest", blocks: [] })).toEqual(["a", "b", "c"]);
+  });
+
+  it("never swaps in someone whose size choice doesn't fit", () => {
+    const people = [waiter("a", 0, "small"), waiter("b", 1, "small"), { ...waiter("c", 2, "small"), age: 60 }];
+    const waiting = [...people.slice(0, 2).map((w) => ({ ...w, age: 22 })), people[2]!, { ...waiter("d", 3, "medium"), age: 23 }];
+    expect(formGroups({ waiting, topicKind: "interest", blocks: [], maxSize: 3 })).toEqual(["a", "b", "c"]);
   });
 });

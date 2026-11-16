@@ -46,7 +46,7 @@ export const copy = {
     otherLang: "fr-CA",
     otherLabel: "Français",
     title: "Babillard",
-    description: "Swipe on research areas, books, and policy questions. When four people in your city pick the same one, a group chat opens and you plan a time to meet.",
+    description: "Swipe on research areas, books, and policy questions. When three people in your city pick the same one, a group chat opens and you plan a time to meet.",
     skip: "Skip to content",
     download: "Download for Android",
     hero: {
@@ -57,7 +57,7 @@ export const copy = {
     storyLabel: "How it works",
     steps: [
       { h: "Swipe on what you'd talk about", p: "Each card is a topic, like walkable cities or the foundations of mathematics. Some cards ask a question, and you can say where you stand before you swipe." },
-      { h: "Four people open a group", p: "The tabs along the bottom of a card are seats. When the fourth person in your city tears one off, a group chat opens with all four of you in it. A group holds up to eight." },
+      { h: "Three people open a group", p: "The tabs along the bottom of a card are seats. When the third person in your city tears one off, a group chat opens with all three of you in it. A group holds up to eight, and you can ask for a small one of three or four." },
       { h: "Or start with one person", p: "People who picked the same topic show up as cards too. If you both swipe right, a chat opens with a question about the topic to get you going." },
       { h: "Then meet up", p: "Pick a time and a place in a couple of taps. Once enough people say yes, it's on. Afterward, the app asks how it went." },
     ],
@@ -118,7 +118,7 @@ export const copy = {
     otherLang: "en-CA",
     otherLabel: "English",
     title: "Babillard",
-    description: "Glissez sur des domaines de recherche, des livres et des questions de politique publique. Quand quatre personnes de votre ville choisissent le même sujet, une discussion de groupe s'ouvre et vous planifiez une rencontre.",
+    description: "Glissez sur des domaines de recherche, des livres et des questions de politique publique. Quand trois personnes de votre ville choisissent le même sujet, une discussion de groupe s'ouvre et vous planifiez une rencontre.",
     skip: "Aller au contenu",
     download: "Télécharger pour Android",
     hero: {
@@ -129,7 +129,7 @@ export const copy = {
     storyLabel: "Comment ça marche",
     steps: [
       { h: "Glissez sur ce dont vous aimeriez parler", p: "Chaque carte est un sujet, comme les villes marchables ou les fondements des mathématiques. Certaines posent une question, et vous pouvez dire où vous vous situez avant de glisser." },
-      { h: "Quatre personnes ouvrent un groupe", p: "Les languettes au bas d'une carte sont des places. Quand la quatrième personne de votre ville en détache une, une discussion de groupe s'ouvre avec vous quatre. Un groupe compte jusqu'à huit personnes." },
+      { h: "Trois personnes ouvrent un groupe", p: "Les languettes au bas d'une carte sont des places. Quand la troisième personne de votre ville en détache une, une discussion de groupe s'ouvre avec vous trois. Un groupe compte jusqu'à huit personnes, et vous pouvez en demander un petit, de trois ou quatre." },
       { h: "Ou commencez à deux", p: "Les gens qui ont choisi le même sujet apparaissent aussi sous forme de cartes. Si vous glissez tous les deux à droite, une discussion s'ouvre avec une question sur le sujet pour lancer la conversation." },
       { h: "Puis rencontrez-vous", p: "Choisissez un moment et un lieu en quelques touches. Dès qu'assez de gens disent oui, c'est confirmé. Ensuite, l'application vous demande comment ça s'est passé." },
     ],

@@ -2,7 +2,7 @@
 
 A mobile app where people find each other through the ideas they want to talk about, then meet in person.
 
-People swipe on a deck of topics: research areas, books, methods, and policy questions. When four people in one city pick the same topic, a group chat opens on its own. People who share a topic also see each other as cards, and a mutual swipe opens a one-on-one chat with a conversation starter already in it. Any chat can propose a meetup in one tap.
+People swipe on a deck of topics: research areas, books, methods, and policy questions. When three people in one city pick the same topic, a group chat opens on its own, and people can ask for small groups of three or four or bigger ones up to eight. People who share a topic also see each other as cards, and a mutual swipe opens a one-on-one chat with a conversation starter already in it. Any chat can propose a meetup in one tap.
 
 ## How it's built
 
@@ -273,6 +273,7 @@ cd apps/api && npx wrangler d1 execute babillard --remote --file seed/seed.sql
 - **"Open to dating" is private unless mutual.** Every response that shows someone's chips goes through `visibleLookingFor`.
 - **18 and over.** The date of birth is checked at sign-up, nothing is stored for anyone younger, and it can't be edited afterward. Others see the age it gives, never the date.
 - **Age ranges go both ways.** People can set the ages they want to meet, and someone appears in suggestions only when each person's age is in the other's range. Ranges start open. Groups ignore them, but lean toward similar ages when forming.
+- **Groups start at three.** Two people is a one-on-one match. People can ask for a small group (3 to 4), a medium one (5 to 8), or either. A group forms, or takes someone new, only at a size that suits everyone in it, and people who'd take either aren't kept waiting by someone who wants a bigger group.
 - **Share pages hide names.** A meetup link shows the plan behind an unguessable token, since venue and time can be sensitive.
 - **Crash reports carry no identity.** The endpoint is open, because a crash can happen before sign-in, and it takes no user ID.
 

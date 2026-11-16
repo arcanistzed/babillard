@@ -1,0 +1,1 @@
+ALTER TABLE `profiles` ADD `group_size` text DEFAULT 'any' NOT NULL;

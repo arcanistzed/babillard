@@ -1,6 +1,6 @@
 import type { Envelope, ReportEvidence } from "@babillard/shared";
 import { index, integer, primaryKey, real, sqliteTable, text, uniqueIndex } from "drizzle-orm/sqlite-core";
-import type { EndedUp, Field, LookingFor, MeetAgain, MindChanged, Role, Stance, VenueKind } from "@babillard/shared";
+import type { EndedUp, Field, GroupSize, LookingFor, MeetAgain, MindChanged, Role, Stance, VenueKind } from "@babillard/shared";
 
 export const users = sqliteTable(
   "users",
@@ -37,6 +37,8 @@ export const profiles = sqliteTable("profiles", {
   /** The ages this person wants to meet. Null means no limit at that end. */
   ageMin: integer("age_min"),
   ageMax: integer("age_max"),
+  /** The group size this person asked for: small (3 to 4), medium (5 to 8), or any. */
+  groupSize: text("group_size").$type<GroupSize>().notNull().default("any"),
 });
 
 export const localities = sqliteTable("localities", {

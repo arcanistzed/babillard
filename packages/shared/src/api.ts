@@ -1,6 +1,6 @@
 import type { Envelope } from "./e2ee";
 import type { Lean } from "./rules/match";
-import type { EndedUp, Field, LookingFor, MeetAgain, MindChanged, Role, Stance, VenueKind } from "./constants";
+import type { EndedUp, Field, GroupSize, LookingFor, MeetAgain, MindChanged, Role, Stance, VenueKind } from "./constants";
 
 /** Response shapes shared by the Worker and the app. */
 
@@ -26,6 +26,7 @@ export interface Me {
     /** The ages this person wants to meet. Null means no limit at that end. */
     ageMin: number | null;
     ageMax: number | null;
+    groupSize: GroupSize;
   } | null;
 }
 

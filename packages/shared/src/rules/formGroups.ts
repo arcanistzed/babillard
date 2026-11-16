@@ -1,4 +1,4 @@
-import { GROUP_AGE_SPREAD, GROUP_MAX_SIZE, GROUP_MIN_SIZE, type Stance } from "../constants";
+import { GROUP_AGE_SPREAD, GROUP_MAX_SIZE, GROUP_MIN_SIZE, GROUP_SIZE_RANGES, type GroupSize, type Stance } from "../constants";
 
 export interface Waiter {
   userId: string;
@@ -6,6 +6,8 @@ export interface Waiter {
   joinedAt: number;
   /** Null or missing when unknown, which leaves the person out of the age preference. */
   age?: number | null;
+  /** Missing means any size. */
+  groupSize?: GroupSize;
 }
 
 export type BlockPair = readonly [string, string];
@@ -29,11 +31,31 @@ export function canJoin(userId: string, members: string[], blocks: BlockPair[]):
   return members.every((member) => !blocked(userId, member));
 }
 
+/** The sizes a group of these people can be, from the size each one asked for. Empty when min is above max. */
+export function sizeBounds(sizes: (GroupSize | undefined)[]): { min: number; max: number } {
+  let min = GROUP_MIN_SIZE;
+  let max = GROUP_MAX_SIZE;
+  for (const size of sizes) {
+    const [low, high] = GROUP_SIZE_RANGES[size ?? "any"];
+    min = Math.max(min, low);
+    max = Math.min(max, high);
+  }
+  return { min, max };
+}
+
+/** True when this many people, with these size choices, makes a group size everyone asked for. */
+export function sizeSuits(sizes: (GroupSize | undefined)[], count: number): boolean {
+  const { min, max } = sizeBounds(sizes);
+  return min <= max && count >= min && count <= max;
+}
+
 /**
  * Picks the members of a new group, or returns null when no group can form yet.
  *
  * People join in the order they arrived, skipping anyone who has a block with
- * someone already picked. Stance is only a soft preference: when a question's
+ * someone already picked, or whose size choice can't fit with theirs. If the
+ * earliest arrivals' choices clash, it tries again with only the people who'd
+ * take a small group, then only those who'd take a larger one. Stance is only a soft preference: when a question's
  * group would be unanimous and someone with a different view is waiting, that
  * person replaces the newest member. Age is a soft preference too: someone far
  * from the group's middle age is swapped for a closer-aged person who is waiting.
@@ -44,16 +66,33 @@ export function formGroups(input: FormGroupsInput): string[] | null {
   const maxSize = input.maxSize ?? GROUP_MAX_SIZE;
   const ordered = [...input.waiting].sort((a, b) => a.joinedAt - b.joinedAt);
 
+  for (const target of [undefined, "small", "medium"] as const) {
+    const candidates = target ? ordered.filter((waiter) => sizeSuits([waiter.groupSize, target], sizeBounds([waiter.groupSize, target]).min)) : ordered;
+    const picked = pickInOrder(candidates, input.blocks, minSize, maxSize);
+    if (!picked) continue;
+    preferSimilarAges(picked, candidates, input.blocks);
+    if (input.topicKind === "question") diversifyStances(picked, candidates, input.blocks);
+    return picked.map((waiter) => waiter.userId);
+  }
+  return null;
+}
+
+function pickInOrder(ordered: Waiter[], blocks: BlockPair[], minSize: number, maxSize: number): Waiter[] | null {
   const picked: Waiter[] = [];
   for (const waiter of ordered) {
-    if (picked.length === maxSize) break;
-    if (canJoin(waiter.userId, picked.map((p) => p.userId), input.blocks)) picked.push(waiter);
+    const next = [...picked, waiter];
+    const { min, max } = sizeBounds(next.map((p) => p.groupSize));
+    if (min > max || next.length > Math.min(max, maxSize)) continue;
+    if (canJoin(waiter.userId, picked.map((p) => p.userId), blocks)) picked.push(waiter);
   }
-  if (picked.length < minSize) return null;
+  const { min } = sizeBounds(picked.map((p) => p.groupSize));
+  return picked.length >= Math.max(minSize, min) ? picked : null;
+}
 
-  preferSimilarAges(picked, ordered, input.blocks);
-  if (input.topicKind === "question") diversifyStances(picked, ordered, input.blocks);
-  return picked.map((waiter) => waiter.userId);
+/** True when swapping `replacement` in for picked[index] keeps everyone's size choice satisfied. */
+function swapKeepsSize(picked: Waiter[], index: number, replacement: Waiter): boolean {
+  const sizes = picked.map((waiter, i) => (i === index ? replacement.groupSize : waiter.groupSize));
+  return sizeSuits(sizes, picked.length);
 }
 
 function diversifyStances(picked: Waiter[], ordered: Waiter[], blocks: BlockPair[]): void {
@@ -68,7 +107,8 @@ function diversifyStances(picked: Waiter[], ordered: Waiter[], blocks: BlockPair
       !pickedIds.has(waiter.userId) &&
       waiter.stance !== null &&
       waiter.stance !== shared &&
-      canJoin(waiter.userId, others, blocks),
+      canJoin(waiter.userId, others, blocks) &&
+      swapKeepsSize(picked, picked.length - 1, waiter),
   );
   if (replacement) picked[picked.length - 1] = replacement;
 }
@@ -92,7 +132,12 @@ function preferSimilarAges(picked: Waiter[], ordered: Waiter[], blocks: BlockPai
     const pickedIds = new Set(picked.map((waiter) => waiter.userId));
     const others = picked.filter((_, index) => index !== outlierIndex).map((waiter) => waiter.userId);
     const replacement = ordered.find(
-      (waiter) => !pickedIds.has(waiter.userId) && waiter.age != null && distance(waiter) <= GROUP_AGE_SPREAD && canJoin(waiter.userId, others, blocks),
+      (waiter) =>
+        !pickedIds.has(waiter.userId) &&
+        waiter.age != null &&
+        distance(waiter) <= GROUP_AGE_SPREAD &&
+        canJoin(waiter.userId, others, blocks) &&
+        swapKeepsSize(picked, outlierIndex, waiter),
     );
     if (!replacement) return;
     picked[outlierIndex] = replacement;

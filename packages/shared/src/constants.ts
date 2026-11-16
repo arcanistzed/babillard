@@ -1,5 +1,9 @@
-export const GROUP_MIN_SIZE = 4;
+export const GROUP_MIN_SIZE = 3;
 export const GROUP_MAX_SIZE = 8;
+/** The group sizes someone can ask for. Two people is a one-on-one match, so groups start at three. */
+export const GROUP_SIZES = ["small", "medium", "any"] as const;
+export type GroupSize = (typeof GROUP_SIZES)[number];
+export const GROUP_SIZE_RANGES: Record<GroupSize, readonly [number, number]> = { small: [3, 4], medium: [5, 8], any: [GROUP_MIN_SIZE, GROUP_MAX_SIZE] };
 export const GROUP_MEETUP_CONFIRM_YES = 3;
 export const MIN_AGE_YEARS = 18;
 /** The oldest age someone can type as the top of the range of ages they want to meet. */
@@ -52,14 +56,17 @@ export const LOOKING_FOR_LABELS: Record<LookingFor, string> = {
   debate: "Debate",
 };
 
-export const ROLES = ["undergrad", "grad", "researcher", "other"] as const;
+export const ROLES = ["high_school", "college", "undergrad", "grad", "researcher", "working", "other"] as const;
 export type Role = (typeof ROLES)[number];
 
 export const ROLE_LABELS: Record<Role, string> = {
-  undergrad: "Undergraduate",
+  high_school: "High school",
+  college: "CEGEP or college",
+  undergrad: "University",
   grad: "Graduate student",
   researcher: "Researcher",
-  other: "Curious person",
+  working: "Working",
+  other: "Something else",
 };
 
 export const FIELDS = [

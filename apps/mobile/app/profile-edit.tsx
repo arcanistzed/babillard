@@ -1,4 +1,4 @@
-import { ROLES, type Me } from "@babillard/shared";
+import { GROUP_SIZES, ROLES, type GroupSize, type Me } from "@babillard/shared";
 import { useQueryClient } from "@tanstack/react-query";
 import { router } from "expo-router";
 import { useCallback, useState } from "react";
@@ -11,6 +11,12 @@ import { FieldPicker } from "@/components/FieldPicker";
 import { LookingForPicker } from "@/components/LookingForPicker";
 import { Button, Chip, ChipRow, ErrorText, Field, KeyboardScreen, T, useBottomPadding } from "@/ui";
 import { roleLabel, t } from "@/i18n";
+
+const GROUP_SIZE_LABELS: Record<GroupSize, string> = {
+  small: t("Small, 3 to 4", "Petit, 3 à 4"),
+  medium: t("Medium, 5 to 8", "Moyen, 5 à 8"),
+  any: t("Either", "Peu importe"),
+};
 
 export default function ProfileEdit() {
   const { me, setMe } = useAuth();
@@ -26,6 +32,7 @@ export default function ProfileEdit() {
   const [campusId, setCampusId] = useState<string | null>(me?.campusId ?? null);
   const [ageRange, setAgeRange] = useState(ageRangeText(profile?.ageMin, profile?.ageMax));
   const range = parseAgeRange(ageRange);
+  const [groupSize, setGroupSize] = useState<GroupSize>(profile?.groupSize ?? "any");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -38,7 +45,7 @@ export default function ProfileEdit() {
     setBusy(true);
     setError(null);
     try {
-      setMe(await api.put<Me>("/me/profile", { displayName: displayName.trim(), bio: bio.trim(), role, fields, lookingFor, cityId, campusId, ageMin: range.ageMin, ageMax: range.ageMax }));
+      setMe(await api.put<Me>("/me/profile", { displayName: displayName.trim(), bio: bio.trim(), role, fields, lookingFor, cityId, campusId, ageMin: range.ageMin, ageMax: range.ageMax, groupSize }));
       await queryClient.invalidateQueries({ queryKey: ["people"] });
       await queryClient.invalidateQueries({ queryKey: ["topics"] });
       router.back();
@@ -58,6 +65,15 @@ export default function ProfileEdit() {
         <T variant="heading">{t("What are you looking for?", "Que recherchez-vous?")}</T>
         <LookingForPicker value={lookingFor} onChange={setLookingFor} />
         <AgeRangeField value={ageRange} onChange={setAgeRange} error={range.error} />
+        <T variant="heading">{t("Group size", "Taille du groupe")}</T>
+        <ChipRow>
+          {GROUP_SIZES.map((value) => (
+            <Chip key={value} label={GROUP_SIZE_LABELS[value]} selected={groupSize === value} onPress={() => setGroupSize(value)} />
+          ))}
+        </ChipRow>
+        <T variant="small" muted>
+          {t("Groups form fastest when you pick Either.", "Les groupes se forment plus vite si vous choisissez Peu importe.")}
+        </T>
         <T variant="heading">{t("Where can you meet people?", "Où pouvez-vous rencontrer des gens?")}</T>
         <CityPicker cityId={cityId} campusId={campusId} onChange={setLocation} />
         <T variant="heading">{t("Fields you care about", "Domaines qui vous intéressent")}</T>

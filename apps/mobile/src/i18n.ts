@@ -53,10 +53,13 @@ const LOOKING_FOR_LABELS_FR: Record<LookingFor, string> = {
 };
 
 const ROLE_LABELS_FR: Record<Role, string> = {
-  undergrad: "Premier cycle",
+  high_school: "École secondaire",
+  college: "Cégep ou collège",
+  undergrad: "Université",
   grad: "Cycles supérieurs",
   researcher: "Recherche",
-  other: "Personne curieuse",
+  working: "En emploi",
+  other: "Autre chose",
 };
 
 const VENUE_LABELS_FR: Record<VenueKind, string> = { cafe: "Café", library: "Bibliothèque", campus: "Campus", park: "Parc", other: "Ailleurs" };

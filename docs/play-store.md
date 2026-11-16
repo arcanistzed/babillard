@@ -36,7 +36,7 @@ Babillard is for people who want to talk about ideas face to face.
 
 Swipe through topics, from reading groups and research to the questions your city is arguing about. When enough people near you pick the same topic, a small group forms and you plan a meetup together. You can also match one on one with someone who picked the same things.
 
-- Groups of 4 to 8 people, formed around one topic in your city.
+- Groups of 3 to 8 people, formed around one topic in your city, small or larger as you prefer.
 - End-to-end encrypted chat. We can't read your messages.
 - Your stance on a question is never shown as yours.
 - Choose the ages you want to meet. Others see your age, never your birth date.
@@ -50,7 +50,7 @@ Babillard est pour les gens qui veulent discuter d'idées en personne.
 
 Parcourez des sujets, des cercles de lecture à la recherche, jusqu'aux questions qui animent votre ville. Quand assez de gens près de vous choisissent le même sujet, un petit groupe se forme et vous planifiez une rencontre ensemble. Vous pouvez aussi être jumelé avec une personne qui a fait les mêmes choix.
 
-- Des groupes de 4 à 8 personnes, formés autour d'un sujet dans votre ville.
+- Des groupes de 3 à 8 personnes, formés autour d'un sujet dans votre ville, petits ou plus grands selon vos préférences.
 - Des conversations chiffrées de bout en bout. Nous ne pouvons pas lire vos messages.
 - Votre position sur une question n'est jamais présentée comme la vôtre.
 - Choisissez l'âge des personnes que vous voulez rencontrer. Les autres voient votre âge, jamais votre date de naissance.
