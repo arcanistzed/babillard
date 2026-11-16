@@ -90,6 +90,7 @@ export function Flyer({ topic, stance, onStance, isTop = true, pull }: { topic: 
                     accessibilityRole="radio"
                     accessibilityState={{ selected }}
                     accessibilityLabel={STANCE_LABELS[value]}
+                    accessibilityHint={t("Joins this topic with your answer", "Rejoint ce sujet avec votre réponse")}
                     onPress={() => onStance(selected ? null : value)}
                     style={[styles.stance, { borderColor: fg, backgroundColor: selected ? fg : "transparent" }]}
                   >

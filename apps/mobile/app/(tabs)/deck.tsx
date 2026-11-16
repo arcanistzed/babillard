@@ -15,6 +15,9 @@ import { Button, Chip, ErrorText, T } from "@/ui";
 import { shortGroupLabel, t } from "@/i18n";
 
 const REFILL_AT = 5;
+/** How long the card stays after a stance tap: long enough to see how the city leans, when there's a lean to show. */
+const LEAN_PAUSE_MS = 1100;
+const TAP_PAUSE_MS = 250;
 const IN_LABEL = t("I'm in", "J'embarque");
 const PASS_LABEL = t("Pass", "Passer");
 
@@ -23,6 +26,10 @@ export default function Deck() {
   const deck = useRef<SwipeDeckHandle>(null);
   const [cards, setCards] = useState<TopicCard[]>([]);
   const [stances, setStances] = useState<Record<string, Stance | null>>({});
+  // The swipe reads stances from here, since a stance tap swipes before React re-renders with the new state.
+  const stancesRef = useRef<Record<string, Stance | null>>({});
+  const pendingSwipe = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const topId = useRef<string | null>(null);
   const [openedGroup, setOpenedGroup] = useState<{ id: string; title: string } | null>(null);
   // The last topic this person joined that still needs people, which makes it the moment to bring a friend.
   const [nudge, setNudge] = useState<{ topic: TopicCard; needed: number } | null>(null);
@@ -51,8 +58,31 @@ export default function Deck() {
     });
   }, [topics.data]);
 
+  useEffect(() => {
+    topId.current = cards[0]?.id ?? null;
+  }, [cards]);
+  useEffect(() => () => clearTimeout(pendingSwipe.current ?? undefined), []);
+
+  /** A stance means "I'm in", so tapping one sends the card right, after a moment to show the city's lean. */
+  function chooseStance(topic: TopicCard, stance: Stance | null) {
+    stancesRef.current[topic.id] = stance;
+    setStances((current) => ({ ...current, [topic.id]: stance }));
+    clearTimeout(pendingSwipe.current ?? undefined);
+    pendingSwipe.current = null;
+    if (!stance) return;
+    pendingSwipe.current = setTimeout(
+      () => {
+        pendingSwipe.current = null;
+        if (topId.current === topic.id) deck.current?.swipe("right");
+      },
+      topic.lean ? LEAN_PAUSE_MS : TAP_PAUSE_MS,
+    );
+  }
+
   const onSwipe = useCallback(
     (topic: TopicCard, direction: SwipeDirection) => {
+      clearTimeout(pendingSwipe.current ?? undefined);
+      pendingSwipe.current = null;
       swiped.current.add(topic.id);
       setNudge(null);
       setSwipeFailed(false);
@@ -61,7 +91,7 @@ export default function Deck() {
         if (next.length <= REFILL_AT) void queryClient.invalidateQueries({ queryKey: ["topics"] });
         return next;
       });
-      const stance = direction === "right" && topic.kind === "question" ? (stances[topic.id] ?? null) : null;
+      const stance = direction === "right" && topic.kind === "question" ? (stancesRef.current[topic.id] ?? null) : null;
       void api
         .post<TopicSwipeResult>(`/deck/topics/${topic.id}/swipe`, { direction, stance })
         .then((result) => {
@@ -80,7 +110,7 @@ export default function Deck() {
           setSwipeFailed(true);
         });
     },
-    [queryClient, stances],
+    [queryClient],
   );
 
   const empty = cards.length === 0;
@@ -147,7 +177,7 @@ export default function Deck() {
             rightLabel={IN_LABEL}
             leftLabel={PASS_LABEL}
             describeCard={(topic) => `${topic.title}. ${topic.blurb}${topic.nearbyCount > 0 ? t(` ${topic.nearbyCount} nearby.`, ` ${topic.nearbyCount} à proximité.`) : ""}`}
-            renderCard={(topic, isTop, pull) => <Flyer isTop={isTop} pull={pull} topic={topic} stance={stances[topic.id] ?? null} onStance={(stance) => setStances((current) => ({ ...current, [topic.id]: stance }))} />}
+            renderCard={(topic, isTop, pull) => <Flyer isTop={isTop} pull={pull} topic={topic} stance={stances[topic.id] ?? null} onStance={(stance) => chooseStance(topic, stance)} />}
           />
         )}
       </View>
