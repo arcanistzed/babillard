@@ -1,13 +1,14 @@
 // Releases the Android app on babillard.app, after an EAS preview build of the version in
 // app.config.ts has finished. Run from apps/mobile: node scripts/release-android.ts
+// For a build made on this computer (eas build --local), pass it: --apk path/to/file.apk
 //
 // It refuses a version that isn't newer than the one already out, uploads the APK to R2,
 // sets ANDROID_LATEST_VERSION in the API's wrangler.jsonc, and deploys. Installs older than
 // that then offer the update. Last, it publishes the APK as a GitHub release, tagged on the
 // commit it was built from, with notes from the changes since the previous release.
 import { execFileSync } from "node:child_process";
-import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
-import { tmpdir } from "node:os";
+import { copyFileSync, existsSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { homedir, tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import config from "../app.config.ts";
 
@@ -37,24 +38,52 @@ if (code <= live.android.latest) {
   fail(`Version ${version} (build ${code}) isn't newer than build ${live.android.latest}, which is already out. Raise the version in app.config.ts and build again.`);
 }
 
+const apkFlag = process.argv.indexOf("--apk");
+const localApk = apkFlag >= 0 ? process.argv[apkFlag + 1] : undefined;
+if (apkFlag >= 0 && !localApk) fail("--apk needs the path to the APK.");
+if (localApk && !existsSync(localApk)) fail(`No APK at ${localApk}.`);
+
+/** The version code inside an APK, read with the Android SDK's aapt2 when it's installed. */
+function apkVersionCode(file: string): number | null {
+  const sdk = process.env.ANDROID_HOME ?? join(homedir(), "Android", "Sdk");
+  const tools = join(sdk, "build-tools");
+  if (!existsSync(tools)) return null;
+  const newest = readdirSync(tools).sort().at(-1);
+  if (!newest) return null;
+  const badging = execFileSync(join(tools, newest, "aapt2"), ["dump", "badging", file], { encoding: "utf8" });
+  const match = /versionCode='(\d+)'/.exec(badging);
+  return match ? Number(match[1]) : null;
+}
+
 interface EasBuild {
   appVersion?: string;
   appBuildVersion?: string;
   artifacts?: { buildUrl?: string };
 }
-const builds = JSON.parse(
-  run("npx", ["eas-cli", "build:list", "--platform", "android", "--build-profile", "preview", "--status", "finished", "--limit", "10", "--json"], mobileDir, true),
-) as EasBuild[];
-const url = builds.find((build) => build.appVersion === version && build.appBuildVersion === String(code))?.artifacts?.buildUrl;
-if (!url) fail(`No finished preview build of ${version}. Build it first: npx eas-cli build --platform android --profile preview`);
+let url: string | undefined;
+if (!localApk) {
+  const builds = JSON.parse(
+    run("npx", ["eas-cli", "build:list", "--platform", "android", "--build-profile", "preview", "--status", "finished", "--limit", "10", "--json"], mobileDir, true),
+  ) as EasBuild[];
+  url = builds.find((build) => build.appVersion === version && build.appBuildVersion === String(code))?.artifacts?.buildUrl;
+  if (!url) fail(`No finished preview build of ${version}. Build it first: npx eas-cli build --platform android --profile preview`);
+}
 
 console.log(`Uploading ${version} (build ${code}).`);
 const dir = mkdtempSync(join(tmpdir(), "babillard-release-"));
 process.on("exit", () => rmSync(dir, { recursive: true, force: true }));
 const apk = join(dir, `babillard-${version}.apk`);
-const download = await fetch(url);
-if (!download.ok) fail(`Couldn't download the build: HTTP ${download.status}`);
-writeFileSync(apk, Buffer.from(await download.arrayBuffer()));
+if (localApk) {
+  copyFileSync(localApk, apk);
+} else {
+  const download = await fetch(url!);
+  if (!download.ok) fail(`Couldn't download the build: HTTP ${download.status}`);
+  writeFileSync(apk, Buffer.from(await download.arrayBuffer()));
+}
+// A file passed by hand could be an old build, so check it says what app.config.ts says.
+const inside = apkVersionCode(apk);
+if (inside === null) console.warn("Couldn't read the APK's version code, so it wasn't checked.");
+else if (inside !== code) fail(`The APK is build ${inside}, but app.config.ts says ${code}.`);
 run("npx", ["wrangler", "r2", "object", "put", "babillard/releases/babillard.apk", "--file", apk, "--remote"], apiDir);
 
 const configPath = join(apiDir, "wrangler.jsonc");
