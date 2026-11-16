@@ -10,10 +10,12 @@ import { fileURLToPath } from "node:url";
 const apiDir = join(dirname(fileURLToPath(import.meta.url)), "..");
 const persist = ".wrangler/e2e";
 const wrangler = join(apiDir, "../../node_modules/.bin/wrangler");
-export const DEV_PORT = 8799;
-export const PROD_PORT = 8798;
-export const SES_PORT = 8797;
-export const ANTHROPIC_PORT = 8796;
+/** Set E2E_PORT_OFFSET to run this suite beside another copy of it, for example from a second worktree. */
+const OFFSET = Number(process.env.E2E_PORT_OFFSET ?? 0);
+export const DEV_PORT = 8799 + OFFSET;
+export const PROD_PORT = 8798 + OFFSET;
+export const SES_PORT = 8797 + OFFSET;
+export const ANTHROPIC_PORT = 8796 + OFFSET;
 
 /** Stands in for Amazon SES. Records each request, and refuses addresses containing "ses-reject". */
 function startFakeSes() {
