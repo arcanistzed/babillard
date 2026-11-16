@@ -249,7 +249,11 @@ meetups.post("/:id/outcome", async (c) => {
   return c.json(await summaryFor(c.env, db, meetup, conversation.kind, user.id));
 });
 
-/** Recorded when a member opens the share sheet to invite someone. The chat hears about it once per person. */
+/**
+ * Recorded when a member opens the share sheet to invite someone. The chat hears about it once per person,
+ * as plain text, since the chat shows one card per meetup. Android doesn't report a cancelled share,
+ * so the note says they're inviting someone, not that someone was invited.
+ */
 meetups.post("/:id/invite", async (c) => {
   const user = c.get("user");
   const db = getDb(c.env);
@@ -259,10 +263,8 @@ meetups.post("/:id/invite", async (c) => {
   const added = await db.insert(schema.meetupInvites).values({ meetupId: meetup.id, userId: user.id, createdAt: Date.now() }).onConflictDoNothing().returning({ id: schema.meetupInvites.userId });
   if (added.length > 0) {
     const [profile] = await db.select({ name: schema.profiles.displayName }).from(schema.profiles).where(eq(schema.profiles.userId, user.id));
-    await c.env.CHAT_ROOM.getByName(meetup.conversationId).postSystem(meetup.conversationId, `${profile?.name ?? "Someone"} invited someone to this meetup.`, {
-      fr: `${profile?.name ?? "Quelqu'un"} a invité une personne à cette rencontre.`,
-      kind: "meetup",
-      meetupId: meetup.id,
+    await c.env.CHAT_ROOM.getByName(meetup.conversationId).postSystem(meetup.conversationId, `${profile?.name ?? "Someone"} is inviting a guest to the meetup.`, {
+      fr: `${profile?.name ?? "Quelqu'un"} invite une personne à la rencontre.`,
     });
   }
   return c.json(await summaryFor(c.env, db, meetup, conversation.kind, user.id));
@@ -288,10 +290,8 @@ meetups.post("/:id/repeat", async (c) => {
   await db.update(schema.meetups).set({ repeat }).where(eq(schema.meetups.id, meetup.id));
   if (repeat === "none") {
     const [profile] = await db.select({ name: schema.profiles.displayName }).from(schema.profiles).where(eq(schema.profiles.userId, user.id));
-    await c.env.CHAT_ROOM.getByName(meetup.conversationId).postSystem(meetup.conversationId, `${profile?.name ?? "Someone"} stopped this meetup from repeating.`, {
-      fr: `${profile?.name ?? "Quelqu'un"} a arrêté la répétition de cette rencontre.`,
-      kind: "meetup",
-      meetupId: meetup.id,
+    await c.env.CHAT_ROOM.getByName(meetup.conversationId).postSystem(meetup.conversationId, `${profile?.name ?? "Someone"} stopped the meetup from repeating.`, {
+      fr: `${profile?.name ?? "Quelqu'un"} a arrêté la répétition de la rencontre.`,
     });
   }
   const [fresh] = await db.select().from(schema.meetups).where(eq(schema.meetups.id, meetup.id));

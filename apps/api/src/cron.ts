@@ -166,10 +166,8 @@ async function continueSeries(env: Env, db: Db, now: number): Promise<number> {
     if ((meetup.state === "cancelled" && previous?.state === "cancelled") || members.length < 2) {
       const stopped = await db.update(schema.meetups).set({ repeat: "none" }).where(and(eq(schema.meetups.id, meetup.id), isNull(schema.meetups.nextMeetupId))).returning({ id: schema.meetups.id });
       if (stopped.length > 0 && members.length >= 2) {
-        await stub.postSystem(meetup.conversationId, "This meetup stopped repeating, since the last two dates didn't happen.", {
-          fr: "Cette rencontre ne se répète plus, puisque les deux dernières dates n'ont pas eu lieu.",
-          kind: "meetup",
-          meetupId: meetup.id,
+        await stub.postSystem(meetup.conversationId, "The meetup stopped repeating, since the last two dates didn't happen.", {
+          fr: "La rencontre ne se répète plus, puisque les deux dernières dates n'ont pas eu lieu.",
         });
       }
       continue;

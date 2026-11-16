@@ -989,7 +989,7 @@ describe("meetups", () => {
 
     await people[1]!.post(`/meetups/${meetup.id}/invite`);
     await people[1]!.post(`/meetups/${meetup.id}/invite`);
-    const notes = (await people[2]!.get(`/conversations/${groupId}/messages`)).filter((message: any) => message.body?.endsWith("invited someone to this meetup."));
+    const notes = (await people[2]!.get(`/conversations/${groupId}/messages`)).filter((message: any) => message.body?.endsWith("is inviting a guest to the meetup."));
     expect(notes).toHaveLength(1);
     expect(await (await fetch(meetup.shareUrl)).text()).toContain("Guests are welcome");
 
@@ -1033,7 +1033,7 @@ describe("meetups", () => {
     expect((await a.get(`/meetups/${nextId}`)).repeat).toBe("none");
     const messages = await a.get(`/conversations/${conversationId}/messages`);
     expect(messages.filter((message: any) => message.body?.startsWith("Next week's meetup"))).toHaveLength(1);
-    expect(messages[messages.length - 1].body).toBe(`Person ${counter} stopped this meetup from repeating.`);
+    expect(messages[messages.length - 1].body).toBe(`Person ${counter} stopped the meetup from repeating.`);
   });
 
   it("cancels a proposal nobody confirmed before it started", async () => {
