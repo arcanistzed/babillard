@@ -195,51 +195,70 @@ Goal: nobody loses history they can read today.
 
 Rollback: before step 4, a chat can go back to v1 by flipping `mode`. MLS messages sent meanwhile stay readable on the phones that already decrypted them into their local stores.
 
-## What the prototype proves
+## What the prototypes prove
 
 Branch `mls-prototype`. Nothing in the normal app paths changed.
 
-- `packages/shared/src/mls/provider.ts` is the cipher suite for Hermes, `MLS_128_DHKEMX25519_CHACHA20POLY1305_SHA256_Ed25519`.
-- `packages/shared/src/mls/group.ts` wraps ts-mls: devices, key packages, groups, add, remove, Welcome, encrypt, receive, save and load state, roster code, and a header reader for the server.
-- `packages/shared/src/mls/delivery.ts` has the ordering rule and an in-memory stand-in for the Durable Object.
-- `packages/shared/src/mls/demo.ts` runs two phones through that stand-in, with a save and reload in the middle.
-- `packages/shared/test/mls.test.ts` has ten tests:
-  - the two-member demo with `crypto.subtle` removed, as on Hermes
-  - a canary showing ts-mls's own noble provider still fails without WebCrypto
-  - interop with ts-mls's WebCrypto provider, in both directions
-  - each message opens once
-  - a removed member can't read what follows, whether or not their phone applied the removal
-  - two commits racing for one epoch: the second is refused, catches up, and gets in
-  - a credential the device list doesn't vouch for is refused by the committer, by other members, and by a phone joining from a Welcome
-  - the roster code holds across epochs and changes when someone joins
-  - the server refuses foreign, wrong-chat, and stale messages
-- `apps/mobile/app/dev-mls.tsx` is a screen that runs the demo on a phone. It redirects home unless the build sets `EXPO_PUBLIC_MLS_PROTOTYPE=1`. It's reachable only by deep link, `exp://<metro>/--/dev-mls`, and isn't linked from anywhere. The flag hides the screen but doesn't keep code out of the build. Metro bundles every route, and the route's `import()` with it, so merging this branch as it stands would ship ts-mls inside the app, unused. Delete the route before merging, or accept that.
-- `apps/mobile/metro.config.js` maps five modules to empty modules. ts-mls and `@hpke` import them dynamically for unused cipher suites, or as a Node fallback. Without that Metro can't bundle. The mapping applies to every build, flag or not, which is harmless because nothing else imports those names.
+### OpenMLS on Android
 
-On the `Local_Reader_API_36` emulator in Expo Go 58, the screen reported `Hermes: true`, `crypto.getRandomValues: false`, `crypto.subtle: false`. So Hermes really does lack both, and the app supplies `getRandomValues` from expo-crypto. The demo passed there. Timings on the emulator:
+- `apps/mobile/modules/babillard-mls/rust/src/tests.rs` has eleven Rust tests. They cover:
+  - two phones trading messages
+  - state surviving a save and reload byte for byte, and truncated state being refused
+  - each message opening once
+  - a failed call leaving the old state usable
+  - a removed phone that can't read on, whether or not it applied its removal
+  - a losing commit being dropped and retried
+  - key updates moving the epoch without changing the roster
+  - IDs containing slashes being refused
+  - a credential the device list doesn't vouch for being refused by the committer, by other members, and by a phone joining from a Welcome
+- `apps/mobile/src/mlsNative.ts` runs on the phone. Alice and Bob use OpenMLS through the native module, and every message they send passes the server's ordering check (`admit`). Then Alice adds Carol, who runs ts-mls.
 
-| Step | First run | Second run |
-|---|---|---|
-| Create two phones' key packages | 480 ms | 131 ms |
-| Alice starts the group | 15 ms | 3 ms |
-| Alice adds Bob, making the commit and Welcome | 245 ms | 131 ms |
-| Bob joins from the Welcome | 202 ms | 140 ms |
-| Both save and reload their state | 4 ms | 2 ms |
-| Alice sends | 21 ms | 11 ms |
-| Bob reads | 44 ms | 27 ms |
-| Bob replies | 17 ms | 9 ms |
-| Alice reads | 36 ms | 29 ms |
-| Total, including loading ts-mls the first time | 2576 ms | 493 ms |
+On the `Local_Reader_API_36` emulator, in a debug build with the module, it passed twice:
 
-Both runs ended with each phone reading the other's message and showing the same security code. The saved group state was about 1.2 KB.
+- Bob read all three messages, and Alice read both of hers.
+- Carol joined from OpenMLS's Welcome on ts-mls and read OpenMLS's message. Alice and Bob read Carol's reply.
+- All three phones showed the same security code, and the server's epoch ended at 2.
 
-These come from a development bundle, which isn't minified and runs Hermes without precompiled bytecode, on an emulator with a desktop CPU. A mid-range phone will be slower. Commits for 8 members do more public-key work than the 2-member demo, so measure on a real phone before relying on these.
+Two independent implementations agreeing on every message is good evidence that our wrapper uses OpenMLS correctly and speaks standard MLS.
 
-It does **not** prove:
+Timings from the second run:
 
-- two real devices through a real Durable Object. Both phones run in one process, against the in-memory stand-in.
-- anything about the Worker side, key package handling, external commits, or franking. Those are designed above and not built.
-- the security of ts-mls. Tests show it works and interoperates, not that it's safe against an attacker.
+| Step | Time |
+|---|---|
+| Create two identities | 31 ms |
+| Alice starts the group | 40 ms |
+| Alice adds Bob, making the commit and Welcome | 88 ms |
+| Bob joins from the Welcome | 70 ms |
+| Alice sends | 37 ms |
+| Bob reads | 88 ms |
+| Bob replies | 62 ms |
+| Alice reads | 59 ms |
+| Alice adds Carol | 70 ms |
+
+Most of each call is the bridge, not the cryptography. Every call copies the whole state, about 12.8 KB for Alice with three members, through base64 both ways. Storing state per chat, or using OpenMLS's SQLite storage, would shrink that. On the first run, creating identities took 518 ms while the native library loaded.
+
+The release library is 2.9 MB for x86_64.
+
+### The earlier ts-mls prototype
+
+- `packages/shared/src/mls/` wraps ts-mls, with our own crypto adapter for Hermes in `provider.ts`, the ordering rule in `delivery.ts`, and a demo in `demo.ts`.
+- `packages/shared/test/mls.test.ts` has ten tests. They include a canary showing ts-mls's own crypto providers fail without WebCrypto, and an interop test against ts-mls's WebCrypto provider.
+- In Expo Go, its two-member demo took 493 ms warm. The emulator reported `Hermes: true`, `crypto.getRandomValues: false`, and `crypto.subtle: false`.
+
+The ordering rule `admit` and the security-code function `codeForRoster` are worth keeping. The rest won't ship. `admit` uses ts-mls only to parse message headers, which a short TypeScript reader can replace.
+
+### On the dev screen and the build
+
+- `apps/mobile/app/dev-mls.tsx` runs both demos. It redirects home unless the build sets `EXPO_PUBLIC_MLS_PROTOTYPE=1`. It's reachable only by deep link (`babillard://dev-mls` in a dev build) and isn't linked from anywhere. In Expo Go, the OpenMLS button says the module isn't in the build.
+- The flag hides the screen but doesn't keep code out of the build. Metro bundles every route, so merging this branch as it stands would ship ts-mls inside the app, unused. Delete the route before merging.
+- `apps/mobile/metro.config.js` maps five modules that ts-mls and `@hpke` import dynamically to empty modules. It can go when ts-mls does.
+
+### What they don't prove
+
+- Two real devices through a real Durable Object. All phones run in one process.
+- Anything about the Worker side, key package handling, external commits, or franking. Those are designed above and not built.
+- Performance on a real phone, or with 8 members.
+- arm64. Only the x86_64 library has run. The arm64 build compiles the same code, but nobody has run it on a phone yet.
 
 ## What's left, and roughly how long
 
