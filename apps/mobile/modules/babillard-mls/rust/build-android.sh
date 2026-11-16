@@ -6,7 +6,7 @@ set -euo pipefail
 
 here="$(cd "$(dirname "$0")" && pwd)"
 android="$here/../android/src/main"
-abis="${1:-arm64-v8a,x86_64}"
+abis="${1:-armeabi-v7a,arm64-v8a,x86,x86_64}"
 
 sdk="${ANDROID_HOME:-${ANDROID_SDK_ROOT:-$HOME/Android/Sdk}}"
 if [[ -z "${ANDROID_NDK_HOME:-}" ]]; then
@@ -18,9 +18,8 @@ targets=()
 IFS=',' read -ra requested <<< "$abis"
 for abi in "${requested[@]}"; do
   case "$abi" in
-    arm64-v8a | x86_64) targets+=(-t "$abi") ;;
-    # Older 32-bit phones aren't supported. The app falls back to v1 there.
-    *) echo "babillard-mls: skipping unsupported ABI $abi" >&2 ;;
+    arm64-v8a | armeabi-v7a | x86_64 | x86) targets+=(-t "$abi") ;;
+    *) echo "babillard-mls: unknown ABI $abi" >&2; exit 1 ;;
   esac
 done
 

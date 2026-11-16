@@ -26,6 +26,7 @@ export interface GroupStatus {
 type Encoded<T> = { [K in keyof T]: T[K] extends Uint8Array ? string : T[K] extends Uint8Array | undefined ? string | null : T[K] };
 
 interface NativeModule {
+  isReady(): boolean;
   createIdentity(userId: string, deviceId: string): Promise<Encoded<{ state: Uint8Array; keyPackage: Uint8Array; signatureKey: Uint8Array }>>;
   createKeyPackage(state: string): Promise<Encoded<{ state: Uint8Array; keyPackage: Uint8Array }>>;
   createGroup(state: string, groupId: string): Promise<string>;
@@ -38,10 +39,11 @@ interface NativeModule {
   groupStatus(state: string, groupId: string): Promise<{ epoch: number; roster: { leafIndex: number; userId: string; deviceId: string; signatureKey: string }[] }>;
 }
 
-/** Null in Expo Go and on platforms the Rust library isn't built for. */
+/** Null in Expo Go. */
 const native = requireOptionalNativeModule<NativeModule>("BabillardMls");
 
-export const isAvailable = native !== null;
+/** True only if the module is in this build and its Rust library loaded. Until then, chats stay on v1. */
+export const isAvailable = native !== null && native.isReady();
 
 function module(): NativeModule {
   if (!native) throw new Error("The BabillardMls native module isn't in this build");

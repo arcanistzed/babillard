@@ -276,6 +276,12 @@ impl Device {
     }
 }
 
+/// Proves the library loaded. The app calls it once before offering MLS.
+#[uniffi::export]
+pub fn library_version() -> String {
+    format!("babillard_mls {} on openmls 0.9.2", env!("CARGO_PKG_VERSION"))
+}
+
 /// A new phone identity with its first key package. Each key package can be used once.
 #[uniffi::export]
 pub fn create_identity(user_id: String, device_id: String) -> Result<Identity> {

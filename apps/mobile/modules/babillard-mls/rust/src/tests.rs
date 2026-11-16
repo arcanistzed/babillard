@@ -211,3 +211,21 @@ fn identities_reject_ids_with_slashes() {
     assert!(create_identity("a/b".into(), "phone".into()).is_err());
     assert!(create_identity("alice".into(), "".into()).is_err());
 }
+
+#[test]
+fn messages_from_a_past_epoch_are_refused() {
+    // OpenMLS keeps no past-epoch secrets by default. The server only accepts current-epoch messages, so nothing needs them.
+    let (mut alice, mut bob) = (phone("alice"), phone("bob"));
+    let trusted = trust(&[&alice, &bob]);
+    form(&mut alice, &mut [&mut bob], &trusted);
+    let late = send(&mut alice, "sent before the update");
+    let update = update_keys(alice.state.clone(), GROUP.to_vec()).unwrap();
+    alice.state = update.state;
+    read(&mut bob, &update.commit, &trusted).unwrap();
+    assert!(read(&mut bob, &late, &trusted).is_err());
+}
+
+#[test]
+fn the_library_reports_its_version() {
+    assert!(library_version().contains("openmls 0.9.2"));
+}

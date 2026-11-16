@@ -35,6 +35,15 @@ class BabillardMlsModule : Module() {
   override fun definition() = ModuleDefinition {
     Name("BabillardMls")
 
+    // False if the Rust library is missing for this phone's ABI or won't load.
+    Function("isReady") {
+      try {
+        uniffi.babillard_mls.libraryVersion().isNotEmpty()
+      } catch (error: Throwable) {
+        false
+      }
+    }
+
     AsyncFunction("createIdentity") { userId: String, deviceId: String ->
       mls {
         val identity = uniffi.babillard_mls.createIdentity(userId, deviceId)

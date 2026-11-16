@@ -15,6 +15,8 @@ android {
   defaultConfig {
     versionCode 1
     versionName "0.1.0"
+    // Applied to the app's release build, which minifies.
+    consumerProguardFiles "proguard-rules.pro"
   }
 }
 
@@ -24,7 +26,7 @@ dependencies {
 }
 
 // Builds the Rust library and its Kotlin bindings for the ABIs this build targets.
-def rustAbis = (findProperty("reactNativeArchitectures") ?: "arm64-v8a,x86_64").toString()
+def rustAbis = (findProperty("reactNativeArchitectures") ?: "armeabi-v7a,arm64-v8a,x86,x86_64").toString()
 def buildRust = tasks.register("buildBabillardMlsRust", Exec) {
   workingDir file("../rust")
   commandLine "bash", "build-android.sh", rustAbis

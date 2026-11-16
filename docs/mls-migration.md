@@ -24,14 +24,21 @@ The first prototype used ts-mls. It stays on the branch as the reference for the
 | | ts-mls | OpenMLS | mls-rs |
 |---|---|---|---|
 | Language | TypeScript | Rust | Rust |
-| Third-party audit | None. The README says so. | Yes. SRLabs, funded by the Sovereign Tech Agency, published May 2026. Eight findings, one rated High, seven fixed by the time of the post. | **None.** Its README says it has passed RFC conformance checks but "has not yet received a full security audit by a 3rd party". |
+| Third-party audit | None. The README says so. | Yes, of the core. SRLabs, funded by the Sovereign Tech Agency, final report March 2026. Eight findings, one rated High. See below for scope. | **None.** Its README says it has passed RFC conformance checks but "has not yet received a full security audit by a 3rd party". |
 | Runs in Hermes | Yes, with our own crypto adapter | As a native library | As a native library |
 | Runs in Expo Go | Yes | No, needs a dev build | No, needs a dev build |
 | Maintainers | Mostly one person | An established team, with public funding for the audit | AWS |
 
 The brief assumed both Rust libraries were audited. Only OpenMLS is. mls-rs has no more independent review than ts-mls does.
 
-Sources: the [OpenMLS audit post](https://blog.openmls.tech/posts/2026-05-27-independent-audit/), the [mls-rs README](https://docs.rs/crate/mls-rs/latest/source/README.md), and the ts-mls README's "Security Disclaimer".
+What the OpenMLS audit covered, from the SRLabs report itself:
+
+- The `openmls`, `traits` and `basic_credential` crates, "up to commit a3402f2 from 22nd of October 2025". The work ran 12 weeks from October 16, 2025, and the final report is dated March 11, 2026.
+- Not in scope: "the crypto and storage providers". We use two of them, `openmls_rust_crypto` and `openmls_memory_storage`. SRLabs did run a differential fuzzer between the two crypto providers, which exercises them without reviewing them. `openmls_rust_crypto` is a thin layer over the RustCrypto crates (`hpke`, `ed25519-dalek`, `chacha20poly1305` and others).
+- Findings: one High (MAC checks accepted truncated or empty tags), three Medium, two Low, two Informational. The High and Mediums were fixed for 0.8.1 and 0.7.3. One Low, S1-3, was only acknowledged. It says OpenMLS's state-changing calls aren't atomic, so a failed storage write leaves memory and disk disagreeing. Our wrapper sidesteps it: every call starts from saved bytes and its result is thrown away on error. That's the kind of application-side fix the report asks for.
+- We use 0.9.2, which includes code written after the audited commit. The audit is strong evidence about the design and the core, not a guarantee about every line we run.
+
+Sources: the [SRLabs report](https://blog.openmls.tech/SRL-OpenMLS_security_assurance_assessment.pdf), the [OpenMLS audit post](https://blog.openmls.tech/posts/2026-05-27-independent-audit/), the [mls-rs README](https://docs.rs/crate/mls-rs/latest/source/README.md), and the ts-mls README's "Security Disclaimer".
 
 ### Why OpenMLS
 
@@ -43,16 +50,21 @@ It also keeps the line clear. With ts-mls, we had to write our own crypto adapte
 
 - `apps/mobile/modules/babillard-mls/rust` is a small crate on `openmls`, `openmls_rust_crypto`, `openmls_basic_credential` and `openmls_memory_storage`, all at exact versions. It exposes about ten functions: create an identity, create key packages, create a group, add, remove, update keys, join from a Welcome, encrypt, receive, and read the roster.
 - Every call takes the phone's whole MLS state as bytes and returns the new state. If a call fails, the caller still has the old bytes, so nothing is half-applied. That's what lets the app save state and text in one transaction.
+- Two rules come with that design.
+  - **One call at a time per state.** If two calls start from the same bytes, one result overwrites the other. On the sending side that rewinds the key chain, so the app must queue calls per chat.
+  - **Never roll back after encrypting.** Save the state `encrypt` returns before sending, and on a network error resend the same bytes. The server drops duplicates by `clientId`. Rolling back and encrypting something else would reuse a message key. Only a refused commit is rolled back: keep the old state, read the log, and commit again. If the outcome of a commit is unknown, keep both states until the log shows whether it landed.
 - UniFFI generates the Kotlin bindings. A local Expo module (`android/.../BabillardMlsModule.kt`) exposes them to JavaScript as async functions, so the work runs off the JavaScript thread. UniFFI can generate Swift the same way when iOS comes.
-- `rust/build-android.sh` builds the library with `cargo-ndk` for arm64 and x86_64 and regenerates the bindings. Gradle runs it before every Android build. The toolchain is pinned in `rust-toolchain.toml` at Rust 1.99.0.
+- `rust/build-android.sh` builds the library with `cargo-ndk` for all four ABIs the release ships (arm64-v8a, armeabi-v7a, x86_64, x86) and regenerates the bindings. Gradle runs it before every Android build. The toolchain is pinned in `rust-toolchain.toml` at Rust 1.99.0.
 - OpenMLS checks signatures, but deciding which key belongs to which person is the app's job. Every call that brings someone into view (adding, receiving a commit, joining from a Welcome) takes the server's device list and refuses anyone not on it. The Rust tests cover all three.
 
 ### What it costs
 
 - Every Android build now needs Rust 1.99 with the Android targets, `cargo-ndk` 4, and the NDK. EAS's builders don't have Rust, so the EAS build needs a custom step that installs it, or the built `.so` files get committed. That's not decided yet.
 - Expo Go can't load the module, so chat testing needs a dev build. The dev screen says so instead of crashing.
-- 32-bit Android isn't built. Those phones would stay on v1.
-- The library adds about 3 MB per ABI before compression.
+- The library adds 2.5 MB on arm64, 1.8 MB on 32-bit ARM, 3.0 MB on x86_64, and 3.4 MB on x86, before compression. Play delivers only the one a phone needs.
+- The module isn't behind the prototype flag, only the screen is. Autolinking compiles it into every Android build from this branch, so any build now needs Rust. Merging the branch as it stands would ship the library in the next release, unused.
+- Release builds minify. The module ships keep rules for JNA and UniFFI (`android/proguard-rules.pro`), but no release build has been run yet.
+- If the library can't load on some phone, `isAvailable` is false and that phone stays on v1.
 - Rust and NDK upgrades become routine upkeep. The exact pins mean an upgrade is always a deliberate edit.
 
 ## The server's role
@@ -100,7 +112,7 @@ Each phone is one MLS member, a leaf in the tree. Its credential is a basic cred
 
 That means the server still vouches for which phones belong to whom, just as it hands out public keys today. A server that lies can still add a phone of its own. MLS doesn't remove that power. What catches it, as now, is the security code.
 
-The security code becomes `rosterCode()`: a hash of every member's user, device, and signing key, sorted. It stays the same across epochs, so it doesn't change every time someone sends an update. It changes only when a phone joins or leaves, which is when people ought to compare again. A test checks both properties. It should **not** come from MLS's epoch authenticator, which changes with every commit.
+The security code becomes `rosterCode()`: a hash of every member's user, device, and signing key, sorted. It stays the same across epochs, so it doesn't change every time someone sends an update. It changes only when a phone joins or leaves, which is when people ought to compare again. The ts-mls tests check both properties of the code, and the Rust test `updating_keys_moves_the_epoch_and_keeps_the_roster` checks that OpenMLS's roster doesn't change on a key update. On the emulator, OpenMLS and ts-mls phones in the same group computed the same code. It should **not** come from MLS's epoch authenticator, which changes with every commit.
 
 ### Groups forming
 
@@ -130,7 +142,7 @@ An MLS member can't commit their own removal. So:
 1. The server removes the D1 row, kicks their sockets, and stops serving them the log, as it does now. It writes an `mls_pending` removal.
 2. While a removal is pending, the Durable Object refuses **application** messages with `pending_removal`. The next phone that tries to send first commits the removal, then sends.
 
-So a departed member's keys stop opening anything new from the first message after they leave. Between the leave and that next message, nothing new is sent. Until then the removed phone could decrypt only if it got ciphertext from somewhere, and the server no longer gives it any. The test "shuts out someone who was removed" checks the cryptographic half: after Carol's phone applies her own removal, it can't open the next message.
+So a departed member's keys stop opening anything new from the first message after they leave. Between the leave and that next message, nothing new is sent. Until then the removed phone could decrypt only if it got ciphertext from somewhere, and the server no longer gives it any. The Rust test `a_removed_phone_cannot_read_what_follows` checks the cryptographic half: after Carol's phone applies her own removal, it can't open the next message.
 
 An alternative is to make the Durable Object an MLS external sender with its own signing key, allowed to propose removals. It removes the dependence on a member sending, but it puts a signing key on the server, and phones still have to commit the proposal. Not worth it for now.
 
@@ -144,11 +156,11 @@ People notice nothing different. A new phone reads new messages and not old ones
 
 ### Decrypting once, and local history
 
-This is the biggest change for the app, and the brief didn't list it. MLS deletes each message key after use. A phone can open a message **once**. The test "opens each message once" shows the second attempt fails.
+This is the biggest change for the app, and the brief didn't list it. MLS deletes each message key after use. A phone can open a message **once**. The Rust test `each_message_opens_once` shows the second attempt fails.
 
 Today `useChat` and the inbox fetch ciphertext again and decrypt it every time the screen opens. Under MLS the phone needs:
 
-- **Stored group state.** About a kilobyte for two members in the prototype, and it grows with the group. It holds private keys. SecureStore is meant for values under about 2 KB, so encrypt the state under a key kept in SecureStore and store the result in the message database, saving it after every message processed.
+- **Stored group state.** In the OpenMLS prototype, one blob holds everything a phone has: its signing key, its unused key packages, and every group. That was about 12.8 KB with one three-member group. Production should keep one blob per chat, or use OpenMLS's SQLite storage, so a message in one chat doesn't rewrite the rest. It holds private keys. SecureStore is meant for values under about 2 KB, so encrypt the state under a key kept in SecureStore and store the result in the message database, saving it after every message processed.
 - **A local message store.** `expo-sqlite` holding the text each phone decrypted, read by the chat screen and the inbox. The server's copy only feeds phones that haven't caught up.
 - **A sync loop.** Read the log from the phone's last `seq`, apply each entry in order, then save the new state, the text, and the cursor in one SQLite transaction. If the app dies halfway through, the same entry gets applied again, which fails, so the save has to be atomic. That means the encrypted state blob lives in the same database as the messages, not in a separate file.
 
@@ -258,7 +270,7 @@ The ordering rule `admit` and the security-code function `codeForRoster` are wor
 - Two real devices through a real Durable Object. All phones run in one process.
 - Anything about the Worker side, key package handling, external commits, or franking. Those are designed above and not built.
 - Performance on a real phone, or with 8 members.
-- arm64. Only the x86_64 library has run. The arm64 build compiles the same code, but nobody has run it on a phone yet.
+- Anything on ARM. All four ABIs compile, but only the x86_64 library has run, on the emulator. Nothing has run on a real phone yet.
 
 ## What's left, and roughly how long
 
