@@ -2,6 +2,7 @@ import type { DemoResult } from "@babillard/shared/mls";
 import { Redirect } from "expo-router";
 import { useState } from "react";
 import { ScrollView, StyleSheet, View } from "react-native";
+import { nativeMlsAvailable, runNativeDemo, type NativeDemoResult } from "@/mlsNative";
 import { MLS_PROTOTYPE, describeRuntime, runDemo } from "@/mlsPrototype";
 import { Button, ErrorText, T } from "@/ui";
 
@@ -15,7 +16,23 @@ export default function MlsPrototype() {
   const [busy, setBusy] = useState(false);
   const [result, setResult] = useState<{ demo: DemoResult; totalMs: number } | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [native, setNative] = useState<{ demo: NativeDemoResult; totalMs: number } | null>(null);
   if (!MLS_PROTOTYPE) return <Redirect href="/" />;
+
+  async function runNative() {
+    setBusy(true);
+    setError(null);
+    setNative(null);
+    const start = performance.now();
+    try {
+      const demo = await runNativeDemo();
+      setNative({ demo, totalMs: Math.round(performance.now() - start) });
+    } catch (caught) {
+      setError(caught instanceof Error ? `${caught.name}: ${caught.message}` : String(caught));
+    } finally {
+      setBusy(false);
+    }
+  }
 
   async function run() {
     setBusy(true);
@@ -40,6 +57,13 @@ export default function MlsPrototype() {
         Hermes: {String(runtime.hermes)}. crypto.getRandomValues: {String(runtime.getRandomValues)}. crypto.subtle: {String(runtime.subtle)}.
       </T>
       <Button testID="mls-run" label="Run two-member demo" onPress={run} busy={busy} disabled={busy} />
+      <Button
+        testID="mls-run-native"
+        label={nativeMlsAvailable ? "Run OpenMLS demo" : "OpenMLS isn't in this build"}
+        kind="secondary"
+        onPress={runNative}
+        disabled={busy || !nativeMlsAvailable}
+      />
       {error ? <ErrorText>{error}</ErrorText> : null}
       {result ? (
         <View style={styles.section} testID="mls-result">
@@ -55,6 +79,24 @@ export default function MlsPrototype() {
             </T>
           ))}
           <T variant="bodyBold">Total: {result.totalMs} ms</T>
+        </View>
+      ) : null}
+      {native ? (
+        <View style={styles.section} testID="mls-native-result">
+          <T variant="heading">
+            {native.demo.bobInbox.length === 3 && native.demo.aliceInbox.length === 2 && native.demo.carolInbox.length === 1 && new Set(Object.values(native.demo.codes)).size === 1 ? "OpenMLS passed" : "OpenMLS failed"}
+          </T>
+          <T>Bob read: {native.demo.bobInbox.join(" | ")}</T>
+          <T>Alice read: {native.demo.aliceInbox.join(" | ")}</T>
+          <T>Carol (ts-mls) read: {native.demo.carolInbox.join(" | ")}</T>
+          <T>Codes: {native.demo.codes.alice} / {native.demo.codes.bob} / {native.demo.codes.carol}</T>
+          <T>Server epoch: {native.demo.serverEpoch}. Alice's state: {native.demo.stateBytes} bytes</T>
+          {native.demo.steps.map((step) => (
+            <T key={step.label} variant="small">
+              {step.label}: {step.ms} ms
+            </T>
+          ))}
+          <T variant="bodyBold">Total: {native.totalMs} ms</T>
         </View>
       ) : null}
     </ScrollView>

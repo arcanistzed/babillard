@@ -1,0 +1,32 @@
+plugins {
+  id 'com.android.library'
+  id 'expo-module-gradle-plugin'
+}
+
+group = 'app.babillard'
+version = '0.1.0'
+
+expoModule {
+  v2 true
+}
+
+android {
+  namespace "expo.modules.babillardmls"
+  defaultConfig {
+    versionCode 1
+    versionName "0.1.0"
+  }
+}
+
+dependencies {
+  // UniFFI's Kotlin bindings call into the Rust library through JNA.
+  implementation "net.java.dev.jna:jna:5.17.0@aar"
+}
+
+// Builds the Rust library and its Kotlin bindings for the ABIs this build targets.
+def rustAbis = (findProperty("reactNativeArchitectures") ?: "arm64-v8a,x86_64").toString()
+def buildRust = tasks.register("buildBabillardMlsRust", Exec) {
+  workingDir file("../rust")
+  commandLine "bash", "build-android.sh", rustAbis
+}
+tasks.matching { it.name == "preBuild" }.configureEach { dependsOn buildRust }

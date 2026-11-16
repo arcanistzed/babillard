@@ -183,9 +183,12 @@ export function roster(state: ClientState): RosterEntry[] {
  * changes only when a phone joins or leaves.
  */
 export function rosterCode(state: ClientState): string {
-  const lines = roster(state)
-    .map((member) => `${member.userId}/${member.deviceId}/${member.signatureKey}`)
-    .sort();
+  return codeForRoster(roster(state));
+}
+
+/** The same code from any MLS library's roster. `signatureKey` is base64url, as `toBase64` writes it. */
+export function codeForRoster(members: { userId: string; deviceId: string; signatureKey: string }[]): string {
+  const lines = members.map((member) => `${member.userId}/${member.deviceId}/${member.signatureKey}`).sort();
   const digest = sha256(encoder.encode(["babillard/mls/code", ...lines].join("\n")));
   const groups: string[] = [];
   for (let i = 0; i < 12; i += 3) {

@@ -1,20 +1,21 @@
 # Moving chat encryption to MLS
 
-Status: proposal, with a prototype on the `mls-prototype` branch. Nothing here is in the app people use. Written 2026-11-13.
+Status: proposal, with prototypes on the `mls-prototype` branch. Nothing here is in the app people use. Written 2026-11-13, revised 2026-11-16 after deciding on OpenMLS.
 
 Chats today use the v1 envelope scheme in `packages/shared/src/e2ee.ts`. Every message gets a random key, and that key is wrapped once for every current device in the chat. It works, and it's simple. It has two weaknesses the README already admits. A stolen device key opens everything that device could ever read, because nothing ratchets. And the work and the envelope size grow with every phone in the chat.
 
 MLS, defined in RFC 9420, fixes both. Group keys change with every membership change and old keys get deleted. A message is encrypted once for the group instead of once per phone, and a membership change costs about log(n) public-key operations. Babillard's groups of 4 to 8, with people coming and going, are the case MLS was designed for. Each chat already runs through one Durable Object, which is exactly the single orderer MLS needs.
 
-This document settles which library to use, what the server does, how each feature maps onto MLS, and how existing chats move over. The last sections say what the prototype proved and what's still open.
+This document settles which library to use, what the server does, how each feature maps onto MLS, and how existing chats move over. The last sections say what the prototypes proved and what's still open.
 
-## Recommendation in short
+## Decisions
 
-- Build on **ts-mls 1.6.4** in JavaScript, with our own crypto provider on `@noble`. Ship it as a beta behind a server flag.
-- Before MLS becomes the default for everyone, pay for an **independent review** of the ts-mls paths we use, our provider, and our server glue.
-- Keep OpenMLS behind a native module as the fallback. The wire format is standard MLS, so the server and the protocol design don't change if we swap libraries later.
+- Use **OpenMLS 0.9.2**, the only MLS library with an independent audit, compiled from Rust into a native Android library and called through a local Expo module. No WebAssembly: Hermes can't run it.
+- There will be no paid review of our own. OpenMLS's audit is the outside scrutiny we get, so the cryptography lives entirely in OpenMLS. Our code passes bytes in and out and never touches a key.
 - The ChatRoom Durable Object becomes the delivery service. It orders commits by epoch and never holds keys.
 - Keep the v1 code and every device key, so that all existing history stays readable. Each chat switches to MLS once all of its members' phones can do MLS.
+
+The first prototype used ts-mls. It stays on the branch as the reference for the design and for its tests, but it won't ship.
 
 ## Implementation choice
 
@@ -24,48 +25,35 @@ This document settles which library to use, what the server does, how each featu
 |---|---|---|---|
 | Language | TypeScript | Rust | Rust |
 | Third-party audit | None. The README says so. | Yes. SRLabs, funded by the Sovereign Tech Agency, published May 2026. Eight findings, one rated High, seven fixed by the time of the post. | **None.** Its README says it has passed RFC conformance checks but "has not yet received a full security audit by a 3rd party". |
-| Runs in Hermes | Yes, with our provider. Proven on the emulator. | Only as a native module | Only as a native module |
+| Runs in Hermes | Yes, with our own crypto adapter | As a native library | As a native library |
 | Runs in Expo Go | Yes | No, needs a dev build | No, needs a dev build |
-| Ready-made mobile bindings | Not needed | None official | `mls-rs-uniffi` for Kotlin and Swift |
 | Maintainers | Mostly one person | An established team, with public funding for the audit | AWS |
 
-The brief assumed both Rust libraries were audited. Only OpenMLS is. That changes the comparison. mls-rs has no more independent review than ts-mls does, so it beats ts-mls only on maturity and backing. It's not "audited versus unaudited".
+The brief assumed both Rust libraries were audited. Only OpenMLS is. mls-rs has no more independent review than ts-mls does.
 
 Sources: the [OpenMLS audit post](https://blog.openmls.tech/posts/2026-05-27-independent-audit/), the [mls-rs README](https://docs.rs/crate/mls-rs/latest/source/README.md), and the ts-mls README's "Security Disclaimer".
 
-### What each one costs
+### Why OpenMLS
 
-**ts-mls.** It's the cheapest to adopt, and the riskiest to trust.
+MLS is a long specification with many checks that must run when someone joins, leaves, or commits. A missed check is the typical bug, and it fails silently: messages keep flowing while a forged commit gets accepted. OpenMLS's High finding was that kind of bug, and it was found because someone outside looked. Our tests can show that a library works and interoperates. They can't show that it refuses everything it should. With no review of our own planned, the audited library is the only way to have that question looked at by someone who isn't us.
 
-- It doesn't run on Hermes out of the box. Both of its crypto providers, including the one called `nobleCryptoProvider`, go through `@hpke/core`. That library does X25519 key generation and HKDF through `crypto.subtle`, and Hermes has no `crypto.subtle`. The prototype's canary test pins this down. With only `getRandomValues` available, ts-mls's own provider fails at the first step: `Cannot read properties of undefined (reading 'generateKey')`.
-- So we wrote `packages/shared/src/mls/provider.ts`, about 150 lines. It uses `@noble` for signatures, hashing, HKDF and the AEAD, the same audited code v1 uses. For HPKE it keeps `@hpke/core`'s key schedule, swaps in `@hpke/dhkem-x25519`'s pure-JS X25519, and replaces the WebCrypto HMAC inside HKDF with `@noble/hashes`. A test runs it against ts-mls's WebCrypto provider in both directions, which shows the two produce the same protocol.
-- That provider is our own code doing cryptographic plumbing, and it depends on two `@hpke/common` internals, `HkdfSha256Native` and `Dhkem`. A ts-mls or `@hpke` upgrade could break it quietly. Pin exact versions, as the branch does, and keep the interop test. ts-mls 1.6.4 also lists exact `@noble` versions as peers, `@noble/curves` 2.0.1 and `@noble/ciphers` 2.1.1, while the repo uses 2.4.0. pnpm warns about it. Our provider calls `@noble` directly, and the ts-mls code that would import those peers never runs, so it's only a warning for now.
-- It runs anywhere JavaScript runs: Expo Go, dev builds, Node tests, and the Worker if we ever need it there.
-- ts-mls's default authentication service accepts **any** credential. `clientConfig()` in `group.ts` replaces it. Tests check that ts-mls really calls it in all three places: the phone adding someone, every other member applying that commit, and a new phone joining from a Welcome. Forgetting this anywhere would let anyone the server introduces join silently. It's the most dangerous default in the library.
-- A ts-mls review should look hardest at secret-tree handling, epoch key retention, commit validation, and the ratchet-tree checks in `joinGroup`. OpenMLS's own problems were in these areas: a 2025 advisory about persisting the secret tree, and MAC checking, which was the audit's one High finding. That's where a newer library is most likely to be wrong too.
+It also keeps the line clear. With ts-mls, we had to write our own crypto adapter (`packages/shared/src/mls/provider.ts`), because ts-mls's providers need `crypto.subtle` and Hermes has none. That adapter reached into `@hpke/common` internals and was unreviewed cryptographic plumbing. With OpenMLS, every cryptographic operation happens in its Rust code and its RustCrypto backend.
 
-**OpenMLS through a native module.** It's the most trustworthy core, with real build and maintenance cost.
+### How it's built
 
-- We would write a small Rust crate exposing the dozen operations in `group.ts`, bind it with `uniffi-bindgen-react-native` as a Turbo Module, and implement OpenMLS's storage trait over a file or SQLite.
-- Every build needs the Rust toolchain and the Android NDK for each ABI, plus Xcode targets once iOS exists. EAS builds need a custom build step or prebuilt `.aar` and `.xcframework` files kept in the repo.
-- Expo Go stops working, so every test of chat needs a dev build. The project already uses dev builds, but the emulator here wipes installed apps on each boot, so each session starts with an install.
-- The APK grows by a few megabytes per ABI.
-- My estimate is three to five extra weeks on top of the JS plan, then ongoing upkeep: Rust upgrades, NDK changes, and FFI bugs that only show up on one platform.
-- The server side is the same either way. The Durable Object only reads message headers, and `readFrame` does that with no crypto.
+- `apps/mobile/modules/babillard-mls/rust` is a small crate on `openmls`, `openmls_rust_crypto`, `openmls_basic_credential` and `openmls_memory_storage`, all at exact versions. It exposes about ten functions: create an identity, create key packages, create a group, add, remove, update keys, join from a Welcome, encrypt, receive, and read the roster.
+- Every call takes the phone's whole MLS state as bytes and returns the new state. If a call fails, the caller still has the old bytes, so nothing is half-applied. That's what lets the app save state and text in one transaction.
+- UniFFI generates the Kotlin bindings. A local Expo module (`android/.../BabillardMlsModule.kt`) exposes them to JavaScript as async functions, so the work runs off the JavaScript thread. UniFFI can generate Swift the same way when iOS comes.
+- `rust/build-android.sh` builds the library with `cargo-ndk` for arm64 and x86_64 and regenerates the bindings. Gradle runs it before every Android build. The toolchain is pinned in `rust-toolchain.toml` at Rust 1.99.0.
+- OpenMLS checks signatures, but deciding which key belongs to which person is the app's job. Every call that brings someone into view (adding, receiving a commit, joining from a Welcome) takes the server's device list and refuses anyone not on it. The Rust tests cover all three.
 
-**mls-rs through a native module.** Same costs as OpenMLS, minus some binding work thanks to `mls-rs-uniffi`. Since it has no audit either, I don't see a reason to pick it over OpenMLS for this.
+### What it costs
 
-### Why ts-mls first
-
-The threat that matters most here is a stolen or seized phone reading months of group history. MLS forward secrecy fixes that with either library. The question is whether an unaudited implementation adds more risk than the old scheme it replaces. v1 is also unaudited. It's our own design on audited primitives, which is the same position ts-mls plus our provider would be in.
-
-The native route costs about a month of work before anyone sees a benefit, and it locks testing to dev builds. I'd rather spend part of that money on a focused review of ts-mls and our glue. That buys most of the assurance for less, and the protocol design here doesn't change if the review says to switch.
-
-Conditions on that choice:
-
-1. MLS stays behind a server flag, on for test accounts only, until the review is done and its findings are fixed.
-2. Versions stay pinned exactly. Upgrades get the interop test and the canary test, plus a read of the ts-mls changelog.
-3. If the review finds structural problems, or ts-mls stops being maintained, we move to OpenMLS. Moving would mean re-forming each group: someone commits a fresh group and the server marks the old one closed. The wire format, the server, and the app's flows stay as they are.
+- Every Android build now needs Rust 1.99 with the Android targets, `cargo-ndk` 4, and the NDK. EAS's builders don't have Rust, so the EAS build needs a custom step that installs it, or the built `.so` files get committed. That's not decided yet.
+- Expo Go can't load the module, so chat testing needs a dev build. The dev screen says so instead of crashing.
+- 32-bit Android isn't built. Those phones would stay on v1.
+- The library adds about 3 MB per ABI before compression.
+- Rust and NDK upgrades become routine upkeep. The exact pins mean an upgrade is always a deliberate edit.
 
 ## The server's role
 
@@ -108,7 +96,7 @@ It no longer checks that an envelope covers every current device, so `stale_keys
 
 ### Who is a member: credentials and the security code
 
-Each phone is one MLS member, a leaf in the tree. Its credential is a basic credential `userId/deviceId` plus its own Ed25519 signing key. The phone's `AuthenticationService` accepts a credential only if the server's device list has that signing key for that user and device. That's `clientConfig()`.
+Each phone is one MLS member, a leaf in the tree. Its credential is a basic credential `userId/deviceId` plus its own Ed25519 signing key. The phone accepts a credential only if the server's device list has that signing key for that user and device. In the Rust wrapper, that's the `trusted` list every add, receive, and join takes.
 
 That means the server still vouches for which phones belong to whom, just as it hands out public keys today. A server that lies can still add a phone of its own. MLS doesn't remove that power. What catches it, as now, is the security code.
 
@@ -146,7 +134,7 @@ So a departed member's keys stop opening anything new from the first message aft
 
 An alternative is to make the Durable Object an MLS external sender with its own signing key, allowed to propose removals. It removes the dependence on a member sending, but it puts a signing key on the server, and phones still have to commit the proposal. Not worth it for now.
 
-Blocking doesn't change membership in groups, the same as today. Today the server leaves the blocked person's messages out of the blocker's history. Under MLS that's risky. Each sender's messages form a chain, and ts-mls will skip ahead at most 200 steps in one chain. If the server hid 201 messages and the person was later unblocked, their next message wouldn't open. So the server should deliver everything, and the blocker's phone should process the blocked person's messages and throw the text away. Commits always have to be delivered anyway, because skipping one breaks the blocker's copy of the group.
+Blocking doesn't change membership in groups, the same as today. Today the server leaves the blocked person's messages out of the blocker's history. Under MLS that's risky. Each sender's messages form a chain, and OpenMLS will skip ahead at most 1,000 steps in one chain by default. If the server hid 1,001 messages and the person was later unblocked, their next message wouldn't open. So the server should deliver everything, and the blocker's phone should process the blocked person's messages and throw the text away. Commits always have to be delivered anyway, because skipping one breaks the blocker's copy of the group.
 
 ### Several phones per person
 
@@ -164,7 +152,7 @@ Today `useChat` and the inbox fetch ciphertext again and decrypt it every time t
 - **A local message store.** `expo-sqlite` holding the text each phone decrypted, read by the chat screen and the inbox. The server's copy only feeds phones that haven't caught up.
 - **A sync loop.** Read the log from the phone's last `seq`, apply each entry in order, then save the new state, the text, and the cursor in one SQLite transaction. If the app dies halfway through, the same entry gets applied again, which fails, so the save has to be atomic. That means the encrypted state blob lives in the same database as the messages, not in a separate file.
 
-ts-mls keeps keys for 4 past epochs and 10 generations by default, so messages that arrive a little out of order still open. Within one sender it will skip ahead at most 200 messages. Phones read the log in order, so they don't hit that limit.
+OpenMLS by default tolerates 5 messages out of order within one sender and skips ahead at most 1,000, and it keeps no keys from past epochs. Phones read the log in order, and the server only accepts messages at the current epoch, so none of those limits come up. Keeping no past epochs is the strictest setting for forward secrecy.
 
 ### Key backup
 
@@ -189,7 +177,7 @@ Use **message franking** instead:
 - Phones check the commitment against what they decrypted, and show the message as unverifiable if it doesn't match.
 - A reporter sends the text and the franking key. The server recomputes the HMAC and compares it with what it stored from the sender's own socket.
 
-Nothing else in the chat becomes readable, the same as today. `ts-mls`'s `createApplicationMessage` already takes `authenticatedData`.
+Nothing else in the chat becomes readable, the same as today. The wrapper's `encrypt` already takes the `aad` and `receive` returns it, so the commitment is ready to wire up.
 
 ### Previews and push
 
@@ -255,30 +243,33 @@ It does **not** prove:
 
 ## What's left, and roughly how long
 
-One developer who knows the codebase, after the review decision:
+One developer who knows the codebase:
 
 | Work | Estimate |
 |---|---|
+| Android build in EAS: install Rust there, or commit the built libraries | 2 to 3 days |
+| A plain TypeScript header reader for the server, so the Worker doesn't need ts-mls | 1 day |
 | Device signing keys and the key package service, D1 and endpoints | 3 to 4 days |
 | Durable Object delivery service: log, epoch check, Welcomes, GroupInfo, pending adds and removals, socket events | 5 to 7 days |
-| Phone: encrypted state file, local message store, sync loop, send and retry, joining by Welcome and external commit, committing pending removals | 8 to 12 days |
+| Rust wrapper: external commits for joining, last-resort key packages, per-chat state | 3 to 5 days |
+| Phone: encrypted state in SQLite, local message store, sync loop, send and retry, joining, committing pending removals | 8 to 12 days |
 | Franking for reports | 2 days |
 | Roster security code on the chat info screen | 1 day |
 | Backup v2 and history store | 5 to 7 days |
 | Migration: dormant release, per-chat switch, version gate, mixed timeline | 3 to 5 days |
+| Removing ts-mls and its adapter from the app once the native path covers everything | 1 day |
 | End-to-end tests with two devices, and on a real phone | 4 to 5 days |
-| **Total** | **about 6 to 9 weeks** |
+| **Total** | **about 8 to 11 weeks** |
 
-Add the independent review: two to four weeks on the calendar, partly overlapping with the above. Going straight to OpenMLS adds three to five weeks.
+iOS isn't in this estimate. It would add a Swift module over the same Rust crate.
 
 ## Open security questions
 
-1. **ts-mls has no audit,** and our provider is new code. The review should cover both, plus `admit`, `clientConfig`, and the sync loop's atomicity.
-2. **Are the `@hpke` packages reviewed?** I haven't found an audit of hpke-js. We use its key schedule and its pure-JS X25519.
-3. **The server still decides who's a member.** MLS doesn't change that. The roster code is the only check, as today. Key transparency would be the real fix, and it's a big project.
-4. **The removal window.** It closes at the next message after someone leaves. Check that the server really stops serving the log to someone the moment their D1 row is gone, including over an open socket.
-5. **Forward secrecy versus local storage.** The local message store and the optional history store keep plaintext, or something that opens to plaintext, on purpose. That limits what MLS forward secrecy buys on a seized, unlocked phone. Decide whether to offer disappearing messages.
-6. **Post-compromise security needs updates.** A phone that never commits never refreshes its own leaf key. Have each phone send an empty commit, an update, when it opens a chat and hasn't committed in a week.
-7. **Key package exhaustion.** If someone's packages run out, they can't be added until they come online. Keep one long-lived "last resort" package per phone, a common MLS practice, and accept that a join using it has weaker forward secrecy.
-8. **Ed25519 strictness.** `@noble/curves` verifies with ZIP-215 rules by default. That's fine while everyone runs the same code. If we ever mix implementations, check that they agree on edge-case signatures.
-9. **Group state at rest.** It holds every private key for the group. Its file needs the same care as the SecureStore keys, and it must never go into a backup.
+1. **Our wrapper is the unaudited part.** It's small and does no cryptography, but it decides which credentials to trust and how state is saved. Keep it small, keep its tests, and read every change to it carefully.
+2. **The server still decides who's a member.** MLS doesn't change that. The roster code is the only check, as today. Key transparency would be the real fix, and it's a big project.
+3. **The removal window.** It closes at the next message after someone leaves. Check that the server really stops serving the log to someone the moment their D1 row is gone, including over an open socket.
+4. **Forward secrecy versus local storage.** The local message store and the optional history store keep plaintext, or something that opens to plaintext, on purpose. That limits what MLS forward secrecy buys on a seized, unlocked phone. Decide whether to offer disappearing messages.
+5. **Post-compromise security needs updates.** A phone that never commits never refreshes its own leaf key. Have each phone call `update_keys` when it opens a chat and hasn't committed in a week.
+6. **Key package exhaustion.** If someone's packages run out, they can't be added until they come online. Keep one long-lived "last resort" package per phone, a common MLS practice, and accept that a join using it has weaker forward secrecy.
+7. **Group state at rest.** It holds every private key for the group. It needs the same care as the SecureStore keys, and it must never go into a backup.
+8. **Keeping up with OpenMLS.** Its fixes only help if we take them. Watch its security advisories and update the pins promptly, rerunning the Rust tests each time.

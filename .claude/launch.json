@@ -74,6 +74,15 @@
       "port": 8083
     },
     {
+      "name": "mls-prototype-dev-client",
+      "runtimeExecutable": "bash",
+      "runtimeArgs": [
+        "-c",
+        "cd apps/mobile && EXPO_PUBLIC_MLS_PROTOTYPE=1 EXPO_PUBLIC_API_URL=http://10.0.2.2:8787 ../../node_modules/.bin/expo start --dev-client --port 8082 --clear"
+      ],
+      "port": 8082
+    },
+    {
       "name": "site",
       "runtimeExecutable": "bash",
       "runtimeArgs": [
