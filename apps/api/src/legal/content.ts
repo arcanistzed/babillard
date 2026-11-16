@@ -76,11 +76,12 @@ These companies may process information outside Canada, including in the United 
 - Crash reports: 30 days.
 - Reports, including any messages shared with them, and moderation history: two years after the case closes.
 - A banned person's email address: for as long as the ban lasts, so they can't sign up again.
+- If you delete your account after someone blocked you: their block, and a code made from your email address with a secret key, until everyone who blocked you has deleted their own account. We can't read your address from the code. It only lets us recognize that address if it signs up again, so the blocks carry over to the new account and you can't use a fresh start to reach someone who blocked you.
 - Everything else: until you delete your account, or after two years without using the app. We email you 30 days before deleting an inactive account.
 
 ## Deleting your account
 
-Go to You, then Delete account. That removes your email address, date of birth, profile, photo, swipes, messages, meetup answers, invites and takeaways, blocks, and notification tokens. An empty record with no personal details stays behind so that other people's conversations keep working. Our host's backups can hold deleted data for up to 30 days, and we can't reach screenshots or anything else people saved.
+Go to You, then Delete account. That removes your email address, date of birth, profile, photo, swipes, messages, meetup answers, invites and takeaways, the blocks you made, and notification tokens. An empty record with no personal details stays behind so that other people's conversations keep working. If someone blocked you, their block stays on that record, with the email code described above, so it keeps protecting them. Our host's backups can hold deleted data for up to 30 days, and we can't reach screenshots or anything else people saved.
 
 Reports made about you stay for the period above, so that deleting an account can't erase a safety record.
 
@@ -264,11 +265,12 @@ Ces entreprises peuvent traiter des renseignements à l'extérieur du Canada, y 
 - Rapports de plantage: 30 jours.
 - Signalements, y compris les messages transmis, et historique de modération: deux ans après la fermeture du dossier.
 - Adresse courriel d'une personne bannie: tant que dure le bannissement, pour l'empêcher de se réinscrire.
+- Si vous supprimez votre compte après que quelqu'un vous a bloqué: son blocage, et un code tiré de votre adresse courriel avec une clé secrète, jusqu'à ce que toutes les personnes qui vous ont bloqué aient supprimé leur propre compte. Nous ne pouvons pas lire votre adresse à partir de ce code. Il nous permet seulement de reconnaître cette adresse si elle sert à une nouvelle inscription, pour que les blocages passent au nouveau compte et qu'un nouveau départ ne permette pas de joindre quelqu'un qui vous a bloqué.
 - Tout le reste: jusqu'à la suppression de votre compte, ou après deux ans sans utiliser l'application. Nous vous écrivons 30 jours avant de supprimer un compte inactif.
 
 ## Supprimer votre compte
 
-Allez à Vous, puis Supprimer le compte. Cela retire votre adresse courriel, votre date de naissance, votre profil, votre photo, vos glissements, vos messages, vos réponses, invitations et phrases à retenir liées aux rencontres, vos blocages et vos jetons de notification. Un dossier vide, sans renseignement personnel, subsiste pour que les conversations des autres continuent de fonctionner. Les sauvegardes de notre hébergeur peuvent contenir des données supprimées jusqu'à 30 jours, et nous n'avons pas accès aux captures d'écran ni à ce que d'autres ont enregistré.
+Allez à Vous, puis Supprimer le compte. Cela retire votre adresse courriel, votre date de naissance, votre profil, votre photo, vos glissements, vos messages, vos réponses, invitations et phrases à retenir liées aux rencontres, les blocages que vous avez faits et vos jetons de notification. Un dossier vide, sans renseignement personnel, subsiste pour que les conversations des autres continuent de fonctionner. Si quelqu'un vous a bloqué, son blocage reste sur ce dossier, avec le code tiré de votre courriel décrit plus haut, pour continuer de le protéger. Les sauvegardes de notre hébergeur peuvent contenir des données supprimées jusqu'à 30 jours, et nous n'avons pas accès aux captures d'écran ni à ce que d'autres ont enregistré.
 
 Les signalements vous concernant sont conservés pendant la période indiquée ci-dessus, afin que la suppression d'un compte n'efface pas un dossier de sécurité.
 

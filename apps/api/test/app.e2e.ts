@@ -1119,6 +1119,114 @@ describe("safety", () => {
     expect((await a!.get("/conversations")).find((row: any) => row.id === groupId).unreadCount).toBe(0);
   });
 
+  it("keeps both sides of a block apart in a shared group, and lists the groups they share", async () => {
+    const a = await person("san-francisco", { displayName: "Blocker Person" });
+    const [b, c, d] = [await person("san-francisco"), await person("san-francisco"), await person("san-francisco")];
+    let groupId: string | null = null;
+    for (const client of [a, b, c, d]) groupId = (await client.post("/deck/topics/philosophy-of-mind/swipe", { direction: "right" })).groupConversationId ?? groupId;
+    const [aSocket, bSocket, cSocket] = [await openSocket(a, groupId!), await openSocket(b, groupId!), await openSocket(c, groupId!)];
+
+    const blocked = await a.post(`/safety/blocks/${b.id}`);
+    expect(blocked).toMatchObject({ ok: true, sharedGroups: [{ id: groupId, title: "Philosophy of mind" }] });
+    const fromSocket = (events: any[], text: string) => events.some((event) => event.type === "message" && event.message.id === text);
+
+    // The blocker's messages don't reach the person they blocked, live or later.
+    const fromA = await a.say(groupId!, "I'll be at the window seat");
+    await waitFor(async () => cSocket.events, (events) => fromSocket(events, fromA.id), "the message reaching a third member");
+    expect(fromSocket(bSocket.events, fromA.id)).toBe(false);
+    expect((await b.read(groupId!)).some((m: any) => m.senderId === a.id)).toBe(false);
+    expect((await b.read(groupId!, `?around=${fromA.id}`)).some((m: any) => m.senderId === a.id)).toBe(false);
+    const bInbox = (await b.get("/conversations")).find((row: any) => row.id === groupId);
+    expect(bInbox).toMatchObject({ unreadCount: 0, lastMessageEnvelope: null, lastMessagePreview: null, lastMessageSenderId: null });
+    expect((await c.get("/conversations")).find((row: any) => row.id === groupId).lastMessageSenderId).toBe(a.id);
+
+    // And the other way round.
+    const fromB = await b.say(groupId!, "where are you sitting?");
+    await waitFor(async () => cSocket.events, (events) => fromSocket(events, fromB.id), "the reply reaching a third member");
+    expect(fromSocket(aSocket.events, fromB.id)).toBe(false);
+    expect((await a.read(groupId!)).some((m: any) => m.senderId === b.id)).toBe(false);
+    expect((await a.get("/conversations")).find((row: any) => row.id === groupId)).toMatchObject({ unreadCount: 0, lastMessageEnvelope: null, lastMessageSenderId: null });
+    expect((await c.read(groupId!)).filter((m: any) => m.senderId === a.id || m.senderId === b.id)).toHaveLength(2);
+
+    // With the sockets closed, the person on the other side of the block isn't sent a push either.
+    for (const { socket } of [aSocket, bSocket, cSocket]) socket.close();
+    await sleep(500);
+    const fromBlocker = (push: { title: string; data: { id: string } }) => push.title === "Blocker Person" && push.data.id === groupId;
+    const before = pushLog().filter((push) => fromBlocker(push) && push.userIds.includes(d.id)).length;
+    await a.say(groupId!, "running late");
+    await waitFor(async () => pushLog().filter((push) => fromBlocker(push) && push.userIds.includes(d.id)), (rows) => rows.length > before, "a push to a member who never connected");
+    expect(pushLog().some((push) => fromBlocker(push) && push.userIds.includes(b.id))).toBe(false);
+
+    // Neither can open the other's profile, and the roster says who the blocker blocked.
+    expect(await status(a.get(`/conversations/${groupId}/members/${b.id}`))).toBe(404);
+    expect(await status(b.get(`/conversations/${groupId}/members/${a.id}`))).toBe(404);
+    expect(await status(c.get(`/conversations/${groupId}/members/${a.id}`))).toBe(200);
+    const aView = (await a.get(`/conversations/${groupId}`)).members.find((member: any) => member.id === b.id);
+    const bView = (await b.get(`/conversations/${groupId}`)).members.find((member: any) => member.id === a.id);
+    expect(aView.blockedByMe).toBe(true);
+    expect(bView.blockedByMe).toBeUndefined();
+    expect(bView.avatarUrl).toBeNull();
+    expect(bView.deviceKeys).toEqual([a.device.publicKey]);
+
+    // Unblocking restores delivery.
+    await a.delete(`/safety/blocks/${b.id}`);
+    await b.say(groupId!, "after unblocking");
+    expect((await a.read(groupId!)).some((m: any) => m.body === "after unblocking")).toBe(true);
+    expect(await status(b.get(`/conversations/${groupId}/members/${a.id}`))).toBe(200);
+  });
+
+  it("lists no shared groups when the two people share none", async () => {
+    const a = await person("san-francisco");
+    const b = await person("san-francisco");
+    expect(await a.post(`/safety/blocks/${b.id}`)).toEqual({ ok: true, sharedGroups: [] });
+  });
+
+  it("keeps a blocked person blocked after they delete their account and sign up again", async () => {
+    const topic = "/deck/topics/evolutionary-biology/swipe";
+    const a = await person("san-francisco");
+    const b = await person("san-francisco", { displayName: "Returning Person" });
+    for (const client of [a, b]) await client.post(topic, { direction: "right" });
+    expect((await a.get("/people")).map((card: any) => card.id)).toContain(b.id);
+    await a.post(`/safety/blocks/${b.id}`);
+    // A block this person made goes with their account.
+    const someone = await person("san-francisco");
+    await someone.post(topic, { direction: "right" });
+    await b.post(`/safety/blocks/${someone.id}`);
+
+    await b.delete("/me");
+    const tombstone = await adminPage(`/admin/users/${b.id}`);
+    expect(tombstone).toMatch(/blocked-[0-9a-f]{64}@deleted\.invalid/);
+    expect(tombstone).not.toContain(b.email);
+
+    const back = await createPerson(BASE, b.email, { displayName: "Back Again", cityId: "san-francisco" });
+    expect(back.id).not.toBe(b.id);
+    await back.post(topic, { direction: "right" });
+    expect((await a.get("/people")).map((card: any) => card.id)).not.toContain(back.id);
+    expect((await back.get("/people")).map((card: any) => card.id)).not.toContain(a.id);
+    expect(await status(back.post(`/people/${a.id}/swipe`, { direction: "right" }))).toBe(404);
+    expect(await status(a.post(`/people/${back.id}/swipe`, { direction: "right" }))).toBe(404);
+    expect((await a.get("/safety/blocks")).map((row: any) => row.id)).toEqual([back.id]);
+    expect((await someone.get("/people")).map((card: any) => card.id)).toContain(back.id);
+    // The hash went once the blocks moved.
+    expect(await adminPage(`/admin/users/${b.id}`)).toContain(`deleted-${b.id}@deleted.invalid`);
+  });
+
+  it("keeps no email hash for a deleted account nobody blocked, or once the last blocker leaves", async () => {
+    const unblocked = await person("san-francisco");
+    await unblocked.delete("/me");
+    const page = await adminPage(`/admin/users/${unblocked.id}`);
+    expect(page).toContain(`deleted-${unblocked.id}@deleted.invalid`);
+    expect(page).not.toMatch(/blocked-[0-9a-f]{64}/);
+
+    const blocker = await person("san-francisco");
+    const blockedPerson = await person("san-francisco");
+    await blocker.post(`/safety/blocks/${blockedPerson.id}`);
+    await blockedPerson.delete("/me");
+    expect(await adminPage(`/admin/users/${blockedPerson.id}`)).toMatch(/blocked-[0-9a-f]{64}@deleted\.invalid/);
+    await blocker.delete("/me");
+    expect(await adminPage(`/admin/users/${blockedPerson.id}`)).toContain(`deleted-${blockedPerson.id}@deleted.invalid`);
+  });
+
   it("carries a report through the admin queue to a ban that ends the session", async () => {
     const reporter = await person("new-york");
     const target = await person("new-york", { displayName: "Reported Person" });

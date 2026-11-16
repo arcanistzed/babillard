@@ -1,9 +1,20 @@
 import { and, eq, inArray, isNull, or, sql } from "drizzle-orm";
 import { getDb, schema } from "../db";
+import { blockedEmailTombstone, deletedEmail, releaseUnblockedTombstones } from "./blocks";
 
-/** Removes everything personal about someone. An empty row stays so that other people's conversations keep working. */
+/**
+ * Removes everything personal about someone. An empty row stays so that other people's conversations keep working.
+ * Blocks other people made on this person stay, and so does a keyed hash of the email while any remain,
+ * so that signing up again with the same address can't get around them.
+ */
 export async function deleteAccount(env: Env, id: string): Promise<void> {
   const db = getDb(env);
+  const [[account], blockedBy, theirBlocks] = await Promise.all([
+    db.select({ email: schema.users.email }).from(schema.users).where(eq(schema.users.id, id)),
+    db.select({ id: schema.blocks.blockerId }).from(schema.blocks).where(eq(schema.blocks.blockedId, id)).limit(1),
+    db.select({ id: schema.blocks.blockedId }).from(schema.blocks).where(eq(schema.blocks.blockerId, id)),
+  ]);
+  const keptEmail = !account || blockedBy.length === 0 ? deletedEmail(id) : account.email.endsWith("@deleted.invalid") ? account.email : await blockedEmailTombstone(env.AUTH_SECRET, account.email);
   const memberships = await db
     .select({ id: schema.conversationMembers.conversationId })
     .from(schema.conversationMembers)
@@ -24,7 +35,7 @@ export async function deleteAccount(env: Env, id: string): Promise<void> {
     db.delete(schema.conversationMembers).where(eq(schema.conversationMembers.userId, id)),
     db.delete(schema.topicSwipes).where(eq(schema.topicSwipes.userId, id)),
     db.delete(schema.peopleSwipes).where(or(eq(schema.peopleSwipes.fromUser, id), eq(schema.peopleSwipes.toUser, id))),
-    db.delete(schema.blocks).where(or(eq(schema.blocks.blockerId, id), eq(schema.blocks.blockedId, id))),
+    db.delete(schema.blocks).where(eq(schema.blocks.blockerId, id)),
     db.delete(schema.meetupResponses).where(eq(schema.meetupResponses.userId, id)),
     db.delete(schema.meetupOutcomes).where(eq(schema.meetupOutcomes.userId, id)),
     db.delete(schema.meetupInvites).where(eq(schema.meetupInvites.userId, id)),
@@ -34,10 +45,12 @@ export async function deleteAccount(env: Env, id: string): Promise<void> {
     db.delete(schema.profiles).where(eq(schema.profiles.userId, id)),
     db
       .update(schema.users)
-      .set({ status: "deleted", email: `deleted-${id}@deleted.invalid`, dob: null, institutionDomain: null, verifiedInstitution: false, cityId: null, campusId: null })
+      .set({ status: "deleted", email: keptEmail, dob: null, institutionDomain: null, verifiedInstitution: false, cityId: null, campusId: null })
       .where(eq(schema.users.id, id)),
     ...(conversationIds.length
       ? [db.update(schema.conversations).set({ lastMessagePreview: null, lastMessagePreviewFr: null, lastMessageEnvelope: null, lastMessageSenderId: null }).where(and(inArray(schema.conversations.id, conversationIds), previewNamesDeletedUser))]
       : []),
   ]);
+  // Accounts this person blocked may have been deleted too, and may now be blocked by nobody.
+  await releaseUnblockedTombstones(db, theirBlocks.map((row) => row.id));
 }

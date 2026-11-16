@@ -55,6 +55,8 @@ Regulated services are defined by a user count that regulations will set, or by 
 
 The cron sweep in `apps/api/src/cron.ts` enforces the schedule in the policy, including the two-year limits on closed reports, moderation history, and inactive accounts. A banned person's record stays while the ban lasts.
 
+Deleting an account (`deleteAccount` in `apps/api/src/lib/accounts.ts`) removes the blocks the person made but keeps the blocks other people made on them, so a blocked person can't delete and sign up again to reach the person who blocked them. While at least one such block remains, the deleted record's email field holds `blocked-<HMAC-SHA256(AUTH_SECRET, "blocked-email:" + email)>@deleted.invalid` instead of `deleted-<id>@deleted.invalid`. Signing in with a matching address (`inheritBlocks` in `apps/api/src/lib/blocks.ts`) moves those blocks to the new account and drops the hash from the old record. The hash is also dropped once nobody blocks the record any more, which in practice happens when the last blocker deletes their own account (`releaseUnblockedTombstones`). An account nobody blocked keeps no hash.
+
 Meetup outcome answers and takeaway lines (`meetup_outcomes`) have no separate limit. They're the data behind each topic's percentages, so the sweep leaves them alone, and they go when the person deletes their account or the inactive-account sweep removes it. Deleting a row also takes an approved takeaway off the topic page. Takeaways aren't end-to-end encrypted: a moderator approves each one before it appears publicly without a name, and the in-app form says so before anyone writes one.
 
 ## If there's a breach
@@ -69,6 +71,9 @@ Meetup outcome answers and takeaway lines (`meetup_outcomes`) have no separate l
 Ban the account, keep the evidence, and report it to Cybertip.ca, as the mandatory reporting law requires. Call police if a child is in immediate danger.
 
 ## Known gaps
+
+- Rotating `AUTH_SECRET` (step 1 of a breach) makes the kept email hashes of deleted, blocked accounts unrecognizable, so those people could sign up again unblocked. Blocks on accounts that still exist aren't affected.
+- The email hash matches the exact address only. Someone can sign up again with another address, or an alias of the same inbox, and the blocks won't follow.
 
 - City and region names are English only, and topics people suggest appear as written.
 - A lawyer hasn't reviewed the French or English text.

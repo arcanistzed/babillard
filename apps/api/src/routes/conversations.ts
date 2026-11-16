@@ -4,6 +4,7 @@ import { and, desc, eq, gt, inArray, or, sql } from "drizzle-orm";
 import { Hono } from "hono";
 import { z } from "zod";
 import { getDb, schema, type Db } from "../db";
+import { blockedWith, blockedWithAmong } from "../lib/blocks";
 import { avatarUrl } from "../lib/config";
 import { fail, parseJson } from "../lib/http";
 import { requireAuth, requireOnboarded } from "../middleware";
@@ -59,9 +60,9 @@ conversations.get("/", async (c) => {
       .from(schema.meetups)
       .where(and(inArray(schema.meetups.conversationId, ids), eq(schema.meetups.state, "confirmed"), gt(schema.meetups.startsAt, now)))
       .groupBy(schema.meetups.conversationId),
-    db.select({ id: schema.blocks.blockedId }).from(schema.blocks).where(eq(schema.blocks.blockerId, user.id)),
+    blockedWith(db, user.id),
   ]);
-  const blockedIds = new Set(myBlocks.map((row) => row.id));
+  const blockedIds = myBlocks;
   const nextMeetup = new Map(meetups.map((row) => [row.conversationId, row.startsAt]));
 
   const language = requestLanguage(c);
@@ -80,7 +81,7 @@ conversations.get("/", async (c) => {
       memberCount: roster.length,
       lastMessagePreview: hidePreview ? null : language === "fr" ? (conversation.lastMessagePreviewFr ?? conversation.lastMessagePreview) : conversation.lastMessagePreview,
       lastMessageEnvelope: hidePreview ? null : conversation.lastMessageEnvelope,
-      lastMessageSenderId: conversation.lastMessageSenderId,
+      lastMessageSenderId: hidePreview ? null : conversation.lastMessageSenderId,
       lastMessageAt: conversation.lastMessageAt,
       unreadCount: membership.unreadCount,
       // The countdown only matters while nobody has written anything.
@@ -98,13 +99,14 @@ conversations.get("/:id", async (c) => {
   const { conversation, membership } = await requireMember(db, id, user.id);
   const expiresAt = await requireOpenMatch(db, id);
 
-  const [roster, topicRows] = await Promise.all([
+  const [roster, topicRows, blocks] = await Promise.all([
     db
       .select({ id: members.userId, displayName: schema.profiles.displayName, avatarKey: schema.profiles.avatarKey })
       .from(members)
       .innerJoin(schema.profiles, eq(schema.profiles.userId, members.userId))
       .where(eq(members.conversationId, id)),
     conversation.topicId ? db.select().from(schema.topics).where(eq(schema.topics.id, conversation.topicId)) : Promise.resolve([]),
+    db.select().from(schema.blocks).where(or(eq(schema.blocks.blockerId, user.id), eq(schema.blocks.blockedId, user.id))),
   ]);
   const topic = topicRows[0] ?? null;
   const localized = topic && localizeTopic(topic, requestLanguage(c));
@@ -125,12 +127,17 @@ conversations.get("/:id", async (c) => {
     .from(schema.deviceKeys)
     .where(inArray(schema.deviceKeys.userId, roster.map((member) => member.id)));
   const keysOf = (userId: string, retired: boolean) => devices.filter((device) => device.userId === userId && (device.retiredAt !== null) === retired).map((device) => device.publicKey);
+  // Members with a block either way stay listed, because phones encrypt for every member's devices.
+  // Someone who blocked the viewer has their photo left out, and the blocker's app is told whom they blocked.
+  const iBlocked = new Set(blocks.filter((row) => row.blockerId === user.id).map((row) => row.blockedId));
+  const blockedMe = new Set(blocks.filter((row) => row.blockedId === user.id).map((row) => row.blockerId));
   const memberCards = roster.map((member) => ({
     id: member.id,
     displayName: member.displayName,
-    avatarUrl: avatarUrl(c.env, member.avatarKey),
+    avatarUrl: blockedMe.has(member.id) ? null : avatarUrl(c.env, member.avatarKey),
     deviceKeys: keysOf(member.id, false),
     retiredDeviceKeys: keysOf(member.id, true),
+    ...(iBlocked.has(member.id) ? { blockedByMe: true } : {}),
   }));
   const other = conversation.kind === "direct" ? memberCards.find((member) => member.id !== user.id) : undefined;
   const detail: ConversationDetail = {
@@ -159,11 +166,10 @@ conversations.get("/:id/messages", async (c) => {
   const before = Number.isInteger(beforeParam) && beforeParam > 0 ? beforeParam : undefined;
   const stub = c.env.CHAT_ROOM.getByName(id);
   const around = c.req.query("around");
-  const history: ChatMessage[] = around !== undefined ? await stub.around(around || null) : await stub.history(before);
-
-  const blocked = await db.select({ id: schema.blocks.blockedId }).from(schema.blocks).where(eq(schema.blocks.blockerId, user.id));
-  const blockedIds = new Set(blocked.map((row) => row.id));
-  return c.json(history.filter((message) => message.senderId === null || !blockedIds.has(message.senderId)));
+  // A block in either direction hides each person's messages from the other.
+  const hidden = [...(await blockedWith(db, user.id))];
+  const history: ChatMessage[] = around !== undefined ? await stub.around(around || null, undefined, hidden) : await stub.history(before, undefined, hidden);
+  return c.json(history);
 });
 
 conversations.post("/:id/messages", async (c) => {
@@ -231,6 +237,8 @@ conversations.get("/:id/members/:userId", async (c) => {
   const id = c.req.param("id");
   await requireMember(db, id, user.id);
   await requireMember(db, id, c.req.param("userId"));
+  // Sharing a group doesn't let either side of a block see the other's profile.
+  if ((await blockedWithAmong(db, user.id, [c.req.param("userId")])).size) throw fail(404, "person_not_found");
 
   const [[profile], [mine], [target]] = await Promise.all([
     db.select().from(schema.profiles).where(eq(schema.profiles.userId, c.req.param("userId"))),

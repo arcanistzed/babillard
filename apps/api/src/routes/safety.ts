@@ -1,7 +1,10 @@
-import { openWithContentKey, orderedPair, reportSchema, type ReportEvidence } from "@babillard/shared";
+import { openWithContentKey, orderedPair, reportSchema, type BlockResult, type ReportEvidence, type SharedGroup } from "@babillard/shared";
 import { and, eq, gt, inArray, sql } from "drizzle-orm";
+import { alias } from "drizzle-orm/sqlite-core";
 import { Hono } from "hono";
 import { getDb, schema } from "../db";
+import { releaseUnblockedTombstones } from "../lib/blocks";
+import { requestLanguage } from "../lib/language";
 import { fail, parseJson } from "../lib/http";
 import { notifyAdminOfReport } from "../lib/moderation";
 import { newId } from "../lib/tokens";
@@ -64,9 +67,11 @@ safety.post("/reports", async (c) => {
 });
 
 /**
- * Hides both people from each other's cards and cohorts, ends any direct chat
- * between them, and hides the blocked person's messages from the blocker in
- * shared groups. ChatRoom and the message routes apply that last part.
+ * Hides both people from each other's cards and cohorts, and ends any direct chat
+ * between them. In groups they share, neither is sent the other's messages or can
+ * open the other's profile. ChatRoom and the conversation routes apply that part.
+ * Meetups belong to the whole group, so the response lists the shared groups and
+ * the app offers to leave them.
  */
 safety.post("/blocks/:userId", async (c) => {
   const user = c.get("user");
@@ -90,13 +95,25 @@ safety.post("/blocks/:userId", async (c) => {
     const stub = c.env.CHAT_ROOM.getByName(match.conversationId);
     await Promise.all([stub.kick(user.id), stub.kick(blockedId)]);
   }
-  return c.json({ ok: true });
+
+  const theirs = alias(schema.conversationMembers, "theirs");
+  const shared = await db
+    .select({ id: schema.conversations.id, title: schema.topics.title, fr: schema.topics.fr })
+    .from(schema.conversationMembers)
+    .innerJoin(theirs, and(eq(theirs.conversationId, schema.conversationMembers.conversationId), eq(theirs.userId, blockedId)))
+    .innerJoin(schema.conversations, eq(schema.conversations.id, schema.conversationMembers.conversationId))
+    .leftJoin(schema.topics, eq(schema.topics.id, schema.conversations.topicId))
+    .where(and(eq(schema.conversationMembers.userId, user.id), eq(schema.conversations.kind, "group")));
+  const french = requestLanguage(c) === "fr";
+  const sharedGroups: SharedGroup[] = shared.map((row) => ({ id: row.id, title: (french ? row.fr?.title : undefined) ?? row.title ?? (french ? "Groupe" : "Group") }));
+  return c.json({ ok: true, sharedGroups } satisfies BlockResult);
 });
 
 safety.delete("/blocks/:userId", async (c) => {
-  await getDb(c.env)
-    .delete(schema.blocks)
-    .where(and(eq(schema.blocks.blockerId, c.get("user").id), eq(schema.blocks.blockedId, c.req.param("userId"))));
+  const db = getDb(c.env);
+  const blockedId = c.req.param("userId");
+  await db.delete(schema.blocks).where(and(eq(schema.blocks.blockerId, c.get("user").id), eq(schema.blocks.blockedId, blockedId)));
+  await releaseUnblockedTombstones(db, [blockedId]);
   return c.json({ ok: true });
 });
 

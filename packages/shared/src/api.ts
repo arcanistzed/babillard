@@ -127,6 +127,20 @@ export interface ConversationMember {
   /** Devices that can read new messages. */
   deviceKeys: string[];
   retiredDeviceKeys: string[];
+  /** Set when the viewer blocked this member. Neither sees the other's messages or profile. */
+  blockedByMe?: boolean;
+}
+
+/** A group both people stay in after one blocks the other. */
+export interface SharedGroup {
+  id: string;
+  title: string;
+}
+
+export interface BlockResult {
+  ok: true;
+  /** Groups the two still share. Older builds ignore this. */
+  sharedGroups: SharedGroup[];
 }
 
 export interface MeetupSummary {

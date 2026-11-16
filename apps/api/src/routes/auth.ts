@@ -5,6 +5,7 @@ import { Hono } from "hono";
 import { createMiddleware } from "hono/factory";
 import { html } from "hono/html";
 import { getDb, schema } from "../db";
+import { inheritBlocks } from "../lib/blocks";
 import { isDevMode } from "../lib/config";
 import { page } from "../lib/page";
 import { sendLoginEmail } from "../lib/email";
@@ -122,6 +123,9 @@ auth.post("/verify", limitByIp("SIGN_IN_VERIFY_LIMIT"), async (c) => {
   const [user] = await db.select().from(schema.users).where(eq(schema.users.email, email));
   if (!user) throw fail(500, "user_missing");
   if (user.status !== "active") throw fail(403, "account_unavailable");
+  // Someone others blocked who deleted their account and came back stays blocked by them.
+  // Checked on every sign-in, so a first attempt cut short still gets finished.
+  await inheritBlocks(db, c.env.AUTH_SECRET, email, user.id);
 
   const token = randomToken();
   await db.insert(schema.sessions).values({ id: await sha256Hex(token), userId: user.id, expiresAt: now + SESSION_TTL_MS });

@@ -2,6 +2,7 @@ import { DurableObject } from "cloudflare:workers";
 import { sendMessageSchema, type ChatMessage, type Envelope, type ServerSocketEvent } from "@babillard/shared";
 import { and, eq, inArray, isNull, ne, notInArray, sql } from "drizzle-orm";
 import { getDb, schema } from "../db";
+import { blockedWithAmong } from "../lib/blocks";
 import { newId } from "../lib/tokens";
 import { sendPush } from "../lib/push";
 
@@ -26,6 +27,8 @@ export class SendRejected extends Error {}
 
 const PREVIEW_LENGTH = 120;
 const HISTORY_LIMIT = 50;
+/** Takes a JSON array of sender IDs to leave out. App messages have no sender and always show. */
+const VISIBLE = "(sender_id IS NULL OR sender_id NOT IN (SELECT value FROM json_each(?)))";
 
 /** People's messages are stored as encrypted envelopes in `body`. The server can't read them. */
 function toMessage(row: MessageRow): ChatMessage {
@@ -145,17 +148,13 @@ export class ChatRoom extends DurableObject<Env> {
     if (!devices.some((device) => device.userId === senderId && device.publicKey === envelope.from)) throw new SendRejected("unknown_device");
     if (devices.some((device) => !(device.publicKey in envelope.keys))) throw new SendRejected("stale_keys");
 
+    // A block works both ways inside a shared group: neither person is sent the other's messages.
+    // Their phones still encrypt for each other, because every current device must be listed above.
     const otherIds = members.filter((member) => member.userId !== senderId).map((member) => member.userId);
-    const blockers = otherIds.length
-      ? await db
-          .select({ id: schema.blocks.blockerId })
-          .from(schema.blocks)
-          .where(and(eq(schema.blocks.blockedId, senderId), inArray(schema.blocks.blockerId, otherIds)))
-      : [];
-    const blockerIds = blockers.map((row) => row.id);
+    const hiddenFrom = [...(await blockedWithAmong(db, senderId, otherIds))];
 
     const message = this.insert({ senderId, body: JSON.stringify(envelope), kind: "text", meetupId: null, clientId: clientId ?? null });
-    this.broadcast({ type: "message", message }, new Set(blockerIds));
+    this.broadcast({ type: "message", message }, new Set(hiddenFrom));
 
     const now = message.createdAt;
     await db.batch([
@@ -177,14 +176,14 @@ export class ChatRoom extends DurableObject<Env> {
           and(
             eq(schema.conversationMembers.conversationId, conversationId),
             ne(schema.conversationMembers.userId, senderId),
-            blockerIds.length ? notInArray(schema.conversationMembers.userId, blockerIds) : undefined,
+            hiddenFrom.length ? notInArray(schema.conversationMembers.userId, hiddenFrom) : undefined,
           ),
         ),
     ]);
 
     const connected = this.connectedUserIds();
     const recipients = members
-      .filter((member) => member.userId !== senderId && !member.muted && !blockerIds.includes(member.userId) && !connected.has(member.userId))
+      .filter((member) => member.userId !== senderId && !member.muted && !hiddenFrom.includes(member.userId) && !connected.has(member.userId))
       .map((member) => member.userId);
     if (recipients.length) {
       const [profile] = await db
@@ -226,23 +225,26 @@ export class ChatRoom extends DurableObject<Env> {
     return message;
   }
 
-  history(before?: number, limit = HISTORY_LIMIT): ChatMessage[] {
+  /** `hideSenders` leaves out people the reader has a block with, in SQL, so a page is never short and the app doesn't think it has reached the start. */
+  history(before?: number, limit = HISTORY_LIMIT, hideSenders: string[] = []): ChatMessage[] {
     const size = Math.min(Math.max(limit, 1), HISTORY_LIMIT);
     const cursor = this.ctx.storage.sql.exec<MessageRow>(
-      "SELECT * FROM messages WHERE seq < ? ORDER BY seq DESC LIMIT ?",
+      `SELECT * FROM messages WHERE seq < ? AND ${VISIBLE} ORDER BY seq DESC LIMIT ?`,
       before ?? Number.MAX_SAFE_INTEGER,
+      JSON.stringify(hideSenders),
       size,
     );
     return cursor.toArray().map(toMessage).reverse();
   }
 
   /** For the reporter's phone: the messages either side of a reported one, or the latest ones if none was named. */
-  around(messageId: string | null, each = 5): ChatMessage[] {
+  around(messageId: string | null, each = 5, hideSenders: string[] = []): ChatMessage[] {
     const sql = this.ctx.storage.sql;
-    const target = messageId ? sql.exec<MessageRow>("SELECT * FROM messages WHERE id = ?", messageId).toArray()[0] : undefined;
-    if (!target) return sql.exec<MessageRow>("SELECT * FROM messages ORDER BY seq DESC LIMIT ?", each * 2).toArray().map(toMessage).reverse();
-    const before = sql.exec<MessageRow>("SELECT * FROM messages WHERE seq < ? ORDER BY seq DESC LIMIT ?", target.seq, each).toArray().reverse();
-    const after = sql.exec<MessageRow>("SELECT * FROM messages WHERE seq > ? ORDER BY seq ASC LIMIT ?", target.seq, each).toArray();
+    const hidden = JSON.stringify(hideSenders);
+    const target = messageId ? sql.exec<MessageRow>(`SELECT * FROM messages WHERE id = ? AND ${VISIBLE}`, messageId, hidden).toArray()[0] : undefined;
+    if (!target) return sql.exec<MessageRow>(`SELECT * FROM messages WHERE ${VISIBLE} ORDER BY seq DESC LIMIT ?`, hidden, each * 2).toArray().map(toMessage).reverse();
+    const before = sql.exec<MessageRow>(`SELECT * FROM messages WHERE seq < ? AND ${VISIBLE} ORDER BY seq DESC LIMIT ?`, target.seq, hidden, each).toArray().reverse();
+    const after = sql.exec<MessageRow>(`SELECT * FROM messages WHERE seq > ? AND ${VISIBLE} ORDER BY seq ASC LIMIT ?`, target.seq, hidden, each).toArray();
     return [...before, target, ...after].map(toMessage);
   }
 
