@@ -56,25 +56,46 @@ export default function ChatInfo() {
     ]);
   }
 
+  const blockedNames = detail.members.filter((member) => member.blockedByMe).map((member) => member.displayName);
+
   return (
     <ScrollView contentContainerStyle={styles.body}>
       <T variant="title">{detail.topic?.title ?? detail.title}</T>
       {detail.stanceSpread ? <StanceSpread spread={detail.stanceSpread} /> : null}
+      {detail.kind === "group" && blockedNames.length ? (
+        <View style={[styles.notice, { borderColor: theme.accent }]}>
+          <T variant="bodyBold">{t(`You blocked ${blockedNames.join(", ")}`, `Vous avez bloqué ${blockedNames.join(", ")}`)}</T>
+          <T>
+            {t(
+              "You don't see each other's messages or profiles here, but they still see this group's meetup plans, including the time and place. Leave the group to keep its plans away from them.",
+              "Vous ne voyez plus vos messages ni vos profils respectifs ici, mais les personnes bloquées voient encore les rencontres prévues dans ce groupe, y compris l'heure et le lieu. Quittez le groupe pour que ses projets leur restent cachés.",
+            )}
+          </T>
+        </View>
+      ) : null}
 
       <View style={styles.section}>
         <T variant="heading">{detail.kind === "group" ? t(`${detail.members.length} people`, `${detail.members.length} personnes`) : t("In this chat", "Dans cette conversation")}</T>
         {detail.members.map((member) => {
           const isMe = member.id === me?.id;
+          // A blocked person's profile can't be opened, so their row goes straight to reporting them.
+          const open = member.blockedByMe
+            ? () => router.push({ pathname: "/report", params: { targetUserId: member.id, name: member.displayName, conversationId: id } })
+            : () => router.push(`/member/${id}/${member.id}`);
           return (
             <Pressable
               key={member.id}
               disabled={isMe}
               accessibilityRole={isMe ? "text" : "button"}
-              onPress={() => router.push(`/member/${id}/${member.id}`)}
+              accessibilityHint={member.blockedByMe ? t("Report this person", "Signaler cette personne") : undefined}
+              onPress={open}
               style={[styles.member, { borderBottomColor: theme.line }]}
             >
               <Avatar name={member.displayName} url={member.avatarUrl} />
-              <T variant="bodyBold">{isMe ? t(`${member.displayName} (you)`, `${member.displayName} (vous)`) : member.displayName}</T>
+              <View style={styles.memberText}>
+                <T variant="bodyBold">{isMe ? t(`${member.displayName} (you)`, `${member.displayName} (vous)`) : member.displayName}</T>
+                {member.blockedByMe ? <T variant="small" muted>{t("Blocked. Tap to report.", "Bloqué. Touchez pour signaler.")}</T> : null}
+              </View>
             </Pressable>
           );
         })}
@@ -107,5 +128,7 @@ const styles = StyleSheet.create({
   section: { gap: 8 },
   bar: { flexDirection: "row", height: 14, borderRadius: 7, overflow: "hidden" },
   member: { flexDirection: "row", alignItems: "center", gap: 12, minHeight: 56, borderBottomWidth: StyleSheet.hairlineWidth },
+  memberText: { flex: 1 },
+  notice: { gap: 6, padding: 14, borderWidth: 1, borderRadius: 12 },
   setting: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", minHeight: 44 },
 });
