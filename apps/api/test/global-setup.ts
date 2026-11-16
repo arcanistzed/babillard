@@ -142,6 +142,7 @@ export default async function setup() {
     NUDGE_AFTER_MS: "2000",
     MATCH_EXPIRY_MS: "4000",
     MEETUP_CHECKIN_DELAY_MS: "500",
+    MLS_ENABLED: "true",
   });
   const prod = startServer(PROD_PORT, "prod.log", prodDb, {
     AUTH_SECRET: "e2e-secret",

@@ -306,6 +306,27 @@ export const deviceKeys = sqliteTable(
     createdAt: integer("created_at").notNull(),
     /** Retired keys get no new messages, but stay known so older messages can still be attributed. */
     retiredAt: integer("retired_at"),
+    /** The phone's MLS signing key (Ed25519, base64url). Its MLS credential is `userId/publicKey`. Set once. */
+    mlsSignatureKey: text("mls_signature_key"),
   },
   (t) => [index("device_keys_user_idx").on(t.userId)],
+);
+
+/**
+ * Single-use MLS key packages, uploaded by each phone so others can add it to a chat
+ * while it's offline. Claiming one deletes it, except a phone's last-resort package,
+ * which stays so the phone can always be added.
+ */
+export const mlsKeyPackages = sqliteTable(
+  "mls_key_packages",
+  {
+    id: text("id").primaryKey(),
+    deviceId: text("device_id").notNull(),
+    userId: text("user_id").notNull(),
+    /** The MLSMessage, base64url. */
+    keyPackage: text("key_package").notNull(),
+    lastResort: integer("last_resort", { mode: "boolean" }).notNull().default(false),
+    createdAt: integer("created_at").notNull(),
+  },
+  (t) => [index("mls_key_packages_device_idx").on(t.deviceId, t.lastResort)],
 );

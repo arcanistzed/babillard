@@ -1,0 +1,185 @@
+// MLS through the real Worker and ChatRoom Durable Object. The topics are physics
+// ones on purpose: right swipes raise a topic for everyone, and the deck test
+// expects a physics topic first. The phones here are
+// ts-mls clients in Node: the wire format is standard MLS, so the server can't
+// tell them from the app's OpenMLS module.
+import { fromBase64, toBase64, type MlsGroupState, type MlsLogEntry } from "@babillard/shared";
+import { addDevices, clientConfig, createDevice, encodeKeyPackage, encryptText, joinFromWelcome, receive, removeUser, startGroup, type MlsDevice } from "@babillard/shared/mls";
+import { mlsCiphersuite } from "@babillard/shared/mls";
+import { randomBytes } from "node:crypto";
+import type { ClientState } from "ts-mls";
+import { describe, expect, it } from "vitest";
+import { ApiError, Client, createPerson } from "../scripts/api-client.ts";
+
+const BASE = "http://localhost:8799";
+const PROD = "http://localhost:8798";
+const cs = mlsCiphersuite((length) => new Uint8Array(randomBytes(length)));
+
+let counter = 0;
+async function person(cityId: string): Promise<Client> {
+  counter += 1;
+  return createPerson(BASE, `mls-${counter}-${Date.now()}@example.test`, { displayName: `MLS ${counter}`, cityId });
+}
+
+async function status(promise: Promise<unknown>): Promise<number> {
+  try {
+    await promise;
+    return 200;
+  } catch (error) {
+    if (error instanceof ApiError) return error.status;
+    throw error;
+  }
+}
+
+/** A phone: its account, its MLS identity registered with the server, and one key package uploaded. */
+interface Phone {
+  client: Client;
+  device: MlsDevice;
+  state: ClientState | null;
+  cursor: number;
+}
+
+async function phone(client: Client): Promise<Phone> {
+  const deviceId = client.device.publicKey;
+  const device = await createDevice(client.id, deviceId, cs);
+  await client.post("/mls/identity", { deviceId, signatureKey: toBase64(device.keyPackage.leafNode.signaturePublicKey) });
+  await client.post("/mls/key-packages", { deviceId, keyPackages: [toBase64(encodeKeyPackage(device))] });
+  return { client, device, state: null, cursor: 0 };
+}
+
+/** The phone's own credential check, fed from the server's directory, as the app would do it. */
+function trustFrom(state: MlsGroupState) {
+  return clientConfig(({ userId, deviceId }, key) => state.directory.some((d) => d.userId === userId && d.deviceId === deviceId && d.signatureKey === toBase64(key)));
+}
+
+async function submit(p: Phone, conversationId: string, message: Uint8Array, extra: { welcome?: Uint8Array; clientId?: string } = {}): Promise<MlsLogEntry> {
+  return p.client.post(`/mls/conversations/${conversationId}/messages`, {
+    deviceId: p.client.device.publicKey,
+    message: toBase64(message),
+    ...(extra.welcome ? { welcome: toBase64(extra.welcome) } : {}),
+    ...(extra.clientId ? { clientId: extra.clientId } : {}),
+  });
+}
+
+/** Applies everything new in the log, skipping the phone's own entries. Returns the texts it read. */
+async function catchUp(p: Phone, conversationId: string): Promise<string[]> {
+  const entries: MlsLogEntry[] = await p.client.get(`/mls/conversations/${conversationId}/messages?since=${p.cursor}`);
+  const texts: string[] = [];
+  for (const entry of entries) {
+    p.cursor = entry.seq;
+    if (entry.deviceId === p.client.device.publicKey) continue;
+    const result = await receive(p.state!, fromBase64(entry.message), cs);
+    p.state = result.state;
+    if (result.kind === "text") texts.push(result.text);
+  }
+  return texts;
+}
+
+/** Starts the group on the server. The first commit must carry an update path, so it's an empty commit. */
+async function startOnServer(p: Phone, conversationId: string): Promise<void> {
+  const server: MlsGroupState = await p.client.get(`/mls/conversations/${conversationId}`);
+  const created = await addDevices(await startGroup(conversationId, p.device, cs, trustFrom(server)), [], cs);
+  const entry = await submit(p, conversationId, created.commit);
+  p.state = created.state;
+  p.cursor = entry.seq;
+}
+
+async function addAll(p: Phone, conversationId: string, others: Phone[]): Promise<void> {
+  const claimed = await p.client.post(`/mls/conversations/${conversationId}/key-packages`, { deviceIds: others.map((o) => o.client.device.publicKey) });
+  expect(claimed.missing).toEqual([]);
+  const added = await addDevices(p.state!, claimed.keyPackages.map((k: { keyPackage: string }) => fromBase64(k.keyPackage)), cs);
+  const entry = await submit(p, conversationId, added.commit, { welcome: added.welcome! });
+  p.state = added.state;
+  p.cursor = entry.seq;
+  for (const other of others) {
+    const server: MlsGroupState = await other.client.get(`/mls/conversations/${conversationId}`);
+    const { seq, welcome } = await other.client.get(`/mls/conversations/${conversationId}/welcome/${other.client.device.publicKey}`);
+    other.state = await joinFromWelcome(fromBase64(welcome), other.device, cs, trustFrom(server));
+    other.cursor = seq;
+  }
+}
+
+describe("MLS delivery service", () => {
+  it("is off unless MLS_ENABLED is set", async () => {
+    expect(await status(new Client(PROD).get("/mls/conversations/anything"))).toBe(404);
+  });
+
+  it("checks key packages, orders a two-person chat, and moves it off v1", async () => {
+    const [a, b] = await Promise.all([person("new-york"), person("new-york")]);
+    await a.post("/deck/topics/astrophysics-and-cosmology/swipe", { direction: "right" });
+    await b.post("/deck/topics/astrophysics-and-cosmology/swipe", { direction: "right" });
+    await a.post(`/people/${b.id}/swipe`, { direction: "right" });
+    const { conversationId } = await b.post(`/people/${a.id}/swipe`, { direction: "right" });
+    expect(conversationId).toBeTruthy();
+
+    const [alice, bob] = await Promise.all([phone(a), phone(b)]);
+    // A key package must be the uploading phone's own, with its registered key.
+    expect(await status(a.post("/mls/key-packages", { deviceId: a.device.publicKey, keyPackages: [toBase64(encodeKeyPackage(bob.device))] }))).toBe(400);
+    // The signing key is set once.
+    expect(await status(a.post("/mls/identity", { deviceId: a.device.publicKey, signatureKey: toBase64(bob.device.keyPackage.leafNode.signaturePublicKey) }))).toBe(409);
+
+    const before: MlsGroupState = await a.get(`/mls/conversations/${conversationId}`);
+    expect(before).toMatchObject({ mode: "v1", epoch: 0, roster: [] });
+    expect(before.pendingAdds).toHaveLength(2);
+
+    await startOnServer(alice, conversationId);
+    await addAll(alice, conversationId, [bob]);
+    // Bob's only package is gone now.
+    expect((await a.post(`/mls/conversations/${conversationId}/key-packages`, { deviceIds: [b.device.publicKey] })).missing).toEqual([b.device.publicKey]);
+
+    const hello = await encryptText(alice.state!, "Hi Bob", cs);
+    const sent = await submit(alice, conversationId, hello.message, { clientId: "first" });
+    alice.state = hello.state;
+    // Resending the same clientId returns the same entry instead of a second copy.
+    expect((await submit(alice, conversationId, hello.message, { clientId: "first" })).seq).toBe(sent.seq);
+    expect(await catchUp(bob, conversationId)).toEqual(["Hi Bob"]);
+
+    const reply = await encryptText(bob.state!, "Hi Alice", cs);
+    await submit(bob, conversationId, reply.message);
+    bob.state = reply.state;
+    expect(await catchUp(alice, conversationId)).toEqual(["Hi Alice"]);
+
+    // A message from an old epoch is refused with a reason the phone can act on.
+    const stale = await encryptText((await startGroup(conversationId, alice.device, cs, clientConfig(() => true))), "late", cs);
+    expect(await status(submit(alice, conversationId, stale.message))).toBe(409);
+
+    const after: MlsGroupState = await a.get(`/mls/conversations/${conversationId}`);
+    expect(after).toMatchObject({ mode: "mls", epoch: 2, pendingAdds: [], pendingRemovals: [] });
+    expect(after.roster.map((entry) => entry.userId)).toEqual([a.id, b.id]);
+    // v1 envelopes are refused once the chat is on MLS.
+    expect(await status(a.post(`/conversations/${conversationId}/messages`, { envelope: { v: 1, from: a.device.publicKey, nonce: "AA", ciphertext: "AA", keys: {} } }))).toBe(403);
+  });
+
+  it("holds messages after someone leaves a group until their phone is removed", async () => {
+    const people = await Promise.all(Array.from({ length: 4 }, () => person("san-francisco")));
+    let groupId: string | null = null;
+    for (const client of people) groupId = (await client.post("/deck/topics/climate-physics/swipe", { direction: "right" })).groupConversationId ?? groupId;
+    expect(groupId).toBeTruthy();
+    const id = groupId!;
+
+    const phones = await Promise.all(people.map(phone));
+    const [first, second, , leaver] = phones as [Phone, Phone, Phone, Phone];
+    await startOnServer(first, id);
+    await addAll(first, id, phones.slice(1));
+
+    await leaver.client.post(`/conversations/${id}/leave`);
+    const state: MlsGroupState = await first.client.get(`/mls/conversations/${id}`);
+    expect(state.pendingRemovals.map((entry) => entry.userId)).toEqual([leaver.client.id]);
+
+    const blocked = await encryptText(first.state!, "too soon", cs);
+    expect(await status(submit(first, id, blocked.message))).toBe(409);
+    // Removing someone who's still a member isn't allowed.
+    const kick = await removeUser(first.state!, second.client.id, cs);
+    expect(await status(submit(first, id, kick.commit))).toBe(403);
+
+    const removal = await removeUser(first.state!, leaver.client.id, cs);
+    await submit(first, id, removal.commit);
+    first.state = removal.state;
+    const now = await encryptText(first.state, "now it's just us", cs);
+    await submit(first, id, now.message);
+    first.state = now.state;
+    expect(await catchUp(second, id)).toEqual(["now it's just us"]);
+    // The leaver can't read the log any more.
+    expect(await status(leaver.client.get(`/mls/conversations/${id}/messages?since=0`))).toBe(404);
+  });
+});

@@ -69,40 +69,69 @@ It also keeps the line clear. With ts-mls, we had to write our own crypto adapte
 
 ## The server's role
 
-The ChatRoom Durable Object becomes MLS's delivery service. It can't read anything. It decides the order of commits, and that order is the group's history.
+The ChatRoom Durable Object is MLS's delivery service. It can't read any message, but it decides the order of commits, and that order is the group's history. This is built on the branch, behind `MLS_ENABLED`, which production's `wrangler.jsonc` sets to `"false"`. Every `/mls` route answers 404 when it's off.
+
+### What it can see
+
+Commits travel as MLS PublicMessages. `packages/shared/src/mlsWire.ts` reads them in plain TypeScript, with no MLS library and no keys. It extracts the chat, the epoch, the sender's leaf, the credentials of phones being added, and the leaves being removed. Application messages travel as PrivateMessages, and the server reads only their chat, epoch and content type.
+
+Because it can read commits, the server keeps its own copy of the roster: which user and phone sits at each leaf. That makes it a gatekeeper as well as an orderer.
+
+### The rules
+
+`decide()` in `packages/shared/src/mlsDelivery.ts` is a pure function holding all of them. It's tested directly on real MLS messages.
+
+- **Order.** A message is accepted only at the current epoch. A commit moves the epoch on by one. A phone that's behind gets `stale_epoch`, reads the log, and tries again.
+- **Who can send.** The sender must be a current member, sending from one of their registered phones. A commit's sender leaf must be the submitting phone's leaf.
+- **Creating the group.** The first commit must come from leaf 0 and carry an update path, whose leaf shows the creator's identity and key. Otherwise anyone could replay a creator's commit and claim leaf 0. OpenMLS always includes the path when adding.
+- **Adds.** Only current members' registered phones, each matching the signing key on file, and none already in the group. New leaves follow RFC 9420: removals first, then each add takes the leftmost free leaf.
+- **Removals.** Only phones that should be gone, because their owner left, was banned, or retired the phone. Members can't kick each other.
+- **Pending removals hold messages.** While such a phone is still in the group, new messages are refused with `pending_removal`. The next sender must commit the removal first, which closes the window in which a departed phone still holds the current keys.
+- **Update paths keep identity.** A committer's new leaf must keep its own identity and registered key.
+- **Shape.** Commits must be public and application messages encrypted. Lone proposals, proposals by reference, update or other proposal types, and non-basic credentials are all refused.
+- **Atomicity.** A commit that adds phones needs its Welcome, and they're stored together.
 
 ### What it stores
 
-New tables in the Durable Object's SQLite, separate from `messages`:
+In the Durable Object's SQLite, apart from the `messages` table (`apps/api/src/do/mlsLog.ts`):
 
-- `mls_log (seq, epoch, kind, sender_id, sender_device, bytes, created_at)` holds every commit and application message in order. `kind` is `commit` or `application`.
-- `mls_state` is a single row with the current `epoch`, plus `mode`, which is `v1` or `mls`.
-- `mls_welcomes (device_id, seq, bytes)` holds Welcomes waiting for a new phone.
-- `mls_group_info (epoch, bytes)` holds the latest GroupInfo, which phones upload after each commit. It lets a phone join by itself with an external commit.
-- `mls_pending (kind, user_id, device_id)` lists adds and removals the server wants and no phone has committed yet.
+- `mls_log` holds every accepted commit and message in order, with sender, phone, and an optional `clientId` so a resend doesn't duplicate.
+- `mls_roster` is the server's copy of who's at each leaf.
+- `mls_welcomes` holds a Welcome per new phone, with the `seq` to read the log from.
+- `mls_group_info` holds the latest GroupInfo, when the committer supplied one. It's served only while it matches the current epoch.
+- The epoch and the mode (`v1` until the first commit, then `mls`) are kept in the object's key-value storage.
 
-Commits stay apart from the `messages` table on purpose. Today `eraseUser` deletes a person's rows, `around()` serves windows of history, and history is filtered for blocks. All of that is fine for application messages. Applied to commits, it would break the chain for everyone else. Commits carry no message text, only membership changes and fresh public keys, so they're kept for as long as the chat exists.
+`MlsLog.submit` is synchronous: the epoch check, the roster update and the insert happen with no `await` between them, because a Durable Object can take other requests while it awaits D1. D1 reads happen before it, and the inbox, unread counts and pushes after.
 
-D1 gets a key package table, `mls_key_packages (device_id, user_id, bytes, created_at)`. Each phone uploads about 10 and tops them up. Claiming one deletes it in the same statement, so no package gets used twice. The device list grows a `signature_key` column, or a sibling `mls_devices` table: the Ed25519 public key that goes in the phone's MLS credential.
+Commits stay apart from `messages` on purpose. Account deletion and block filtering edit `messages`. Applied to commits, those edits would break everyone's copy of the group. Commits carry no text, only membership changes and public keys.
 
-### Ordering
+Once a chat is in `mls` mode, the server refuses v1 envelopes in it, with `mls_mode`.
 
-`admit()` in `packages/shared/src/mls/delivery.ts` holds the whole rule:
+In D1, `device_keys` gains `mls_signature_key`, set once per phone, since changing it would change everyone's security code. A phone's MLS identity is `userId/deviceId`, where `deviceId` is its existing v1 public key. The new `mls_key_packages` table holds single-use packages, up to 100 per phone, plus one last-resort package that's never deleted. The server checks each upload is the phone's own, with its registered key and the right cipher suite. Claiming deletes the row, and whoever's delete succeeds gets it, so two people adding the same phone never share a package.
 
-- Anything that doesn't parse as an MLS message for this chat is refused.
-- A commit is accepted only if its epoch equals the current epoch. Then the epoch goes up by one.
-- An application message is accepted only at the current epoch. A phone that's behind gets `stale_epoch`, reads the log, and sends again. That's the same retry the app does for `stale_keys` today.
-- Lone proposals are refused. Proposals go inside commits.
+### Routes
 
-Commits travel as MLS PublicMessages, so the server can read the epoch and content type. Their contents are only membership changes and public keys, which the server already knows from D1. Application messages travel as PrivateMessages.
+| Route | What it does |
+|---|---|
+| `POST /mls/identity` | Registers a phone's signing key, once |
+| `POST /mls/key-packages` | Uploads key packages and an optional last-resort one |
+| `GET /mls/key-packages/:deviceId` | How many are left |
+| `POST /mls/conversations/:id/key-packages` | Claims packages for members' phones, to add them |
+| `GET /mls/conversations/:id` | Epoch, mode, roster, pending adds and removals, and the device directory phones check credentials against |
+| `POST /mls/conversations/:id/messages` | Submits a commit, with Welcome and GroupInfo, or a message. Refusals the phone can fix come back as 409 |
+| `GET /mls/conversations/:id/messages?since=` | The log after a sequence number |
+| `GET /mls/conversations/:id/welcome/:deviceId` | The Welcome for one of the caller's own phones |
+| `GET /mls/conversations/:id/group-info` | The latest GroupInfo |
 
-One Durable Object detail matters. The epoch check and the insert must run in one synchronous block. `postUserMessage` awaits D1 several times, and while a Durable Object awaits D1 it can start other requests. Read the epoch, check, and insert with no `await` in between. The D1 work for previews, unread counts, and push can stay after the insert, as it is now.
+Open sockets get `{ type: "mls", seq, epoch }` after each accepted entry. Everyone gets every entry, blockers included, because skipping entries would break their copy of the group.
 
-A commit and its Welcome are accepted together or not at all.
+`apps/api/test/mls.e2e.ts` runs these through the real Worker, with ts-mls phones:
 
-### What it no longer does
-
-It no longer checks that an envelope covers every current device, so `stale_keys` and `unknown_device` go away. In MLS the group is whoever the last commit says it is.
+- The routes are off without the flag.
+- A key package claimed for someone else's phone is refused, and a second signing key is refused.
+- A direct chat forms, both sides send and read, and a resend with the same `clientId` isn't stored twice.
+- A message from an old epoch is refused, and v1 is refused once the chat is on MLS.
+- In a four-person group, after someone leaves, messages wait until their phone is removed, kicking a current member is refused, and the leaver can no longer read the log.
 
 ## How each feature works under MLS
 
@@ -118,18 +147,17 @@ The security code becomes `rosterCode()`: a hash of every member's user, device,
 
 The Cohort Durable Object creates a group in D1 while nobody is looking at their phone. Under MLS a phone has to create the group:
 
-1. The server writes the conversation with `mode = mls` and an `mls_pending` add for every member's phone.
-2. The first member to open the chat claims key packages for the others and submits the epoch-0 commit that adds them all. The server accepts the first epoch-0 commit and refuses later ones.
-3. Everyone else sees a Welcome waiting and joins from it.
+1. The server writes the conversation as now. `GET /mls/conversations/:id` lists every member's phone under `pendingAdds`.
+2. The first member to open the chat claims key packages for the others and submits the epoch-0 commit that adds them all. The server accepts the first epoch-0 commit and refuses later ones with `stale_epoch`. A later phone then finds its Welcome waiting instead.
 
 Until then, the chat shows "Waiting for someone in the group to open the chat". The system message about the group opening is written by the server, as now, and isn't encrypted.
 
 ### Someone joins an open group
 
-`tryJoinOpenGroup` adds the D1 row and an `mls_pending` add. Two ways to finish it:
+`tryJoinOpenGroup` adds the D1 row, and the newcomer's phones show up in `pendingAdds`. Two ways to finish it:
 
 - **External commit, which I recommend.** The new member's phone fetches the latest GroupInfo from the Durable Object and adds itself. The Durable Object serves GroupInfo only to people D1 lists as members. Nobody else needs to be online.
-- The next member who opens the chat adds them with a normal commit.
+- The next member who opens the chat adds them with a normal commit. This is what's built today. The server already stores the latest GroupInfo for the external-commit route, but it doesn't accept external commits yet.
 
 Either way the newcomer reads only from their join onward, the same as today.
 
@@ -139,8 +167,8 @@ The server's power here equals what it has now. It can let in whoever it likes, 
 
 An MLS member can't commit their own removal. So:
 
-1. The server removes the D1 row, kicks their sockets, and stops serving them the log, as it does now. It writes an `mls_pending` removal.
-2. While a removal is pending, the Durable Object refuses **application** messages with `pending_removal`. The next phone that tries to send first commits the removal, then sends.
+1. The server removes the D1 row, kicks their sockets, and stops serving them the log, as it does now. Their phones show up in `pendingRemovals`, because they're in the roster but not the directory.
+2. While a removal is pending, the Durable Object refuses **application** messages with `pending_removal`. The next phone that tries to send first commits the removal, then sends. Both halves are built and covered by `apps/api/test/mls.e2e.ts`.
 
 So a departed member's keys stop opening anything new from the first message after they leave. Between the leave and that next message, nothing new is sent. Until then the removed phone could decrypt only if it got ciphertext from somewhere, and the server no longer gives it any. The Rust test `a_removed_phone_cannot_read_what_follows` checks the cryptographic half: after Carol's phone applies her own removal, it can't open the next message.
 
@@ -267,21 +295,19 @@ The ordering rule `admit` and the security-code function `codeForRoster` are wor
 
 ### What they don't prove
 
-- Two real devices through a real Durable Object. All phones run in one process.
-- Anything about the Worker side, key package handling, external commits, or franking. Those are designed above and not built.
+- Two real devices through a real Durable Object. The server is built and tested end to end, but with ts-mls phones in Node, not the app's OpenMLS module.
+- External commits, franking, the phone's storage and sync loop, backup, and migration. Those are designed above and not built.
 - Performance on a real phone, or with 8 members.
 - Anything on ARM. All four ABIs compile, but only the x86_64 library has run, on the emulator. Nothing has run on a real phone yet.
 
 ## What's left, and roughly how long
 
-One developer who knows the codebase:
+One developer who knows the codebase. Done on the branch since the first estimate: the server's header reader, the key package service, and the delivery service.
 
 | Work | Estimate |
 |---|---|
 | Android build in EAS: install Rust there, or commit the built libraries | 2 to 3 days |
-| A plain TypeScript header reader for the server, so the Worker doesn't need ts-mls | 1 day |
-| Device signing keys and the key package service, D1 and endpoints | 3 to 4 days |
-| Durable Object delivery service: log, epoch check, Welcomes, GroupInfo, pending adds and removals, socket events | 5 to 7 days |
+| Server, still to do: accept external commits, rate-limit key package claims, export GroupInfo from the wrapper | 2 to 3 days |
 | Rust wrapper: external commits for joining, last-resort key packages, per-chat state | 3 to 5 days |
 | Phone: encrypted state in SQLite, local message store, sync loop, send and retry, joining, committing pending removals | 8 to 12 days |
 | Franking for reports | 2 days |
@@ -290,7 +316,7 @@ One developer who knows the codebase:
 | Migration: dormant release, per-chat switch, version gate, mixed timeline | 3 to 5 days |
 | Removing ts-mls and its adapter from the app once the native path covers everything | 1 day |
 | End-to-end tests with two devices, and on a real phone | 4 to 5 days |
-| **Total** | **about 8 to 11 weeks** |
+| **Total** | **about 6 to 9 weeks** |
 
 iOS isn't in this estimate. It would add a Swift module over the same Rust crate.
 
@@ -304,3 +330,7 @@ iOS isn't in this estimate. It would add a Swift module over the same Rust crate
 6. **Key package exhaustion.** If someone's packages run out, they can't be added until they come online. Keep one long-lived "last resort" package per phone, a common MLS practice, and accept that a join using it has weaker forward secrecy.
 7. **Group state at rest.** It holds every private key for the group. It needs the same care as the SecureStore keys, and it must never go into a backup.
 8. **Keeping up with OpenMLS.** Its fixes only help if we take them. Watch its security advisories and update the pins promptly, rerunning the Rust tests each time.
+9. **Draining key packages.** Any member can claim packages for other members' phones, so a hostile member could use up someone's single-use packages. The last-resort package keeps the phone addable. Claims still need a rate limit.
+10. **The roster is the server's word.** It follows the commits the server accepted, and phones keep their own roster from the same commits. If they ever disagree, a phone should stop and show the security code, not trust either side.
+
+The D1 migration on the branch is `0010`. Main has moved on since the branch started, so check the number before merging.

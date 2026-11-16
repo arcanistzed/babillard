@@ -1,9 +1,10 @@
 import { DurableObject } from "cloudflare:workers";
-import { sendMessageSchema, type ChatMessage, type Envelope, type ServerSocketEvent } from "@babillard/shared";
-import { and, eq, inArray, isNull, ne, notInArray, sql } from "drizzle-orm";
+import { sendMessageSchema, type ChatMessage, type Directory, type Envelope, type MlsGroupState, type MlsLogEntry, type ServerSocketEvent } from "@babillard/shared";
+import { and, eq, inArray, isNotNull, isNull, ne, notInArray, sql } from "drizzle-orm";
 import { getDb, schema } from "../db";
 import { newId } from "../lib/tokens";
 import { sendPush } from "../lib/push";
+import { MlsLog } from "./mlsLog";
 
 interface SocketAttachment {
   userId: string;
@@ -46,9 +47,12 @@ function toMessage(row: MessageRow): ChatMessage {
 
 /** One per conversation. Owns the message log and the live sockets. D1 only keeps what the inbox list needs. */
 export class ChatRoom extends DurableObject<Env> {
+  private mls!: MlsLog;
+
   constructor(ctx: DurableObjectState, env: Env) {
     super(ctx, env);
     ctx.blockConcurrencyWhile(async () => {
+      this.mls = new MlsLog(ctx.storage);
       this.ctx.storage.sql.exec(`
         CREATE TABLE IF NOT EXISTS messages (
           seq INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -122,7 +126,28 @@ export class ChatRoom extends DurableObject<Env> {
         .toArray()[0];
       if (existing) return toMessage(existing);
     }
+    // Once a chat has moved to MLS, v1 envelopes would be readable by phones that left the group.
+    if (this.mls.mode === "mls") throw new SendRejected("mls_mode");
 
+    const db = getDb(this.env);
+    const { members, blockerIds } = await this.audience(conversationId, senderId);
+
+    // Everyone's current devices must be able to read this. If not, the sender's phone has an old list.
+    const devices = await db
+      .select({ userId: schema.deviceKeys.userId, publicKey: schema.deviceKeys.publicKey })
+      .from(schema.deviceKeys)
+      .where(and(inArray(schema.deviceKeys.userId, members.map((member) => member.userId)), isNull(schema.deviceKeys.retiredAt)));
+    if (!devices.some((device) => device.userId === senderId && device.publicKey === envelope.from)) throw new SendRejected("unknown_device");
+    if (devices.some((device) => !(device.publicKey in envelope.keys))) throw new SendRejected("stale_keys");
+
+    const message = this.insert({ senderId, body: JSON.stringify(envelope), kind: "text", meetupId: null, clientId: clientId ?? null });
+    this.broadcast({ type: "message", message }, new Set(blockerIds));
+    await this.afterUserMessage(conversationId, senderId, members, blockerIds, message.createdAt, envelope);
+    return message;
+  }
+
+  /** The chat's members, checked that the sender is one and the chat is open, plus who has blocked the sender. */
+  private async audience(conversationId: string, senderId: string) {
     const db = getDb(this.env);
     const [members, matchRows] = await Promise.all([
       db
@@ -137,14 +162,6 @@ export class ChatRoom extends DurableObject<Env> {
     if (!sender || sender.status !== "active") throw new SendRejected("You are not in this conversation");
     if (matchRows[0] && matchRows[0].state !== "active") throw new SendRejected("This conversation is closed");
 
-    // Everyone's current devices must be able to read this. If not, the sender's phone has an old list.
-    const devices = await db
-      .select({ userId: schema.deviceKeys.userId, publicKey: schema.deviceKeys.publicKey })
-      .from(schema.deviceKeys)
-      .where(and(inArray(schema.deviceKeys.userId, members.map((member) => member.userId)), isNull(schema.deviceKeys.retiredAt)));
-    if (!devices.some((device) => device.userId === senderId && device.publicKey === envelope.from)) throw new SendRejected("unknown_device");
-    if (devices.some((device) => !(device.publicKey in envelope.keys))) throw new SendRejected("stale_keys");
-
     const otherIds = members.filter((member) => member.userId !== senderId).map((member) => member.userId);
     const blockers = otherIds.length
       ? await db
@@ -152,12 +169,19 @@ export class ChatRoom extends DurableObject<Env> {
           .from(schema.blocks)
           .where(and(eq(schema.blocks.blockedId, senderId), inArray(schema.blocks.blockerId, otherIds)))
       : [];
-    const blockerIds = blockers.map((row) => row.id);
+    return { members, blockerIds: blockers.map((row) => row.id) };
+  }
 
-    const message = this.insert({ senderId, body: JSON.stringify(envelope), kind: "text", meetupId: null, clientId: clientId ?? null });
-    this.broadcast({ type: "message", message }, new Set(blockerIds));
-
-    const now = message.createdAt;
+  /** Inbox fields, unread counts, and pushes, for a message someone wrote. */
+  private async afterUserMessage(
+    conversationId: string,
+    senderId: string,
+    members: { userId: string; muted: boolean }[],
+    blockerIds: string[],
+    now: number,
+    envelope: Envelope | null,
+  ): Promise<void> {
+    const db = getDb(this.env);
     await db.batch([
       db
         .update(schema.conversations)
@@ -201,7 +225,68 @@ export class ChatRoom extends DurableObject<Env> {
         }),
       );
     }
-    return message;
+  }
+
+  /** Current members' phones with an MLS key, from D1. The delivery rules trust nothing else. */
+  private async mlsDirectory(conversationId: string): Promise<Directory> {
+    const rows = await getDb(this.env)
+      .select({ userId: schema.conversationMembers.userId, deviceId: schema.deviceKeys.publicKey, signatureKey: schema.deviceKeys.mlsSignatureKey })
+      .from(schema.conversationMembers)
+      .innerJoin(schema.users, and(eq(schema.users.id, schema.conversationMembers.userId), eq(schema.users.status, "active")))
+      .innerJoin(
+        schema.deviceKeys,
+        and(eq(schema.deviceKeys.userId, schema.conversationMembers.userId), isNull(schema.deviceKeys.retiredAt), isNotNull(schema.deviceKeys.mlsSignatureKey)),
+      )
+      .where(eq(schema.conversationMembers.conversationId, conversationId));
+    const directory: Directory = new Map();
+    for (const row of rows) {
+      if (!directory.has(row.userId)) directory.set(row.userId, new Map());
+      directory.get(row.userId)!.set(row.deviceId, row.signatureKey!);
+    }
+    return directory;
+  }
+
+  async mlsState(conversationId: string): Promise<MlsGroupState> {
+    return this.mls.state(await this.mlsDirectory(conversationId));
+  }
+
+  /** RPC entry point for MLS commits and messages. Rejections come back as data. */
+  async mlsSubmit(
+    conversationId: string,
+    senderId: string,
+    input: { deviceId: string; message: string; welcome?: string; groupInfo?: string; clientId?: string },
+  ): Promise<{ ok: true; entry: MlsLogEntry } | { ok: false; error: string; epoch?: number }> {
+    let audience;
+    try {
+      audience = await this.audience(conversationId, senderId);
+    } catch (error) {
+      if (error instanceof SendRejected) return { ok: false, error: error.message };
+      throw error;
+    }
+    const directory = await this.mlsDirectory(conversationId);
+    // No await from here to the insert: the epoch check and the write happen together.
+    const result = this.mls.submit({ conversationId, directory, sender: { userId: senderId, deviceId: input.deviceId }, ...input });
+    if (!result.ok) return result;
+    if (result.duplicate) return { ok: true, entry: result.entry };
+
+    // Everyone gets every entry, blockers included. Skipping entries would break their copy of the group.
+    this.broadcast({ type: "mls", seq: result.entry.seq, epoch: this.mls.epoch });
+    if (result.entry.kind === "application") {
+      await this.afterUserMessage(conversationId, senderId, audience.members, audience.blockerIds, result.entry.createdAt, null);
+    }
+    return { ok: true, entry: result.entry };
+  }
+
+  mlsLog(since: number, limit?: number): MlsLogEntry[] {
+    return this.mls.since(since, limit);
+  }
+
+  mlsWelcome(deviceId: string): { seq: number; welcome: string } | null {
+    return this.mls.welcome(deviceId);
+  }
+
+  mlsGroupInfo(): { epoch: number; groupInfo: string } | null {
+    return this.mls.groupInfo();
   }
 
   /** RPC entry point. Custom error classes do not survive RPC, so rejections come back as data. */

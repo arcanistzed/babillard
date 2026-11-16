@@ -23,7 +23,7 @@ export async function requireMember(db: Db, conversationId: string, userId: stri
 }
 
 /** Direct chats close with their match. Returns the match's expiry, or null for a group. */
-async function requireOpenMatch(db: Db, conversationId: string): Promise<number | null> {
+export async function requireOpenMatch(db: Db, conversationId: string): Promise<number | null> {
   const [match] = await db.select().from(schema.matches).where(eq(schema.matches.conversationId, conversationId));
   if (match && match.state !== "active") throw fail(410, "conversation_closed");
   return match?.expiresAt ?? null;

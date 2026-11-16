@@ -70,6 +70,29 @@ export const sendMessageSchema = z.object({
   clientId: z.string().max(64).optional(),
 });
 
+// MLS. Bytes travel as unpadded base64url. A Welcome carries the whole ratchet tree, so it gets the most room.
+const mlsBytes = (max: number) => encodedSchema.max(max);
+
+export const mlsIdentitySchema = z.object({ deviceId: publicKeySchema, signatureKey: publicKeySchema });
+
+export const mlsKeyPackagesSchema = z.object({
+  deviceId: publicKeySchema,
+  keyPackages: z.array(mlsBytes(4000)).max(50).default([]),
+  lastResort: mlsBytes(4000).optional(),
+});
+
+export const mlsClaimSchema = z.object({ deviceIds: z.array(publicKeySchema).min(1).max(40) });
+
+export const mlsSubmitSchema = z.object({
+  deviceId: publicKeySchema,
+  message: mlsBytes(150_000),
+  /** With a commit that adds phones: one Welcome for all of them. */
+  welcome: mlsBytes(300_000).optional(),
+  /** With a commit: the new epoch's GroupInfo, so phones can join on their own later. */
+  groupInfo: mlsBytes(300_000).optional(),
+  clientId: z.string().max(64).optional(),
+});
+
 export const meetupProposalSchema = z
   .object({
     startsAt: z.number().int().positive(),

@@ -187,7 +187,36 @@ export interface ChatMessage {
 export type ServerSocketEvent =
   | { type: "message"; message: ChatMessage }
   | { type: "meetup"; meetup: { id: string } }
+  /** Something new in the chat's MLS log. Clients fetch from their last `seq`. */
+  | { type: "mls"; seq: number; epoch: number }
   | { type: "error"; error: string; clientId?: string };
+
+/** One entry in a chat's MLS log, as the server hands it out. */
+export interface MlsLogEntry {
+  seq: number;
+  epoch: number;
+  kind: "commit" | "application";
+  senderId: string;
+  deviceId: string;
+  message: string;
+  clientId: string | null;
+  createdAt: number;
+}
+
+/** What a phone needs to know about a chat's MLS group before acting on it. */
+export interface MlsGroupState {
+  mode: "v1" | "mls";
+  epoch: number;
+  lastSeq: number;
+  /** Who the server believes is in the group, by leaf. */
+  roster: { leafIndex: number; userId: string; deviceId: string }[];
+  /** Phones of current members that aren't in the group yet. Any member may add them. */
+  pendingAdds: { userId: string; deviceId: string }[];
+  /** Phones in the group that should be gone. The next sender must commit their removal first. */
+  pendingRemovals: { leafIndex: number; userId: string; deviceId: string }[];
+  /** Every current member's MLS-capable phones. Credentials must match one of these. */
+  directory: { userId: string; deviceId: string; signatureKey: string }[];
+}
 
 export interface ClientSocketEvent {
   type: "send";

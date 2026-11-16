@@ -71,6 +71,13 @@
       "when": 1794554243527,
       "tag": "0009_big_patch",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "6",
+      "when": 1794867242642,
+      "tag": "0010_familiar_talkback",
+      "breakpoints": true
     }
   ]
 }
