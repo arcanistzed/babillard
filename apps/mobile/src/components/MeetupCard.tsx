@@ -12,6 +12,9 @@ import { t, venueLabel } from "@/i18n";
 export function stateLine(meetup: MeetupSummary): string {
   switch (meetup.state) {
     case "confirmed":
+      // The meetup is on, but not for someone who said they can't come.
+      if (meetup.myResponse === "no") return t("On for the others. You said you can't make it.", "Confirmée pour les autres. Vous avez dit que vous ne pouvez pas venir.");
+      if (meetup.myResponse === "maybe") return t("It's on. You said maybe.", "C'est confirmé. Vous avez répondu peut-être.");
       return t("It's on", "C'est confirmé");
     case "cancelled":
       return t("Cancelled", "Annulée");

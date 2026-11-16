@@ -1,7 +1,8 @@
-import { MEETUP_REPEAT_MS, isCheckinDue, isMatchExpired, isNudgeDue, isProposalStale, isReminderDue, pickBilingualOpener } from "@babillard/shared";
+import { MEETUP_REPEAT_MS, isCheckinDue, isMatchExpired, isNudgeDue, isProposalStale, isReminderDue, pickBilingualOpener, settledMeetupState } from "@babillard/shared";
 import { deleteAccount } from "./lib/accounts";
 import { sendEmail } from "./lib/email";
-import { and, eq, inArray, isNotNull, isNull, lt, lte, sql } from "drizzle-orm";
+import { settleMeetup } from "./lib/meetupState";
+import { and, eq, gt, inArray, isNotNull, isNull, lt, lte, sql } from "drizzle-orm";
 import { getDb, schema, type Db } from "./db";
 import { jobOffsets } from "./lib/config";
 import { sendPush } from "./lib/push";
@@ -12,7 +13,7 @@ const SWEEP_BATCH = 200;
 /** Every time-based job lives here. Each step claims a row before notifying, so a retry cannot double-send. */
 export async function runSweep(env: Env, now = Date.now()): Promise<void> {
   const db = getDb(env);
-  const jobs = { nudgeMatches, expireMatches, remindMeetups, checkInMeetups, cancelStaleProposals, continueSeries, removeOldRecords, warnInactiveAccounts, deleteInactiveAccounts };
+  const jobs = { nudgeMatches, expireMatches, settleMeetups, remindMeetups, checkInMeetups, cancelStaleProposals, continueSeries, removeOldRecords, warnInactiveAccounts, deleteInactiveAccounts };
   for (const [name, job] of Object.entries(jobs)) {
     try {
       const handled = await job(env, db, now);
@@ -69,12 +70,41 @@ async function expireMatches(_env: Env, db: Db, now: number): Promise<number> {
   return expired.length;
 }
 
-async function responders(db: Db, meetupId: string, answers: ("yes" | "maybe")[]): Promise<string[]> {
+/** People still in the chat who gave one of these answers. Someone who left can't open the meetup anymore. */
+async function responders(db: Db, meetup: { id: string; conversationId: string }, answers: ("yes" | "maybe")[]): Promise<string[]> {
   const rows = await db
     .select({ userId: schema.meetupResponses.userId })
     .from(schema.meetupResponses)
-    .where(and(eq(schema.meetupResponses.meetupId, meetupId), inArray(schema.meetupResponses.response, answers)));
+    .innerJoin(schema.conversationMembers, and(eq(schema.conversationMembers.userId, schema.meetupResponses.userId), eq(schema.conversationMembers.conversationId, meetup.conversationId)))
+    .where(and(eq(schema.meetupResponses.meetupId, meetup.id), inArray(schema.meetupResponses.response, answers)));
   return rows.map((row) => row.userId);
+}
+
+/**
+ * Leaving a group or deleting an account removes someone's yes without anyone answering, so nothing in a request settles the meetup.
+ * This catches those within one sweep. Only meetups that need to change are touched.
+ */
+async function settleMeetups(env: Env, db: Db, now: number): Promise<number> {
+  const yes = sql<number>`(select count(*) from ${schema.meetupResponses} inner join ${schema.conversationMembers} on ${schema.conversationMembers.userId} = ${schema.meetupResponses.userId} and ${schema.conversationMembers.conversationId} = ${schema.meetups.conversationId} where ${schema.meetupResponses.meetupId} = ${schema.meetups.id} and ${schema.meetupResponses.response} = 'yes')`;
+  const members = sql<number>`(select count(*) from ${schema.conversationMembers} where ${schema.conversationMembers.conversationId} = ${schema.meetups.conversationId})`;
+  const candidates = await db
+    .select({ meetup: schema.meetups, kind: schema.conversations.kind, yes, members })
+    .from(schema.meetups)
+    .innerJoin(schema.conversations, eq(schema.conversations.id, schema.meetups.conversationId))
+    .where(and(inArray(schema.meetups.state, ["proposed", "confirmed"]), gt(schema.meetups.startsAt, now)))
+    .orderBy(schema.meetups.startsAt)
+    .limit(SWEEP_BATCH * 5);
+
+  let handled = 0;
+  for (const { meetup, kind, yes: yesCount, members: memberCount } of candidates) {
+    if (settledMeetupState(meetup, kind, yesCount, memberCount, now) === meetup.state) continue;
+    const settled = await settleMeetup(env, db, meetup, kind, { now });
+    if (settled.state !== meetup.state) {
+      await env.CHAT_ROOM.getByName(meetup.conversationId).notifyMeetupChanged(meetup.id);
+      handled += 1;
+    }
+  }
+  return handled;
 }
 
 async function remindMeetups(env: Env, db: Db, now: number): Promise<number> {
@@ -91,10 +121,10 @@ async function remindMeetups(env: Env, db: Db, now: number): Promise<number> {
     const claimed = await db
       .update(schema.meetups)
       .set({ reminderSentAt: now })
-      .where(and(eq(schema.meetups.id, meetup.id), isNull(schema.meetups.reminderSentAt)))
+      .where(and(eq(schema.meetups.id, meetup.id), eq(schema.meetups.state, "confirmed"), isNull(schema.meetups.reminderSentAt)))
       .returning({ id: schema.meetups.id });
     if (claimed.length === 0) continue;
-    await sendPush(env, await responders(db, meetup.id, ["yes", "maybe"]), {
+    await sendPush(env, await responders(db, meetup, ["yes", "maybe"]), {
       title: "Your meetup is coming up",
       body: meetup.venueNote ? `Soon at ${meetup.venueNote}` : "It starts soon.",
       fr: { title: "Votre rencontre approche", body: meetup.venueNote ? `Bientôt à ${meetup.venueNote}` : "Ça commence bientôt." },
@@ -119,10 +149,10 @@ async function checkInMeetups(env: Env, db: Db, now: number): Promise<number> {
     const claimed = await db
       .update(schema.meetups)
       .set({ checkinSentAt: now, state: "done" })
-      .where(and(eq(schema.meetups.id, meetup.id), isNull(schema.meetups.checkinSentAt)))
+      .where(and(eq(schema.meetups.id, meetup.id), eq(schema.meetups.state, "confirmed"), isNull(schema.meetups.checkinSentAt)))
       .returning({ id: schema.meetups.id });
     if (claimed.length === 0) continue;
-    await sendPush(env, await responders(db, meetup.id, ["yes"]), {
+    await sendPush(env, await responders(db, meetup, ["yes"]), {
       title: "Did you meet?",
       body: "Tell us how it went.",
       fr: { title: "Vous êtes-vous rencontrés?", body: "Dites-nous comment ça s'est passé." },

@@ -58,7 +58,15 @@ conversations.get("/", async (c) => {
     db
       .select({ conversationId: schema.meetups.conversationId, startsAt: sql<number>`min(${schema.meetups.startsAt})` })
       .from(schema.meetups)
-      .where(and(inArray(schema.meetups.conversationId, ids), eq(schema.meetups.state, "confirmed"), gt(schema.meetups.startsAt, now)))
+      .where(
+        and(
+          inArray(schema.meetups.conversationId, ids),
+          eq(schema.meetups.state, "confirmed"),
+          gt(schema.meetups.startsAt, now),
+          // Someone who said they can't make it isn't meeting anyone, even if the others still are.
+          sql`not exists (select 1 from ${schema.meetupResponses} where ${schema.meetupResponses.meetupId} = ${schema.meetups.id} and ${schema.meetupResponses.userId} = ${user.id} and ${schema.meetupResponses.response} = 'no')`,
+        ),
+      )
       .groupBy(schema.meetups.conversationId),
     blockedWith(db, user.id),
   ]);

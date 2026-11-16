@@ -1,10 +1,11 @@
-import { didMeetSchema, isMeetupConfirmed, meetupOutcomeSchema, meetupProposalSchema, meetupRepeatSchema, meetupResponseSchema, requiredYesCount, type ConversationKind, type MeetupSummary } from "@babillard/shared";
+import { didMeetSchema, meetupOutcomeSchema, meetupProposalSchema, meetupRepeatSchema, meetupResponseSchema, requiredYesCount, type ConversationKind, type MeetupSummary } from "@babillard/shared";
 import { requestLanguage, venueNames } from "../lib/language";
-import { and, desc, eq, inArray, sql } from "drizzle-orm";
+import { and, desc, eq, inArray } from "drizzle-orm";
 import { Hono } from "hono";
 import { getDb, schema, type Db } from "../db";
 import { withoutBlocksWith } from "../lib/blocks";
 import { fail, parseJson } from "../lib/http";
+import { memberIds, settleMeetup, type Backout } from "../lib/meetupState";
 import { sendPush } from "../lib/push";
 import { newId, randomToken } from "../lib/tokens";
 import { requireAuth, requireOnboarded } from "../middleware";
@@ -16,22 +17,6 @@ type MeetupRow = typeof schema.meetups.$inferSelect;
 const MAX_DURATION_MS = 24 * 60 * 60 * 1000;
 const START_GRACE_MS = 60 * 1000;
 
-async function memberCount(db: Db, conversationId: string): Promise<number> {
-  const [row] = await db
-    .select({ count: sql<number>`count(*)` })
-    .from(schema.conversationMembers)
-    .where(eq(schema.conversationMembers.conversationId, conversationId));
-  return row?.count ?? 0;
-}
-
-async function memberIds(db: Db, conversationId: string): Promise<string[]> {
-  const rows = await db
-    .select({ id: schema.conversationMembers.userId })
-    .from(schema.conversationMembers)
-    .where(eq(schema.conversationMembers.conversationId, conversationId));
-  return rows.map((row) => row.id);
-}
-
 export async function meetupSummaries(env: Env, db: Db, conversationId: string, kind: ConversationKind, userId: string, only?: string): Promise<MeetupSummary[]> {
   const rows = await db
     .select()
@@ -42,18 +27,20 @@ export async function meetupSummaries(env: Env, db: Db, conversationId: string, 
   if (rows.length === 0) return [];
 
   const ids = rows.map((row) => row.id);
-  const [responses, count, outcomes] = await Promise.all([
+  const [responses, members, outcomes] = await Promise.all([
     db.select().from(schema.meetupResponses).where(inArray(schema.meetupResponses.meetupId, ids)),
-    memberCount(db, conversationId),
+    memberIds(db, conversationId),
     db.select().from(schema.meetupOutcomes).where(and(inArray(schema.meetupOutcomes.meetupId, ids), eq(schema.meetupOutcomes.userId, userId))),
   ]);
-  return rows.map((row) => toSummary(env, row, responses, outcomes, kind, count, userId));
+  return rows.map((row) => toSummary(env, row, responses, outcomes, kind, members, userId));
 }
 
 type OutcomeRow = typeof schema.meetupOutcomes.$inferSelect;
 
-function toSummary(env: Env, row: MeetupRow, responses: (typeof schema.meetupResponses.$inferSelect)[], outcomes: OutcomeRow[], kind: ConversationKind, count: number, userId: string): MeetupSummary {
+function toSummary(env: Env, row: MeetupRow, responses: (typeof schema.meetupResponses.$inferSelect)[], outcomes: OutcomeRow[], kind: ConversationKind, members: string[], userId: string): MeetupSummary {
   const own = responses.filter((response) => response.meetupId === row.id);
+  // A yes from someone who has since left the chat doesn't count, the same as when the server decides whether the meetup is on.
+  const present = new Set(members);
   const mine = own.find((response) => response.userId === userId);
   const outcome = outcomes.find((entry) => entry.meetupId === row.id);
   return {
@@ -65,8 +52,8 @@ function toSummary(env: Env, row: MeetupRow, responses: (typeof schema.meetupRes
     venueKind: row.venueKind,
     venueNote: row.venueNote,
     state: row.state,
-    yesCount: own.filter((response) => response.response === "yes").length,
-    requiredYes: requiredYesCount(kind, count),
+    yesCount: own.filter((response) => response.response === "yes" && present.has(response.userId)).length,
+    requiredYes: requiredYesCount(kind, members.length),
     myResponse: mine?.response ?? null,
     myDidMeet: mine?.didMeet ?? null,
     myOutcome: outcome ? { mindChanged: outcome.mindChanged, endedUp: outcome.endedUp, meetAgain: outcome.meetAgain, takeaway: outcome.takeaway ?? "" } : null,
@@ -169,34 +156,23 @@ meetups.post("/:id/respond", async (c) => {
   const { meetup, conversation } = await loadMeetup(db, c.req.param("id"), user.id);
   if (meetup.state === "cancelled" || meetup.state === "done") throw fail(409, "meetup_closed");
 
+  const [previous] = await db
+    .select({ response: schema.meetupResponses.response })
+    .from(schema.meetupResponses)
+    .where(and(eq(schema.meetupResponses.meetupId, meetup.id), eq(schema.meetupResponses.userId, user.id)));
   const now = Date.now();
   await db
     .insert(schema.meetupResponses)
     .values({ meetupId: meetup.id, userId: user.id, response, respondedAt: now })
     .onConflictDoUpdate({ target: [schema.meetupResponses.meetupId, schema.meetupResponses.userId], set: { response, respondedAt: now } });
 
-  const [yes] = await db
-    .select({ count: sql<number>`count(*)` })
-    .from(schema.meetupResponses)
-    .where(and(eq(schema.meetupResponses.meetupId, meetup.id), eq(schema.meetupResponses.response, "yes")));
-
-  const stub = c.env.CHAT_ROOM.getByName(meetup.conversationId);
-  const count = await memberCount(db, meetup.conversationId);
-  if (meetup.state === "proposed" && isMeetupConfirmed(conversation.kind, yes?.count ?? 0, count)) {
-    const confirmed = await db
-      .update(schema.meetups)
-      .set({ state: "confirmed" })
-      .where(and(eq(schema.meetups.id, meetup.id), eq(schema.meetups.state, "proposed")))
-      .returning({ id: schema.meetups.id });
-    if (confirmed.length > 0) {
-      const where = venueName(meetup);
-      await stub.postSystem(meetup.conversationId, `It's on! Meetup confirmed at ${where.en}.`, { fr: `C'est confirmé! Rencontre: ${where.fr}.`, kind: "meetup", meetupId: meetup.id });
-      console.log(JSON.stringify({ event: "meetup_confirmed", meetupId: meetup.id, conversationKind: conversation.kind }));
-      c.executionCtx.waitUntil(
-        sendPush(c.env, await memberIds(db, meetup.conversationId), { title: "Your meetup is on", body: where.en, fr: { title: "Votre rencontre est confirmée", body: where.fr }, data: { screen: "meetup", id: meetup.id } }),
-      );
-    }
+  let backout: Backout | undefined;
+  if (previous?.response === "yes" && response !== "yes") {
+    const [profile] = await db.select({ name: schema.profiles.displayName }).from(schema.profiles).where(eq(schema.profiles.userId, user.id));
+    backout = { userId: user.id, name: { en: profile?.name ?? "Someone", fr: profile?.name ?? "Quelqu'un" }, response };
   }
+  await settleMeetup(c.env, db, meetup, conversation.kind, { now, backout, waitUntil: (promise) => c.executionCtx.waitUntil(promise) });
+  const stub = c.env.CHAT_ROOM.getByName(meetup.conversationId);
   await stub.notifyMeetupChanged(meetup.id);
 
   const [fresh] = await db.select().from(schema.meetups).where(eq(schema.meetups.id, meetup.id));

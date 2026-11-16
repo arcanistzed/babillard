@@ -82,7 +82,7 @@ export default function MeetupScreen() {
 
       {upcoming ? (
         <View style={styles.actions}>
-          {meetup.state === "confirmed" ? <Button label={t("Add to calendar", "Ajouter au calendrier")} onPress={addToCalendar} /> : null}
+          {meetup.state === "confirmed" && meetup.myResponse !== "no" ? <Button label={t("Add to calendar", "Ajouter au calendrier")} onPress={addToCalendar} /> : null}
           {meetup.inviteOpen ? (
             <Button label={t("Invite someone", "Inviter quelqu'un")} kind="secondary" onPress={() => void inviteSomeone()} />
           ) : (
