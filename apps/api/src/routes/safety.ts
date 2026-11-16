@@ -49,6 +49,8 @@ safety.post("/reports", async (c) => {
       if (body !== null) evidence.push({ id: message.id, senderId: message.senderId, body, createdAt: message.createdAt });
     }
     evidence.sort((a, b) => a.createdAt - b.createdAt);
+    // Messages only from other people say nothing about this person and expose bystanders, so they aren't kept.
+    if (!evidence.some((item) => item.senderId === input.targetUserId)) evidence.length = 0;
   }
 
   await db.insert(schema.reports).values({
@@ -78,8 +80,9 @@ safety.post("/blocks/:userId", async (c) => {
   const blockedId = c.req.param("userId");
   if (blockedId === user.id) throw fail(400, "cannot_block_self");
   const db = getDb(c.env);
-  const [target] = await db.select({ id: schema.users.id }).from(schema.users).where(eq(schema.users.id, blockedId));
-  if (!target) throw fail(404, "person_not_found");
+  const [target] = await db.select({ id: schema.users.id, status: schema.users.status }).from(schema.users).where(eq(schema.users.id, blockedId));
+  // A deleted account has nobody behind it, and a block on it would never reach them if they came back.
+  if (!target || target.status === "deleted") throw fail(404, "person_not_found");
 
   await db.insert(schema.blocks).values({ blockerId: user.id, blockedId, createdAt: Date.now() }).onConflictDoNothing();
 

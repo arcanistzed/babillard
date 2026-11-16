@@ -67,8 +67,8 @@ export default function ChatInfo() {
           <T variant="bodyBold">{t(`You blocked ${blockedNames.join(", ")}`, `Vous avez bloqué ${blockedNames.join(", ")}`)}</T>
           <T>
             {t(
-              "You don't see each other's messages or profiles here, but they still see this group's meetup plans, including the time and place. Leave the group to keep its plans away from them.",
-              "Vous ne voyez plus vos messages ni vos profils respectifs ici, mais les personnes bloquées voient encore les rencontres prévues dans ce groupe, y compris l'heure et le lieu. Quittez le groupe pour que ses projets leur restent cachés.",
+              "You don't see each other's messages or profiles here, but they can still see this group's meetup plans, including the time and place. Leave the group to keep its plans away from them.",
+              "Vous ne voyez plus vos messages ni vos profils respectifs ici, mais les personnes bloquées peuvent encore voir les rencontres prévues dans ce groupe, y compris l'heure et le lieu. Quittez le groupe pour que ses projets leur restent cachés.",
             )}
           </T>
         </View>

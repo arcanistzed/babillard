@@ -3,6 +3,7 @@ import { requestLanguage, venueNames } from "../lib/language";
 import { and, desc, eq, inArray, sql } from "drizzle-orm";
 import { Hono } from "hono";
 import { getDb, schema, type Db } from "../db";
+import { withoutBlocksWith } from "../lib/blocks";
 import { fail, parseJson } from "../lib/http";
 import { sendPush } from "../lib/push";
 import { newId, randomToken } from "../lib/tokens";
@@ -145,8 +146,9 @@ meetups.post("/", async (c) => {
     fr: `${profile?.name ?? "Quelqu'un"} a proposé une rencontre: ${venueName(meetup).fr}.`,
     kind: "meetup",
     meetupId: meetup.id,
+    actorId: user.id,
   });
-  const others = (await memberIds(db, conversationId)).filter((id) => id !== user.id);
+  const others = await withoutBlocksWith(db, user.id, (await memberIds(db, conversationId)).filter((id) => id !== user.id));
   c.executionCtx.waitUntil(
     sendPush(c.env, others, { title: `${name} wants to meet`, body: venueName(meetup).en, fr: { title: `${profile?.name ?? "Quelqu'un"} veut vous rencontrer`, body: venueName(meetup).fr }, data: { screen: "meetup", id: meetup.id } }),
   );
@@ -265,6 +267,7 @@ meetups.post("/:id/invite", async (c) => {
     const [profile] = await db.select({ name: schema.profiles.displayName }).from(schema.profiles).where(eq(schema.profiles.userId, user.id));
     await c.env.CHAT_ROOM.getByName(meetup.conversationId).postSystem(meetup.conversationId, `${profile?.name ?? "Someone"} is inviting a guest to the meetup.`, {
       fr: `${profile?.name ?? "Quelqu'un"} invite une personne à la rencontre.`,
+      actorId: user.id,
     });
   }
   return c.json(await summaryFor(c.env, db, meetup, conversation.kind, user.id));

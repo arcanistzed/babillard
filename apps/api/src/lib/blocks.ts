@@ -27,6 +27,12 @@ export async function blockedWithAmong(db: Db, userId: string, others: string[])
   return new Set(rows.map((row) => (row.blockerId === userId ? row.blockedId : row.blockerId)));
 }
 
+/** These people, less anyone with a block either way with `actorId`. For pushes about something that person did. */
+export async function withoutBlocksWith(db: Db, actorId: string, userIds: string[]): Promise<string[]> {
+  const hidden = await blockedWithAmong(db, actorId, userIds);
+  return userIds.filter((id) => !hidden.has(id));
+}
+
 export async function blocksBetween(db: Db, userIds: string[]): Promise<BlockPair[]> {
   if (userIds.length < 2) return [];
   const rows = await db

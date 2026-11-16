@@ -9,12 +9,13 @@ import { blockedEmailTombstone, deletedEmail, releaseUnblockedTombstones } from 
  */
 export async function deleteAccount(env: Env, id: string): Promise<void> {
   const db = getDb(env);
-  const [[account], blockedBy, theirBlocks] = await Promise.all([
+  const [[account], theirBlocks] = await Promise.all([
     db.select({ email: schema.users.email }).from(schema.users).where(eq(schema.users.id, id)),
-    db.select({ id: schema.blocks.blockerId }).from(schema.blocks).where(eq(schema.blocks.blockedId, id)).limit(1),
     db.select({ id: schema.blocks.blockedId }).from(schema.blocks).where(eq(schema.blocks.blockerId, id)),
   ]);
-  const keptEmail = !account || blockedBy.length === 0 ? deletedEmail(id) : account.email.endsWith("@deleted.invalid") ? account.email : await blockedEmailTombstone(env.AUTH_SECRET, account.email);
+  const hashed = !account ? deletedEmail(id) : account.email.endsWith("@deleted.invalid") ? account.email : await blockedEmailTombstone(env.AUTH_SECRET, account.email);
+  // Decided inside the batch, so a block made or removed while this runs is counted.
+  const keptEmail = sql`CASE WHEN EXISTS (SELECT 1 FROM blocks WHERE blocked_id = ${id}) THEN ${hashed} ELSE ${deletedEmail(id)} END`;
   const memberships = await db
     .select({ id: schema.conversationMembers.conversationId })
     .from(schema.conversationMembers)

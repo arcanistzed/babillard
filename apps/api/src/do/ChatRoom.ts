@@ -2,7 +2,7 @@ import { DurableObject } from "cloudflare:workers";
 import { sendMessageSchema, type ChatMessage, type Envelope, type ServerSocketEvent } from "@babillard/shared";
 import { and, eq, inArray, isNull, ne, notInArray, sql } from "drizzle-orm";
 import { getDb, schema } from "../db";
-import { blockedWithAmong } from "../lib/blocks";
+import { blockedWith, blockedWithAmong } from "../lib/blocks";
 import { newId } from "../lib/tokens";
 import { sendPush } from "../lib/push";
 
@@ -21,14 +21,16 @@ interface MessageRow extends Record<string, SqlStorageValue> {
   meetup_id: string | null;
   created_at: number;
   client_id: string | null;
+  /** Who caused an app message, such as the person who proposed a meetup. Never sent to phones. */
+  actor_id: string | null;
 }
 
 export class SendRejected extends Error {}
 
 const PREVIEW_LENGTH = 120;
 const HISTORY_LIMIT = 50;
-/** Takes a JSON array of sender IDs to leave out. App messages have no sender and always show. */
-const VISIBLE = "(sender_id IS NULL OR sender_id NOT IN (SELECT value FROM json_each(?)))";
+/** Takes a JSON array of people to leave out: their messages, and app messages about something they did. */
+const VISIBLE = "(coalesce(sender_id, actor_id) IS NULL OR coalesce(sender_id, actor_id) NOT IN (SELECT value FROM json_each(?)))";
 
 /** People's messages are stored as encrypted envelopes in `body`. The server can't read them. */
 function toMessage(row: MessageRow): ChatMessage {
@@ -69,6 +71,9 @@ export class ChatRoom extends DurableObject<Env> {
       // Rooms created before French was added lack this column.
       if (!this.ctx.storage.sql.exec("SELECT 1 FROM pragma_table_info('messages') WHERE name = 'body_fr'").toArray().length) {
         this.ctx.storage.sql.exec("ALTER TABLE messages ADD COLUMN body_fr TEXT");
+      }
+      if (!this.ctx.storage.sql.exec("SELECT 1 FROM pragma_table_info('messages') WHERE name = 'actor_id'").toArray().length) {
+        this.ctx.storage.sql.exec("ALTER TABLE messages ADD COLUMN actor_id TEXT");
       }
       // Messages from before encryption were plain text, and shouldn't sit readable on the server.
       if (!this.ctx.storage.kv.get("plaintext_removed")) {
@@ -213,14 +218,25 @@ export class ChatRoom extends DurableObject<Env> {
     }
   }
 
-  /** System and meetup messages. The caller decides who gets a push. */
-  async postSystem(conversationId: string, body: string, options: { fr?: string; kind?: "system" | "meetup"; meetupId?: string } = {}): Promise<ChatMessage> {
-    const message = this.insert({ senderId: null, body, bodyFr: options.fr ?? null, kind: options.kind ?? "system", meetupId: options.meetupId ?? null, clientId: null });
-    this.broadcast({ type: "message", message });
+  /**
+   * System and meetup messages. The caller decides who gets a push.
+   * `actorId` names the person whose action this reports. A meetup message without one is about
+   * whoever proposed the meetup. People with a block either way with the actor aren't sent it,
+   * so a blocked person can't reach the blocker through a meetup's free-text note.
+   */
+  async postSystem(conversationId: string, body: string, options: { fr?: string; kind?: "system" | "meetup"; meetupId?: string; actorId?: string } = {}): Promise<ChatMessage> {
     const db = getDb(this.env);
+    let actorId = options.actorId ?? null;
+    if (!actorId && options.meetupId) {
+      const [meetup] = await db.select({ proposedBy: schema.meetups.proposedBy }).from(schema.meetups).where(eq(schema.meetups.id, options.meetupId));
+      actorId = meetup?.proposedBy ?? null;
+    }
+    const message = this.insert({ senderId: null, actorId, body, bodyFr: options.fr ?? null, kind: options.kind ?? "system", meetupId: options.meetupId ?? null, clientId: null });
+    this.broadcast({ type: "message", message }, actorId ? await blockedWith(db, actorId) : undefined);
     await db
       .update(schema.conversations)
-      .set({ lastMessagePreview: body.slice(0, PREVIEW_LENGTH), lastMessagePreviewFr: options.fr?.slice(0, PREVIEW_LENGTH) ?? null, lastMessageEnvelope: null, lastMessageSenderId: null, lastMessageAt: message.createdAt })
+      // The actor goes in as the sender, so the inbox hides this preview from anyone with a block with them.
+      .set({ lastMessagePreview: body.slice(0, PREVIEW_LENGTH), lastMessagePreviewFr: options.fr?.slice(0, PREVIEW_LENGTH) ?? null, lastMessageEnvelope: null, lastMessageSenderId: actorId, lastMessageAt: message.createdAt })
       .where(eq(schema.conversations.id, conversationId));
     return message;
   }
@@ -283,12 +299,13 @@ export class ChatRoom extends DurableObject<Env> {
     this.kick(userId);
   }
 
-  private insert(input: { senderId: string | null; body: string; bodyFr?: string | null; kind: ChatMessage["kind"]; meetupId: string | null; clientId: string | null }): ChatMessage {
+  private insert(input: { senderId: string | null; actorId?: string | null; body: string; bodyFr?: string | null; kind: ChatMessage["kind"]; meetupId: string | null; clientId: string | null }): ChatMessage {
     const row = this.ctx.storage.sql
       .exec<MessageRow>(
-        "INSERT INTO messages (id, sender_id, body, body_fr, kind, meetup_id, created_at, client_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?) RETURNING *",
+        "INSERT INTO messages (id, sender_id, actor_id, body, body_fr, kind, meetup_id, created_at, client_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?) RETURNING *",
         newId(),
         input.senderId,
+        input.actorId ?? null,
         input.body,
         input.bodyFr ?? null,
         input.kind,

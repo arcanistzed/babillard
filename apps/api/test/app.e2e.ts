@@ -1175,6 +1175,70 @@ describe("safety", () => {
     expect(await status(b.get(`/conversations/${groupId}/members/${a.id}`))).toBe(200);
   });
 
+  it("doesn't pass a meetup proposal, its note, or its push across a block in a shared group", async () => {
+    const a = await person("san-francisco", { displayName: "Careful Blocker" });
+    const b = await person("san-francisco", { displayName: "Blocked Proposer" });
+    const [c, d] = [await person("san-francisco"), await person("san-francisco")];
+    let groupId: string | null = null;
+    for (const client of [a, b, c, d]) groupId = (await client.post("/deck/topics/philosophy-of-science/swipe", { direction: "right" })).groupConversationId ?? groupId;
+    await a.post(`/safety/blocks/${b.id}`);
+    const aSocket = await openSocket(a, groupId!);
+    const cSocket = await openSocket(c, groupId!);
+
+    const startsAt = Date.now() + 3_600_000;
+    const proposal = await b.post(`/meetups?conversationId=${groupId}`, { startsAt, endsAt: startsAt + 3_600_000, venueKind: "cafe", venueNote: "a note only bystanders should get" });
+    const isProposal = (m: any) => m.meetupId === proposal.id;
+    await waitFor(async () => cSocket.events, (events) => events.some((event) => event.type === "message" && isProposal(event.message)), "the proposal reaching a bystander");
+    expect(aSocket.events.some((event) => event.type === "message" && isProposal(event.message))).toBe(false);
+    expect((await a.read(groupId!)).some(isProposal)).toBe(false);
+    expect((await c.read(groupId!)).some(isProposal)).toBe(true);
+    expect((await a.get("/conversations")).find((row: any) => row.id === groupId)).toMatchObject({ lastMessagePreview: null, lastMessageSenderId: null });
+    expect((await c.get("/conversations")).find((row: any) => row.id === groupId).lastMessagePreview).toContain("a note only bystanders should get");
+    const pushes = await waitFor(async () => pushLog().filter((push) => push.title === "Blocked Proposer wants to meet" && push.data.id === proposal.id), (rows) => rows.length > 0, "the proposal push");
+    expect(pushes.every((push) => !push.userIds.includes(a.id) && push.userIds.includes(d.id))).toBe(true);
+
+    // The other way round, the blocked person isn't told about the blocker's meetup or that they're inviting a guest.
+    const bSocket = await openSocket(b, groupId!);
+    const mine = await a.post(`/meetups?conversationId=${groupId}`, { startsAt, endsAt: startsAt + 3_600_000, venueKind: "park", venueNote: "by the fountain" });
+    await a.post(`/meetups/${mine.id}/invite`);
+    await waitFor(async () => cSocket.events, (events) => events.some((event) => event.type === "message" && event.message.body === "Careful Blocker is inviting a guest to the meetup."), "the invite note reaching a bystander");
+    expect(bSocket.events.some((event) => event.type === "message" && (event.message.meetupId === mine.id || event.message.body.startsWith("Careful Blocker")))).toBe(false);
+    expect((await b.read(groupId!)).some((m: any) => m.meetupId === mine.id || m.body.startsWith("Careful Blocker"))).toBe(false);
+    const theirs = await waitFor(async () => pushLog().filter((push) => push.title === "Careful Blocker wants to meet" && push.data.id === mine.id), (rows) => rows.length > 0, "the blocker's proposal push");
+    expect(theirs.some((push) => push.userIds.includes(b.id))).toBe(false);
+    for (const { socket } of [aSocket, bSocket, cSocket]) socket.close();
+  });
+
+  it("shares a blocked person's messages as report evidence only when the reporter asks for them, and never bystanders' alone", async () => {
+    const a = await person("san-francisco");
+    const b = await person("san-francisco", { displayName: "Evidence Target" });
+    const [c, d] = [await person("san-francisco"), await person("san-francisco")];
+    let groupId: string | null = null;
+    for (const client of [a, b, c, d]) groupId = (await client.post("/deck/topics/origins-of-life/swipe", { direction: "right" })).groupConversationId ?? groupId;
+    await a.post(`/safety/blocks/${b.id}`);
+    await b.say(groupId!, "what the target said");
+    await c.say(groupId!, "what a bystander said");
+
+    const keys = (messages: any[]) => messages.filter((message) => message.contentKey).map((message) => ({ messageId: message.id, contentKey: message.contentKey }));
+    // Without asking, the target's messages stay hidden, and bystanders' alone aren't kept.
+    const hidden = await a.read(groupId!, "?around=");
+    expect(hidden.some((m: any) => m.senderId === b.id)).toBe(false);
+    await a.post("/safety/reports", { targetUserId: b.id, conversationId: groupId, reason: "harassment", evidence: keys(hidden) });
+    let article = (await adminPage("/admin/reports")).split("<article>").find((part) => part.includes("Evidence Target"))!;
+    expect(article).not.toContain("what a bystander said");
+    await adminPost(`/admin/reports/${await openReportId("Evidence Target")}`, { action: "resolved" });
+
+    // The report screen asks for the person it's about, and only a blocker gets their messages back that way.
+    const nearby = await a.read(groupId!, `?around=&reporting=${b.id}`);
+    expect(nearby.some((m: any) => m.body === "what the target said")).toBe(true);
+    expect((await c.read(groupId!, `?around=&reporting=${d.id}`)).length).toBeGreaterThan(0);
+    expect((await b.read(groupId!, `?around=&reporting=${a.id}`)).some((m: any) => m.senderId === a.id)).toBe(false);
+    await a.post("/safety/reports", { targetUserId: b.id, conversationId: groupId, reason: "harassment", evidence: keys(nearby) });
+    article = (await adminPage("/admin/reports")).split("<article>").find((part) => part.includes("Evidence Target"))!;
+    expect(article).toContain("what the target said");
+    await adminPost(`/admin/reports/${await openReportId("Evidence Target")}`, { action: "resolved" });
+  });
+
   it("lists no shared groups when the two people share none", async () => {
     const a = await person("san-francisco");
     const b = await person("san-francisco");

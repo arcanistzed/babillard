@@ -47,7 +47,9 @@ export default function Report() {
     if (!params.conversationId || !me) return [];
     try {
       const keys = await readingKeys(me.id);
-      const nearby = await api.get<ChatMessage[]>(`/conversations/${params.conversationId}/messages?around=${params.messageId ?? ""}`);
+      const nearby = await api.get<ChatMessage[]>(`/conversations/${params.conversationId}/messages?around=${params.messageId ?? ""}&reporting=${params.targetUserId}`);
+      // Without anything this person wrote, the nearby messages are only bystanders', so none are shared.
+      if (!nearby.some((message) => message.senderId === params.targetUserId)) return [];
       return nearby.flatMap((message) => {
         const { contentKey } = readMessage(message, params.conversationId!, keys);
         return contentKey ? [{ messageId: message.id, contentKey }] : [];
@@ -157,8 +159,8 @@ function Done({ name, reported, blocked, sharedGroups }: { name: string; reporte
           <T variant="heading">{t("Groups you're both still in", "Groupes où vous êtes encore tous les deux")}</T>
           <T muted>
             {t(
-              `${name} still sees the meetup plans made in these groups, including the time and place. Leave a group to keep its plans away from them.`,
-              `${name} voit encore les rencontres prévues dans ces groupes, y compris l'heure et le lieu. Quittez un groupe pour que ses projets lui restent cachés.`,
+              `${name} can still see the meetup plans made in these groups, including the time and place. Leave a group to keep its plans away from them.`,
+              `${name} peut encore voir les rencontres prévues dans ces groupes, y compris l'heure et le lieu. Quittez un groupe pour que ses projets lui restent cachés.`,
             )}
           </T>
           {sharedGroups.map((group) => (
