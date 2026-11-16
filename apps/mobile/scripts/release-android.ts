@@ -96,12 +96,13 @@ run("node", ["../site/scripts/build.ts"], apiDir);
 run("npx", ["wrangler", "deploy"], apiDir);
 console.log(`Released ${version} on babillard.app.`);
 
-/** What people would notice, from the feat and fix commits since the last release. */
+/** What people would notice: the feat and fix commits since the last release that touch the app's own code. */
 function releaseNotes(): string {
   const tags = run("git", ["tag", "--list", "v*", "--sort=-v:refname", "--merged", commit], mobileDir, true).split("\n").filter(Boolean);
   // Before the first tag, the previous version bump marks where the last release began.
   const since = tags[0] ?? run("git", ["log", "--format=%H", "--grep=^chore(mobile): version", "-n", "2", commit], mobileDir, true).split("\n").filter(Boolean)[1];
-  const subjects = run("git", ["log", "--format=%s", since ? `${since}..${commit}` : commit], mobileDir, true).split("\n");
+  const appCode = ["app", "src", "assets", "../../packages/shared/src"];
+  const subjects = run("git", ["log", "--format=%s", since ? `${since}..${commit}` : commit, "--", ...appCode], mobileDir, true).split("\n");
   const changes = subjects
     .map((subject) => /^(?:feat|fix)(?:\([^)]*\))?: (.+)$/.exec(subject)?.[1])
     .filter((change): change is string => Boolean(change))
