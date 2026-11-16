@@ -1,17 +1,18 @@
-import { isCheckinDue, isMatchExpired, isNudgeDue, isProposalStale, isReminderDue, pickBilingualOpener } from "@babillard/shared";
+import { MEETUP_REPEAT_MS, isCheckinDue, isMatchExpired, isNudgeDue, isProposalStale, isReminderDue, pickBilingualOpener } from "@babillard/shared";
 import { deleteAccount } from "./lib/accounts";
 import { sendEmail } from "./lib/email";
 import { and, eq, inArray, isNotNull, isNull, lt, lte, sql } from "drizzle-orm";
 import { getDb, schema, type Db } from "./db";
 import { jobOffsets } from "./lib/config";
 import { sendPush } from "./lib/push";
+import { newId, randomToken } from "./lib/tokens";
 
 const SWEEP_BATCH = 200;
 
 /** Every time-based job lives here. Each step claims a row before notifying, so a retry cannot double-send. */
 export async function runSweep(env: Env, now = Date.now()): Promise<void> {
   const db = getDb(env);
-  const jobs = { nudgeMatches, expireMatches, remindMeetups, checkInMeetups, cancelStaleProposals, removeOldRecords, warnInactiveAccounts, deleteInactiveAccounts };
+  const jobs = { nudgeMatches, expireMatches, remindMeetups, checkInMeetups, cancelStaleProposals, continueSeries, removeOldRecords, warnInactiveAccounts, deleteInactiveAccounts };
   for (const [name, job] of Object.entries(jobs)) {
     try {
       const handled = await job(env, db, now);
@@ -142,6 +143,79 @@ async function cancelStaleProposals(_env: Env, db: Db, now: number): Promise<num
   if (stale.length === 0) return 0;
   await db.update(schema.meetups).set({ state: "cancelled" }).where(inArray(schema.meetups.id, stale.map((meetup) => meetup.id)));
   return stale.length;
+}
+
+/**
+ * After a repeating meetup ends, proposes the next date at the same time and place and asks the chat.
+ * A date that was cancelled or never confirmed only skips that week, but two in a row end the series,
+ * so a group that has gone quiet stops getting proposals.
+ */
+async function continueSeries(env: Env, db: Db, now: number): Promise<number> {
+  const ended = await db
+    .select()
+    .from(schema.meetups)
+    .where(and(inArray(schema.meetups.repeat, ["weekly", "biweekly"]), isNull(schema.meetups.nextMeetupId), lte(schema.meetups.endsAt, now), inArray(schema.meetups.state, ["confirmed", "done", "cancelled"])))
+    .limit(SWEEP_BATCH);
+
+  let handled = 0;
+  for (const meetup of ended) {
+    if (meetup.repeat === "none") continue;
+    const stub = env.CHAT_ROOM.getByName(meetup.conversationId);
+    const [previous] = await db.select({ state: schema.meetups.state }).from(schema.meetups).where(eq(schema.meetups.nextMeetupId, meetup.id));
+    const members = await db.select({ id: schema.conversationMembers.userId }).from(schema.conversationMembers).where(eq(schema.conversationMembers.conversationId, meetup.conversationId));
+    if ((meetup.state === "cancelled" && previous?.state === "cancelled") || members.length < 2) {
+      const stopped = await db.update(schema.meetups).set({ repeat: "none" }).where(and(eq(schema.meetups.id, meetup.id), isNull(schema.meetups.nextMeetupId))).returning({ id: schema.meetups.id });
+      if (stopped.length > 0 && members.length >= 2) {
+        await stub.postSystem(meetup.conversationId, "This meetup stopped repeating, since the last two dates didn't happen.", {
+          fr: "Cette rencontre ne se répète plus, puisque les deux dernières dates n'ont pas eu lieu.",
+          kind: "meetup",
+          meetupId: meetup.id,
+        });
+      }
+      continue;
+    }
+
+    const interval = MEETUP_REPEAT_MS[meetup.repeat];
+    let startsAt = meetup.startsAt + interval;
+    while (startsAt <= now) startsAt += interval;
+    const nextId = newId();
+    // Claimed first, so a retried sweep can't propose the same date twice.
+    const claimed = await db.update(schema.meetups).set({ nextMeetupId: nextId }).where(and(eq(schema.meetups.id, meetup.id), isNull(schema.meetups.nextMeetupId))).returning({ id: schema.meetups.id });
+    if (claimed.length === 0) continue;
+    await db.insert(schema.meetups).values({
+      id: nextId,
+      conversationId: meetup.conversationId,
+      proposedBy: meetup.proposedBy,
+      startsAt,
+      endsAt: startsAt + (meetup.endsAt - meetup.startsAt),
+      venueKind: meetup.venueKind,
+      venueNote: meetup.venueNote,
+      state: "proposed",
+      shareToken: randomToken(18),
+      guestsWelcome: meetup.guestsWelcome,
+      repeat: meetup.repeat,
+      createdAt: now,
+    });
+
+    const weekly = meetup.repeat === "weekly";
+    await stub.postSystem(
+      meetup.conversationId,
+      weekly ? "Next week's meetup is proposed, same time and place. Are you in?" : "The meetup in two weeks is proposed, same time and place. Are you in?",
+      {
+        fr: weekly ? "La rencontre de la semaine prochaine est proposée, même heure et même lieu. Vous venez?" : "La rencontre dans deux semaines est proposée, même heure et même lieu. Vous venez?",
+        kind: "meetup",
+        meetupId: nextId,
+      },
+    );
+    await sendPush(env, members.map((member) => member.id), {
+      title: "Meeting again?",
+      body: weekly ? "Next week, same time and place." : "In two weeks, same time and place.",
+      fr: { title: "On se revoit?", body: weekly ? "La semaine prochaine, même heure et même lieu." : "Dans deux semaines, même heure et même lieu." },
+      data: { screen: "meetup", id: nextId },
+    });
+    handled += 1;
+  }
+  return handled;
 }
 
 const DAY_MS = 24 * 60 * 60 * 1000;

@@ -23,6 +23,8 @@ export default function MeetupScreen() {
 
   const didMeet = useMutation({ mutationFn: (value: boolean) => api.post(`/meetups/${id}/did-meet`, { didMeet: value }), onSuccess: invalidate, onError: (caught) => setError(friendlyError(caught)) });
   const cancel = useMutation({ mutationFn: () => api.post(`/meetups/${id}/cancel`), onSuccess: invalidate, onError: (caught) => setError(friendlyError(caught)) });
+  const invited = useMutation({ mutationFn: () => api.post(`/meetups/${id}/invite`), onSuccess: invalidate });
+  const stopRepeating = useMutation({ mutationFn: () => api.post(`/meetups/${id}/repeat`, { repeat: "none" }), onSuccess: invalidate, onError: (caught) => setError(friendlyError(caught)) });
 
   const meetup = query.data;
   if (query.isError) return <View style={styles.body}><ErrorText>{t("Couldn't load this meetup.", "Impossible de charger cette rencontre.")}</ErrorText></View>;
@@ -31,6 +33,17 @@ export default function MeetupScreen() {
   const place = meetup.venueNote || venueLabel(meetup.venueKind);
   const when = describeWhen(meetup.startsAt);
   const upcoming = meetup.state === "proposed" || meetup.state === "confirmed";
+
+  /** Uses the phone's own share sheet. The chat hears that someone was invited once the sheet wasn't dismissed. */
+  async function inviteSomeone() {
+    const result = await Share.share({
+      message: t(
+        `Come to a Babillard meetup with us, ${when} at ${place}. Guests are welcome: ${meetup!.shareUrl}`,
+        `Venez à une rencontre Babillard avec nous, ${when}, ${place}. Les invités sont les bienvenus: ${meetup!.shareUrl}`,
+      ),
+    });
+    if (result.action !== Share.dismissedAction) invited.mutate();
+  }
 
   async function addToCalendar() {
     try {
@@ -70,7 +83,17 @@ export default function MeetupScreen() {
       {upcoming ? (
         <View style={styles.actions}>
           {meetup.state === "confirmed" ? <Button label={t("Add to calendar", "Ajouter au calendrier")} onPress={addToCalendar} /> : null}
-          <Button label={t("Share the details", "Partager les détails")} kind="secondary" onPress={() => void Share.share({ message: t(`Meetup ${when} at ${place}: ${meetup.shareUrl}`, `Rencontre ${when}, ${place}: ${meetup.shareUrl}`) })} />
+          {meetup.inviteOpen ? (
+            <Button label={t("Invite someone", "Inviter quelqu'un")} kind="secondary" onPress={() => void inviteSomeone()} />
+          ) : (
+            <Button label={t("Share the details", "Partager les détails")} kind="secondary" onPress={() => void Share.share({ message: t(`Meetup ${when} at ${place}: ${meetup.shareUrl}`, `Rencontre ${when}, ${place}: ${meetup.shareUrl}`) })} />
+          )}
+          {meetup.repeat !== "none" ? (
+            <>
+              <T muted>{meetup.repeat === "weekly" ? t("Repeats every week.", "Se répète chaque semaine.") : t("Repeats every two weeks.", "Se répète toutes les deux semaines.")}</T>
+              <Button label={t("Stop repeating", "Arrêter la répétition")} kind="quiet" onPress={() => stopRepeating.mutate()} busy={stopRepeating.isPending} />
+            </>
+          ) : null}
           {meetup.proposedBy === me?.id ? <Button label={t("Cancel this meetup", "Annuler cette rencontre")} kind="danger" onPress={() => cancel.mutate()} busy={cancel.isPending} /> : null}
         </View>
       ) : null}

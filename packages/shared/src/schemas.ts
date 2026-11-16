@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { ENDED_UP, FIELDS, GROUP_SIZES, LOOKING_FOR, MAX_AGE_YEARS, MEET_AGAIN, MIN_AGE_YEARS, MIND_CHANGED, REPORT_REASONS, ROLES, STANCES, TAKEAWAY_MAX_LENGTH, VENUE_KINDS } from "./constants";
+import { ENDED_UP, FIELDS, GROUP_SIZES, LOOKING_FOR, MAX_AGE_YEARS, MEET_AGAIN, MEETUP_REPEATS, MIN_AGE_YEARS, MIND_CHANGED, REPORT_REASONS, ROLES, STANCES, TAKEAWAY_MAX_LENGTH, VENUE_KINDS } from "./constants";
 
 export const emailSchema = z.string().trim().toLowerCase().email().max(254);
 
@@ -77,8 +77,13 @@ export const meetupProposalSchema = z
     endsAt: z.number().int().positive(),
     venueKind: z.enum(VENUE_KINDS),
     venueNote: z.string().trim().max(200).default(""),
+    /** Only group meetups take guests. A one-on-one meetup ignores this. */
+    guestsWelcome: z.boolean().default(true),
+    repeat: z.enum(MEETUP_REPEATS).default("none"),
   })
   .refine((value) => value.endsAt > value.startsAt, { message: "endsAt must be after startsAt", path: ["endsAt"] });
+
+export const meetupRepeatSchema = z.object({ repeat: z.enum(MEETUP_REPEATS) });
 
 export const meetupResponseSchema = z.object({ response: z.enum(["yes", "no", "maybe"]) });
 export const didMeetSchema = z.object({ didMeet: z.boolean() });

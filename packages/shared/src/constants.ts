@@ -165,6 +165,11 @@ export type MeetAgain = (typeof MEET_AGAIN)[number];
 export const STANCES = ["for", "against", "unsure"] as const;
 export type Stance = (typeof STANCES)[number];
 
+/** How often a meetup comes back. After each one ends, the next date is proposed to the group. */
+export const MEETUP_REPEATS = ["none", "weekly", "biweekly"] as const;
+export type MeetupRepeat = (typeof MEETUP_REPEATS)[number];
+export const MEETUP_REPEAT_MS: Record<Exclude<MeetupRepeat, "none">, number> = { weekly: 7 * 24 * 60 * 60 * 1000, biweekly: 14 * 24 * 60 * 60 * 1000 };
+
 export const VENUE_KINDS = ["cafe", "library", "campus", "park", "other"] as const;
 export type VenueKind = (typeof VENUE_KINDS)[number];
 

@@ -1,4 +1,4 @@
-import { didMeetSchema, isMeetupConfirmed, meetupOutcomeSchema, meetupProposalSchema, meetupResponseSchema, requiredYesCount, type ConversationKind, type MeetupSummary } from "@babillard/shared";
+import { didMeetSchema, isMeetupConfirmed, meetupOutcomeSchema, meetupProposalSchema, meetupRepeatSchema, meetupResponseSchema, requiredYesCount, type ConversationKind, type MeetupSummary } from "@babillard/shared";
 import { requestLanguage, venueNames } from "../lib/language";
 import { and, desc, eq, inArray, sql } from "drizzle-orm";
 import { Hono } from "hono";
@@ -71,7 +71,14 @@ function toSummary(env: Env, row: MeetupRow, responses: (typeof schema.meetupRes
     myOutcome: outcome ? { mindChanged: outcome.mindChanged, endedUp: outcome.endedUp, meetAgain: outcome.meetAgain, takeaway: outcome.takeaway ?? "" } : null,
     shareUrl: `${env.PUBLIC_ORIGIN}/m/${row.shareToken}`,
     checkinOpen: row.checkinSentAt !== null,
+    repeat: row.repeat,
+    inviteOpen: inviteOpen(row, kind),
   };
+}
+
+/** Members can invite a guest to an upcoming group meetup when its proposer welcomed guests. */
+function inviteOpen(row: MeetupRow, kind: ConversationKind): boolean {
+  return kind === "group" && row.guestsWelcome && (row.state === "proposed" || row.state === "confirmed") && row.startsAt > Date.now();
 }
 
 /** Messages name the place only. The server doesn't know the reader's time zone, so the app's meetup card shows the time. */
@@ -120,6 +127,9 @@ meetups.post("/", async (c) => {
     shareToken: randomToken(18),
     reminderSentAt: null,
     checkinSentAt: null,
+    guestsWelcome: conversation.kind === "group" && input.guestsWelcome,
+    repeat: input.repeat,
+    nextMeetupId: null,
     createdAt: now,
   };
   await db.batch([
@@ -237,6 +247,55 @@ meetups.post("/:id/outcome", async (c) => {
     .values({ meetupId: meetup.id, userId: user.id, createdAt: Date.now(), ...answers })
     .onConflictDoUpdate({ target: [schema.meetupOutcomes.meetupId, schema.meetupOutcomes.userId], set: answers });
   return c.json(await summaryFor(c.env, db, meetup, conversation.kind, user.id));
+});
+
+/** Recorded when a member opens the share sheet to invite someone. The chat hears about it once per person. */
+meetups.post("/:id/invite", async (c) => {
+  const user = c.get("user");
+  const db = getDb(c.env);
+  const { meetup, conversation } = await loadMeetup(db, c.req.param("id"), user.id);
+  if (!inviteOpen(meetup, conversation.kind)) throw fail(409, "guests_not_welcome");
+
+  const added = await db.insert(schema.meetupInvites).values({ meetupId: meetup.id, userId: user.id, createdAt: Date.now() }).onConflictDoNothing().returning({ id: schema.meetupInvites.userId });
+  if (added.length > 0) {
+    const [profile] = await db.select({ name: schema.profiles.displayName }).from(schema.profiles).where(eq(schema.profiles.userId, user.id));
+    await c.env.CHAT_ROOM.getByName(meetup.conversationId).postSystem(meetup.conversationId, `${profile?.name ?? "Someone"} invited someone to this meetup.`, {
+      fr: `${profile?.name ?? "Quelqu'un"} a invité une personne à cette rencontre.`,
+      kind: "meetup",
+      meetupId: meetup.id,
+    });
+  }
+  return c.json(await summaryFor(c.env, db, meetup, conversation.kind, user.id));
+});
+
+/** Any member can stop a series, so it doesn't depend on whoever proposed it still being around. */
+meetups.post("/:id/repeat", async (c) => {
+  const user = c.get("user");
+  const { repeat } = await parseJson(c, meetupRepeatSchema);
+  const db = getDb(c.env);
+  const loaded = await loadMeetup(db, c.req.param("id"), user.id);
+  const { conversation } = loaded;
+  // The series lives on its latest date, so follow it forward from whichever date was opened.
+  let meetup = loaded.meetup;
+  for (let hops = 0; meetup.nextMeetupId && hops < 500; hops++) {
+    const [next] = await db.select().from(schema.meetups).where(eq(schema.meetups.id, meetup.nextMeetupId));
+    if (!next) break;
+    meetup = next;
+  }
+  if (repeat !== "none" && meetup.proposedBy !== user.id) throw fail(403, "only_the_proposer_can_repeat");
+  if (repeat === meetup.repeat) return c.json(await summaryFor(c.env, db, meetup, conversation.kind, user.id));
+
+  await db.update(schema.meetups).set({ repeat }).where(eq(schema.meetups.id, meetup.id));
+  if (repeat === "none") {
+    const [profile] = await db.select({ name: schema.profiles.displayName }).from(schema.profiles).where(eq(schema.profiles.userId, user.id));
+    await c.env.CHAT_ROOM.getByName(meetup.conversationId).postSystem(meetup.conversationId, `${profile?.name ?? "Someone"} stopped this meetup from repeating.`, {
+      fr: `${profile?.name ?? "Quelqu'un"} a arrêté la répétition de cette rencontre.`,
+      kind: "meetup",
+      meetupId: meetup.id,
+    });
+  }
+  const [fresh] = await db.select().from(schema.meetups).where(eq(schema.meetups.id, meetup.id));
+  return c.json(await summaryFor(c.env, db, fresh!, conversation.kind, user.id));
 });
 
 meetups.post("/:id/cancel", async (c) => {

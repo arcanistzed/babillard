@@ -1,6 +1,6 @@
 import type { Envelope } from "./e2ee";
 import type { Lean } from "./rules/match";
-import type { EndedUp, Field, GroupSize, LookingFor, MeetAgain, MindChanged, Role, Stance, VenueKind } from "./constants";
+import type { EndedUp, Field, GroupSize, LookingFor, MeetAgain, MeetupRepeat, MindChanged, Role, Stance, VenueKind } from "./constants";
 
 /** Response shapes shared by the Worker and the app. */
 
@@ -146,6 +146,9 @@ export interface MeetupSummary {
   myOutcome: MyOutcome | null;
   shareUrl: string;
   checkinOpen: boolean;
+  repeat: MeetupRepeat;
+  /** An upcoming group meetup whose proposer welcomed guests, so members can invite someone. */
+  inviteOpen: boolean;
 }
 
 export interface ConversationDetail {

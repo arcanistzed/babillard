@@ -20,7 +20,7 @@ Babillard helps people find others nearby who want to talk about the same topics
 
 **What you give us.** Your email address, first name, date of birth, role, fields of interest, what you're looking for, city, and campus. A photo and a line about yourself are optional.
 
-**What you do in the app.** The topics and people you swipe on, your stance on question topics if you pick one, your messages (encrypted, so we can't read them), the meetups you propose and answer, whether you say a meetup happened, your answers to the questions that follow, any takeaway line you write, the topics you suggest, and the people you report or block.
+**What you do in the app.** The topics and people you swipe on, your stance on question topics if you pick one, your messages (encrypted, so we can't read them), the meetups you propose and answer, whether you invited someone to one, whether you say a meetup happened, your answers to the questions that follow, any takeaway line you write, the topics you suggest, and the people you report or block.
 
 **Device details.** A push notification token if you allow notifications, and your phone's public encryption key. Your IP address reaches our host with every request, and we use it to slow down abuse of sign-in. Our host keeps request logs, including IP addresses, for up to a week.
 
@@ -80,7 +80,7 @@ These companies may process information outside Canada, including in the United 
 
 ## Deleting your account
 
-Go to You, then Delete account. That removes your email address, date of birth, profile, photo, swipes, messages, meetup answers and takeaways, blocks, and notification tokens. An empty record with no personal details stays behind so that other people's conversations keep working. Our host's backups can hold deleted data for up to 30 days, and we can't reach screenshots or anything else people saved.
+Go to You, then Delete account. That removes your email address, date of birth, profile, photo, swipes, messages, meetup answers, invites and takeaways, blocks, and notification tokens. An empty record with no personal details stays behind so that other people's conversations keep working. Our host's backups can hold deleted data for up to 30 days, and we can't reach screenshots or anything else people saved.
 
 Reports made about you stay for the period above, so that deleting an account can't erase a safety record.
 
@@ -208,7 +208,7 @@ Babillard aide les gens à trouver des personnes près de chez eux qui veulent p
 
 **Ce que vous nous donnez.** Votre adresse courriel, votre prénom, votre date de naissance, votre rôle, vos domaines d'intérêt, ce que vous recherchez, votre ville et votre campus. Une photo et une phrase à votre sujet sont facultatives.
 
-**Ce que vous faites dans l'application.** Les sujets et les personnes que vous faites glisser, votre position sur les sujets de type question si vous en choisissez une, vos messages (chiffrés, donc illisibles pour nous), les rencontres que vous proposez et vos réponses, le fait qu'une rencontre a eu lieu si vous l'indiquez, vos réponses aux questions qui suivent, la phrase à retenir que vous écrivez s'il y a lieu, les sujets que vous suggérez, ainsi que les personnes que vous signalez ou bloquez.
+**Ce que vous faites dans l'application.** Les sujets et les personnes que vous faites glisser, votre position sur les sujets de type question si vous en choisissez une, vos messages (chiffrés, donc illisibles pour nous), les rencontres que vous proposez et vos réponses, le fait que vous ayez invité quelqu'un à une rencontre, le fait qu'une rencontre a eu lieu si vous l'indiquez, vos réponses aux questions qui suivent, la phrase à retenir que vous écrivez s'il y a lieu, les sujets que vous suggérez, ainsi que les personnes que vous signalez ou bloquez.
 
 **Renseignements sur l'appareil.** Un jeton de notification si vous autorisez les notifications, et la clé publique de chiffrement de votre téléphone. Votre adresse IP parvient à notre hébergeur à chaque requête, et nous l'utilisons pour limiter les abus à la connexion. Notre hébergeur conserve les journaux de requêtes, y compris les adresses IP, jusqu'à une semaine.
 
@@ -268,7 +268,7 @@ Ces entreprises peuvent traiter des renseignements à l'extérieur du Canada, y 
 
 ## Supprimer votre compte
 
-Allez à Vous, puis Supprimer le compte. Cela retire votre adresse courriel, votre date de naissance, votre profil, votre photo, vos glissements, vos messages, vos réponses aux rencontres et phrases à retenir, vos blocages et vos jetons de notification. Un dossier vide, sans renseignement personnel, subsiste pour que les conversations des autres continuent de fonctionner. Les sauvegardes de notre hébergeur peuvent contenir des données supprimées jusqu'à 30 jours, et nous n'avons pas accès aux captures d'écran ni à ce que d'autres ont enregistré.
+Allez à Vous, puis Supprimer le compte. Cela retire votre adresse courriel, votre date de naissance, votre profil, votre photo, vos glissements, vos messages, vos réponses, invitations et phrases à retenir liées aux rencontres, vos blocages et vos jetons de notification. Un dossier vide, sans renseignement personnel, subsiste pour que les conversations des autres continuent de fonctionner. Les sauvegardes de notre hébergeur peuvent contenir des données supprimées jusqu'à 30 jours, et nous n'avons pas accès aux captures d'écran ni à ce que d'autres ont enregistré.
 
 Les signalements vous concernant sont conservés pendant la période indiquée ci-dessus, afin que la suppression d'un compte n'efface pas un dossier de sécurité.
 

@@ -1,4 +1,4 @@
-import { meetupDays, meetupSlotAt, meetupTimes, suggestMeetupSlots, VENUE_KINDS, type MeetupSummary, type VenueKind } from "@babillard/shared";
+import { MEETUP_REPEATS, meetupDays, meetupSlotAt, meetupTimes, suggestMeetupSlots, VENUE_KINDS, type ConversationDetail, type MeetupRepeat, type MeetupSummary, type VenueKind } from "@babillard/shared";
 import { useQueryClient } from "@tanstack/react-query";
 import { router, useLocalSearchParams } from "expo-router";
 import { useMemo, useState } from "react";
@@ -6,6 +6,12 @@ import { ScrollView, StyleSheet, View } from "react-native";
 import { api, friendlyError } from "@/api";
 import { Button, Chip, ChipRow, ErrorText, Field, FormScreen, T } from "@/ui";
 import { slotLabel, t, venueLabel } from "@/i18n";
+
+const REPEAT_LABELS: Record<MeetupRepeat, string> = {
+  none: t("Once", "Une fois"),
+  weekly: t("Every week", "Chaque semaine"),
+  biweekly: t("Every two weeks", "Toutes les deux semaines"),
+};
 
 /** Everything starts filled in, so proposing a meetup can be a single tap. */
 export default function NewMeetup() {
@@ -20,6 +26,10 @@ export default function NewMeetup() {
   const times = useMemo(() => meetupTimes(days[dayIndex]!), [days, dayIndex]);
   const [venueKind, setVenueKind] = useState<VenueKind>("cafe");
   const [venueNote, setVenueNote] = useState("");
+  const [repeat, setRepeat] = useState<MeetupRepeat>("none");
+  const [guestsWelcome, setGuestsWelcome] = useState(true);
+  // The chat screen already loaded this. Only group meetups can take guests.
+  const isGroup = queryClient.getQueryData<ConversationDetail>(["conversation", conversationId])?.kind === "group";
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -29,7 +39,7 @@ export default function NewMeetup() {
     setBusy(true);
     setError(null);
     try {
-      await api.post<MeetupSummary>(`/meetups?conversationId=${conversationId}`, { startsAt: slot.startsAt, endsAt: slot.endsAt, venueKind, venueNote: venueNote.trim() });
+      await api.post<MeetupSummary>(`/meetups?conversationId=${conversationId}`, { startsAt: slot.startsAt, endsAt: slot.endsAt, venueKind, venueNote: venueNote.trim(), repeat, guestsWelcome: isGroup && guestsWelcome });
       await queryClient.invalidateQueries({ queryKey: ["conversation", conversationId] });
       router.back();
     } catch (caught) {
@@ -92,6 +102,24 @@ export default function NewMeetup() {
           </ChipRow>
           <Field label={t("Name the place (optional)", "Nom du lieu (facultatif)")} value={venueNote} onChangeText={setVenueNote} maxLength={200} placeholder={t("Blue Door on Main Street", "La Porte bleue, rue Principale")} />
         </View>
+        <View style={styles.section}>
+          <T variant="heading">{t("How often?", "À quelle fréquence?")}</T>
+          <ChipRow>
+            {MEETUP_REPEATS.map((value) => (
+              <Chip key={value} label={REPEAT_LABELS[value]} selected={repeat === value} onPress={() => setRepeat(value)} />
+            ))}
+          </ChipRow>
+          {repeat !== "none" ? <T variant="small" muted>{t("After each meetup, the next date is proposed to everyone.", "Après chaque rencontre, la date suivante est proposée à tout le monde.")}</T> : null}
+        </View>
+        {isGroup ? (
+          <View style={styles.section}>
+            <T variant="heading">{t("Guests", "Invités")}</T>
+            <ChipRow>
+              <Chip label={t("Welcome", "Bienvenus")} selected={guestsWelcome} onPress={() => setGuestsWelcome(true)} />
+              <Chip label={t("Group only", "Groupe seulement")} selected={!guestsWelcome} onPress={() => setGuestsWelcome(false)} />
+            </ChipRow>
+          </View>
+        ) : null}
         <T variant="small" muted>
           {t("First time meeting? Choose a public place and tell a friend.", "Première rencontre? Choisissez un lieu public et prévenez quelqu'un.")}
         </T>

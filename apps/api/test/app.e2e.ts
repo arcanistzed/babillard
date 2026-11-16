@@ -10,8 +10,9 @@ import { randomBytes } from "node:crypto";
 import { generateDeviceKey, nearestCity, openMessage, sealMessage, searchCities, type Locality } from "@babillard/shared";
 
 const apiDir = join(dirname(fileURLToPath(import.meta.url)), "..");
-const BASE = "http://localhost:8799";
-const PROD = "http://localhost:8798";
+const PORT_OFFSET = Number(process.env.E2E_PORT_OFFSET ?? 0);
+const BASE = `http://localhost:${8799 + PORT_OFFSET}`;
+const PROD = `http://localhost:${8798 + PORT_OFFSET}`;
 const DEV_DB = ".wrangler/e2e/dev";
 
 let counter = 0;
@@ -977,6 +978,62 @@ describe("meetups", () => {
     expect(done.state).toBe("done");
     expect(done.checkinOpen).toBe(true);
     expect((await a.post(`/meetups/${meetup.id}/did-meet`, { didMeet: true })).myDidMeet).toBe(true);
+  });
+
+  it("lets group members invite a guest, tells the chat once, and welcomes guests on the share page", async () => {
+    const people = await Promise.all(Array.from({ length: 3 }, () => person("london")));
+    let groupId: string | null = null;
+    for (const client of people) groupId = (await client.post("/deck/topics/board-game-design/swipe", { direction: "right" })).groupConversationId ?? groupId;
+    const meetup = await people[0]!.post(`/meetups?conversationId=${groupId}`, proposal());
+    expect(meetup.inviteOpen).toBe(true);
+
+    await people[1]!.post(`/meetups/${meetup.id}/invite`);
+    await people[1]!.post(`/meetups/${meetup.id}/invite`);
+    const notes = (await people[2]!.get(`/conversations/${groupId}/messages`)).filter((message: any) => message.body?.endsWith("invited someone to this meetup."));
+    expect(notes).toHaveLength(1);
+    expect(await (await fetch(meetup.shareUrl)).text()).toContain("Guests are welcome");
+
+    const closed = await people[0]!.post(`/meetups?conversationId=${groupId}`, proposal({ guestsWelcome: false }));
+    expect(closed.inviteOpen).toBe(false);
+    expect(await status(people[1]!.post(`/meetups/${closed.id}/invite`))).toBe(409);
+    expect(await (await fetch(closed.shareUrl)).text()).not.toContain("Guests are welcome");
+
+    const a = await person("london");
+    const b = await person("london");
+    const direct = await a.post(`/meetups?conversationId=${await match(a, b, "chess-and-strategy-games")}`, proposal());
+    expect(direct.inviteOpen).toBe(false);
+  });
+
+  it("proposes the next date after a repeating meetup ends, and lets any member stop the series", async () => {
+    const a = await person("new-york");
+    const b = await person("new-york");
+    const conversationId = await match(a, b, "home-cooking");
+    const now = Date.now();
+    const first = await a.post(`/meetups?conversationId=${conversationId}`, proposal({ startsAt: now + 200, endsAt: now + 400, repeat: "weekly" }));
+    expect(first.repeat).toBe("weekly");
+    await b.post(`/meetups/${first.id}/respond`, { response: "yes" });
+    expect(await status(b.post(`/meetups/${first.id}/repeat`, { repeat: "biweekly" }))).toBe(403);
+
+    await sleep(500);
+    await sweep();
+    const proposed = await waitFor(
+      () => b.get(`/conversations/${conversationId}/messages`),
+      (messages: any[]) => messages.some((message) => message.body === "Next week's meetup is proposed, same time and place. Are you in?"),
+      "next date",
+    );
+    const nextId = proposed.find((message: any) => message.body?.startsWith("Next week's meetup")).meetupId;
+    const next = await b.get(`/meetups/${nextId}`);
+    expect(next.state).toBe("proposed");
+    expect(next.startsAt).toBe(first.startsAt + 7 * 24 * 60 * 60 * 1000);
+    expect(next.repeat).toBe("weekly");
+
+    // Stopping from the first date's screen still reaches the series' latest date.
+    await sweep();
+    expect((await b.post(`/meetups/${first.id}/repeat`, { repeat: "none" })).repeat).toBe("none");
+    expect((await a.get(`/meetups/${nextId}`)).repeat).toBe("none");
+    const messages = await a.get(`/conversations/${conversationId}/messages`);
+    expect(messages.filter((message: any) => message.body?.startsWith("Next week's meetup"))).toHaveLength(1);
+    expect(messages[messages.length - 1].body).toBe(`Person ${counter} stopped this meetup from repeating.`);
   });
 
   it("cancels a proposal nobody confirmed before it started", async () => {

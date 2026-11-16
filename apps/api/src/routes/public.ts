@@ -183,14 +183,18 @@ publicRoutes.get("/m/:file", async (c) => {
   const db = getDb(c.env);
 
   const [row] = await db
-    .select({ meetup: schema.meetups, topicTitle: schema.topics.title })
+    .select({ meetup: schema.meetups, topicTitle: schema.topics.title, topicId: schema.topics.id, kind: schema.conversations.kind })
     .from(schema.meetups)
     .innerJoin(schema.conversations, eq(schema.conversations.id, schema.meetups.conversationId))
     .leftJoin(schema.topics, eq(schema.topics.id, schema.conversations.topicId))
     .where(eq(schema.meetups.shareToken, token));
   if (!row || row.meetup.state === "cancelled") return c.notFound();
 
-  const { meetup, topicTitle } = row;
+  const { meetup, topicTitle, topicId, kind } = row;
+  const language = requestLanguage(c);
+  const fr = language === "fr";
+  // The page only invites people in when the group welcomed guests and the meetup hasn't happened yet.
+  const welcomesGuests = kind === "group" && meetup.guestsWelcome && meetup.state !== "done" && meetup.startsAt > Date.now();
   const summary = topicTitle ? `Babillard meetup: ${topicTitle}` : "Babillard meetup";
   const location = meetup.venueNote || VENUE_LABELS[meetup.venueKind];
   const url = `${c.env.PUBLIC_ORIGIN}/m/${token}`;
@@ -206,12 +210,18 @@ publicRoutes.get("/m/:file", async (c) => {
       html`<h1>${topicTitle ?? "A meetup"}</h1>
         <p><strong>${location}</strong></p>
         <p><time datetime="${new Date(meetup.startsAt).toISOString()}" data-local>${new Date(meetup.startsAt).toUTCString()}</time></p>
-        <p><a class="button" href="${url}.ics">Add to calendar</a></p>
+        <p><a class="button" href="${url}.ics">${fr ? "Ajouter au calendrier" : "Add to calendar"}</a></p>
+        ${welcomesGuests
+          ? html`<p>${fr ? "Les invités sont les bienvenus. Venez en parler avec le groupe." : "Guests are welcome. Come and talk about it with the group."}</p>
+              ${topicId ? html`<p><a href="/t/${topicId}">${fr ? "En savoir plus sur ce sujet" : "More about this topic"}</a></p>` : ""}
+              <p>${fr ? "Pour trouver d'autres groupes près de chez vous, obtenez Babillard." : "To find more groups near you, get Babillard."}</p>
+              ${getApp(language)}`
+          : ""}
         <script>
           // The server doesn't know the reader's time zone, but their browser does.
           for (const el of document.querySelectorAll("time[data-local]")) el.textContent = new Date(el.getAttribute("datetime")).toLocaleString(undefined, { weekday: "long", month: "long", day: "numeric", hour: "numeric", minute: "2-digit" });
         </script>`,
-      "en",
+      language,
       { hidden: true },
     ),
   );

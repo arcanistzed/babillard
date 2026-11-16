@@ -275,6 +275,8 @@ cd apps/api && npx wrangler d1 execute babillard --remote --file seed/seed.sql
 - **Age ranges go both ways.** People can set the ages they want to meet, and someone appears in suggestions only when each person's age is in the other's range. Ranges start open. Groups ignore them, but lean toward similar ages when forming.
 - **Groups start at three.** Two people is a one-on-one match. People can ask for a small group (3 to 4), a medium one (5 to 8), or either. A group forms, or takes someone new, only at a size that suits everyone in it, and people who'd take either aren't kept waiting by someone who wants a bigger group.
 - **Share pages hide names.** A meetup link shows the plan behind an unguessable token, since venue and time can be sensitive.
+- **Group meetups can take guests.** Whoever proposes one chooses whether guests are welcome, and it's on by default. Members then get an "Invite someone" button that opens the phone's own share sheet, the chat says once that they invited someone, and the share page invites the guest in. One-on-one meetups never take guests.
+- **Meetups can repeat** every week or every two weeks. After each one ends, the cron sweep proposes the next date at the same time and place and asks everyone. A date nobody confirms just lapses, two lapses in a row end the series, and any member can stop it.
 - **Crash reports carry no identity.** The endpoint is open, because a crash can happen before sign-in, and it takes no user ID.
 
 ## Licence

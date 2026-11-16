@@ -1,6 +1,6 @@
 import type { Envelope, ReportEvidence } from "@babillard/shared";
 import { index, integer, primaryKey, real, sqliteTable, text, uniqueIndex } from "drizzle-orm/sqlite-core";
-import type { EndedUp, Field, GroupSize, LookingFor, MeetAgain, MindChanged, Role, Stance, VenueKind } from "@babillard/shared";
+import type { EndedUp, Field, GroupSize, LookingFor, MeetupRepeat, MeetAgain, MindChanged, Role, Stance, VenueKind } from "@babillard/shared";
 
 export const users = sqliteTable(
   "users",
@@ -166,9 +166,25 @@ export const meetups = sqliteTable(
     shareToken: text("share_token").notNull().unique(),
     reminderSentAt: integer("reminder_sent_at"),
     checkinSentAt: integer("checkin_sent_at"),
+    /** Group meetups only. Members can invite someone from outside the group. */
+    guestsWelcome: integer("guests_welcome", { mode: "boolean" }).notNull().default(true),
+    repeat: text("repeat").$type<MeetupRepeat>().notNull().default("none"),
+    /** Set once the next date in a repeating series has been proposed, so it's proposed only once. */
+    nextMeetupId: text("next_meetup_id"),
     createdAt: integer("created_at").notNull(),
   },
-  (t) => [index("meetups_conversation_idx").on(t.conversationId), index("meetups_sweep_idx").on(t.state, t.startsAt)],
+  (t) => [index("meetups_conversation_idx").on(t.conversationId), index("meetups_sweep_idx").on(t.state, t.startsAt), index("meetups_series_idx").on(t.repeat, t.endsAt)],
+);
+
+/** Who has invited a guest to a meetup, so the chat hears about it once per person. */
+export const meetupInvites = sqliteTable(
+  "meetup_invites",
+  {
+    meetupId: text("meetup_id").notNull(),
+    userId: text("user_id").notNull(),
+    createdAt: integer("created_at").notNull(),
+  },
+  (t) => [primaryKey({ columns: [t.meetupId, t.userId] })],
 );
 
 export const meetupResponses = sqliteTable(
