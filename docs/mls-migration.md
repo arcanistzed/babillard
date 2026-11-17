@@ -412,6 +412,11 @@ This order matters because the readiness check counts members, not phones. A mem
 
 Tested: `mlsDelivery.test.ts` checks the paused rule on its own. `mlsEngineFailures.test.ts` pauses the in-memory server after a chat moved: messages still go both ways, a new phone joins, another chat stays on v1 with no error, and it moves once unpaused. The end-to-end suite runs a third Worker with `MLS_ENABLED=paused`, where a chat's first commit gets 409 `not_ready` and the chat stays on v1, and checks that `/me` says `mls: true` there and `mls: false` on the Worker with MLS off.
 
+Tried on the emulator (2026-11-17), with a local Worker and `apps/api/scripts/mls-peer.ts` playing Bob, who now also waits for `/me` to say MLS is on:
+- **With `MLS_ENABLED=false`:** the phone signed in as Alice, opened the inbox and the chat twice, and sent "hello over v1" over the socket. The Worker logged no `/mls` request at all, and the phone had no MLS database, only the app's existing key-value store.
+- **After restarting the same Worker with `"true"`:** Bob registered on his next look at `/me`. The phone, reopened, registered, uploaded key packages and joined the chat's group. "ping over MLS" reached Bob, his "pong" showed on the phone, and both showed the same security code. The v1 message stayed in the timeline above them.
+- **A message was lost in the switch.** Bob created the group the moment the phone registered its identity, about a second before its key packages went up. So his claim for the phone came back empty, and he said hello in a group of one. The phone then joined by itself at the next epoch, and can't read that hello. The readiness check counts a phone once its signing key is registered, not once it has key packages, and a sender doesn't wait for the adds still owed. Either would close it: count a phone as ready only once it has a key package, or have the engine hold a message while `pendingAdds` isn't empty and retry the adds first.
+
 ## What the prototypes prove
 
 Branch `mls-prototype`. Nothing in the normal app paths changed.

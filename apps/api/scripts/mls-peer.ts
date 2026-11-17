@@ -1,9 +1,11 @@
 // Plays the other side of an MLS chat, so the app can be tried on a phone against a local Worker.
-// Run a local Worker with DEV_MODE=true and MLS_ENABLED=true, then:
-//   ../../node_modules/.bin/tsx scripts/mls-peer.ts http://localhost:8787
+// Run a local Worker with DEV_MODE=true, then:
+//   ../../node_modules/.bin/tsx scripts/mls-peer.ts http://localhost:8787 [minutes]
 // It creates Alice and Bob with a direct chat, prints a link that signs the phone in as Alice,
 // and then runs Bob on the shared sync engine (with ts-mls): he says hello once the group exists,
-// and answers "pong" when the phone sends "ping". It stops after that, or after ten minutes.
+// and answers "pong" when the phone sends "ping". It stops after that, or after `minutes` (10).
+// Like the app, Bob touches no /mls route until /me says MLS is on, so the Worker can start with
+// MLS_ENABLED=false and be switched to "true" while this runs.
 import { MemoryMlsStore, MlsMessenger, httpMlsTransport, type HttpCall } from "@babillard/shared";
 import { mlsCiphersuite, tsMlsCrypto } from "@babillard/shared/mls";
 import { randomBytes } from "node:crypto";
@@ -34,12 +36,22 @@ const call: HttpCall = async (method, path, body) => {
 };
 const crypto = tsMlsCrypto(mlsCiphersuite((length) => new Uint8Array(randomBytes(length))));
 const messenger = new MlsMessenger(crypto, httpMlsTransport(call), new MemoryMlsStore(), { userId: bob.id, deviceId: bob.device.publicKey });
-await messenger.ensureIdentity();
 
-const deadline = Date.now() + 10 * 60 * 1000;
+const deadline = Date.now() + Number(process.argv[3] ?? 10) * 60 * 1000;
 let greeted = false;
+let registered = false;
 while (Date.now() < deadline) {
   try {
+    if (!registered) {
+      const { body: me } = await call("GET", "/me");
+      if (!me?.mls) {
+        await new Promise((resolve) => setTimeout(resolve, 2000));
+        continue;
+      }
+      await messenger.ensureIdentity();
+      registered = true;
+      console.log(JSON.stringify({ event: "registered" }));
+    }
     const received = await messenger.sync(conversationId);
     for (const message of received) console.log(JSON.stringify({ event: "received", text: message.text }));
     if (!greeted && (await messenger.inGroup(conversationId))) {
