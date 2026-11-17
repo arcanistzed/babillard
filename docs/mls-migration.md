@@ -91,7 +91,7 @@ Because it can read commits, the server keeps its own copy of the roster: which 
 - **Shape.** Commits must be public and application messages encrypted. Lone proposals, proposals by reference, update or other proposal types, and non-basic credentials are all refused.
 - **Atomicity.** A commit that adds phones needs its Welcome, and they're stored together.
 - **Readiness.** The first commit, which moves a chat to MLS, is refused with `not_ready` until every member of the chat has a registered MLS phone. After it, v1 is refused, so nobody may be left behind.
-- **GroupInfo with every commit.** Every commit must carry the next epoch's GroupInfo, checked for the right chat and epoch. The server always holds a current one, so a phone can always join by itself.
+- **GroupInfo with every commit.** Every commit must carry the next epoch's GroupInfo, checked for the right chat and epoch. The server always holds a current one, so a phone can always join by itself. The server reads the whole GroupInfo and refuses one without exactly one `external_pub` holding a length-prefixed key of the right size, since a phone joining by itself needs that key. (See "ts-mls and `external_pub`" below.)
 - **External commits.** A member's registered phone that isn't in the group may add itself from the stored GroupInfo, with an external commit. It may remove only its own old leaf (a phone that lost its state rejoining), it must not already be in the group, and it lands on the leftmost free leaf, as OpenMLS places it. This is how a newcomer joins with nobody else online, and how a chat recovers when every phone in it is gone.
 
 ### What it stores
@@ -232,11 +232,22 @@ A group was tried the same way, with `apps/api/scripts/mls-group-peers.ts` playi
 - Dave left. Bob's next message removed Dave's phone first, which left 3 phones at epoch 3. The phone showed "Dave left" and the notice, its info screen listed 3 people, and its security code changed to match Bob's new one.
 - Unblocking Carol brought both of her messages back in place.
 
+A person's second phone was tried with `apps/api/scripts/mls-second-phone.ts`. Alice's first phone (scripted) and Bob move their direct chat to MLS, and then stay quiet while the emulator signs in as Alice, so nobody can add the new phone:
+- The new phone joined by itself with an external commit. The server's group went to 3 phones with no adds waiting.
+- It showed what Bob and Alice's first phone sent after it joined, with the first phone's message on Alice's side. What was sent before it joined doesn't show: a new phone can't read MLS history until backup v2 exists.
+- Its "ping" reached both Bob and Alice's first phone, and Bob's "pong" came back.
+- All three phones showed the same security code.
+
+**ts-mls and `external_pub`.** The first try failed on the device: OpenMLS couldn't read the GroupInfo the ts-mls phones had uploaded. RFC 9420 section 12.4.3.2 makes the `external_pub` extension a length-prefixed key, and OpenMLS writes it that way. ts-mls 1.6.4, the latest stable release, writes and reads the bare key. That agrees with itself, so every test with only ts-mls phones passed, but OpenMLS can't read it. Phones in production would all run OpenMLS, so this only broke tests that mix the two. Three changes:
+- `patches/ts-mls@1.6.4.patch`, applied by pnpm, makes ts-mls write and read the field as the RFC has it.
+- The server refuses a GroupInfo whose `external_pub` isn't well formed, so no client, whatever its library, can leave the group with one a new phone can't join from.
+- Tests: `mlsWire.test.ts` checks the server's refusal, and `mlsOpenmls.test.ts` has a ts-mls phone join by itself from a GroupInfo OpenMLS made.
+
 ### Not done on the phone
 
 - **Being removed.** The engine stops with an error when the log removes this phone. The chat screen needs to show that the person left or was removed.
 - **Typing and sending states.** A message sent with MLS shows as pending until the engine returns, with no echo over the socket. That's fine on a quick connection and untested on a slow one.
-- **New phones and recovery in the app.** A second phone for the same person joining by external commit, and the recovery cases, have run in the engine on the emulator, but not through the chat screens with a live Worker. Nothing has run on a real ARM phone.
+- **Recovery in the app.** The recovery cases have run in the engine on the emulator, but not through the chat screens with a live Worker. Nothing has run on a real ARM phone.
 - **Franking for reports, backup v2, and per-chat state** remain as designed above.
 
 ## Before turning it on
@@ -433,7 +444,7 @@ One developer who knows the codebase. Done on the branch since the first estimat
 | Android build in EAS: install Rust there, or commit the built libraries | 2 to 3 days |
 | Server, still to do: rate-limiting key package claims, and a way for people to retire a lost phone | 1 to 2 days |
 | Rust wrapper: last-resort key packages and per-chat state | 2 to 4 days |
-| Phone: a second phone for the same person, and the chat screen's handling of being removed | 1 to 2 days |
+| Phone: the chat screen's handling of being removed | 1 day |
 | Franking for reports | 2 days |
 | Roster security code on the chat info screen | 1 day |
 | Backup v2 and history store | 5 to 7 days |

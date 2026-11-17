@@ -4,6 +4,9 @@ settings:
   autoInstallPeers: true
   excludeLinksFromLockfile: false
 
+patchedDependencies:
+  ts-mls@1.6.4: 016bb026dd1663783b89d34c7dd7c9e8250e6fa590e14c89ad91bc638902f9dc
+
 importers:
 
   .:
@@ -213,7 +216,7 @@ importers:
         version: 2.4.0
       ts-mls:
         specifier: 1.6.4
-        version: 1.6.4(@hpke/chacha20poly1305@1.8.0)(@noble/ciphers@2.4.0)(@noble/curves@2.4.0)
+        version: 1.6.4(patch_hash=016bb026dd1663783b89d34c7dd7c9e8250e6fa590e14c89ad91bc638902f9dc)(@hpke/chacha20poly1305@1.8.0)(@noble/ciphers@2.4.0)(@noble/curves@2.4.0)
       zod:
         specifier: ^4.6.7
         version: 4.6.7
@@ -10155,7 +10158,7 @@ snapshots:
     dependencies:
       typescript: 5.9.3
 
-  ts-mls@1.6.4(@hpke/chacha20poly1305@1.8.0)(@noble/ciphers@2.4.0)(@noble/curves@2.4.0):
+  ts-mls@1.6.4(patch_hash=016bb026dd1663783b89d34c7dd7c9e8250e6fa590e14c89ad91bc638902f9dc)(@hpke/chacha20poly1305@1.8.0)(@noble/ciphers@2.4.0)(@noble/curves@2.4.0):
     dependencies:
       '@hpke/core': 1.9.0
       '@noble/ciphers': 2.4.0

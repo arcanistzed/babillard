@@ -1,8 +1,11 @@
+import { webcrypto } from "node:crypto";
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import { toBase64 } from "../src/e2ee";
+import { clientConfig, createDevice, joinExternally } from "../src/mls/group";
+import { mlsCiphersuite } from "../src/mls/provider";
 import { decide, type Directory, type RosterEntry } from "../src/mlsDelivery";
-import { isWelcome, readFrame, readKeyPackage } from "../src/mlsWire";
+import { isWelcome, readFrame, readGroupInfo, readKeyPackage } from "../src/mlsWire";
 
 /**
  * Real OpenMLS output, written by the Rust test `server_fixture` in
@@ -92,5 +95,20 @@ describe("the server's rules on real OpenMLS messages", () => {
     });
     // Its update path names Bob, so it fails the identity check before the leaf check.
     expect(decision).toMatchObject({ ok: false, error: "bad_credential" });
+  });
+});
+
+describe("GroupInfo between OpenMLS and ts-mls", () => {
+  it("lets a ts-mls phone join by itself from a GroupInfo OpenMLS made", async () => {
+    // This needs the patch in patches/: ts-mls 1.6.4 read external_pub without its length prefix.
+    const latest = fixture.steps.filter((step) => step.groupInfo).at(-1)!;
+    const info = bytes(latest.groupInfo!);
+    expect(readGroupInfo(info).groupId).toBe(fixture.groupId);
+    const cs = mlsCiphersuite((length) => webcrypto.getRandomValues(new Uint8Array(length)));
+    const frank = await createDevice("frank", "frank-phone", cs);
+    const joined = await joinExternally(info, frank, cs, clientConfig(() => true));
+    expect(readFrame(joined.commit)).toMatchObject({ kind: "commit", commit: { externalInits: 1 } });
+    // And what ts-mls writes back passes the server's check that a new phone could join from it.
+    expect(readGroupInfo(joined.groupInfo)).toMatchObject({ groupId: fixture.groupId, epoch: latest.epoch + 2 });
   });
 });

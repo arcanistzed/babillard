@@ -1,0 +1,47 @@
+diff --git a/dist/src/createCommit.js b/dist/src/createCommit.js
+index 59ab06c6ed558a54f0c900e888d32de1e97d4519..b339822b20eec4a0c0e7817b8a05ff4795439137 100644
+--- a/dist/src/createCommit.js
++++ b/dist/src/createCommit.js
+@@ -17,10 +17,11 @@ import { leafToNodeIndex, leafWidth, nodeToLeafIndex, toLeafIndex, toNodeIndex,
+ import { createUpdatePath, firstCommonAncestor, firstMatchAncestor } from "./updatePath.js";
+ import { base64ToBytes, zeroOutUint8Array } from "./util/byteArray.js";
+ import { encryptGroupInfo, encryptGroupSecrets } from "./welcome.js";
+-import { CryptoVerificationError, InternalError, UsageError, ValidationError } from "./mlsError.js";
++import { CodecError, CryptoVerificationError, InternalError, UsageError, ValidationError } from "./mlsError.js";
+ import { defaultClientConfig } from "./clientConfig.js";
+ import { extensionsSupportedByCapabilities } from "./extension.js";
+ import { encode } from "./codec/tlsEncoder.js";
++import { decodeVarLenData, varLenDataEncoder } from "./codec/variableLength.js";
+ /** @public */
+ export async function createCommit(context, options) {
+     const { state, pskIndex = makePskIndex(state, {}), cipherSuite } = context;
+@@ -141,7 +142,7 @@ export async function createGroupInfoWithRatchetTree(groupContext, confirmationT
+ export async function createGroupInfoWithExternalPub(state, extensions, cs) {
+     const externalKeyPair = await cs.hpke.deriveKeyPair(state.keySchedule.externalSecret);
+     const externalPub = await cs.hpke.exportPublicKey(externalKeyPair.publicKey);
+-    const gi = await createGroupInfo(state.groupContext, state.confirmationTag, state, [...extensions, { extensionType: "external_pub", extensionData: externalPub }], cs);
++    const gi = await createGroupInfo(state.groupContext, state.confirmationTag, state, [...extensions, { extensionType: "external_pub", extensionData: encode(varLenDataEncoder)(externalPub) }], cs);
+     return gi;
+ }
+ /** @public */
+@@ -151,7 +152,7 @@ export async function createGroupInfoWithExternalPubAndRatchetTree(state, extens
+     const externalPub = await cs.hpke.exportPublicKey(externalKeyPair.publicKey);
+     const gi = await createGroupInfo(state.groupContext, state.confirmationTag, state, [
+         ...extensions,
+-        { extensionType: "external_pub", extensionData: externalPub },
++        { extensionType: "external_pub", extensionData: encode(varLenDataEncoder)(externalPub) },
+         { extensionType: "ratchet_tree", extensionData: encodedTree },
+     ], cs);
+     return gi;
+@@ -196,7 +197,10 @@ export async function joinGroupExternal(groupInfo, keyPackage, privateKeys, resy
+     const allExtensionsSupported = extensionsSupportedByCapabilities(groupInfo.groupContext.extensions, keyPackage.leafNode.capabilities);
+     if (!allExtensionsSupported)
+         throw new UsageError("client does not support every extension in the GroupContext");
+-    const { enc, secret: initSecret } = await exportSecret(externalPub.extensionData, cs);
++    const [externalPubKey, externalPubLength] = decodeVarLenData(externalPub.extensionData, 0);
++    if (externalPubLength !== externalPub.extensionData.length)
++        throw new CodecError("external_pub has trailing data");
++    const { enc, secret: initSecret } = await exportSecret(externalPubKey, cs);
+     const ratchetTree = ratchetTreeFromExtension(groupInfo) ?? tree;
+     if (ratchetTree === undefined)
+         throw new UsageError("No RatchetTree passed and no ratchet_tree extension");

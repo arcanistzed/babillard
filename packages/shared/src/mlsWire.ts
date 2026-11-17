@@ -250,11 +250,35 @@ export function readGroupInfo(bytes: Uint8Array): { groupId: string; epoch: numb
   const { reader, wireformat } = header(bytes);
   if (wireformat !== WIRE.groupInfo) throw new MlsWireError("not a group info");
   reader.u16(); // group context version
-  reader.u16(); // cipher suite
+  const keyLength = HPKE_KEY_LENGTH[reader.u16()];
+  if (keyLength === undefined) throw new MlsWireError("unsupported cipher suite");
   const groupId = decoder.decode(reader.vector());
   const epoch = reader.u64();
+  reader.vector(); // tree hash
+  reader.vector(); // confirmed transcript hash
+  reader.vector(); // group context extensions
+  // A phone joining or rejoining by itself needs the external_pub key. RFC 9420 section 12.4.3.2
+  // makes it a length-prefixed key. ts-mls 1.6.4 wrote the bare key, which OpenMLS can't read.
+  const extensions = new Reader(reader.vector());
+  let externalPub = 0;
+  while (!extensions.done) {
+    const type = extensions.u16();
+    const data = new Reader(extensions.vector());
+    if (type !== EXTERNAL_PUB) continue;
+    if (data.vector().length !== keyLength || !data.done) throw new MlsWireError("bad external_pub");
+    externalPub += 1;
+  }
+  if (externalPub !== 1) throw new MlsWireError("needs one external_pub");
+  reader.vector(); // confirmation tag
+  reader.u32(); // signer
+  reader.vector(); // signature
+  if (!reader.done) throw new MlsWireError("trailing bytes");
   return { groupId, epoch };
 }
+
+const EXTERNAL_PUB = 4;
+/** HPKE public key sizes for the X25519 cipher suites, the only ones Babillard uses. */
+const HPKE_KEY_LENGTH: Record<number, number> = { 1: 32, 3: 32 };
 
 /** Checks that bytes are a Welcome, without reading inside it. Its contents are encrypted to the new member. */
 export function isWelcome(bytes: Uint8Array): boolean {
