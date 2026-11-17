@@ -26,7 +26,7 @@ Babillard helps people find others nearby who want to talk about the same topics
 
 **Crash reports.** If the app crashes it sends the error message, the technical trace, your platform, and the app version. These reports carry no account ID or name, and we delete them after 30 days. An error message could in rare cases contain text from the screen you were on.
 
-**Website visits.** Pages on babillard.app load Cloudflare Web Analytics, which records the page you visited, the page that linked to it, your browser and device type, your country, and how long the page took to load. It doesn't set cookies, and we only see totals.
+**Website visits.** Pages on babillard.app load Cloudflare Web Analytics, which records the page you visited, the page that linked to it, your browser, operating system and device type, your country, and how long the page took to load. It doesn't set cookies, and we only see totals.
 
 ## Your consent
 
@@ -46,7 +46,7 @@ People in a chat with you can see your messages and profile. Anyone with a meetu
 
 ## How we use it
 
-We use your information to sign you in, show you topics and people, form matches and groups, deliver messages, remind you about meetups, keep people safe, and fix problems. Your date of birth confirms you're 18 or older and gives the age shown on your profile. If you set the ages you want to meet, we only suggest people in that range whose own range includes you, and we lean toward similar ages when forming groups. When a group forms around a question and everyone in it gave the same answer, we swap its newest member for someone waiting who answered differently, if there is one. We don't sell your information and we don't show ads.
+We use your information to sign you in, show you topics and people, form matches and groups, deliver messages, remind you about meetups, keep people safe, and fix problems. Your date of birth confirms you're 18 or older and gives the age shown on your profile. If you set the ages you want to meet, we only suggest people in that range whose own range includes you, and we lean toward similar ages when forming groups. When a group forms around a question and everyone in it who answered gave the same answer, we swap its newest member for someone waiting who answered differently, if there is one. We don't sell your information and we don't show ads.
 
 ## How we choose what you see
 
@@ -217,7 +217,7 @@ Babillard aide les gens à trouver des personnes près de chez eux qui veulent p
 
 **Rapports de plantage.** Si l'application plante, elle envoie le message d'erreur, la trace technique, votre plateforme et la version de l'application. Ces rapports ne contiennent ni identifiant de compte ni nom, et nous les supprimons après 30 jours. Dans de rares cas, un message d'erreur pourrait contenir du texte de l'écran affiché.
 
-**Visites du site.** Les pages de babillard.app chargent Cloudflare Web Analytics, qui enregistre la page visitée, la page qui y menait, votre type de navigateur et d'appareil, votre pays et le temps de chargement de la page. Ce service ne dépose pas de témoins, et nous n'en voyons que des totaux.
+**Visites du site.** Les pages de babillard.app chargent Cloudflare Web Analytics, qui enregistre la page visitée, la page qui y menait, votre navigateur, votre système d'exploitation, votre type d'appareil, votre pays et le temps de chargement de la page. Ce service ne dépose pas de témoins, et nous n'en voyons que des totaux.
 
 ## Votre consentement
 
@@ -237,7 +237,7 @@ Les personnes d'une conversation peuvent voir vos messages et votre profil. Tout
 
 ## Comment nous les utilisons
 
-Nous utilisons vos renseignements pour vous connecter, vous montrer des sujets et des personnes, former des jumelages et des groupes, livrer les messages, vous rappeler les rencontres, assurer la sécurité et corriger les problèmes. Votre date de naissance confirme que vous avez 18 ans ou plus et donne l'âge affiché sur votre profil. Si vous indiquez les âges des personnes que vous voulez rencontrer, nous ne vous suggérons que des personnes dans cette tranche dont la propre tranche vous inclut, et nous privilégions des âges semblables pour former les groupes. Quand un groupe se forme autour d'une question et que tous ses membres ont donné la même réponse, nous remplaçons son membre le plus récent par une personne en attente qui a répondu autrement, s'il y en a une. Nous ne vendons pas vos renseignements et nous n'affichons pas de publicité.
+Nous utilisons vos renseignements pour vous connecter, vous montrer des sujets et des personnes, former des jumelages et des groupes, livrer les messages, vous rappeler les rencontres, assurer la sécurité et corriger les problèmes. Votre date de naissance confirme que vous avez 18 ans ou plus et donne l'âge affiché sur votre profil. Si vous indiquez les âges des personnes que vous voulez rencontrer, nous ne vous suggérons que des personnes dans cette tranche dont la propre tranche vous inclut, et nous privilégions des âges semblables pour former les groupes. Quand un groupe se forme autour d'une question et que tous ses membres qui ont répondu ont donné la même réponse, nous remplaçons son membre le plus récent par une personne en attente qui a répondu autrement, s'il y en a une. Nous ne vendons pas vos renseignements et nous n'affichons pas de publicité.
 
 ## Comment nous choisissons ce que vous voyez
 
