@@ -496,6 +496,55 @@ describe("topic deck", () => {
   });
 });
 
+describe("topic links", () => {
+  const city = "chicago-il-us";
+  const question = "should-citizens-assemblies-make-binding-decisions";
+  const interest = "electoral-systems-and-voting-reform";
+
+  it("shows a topic with whether someone joined or passed on it, and the group they're in", async () => {
+    const [me, b, c] = await Promise.all(Array.from({ length: 3 }, () => person(city)));
+    expect(await me!.get(`/deck/topics/${question}`)).toEqual({
+      topic: expect.objectContaining({ id: question, kind: "question", pending: false, nearbyCount: 0, lean: null }),
+      mine: null,
+      stance: null,
+      groupConversationId: null,
+    });
+
+    await me!.post(`/deck/topics/${question}/swipe`, { direction: "right", stance: "for" });
+    const joined = await me!.get(`/deck/topics/${question}`);
+    expect(joined).toMatchObject({ mine: "joined", stance: "for", groupConversationId: null });
+    // Like the deck, the count is the other people nearby who are in.
+    expect(joined.topic.nearbyCount).toBe(0);
+    expect((await b!.get(`/deck/topics/${question}`)).topic.nearbyCount).toBe(1);
+
+    await me!.post(`/deck/topics/${interest}/swipe`, { direction: "left" });
+    expect(await me!.get(`/deck/topics/${interest}`)).toMatchObject({ topic: { id: interest, kind: "interest" }, mine: "passed", stance: null, groupConversationId: null });
+    await me!.post(`/deck/topics/${interest}/join`, {});
+    expect((await me!.get(`/deck/topics/${interest}`)).mine).toBe("joined");
+
+    await b!.post(`/deck/topics/${question}/swipe`, { direction: "right" });
+    const { groupConversationId } = await c!.post(`/deck/topics/${question}/swipe`, { direction: "right" });
+    expect(groupConversationId).toBeTruthy();
+    await waitFor(() => me!.get(`/deck/topics/${question}`), (link) => link.groupConversationId === groupConversationId, "the group on the topic link");
+    expect((await b!.get(`/deck/topics/${question}`)).groupConversationId).toBe(groupConversationId);
+  });
+
+  it("404s a topic someone can't see, and needs a finished account", async () => {
+    const me = await person(city);
+    expect(await status(me.get("/deck/topics/nope"))).toBe(404);
+    expect(await status(me.get("/deck/topics/should-ottawa-and-gatineau-run-one-transit-system"))).toBe(404);
+
+    const submitter = await person(city, { fields: ["law"] });
+    const { id } = await submitter.post("/deck/topics", { kind: "interest", title: "Small claims court in practice", blurb: "", fieldTags: ["law"] });
+    expect((await submitter.get(`/deck/topics/${id}`)).topic.pending).toBe(true);
+    expect(await status(me.get(`/deck/topics/${id}`))).toBe(404);
+
+    expect(await status(new Client(BASE).get(`/deck/topics/${question}`))).toBe(401);
+    const unfinished = await new Client(BASE).signIn("topic-link-unfinished@example.test");
+    expect(await status(unfinished.get(`/deck/topics/${question}`))).toBe(403);
+  });
+});
+
 describe("people and matching", () => {
   it("only shows people in the same city who share a topic", async () => {
     const viewer = await person("new-york");

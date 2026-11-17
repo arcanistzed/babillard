@@ -80,6 +80,17 @@ export interface MyOutcome {
   takeaway: string;
 }
 
+/** One topic opened from a shared link, with where this person stands on it. */
+export interface TopicLink {
+  topic: TopicCard;
+  /** Whether they joined it or passed on it. Null if they haven't swiped on it yet. */
+  mine: "joined" | "passed" | null;
+  /** Their own answer on a question they joined. Only they ever see it. */
+  stance: Stance | null;
+  /** The group they're in for this topic. Null while they wait for one, or if they haven't joined. */
+  groupConversationId: string | null;
+}
+
 export interface TopicSwipeResult {
   groupConversationId: string | null;
 }
