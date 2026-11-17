@@ -1017,6 +1017,25 @@ describe("your topics", () => {
   });
 });
 
+describe("moving city", () => {
+  it("takes someone off the old city's waiting lists, and puts them on the new city's", async () => {
+    const topicId = "international-relations-theory";
+    const mover = await person("boston");
+    await mover.post(`/deck/topics/${topicId}/swipe`, { direction: "right" });
+    expect(cohortRowsFor(mover.id)).toBe(1);
+    await mover.put("/me/location", { cityId: "toronto", campusId: null });
+    // The move rejoins in the background.
+    await sleep(1500);
+
+    const locals = await Promise.all(Array.from({ length: 2 }, () => person("toronto")));
+    let groupId: string | null = null;
+    for (const client of locals) groupId = (await client.post(`/deck/topics/${topicId}/swipe`, { direction: "right" })).groupConversationId ?? groupId;
+    expect((await mover.get(`/conversations/${groupId}`)).members).toHaveLength(3);
+    // Toronto's row and its group roster. Nothing left in Boston.
+    expect(cohortRowsFor(mover.id)).toBe(2);
+  });
+});
+
 describe("deleted accounts in cohorts", () => {
   it("removes a deleted person, and their answer, from the cohorts they waited in and the groups they were in", async () => {
     const leaving = await person("boston");

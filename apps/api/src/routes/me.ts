@@ -7,7 +7,7 @@ import { avatarUrl } from "../lib/config";
 import { fail, parseJson } from "../lib/http";
 import { newId } from "../lib/tokens";
 import { requireAuth } from "../middleware";
-import { joinCohort } from "./deck";
+import { cohortName, joinCohort } from "./deck";
 import type { AppEnv, UserRow } from "../types";
 
 const MAX_AVATAR_BYTES = 2 * 1024 * 1024;
@@ -64,8 +64,8 @@ function imageExtension(bytes: Uint8Array): string | null {
 
 const MAX_TOPICS_CARRIED_TO_NEW_CITY = 100;
 
-/** Someone's picks follow them, so they count toward groups in the new city. */
-async function rejoinCohorts(env: Env, userId: string, cityId: string): Promise<void> {
+/** Someone's picks follow them, so they count toward groups in the new city, and stop waiting in the old one. */
+async function rejoinCohorts(env: Env, userId: string, cityId: string, oldCityId: string | null): Promise<void> {
   const db = getDb(env);
   const picks = await db
     .select({ topic: schema.topics, stance: schema.topicSwipes.stance })
@@ -76,6 +76,8 @@ async function rejoinCohorts(env: Env, userId: string, cityId: string): Promise<
     .limit(MAX_TOPICS_CARRIED_TO_NEW_CITY);
   for (const { topic, stance } of picks) {
     try {
+      // Only waiting is undone there. A group they're in stays theirs.
+      if (oldCityId) await env.COHORT.getByName(cohortName(topic.id, oldCityId)).leave(userId);
       await joinCohort(env, { userId, cityId, topic, stance });
     } catch (error) {
       console.error(JSON.stringify({ event: "cohort_rejoin_failed", topicId: topic.id, error: String(error) }));
@@ -157,7 +159,7 @@ me.put("/profile", async (c) => {
     db.update(schema.profiles).set(profile).where(eq(schema.profiles.userId, user.id)),
     db.update(schema.users).set(location ?? { cityId: user.cityId, campusId: user.campusId }).where(eq(schema.users.id, user.id)),
   ]);
-  if (location && user.cityId !== location.cityId) c.executionCtx.waitUntil(rejoinCohorts(c.env, user.id, location.cityId));
+  if (location && user.cityId !== location.cityId) c.executionCtx.waitUntil(rejoinCohorts(c.env, user.id, location.cityId, user.cityId));
   return c.json(await loadMe(c.env, { ...user, ...location }));
 });
 
@@ -169,7 +171,7 @@ me.put("/location", async (c) => {
   const db = getDb(c.env);
   await requireLocation(db, input.cityId, input.campusId);
   const [updated] = await db.update(schema.users).set({ cityId: input.cityId, campusId: input.campusId }).where(eq(schema.users.id, user.id)).returning();
-  if (user.cityId !== input.cityId) c.executionCtx.waitUntil(rejoinCohorts(c.env, user.id, input.cityId));
+  if (user.cityId !== input.cityId) c.executionCtx.waitUntil(rejoinCohorts(c.env, user.id, input.cityId, user.cityId));
   return c.json(await loadMe(c.env, updated!));
 });
 

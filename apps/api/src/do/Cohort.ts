@@ -108,15 +108,7 @@ export class Cohort extends DurableObject<Env> {
       const sqlite = this.ctx.storage.sql;
       const me = sqlite.exec<MemberRow>("SELECT * FROM members WHERE user_id = ?", userId).toArray()[0];
       if (me?.group_id) {
-        const group = sqlite.exec<GroupRow>("SELECT * FROM groups WHERE id = ?", me.group_id).toArray()[0];
-        // A group still being written to D1 counts as one they're in.
-        if (!group || group.flushed === 0) return { groupConversationId: me.group_id };
-        const [membership] = await getDb(this.env)
-          .select({ userId: schema.conversationMembers.userId })
-          .from(schema.conversationMembers)
-          .where(and(eq(schema.conversationMembers.conversationId, me.group_id), eq(schema.conversationMembers.userId, userId)));
-        if (membership) return { groupConversationId: me.group_id };
-        // They left that group before leaving it was recorded here.
+        if (!(await this.leftUnrecorded(me))) return { groupConversationId: me.group_id };
         sqlite.exec("INSERT OR IGNORE INTO left_groups (user_id, group_id) VALUES (?, ?)", userId, me.group_id);
       }
       sqlite.exec("DELETE FROM members WHERE user_id = ?", userId);
@@ -140,6 +132,20 @@ export class Cohort extends DurableObject<Env> {
       const row = this.ctx.storage.sql.exec<{ counts: string }>("SELECT counts FROM group_stances WHERE group_id = ?", groupId).toArray()[0];
       return row ? (JSON.parse(row.counts) as Lean) : null;
     });
+  }
+
+  /**
+   * True when someone this cohort has in a written group is no longer in it, because they left before leaving was
+   * recorded here. A group still being written to D1 counts as one they're in.
+   */
+  private async leftUnrecorded(me: MemberRow): Promise<boolean> {
+    const group = this.ctx.storage.sql.exec<GroupRow>("SELECT * FROM groups WHERE id = ?", me.group_id).toArray()[0];
+    if (!group || group.flushed === 0) return false;
+    const [membership] = await getDb(this.env)
+      .select({ userId: schema.conversationMembers.userId })
+      .from(schema.conversationMembers)
+      .where(and(eq(schema.conversationMembers.conversationId, me.group_id!), eq(schema.conversationMembers.userId, me.user_id)));
+    return !membership;
   }
 
   private requeue(userId: string, groupId: string): void {
@@ -224,7 +230,11 @@ export class Cohort extends DurableObject<Env> {
       input.stance,
       Date.now(),
     );
-    const me = sqlite.exec<MemberRow>("SELECT * FROM members WHERE user_id = ?", input.userId).one();
+    let me = sqlite.exec<MemberRow>("SELECT * FROM members WHERE user_id = ?", input.userId).one();
+    if (me.group_id && (await this.leftUnrecorded(me))) {
+      this.requeue(me.user_id, me.group_id);
+      me = sqlite.exec<MemberRow>("SELECT * FROM members WHERE user_id = ?", input.userId).one();
+    }
     if (me.group_id) return me.group_id;
 
     const joinedOpen = await this.tryJoinOpenGroup(input);
