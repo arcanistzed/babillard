@@ -46,10 +46,10 @@ Regulated services are defined by a user count that regulations will set, or by 
 
 | Provider | What it holds | Where | Why it's acceptable |
 |---|---|---|---|
-| Cloudflare | The database, encrypted messages, photos, and request logs | Global, possibly the United States | Messages are ciphertext. The rest is what the service needs, and the policy says so |
+| Cloudflare | The database, encrypted messages, photos, and request logs. Web Analytics on babillard.app pages: the page, referrer, browser and device type, country, and load time | Global, possibly the United States | Messages are ciphertext. The rest is what the service needs, and the policy says so. The analytics beacon is injected at Cloudflare's edge by the zone's Web Analytics setting, not by code in this repo, and sets no cookies |
 | Amazon SES | Email addresses and email text | The region set in `SES_REGION` | Needed for sign-in. Report alerts carry no names |
 | Expo, Google, Apple | Push tokens, sender names, and "New message" | United States | Push text never holds the message |
-| Anthropic | The text of suggested topics, and a city and province name for the moderator's scope suggestion | United States | Never messages, names, or contact details. Anthropic doesn't train on API data |
+| Anthropic | For wording help (`suggestWording`): a suggested topic's title, blurb, and kind. For a moderator's draft (`draftForModerator`): also its field tags and the name of the suggester's current city and province | United States | Never messages, names, or contact details. The policy lists the same fields. Anthropic doesn't train on API data |
 
 ## Retention
 

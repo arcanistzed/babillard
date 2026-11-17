@@ -12,7 +12,7 @@ export const LEGAL_PATHS: Record<LegalPage, Record<Language, string>> = {
 
 const privacyEn = `# Privacy policy
 
-Last updated: November 16, 2026
+Last updated: November 17, 2026
 
 Babillard helps people find others nearby who want to talk about the same topics, then meet in person. In this policy, "we" means the operator of Babillard, named in our Terms of use. We're based in Canada. Our privacy officer is responsible for how we handle your information. Questions and requests go to privacy@babillard.app.
 
@@ -25,6 +25,8 @@ Babillard helps people find others nearby who want to talk about the same topics
 **Device details.** A push notification token if you allow notifications, and your phone's public encryption key. Your IP address reaches our host with every request, and we use it to slow down abuse of sign-in. Our host keeps request logs, including IP addresses, for up to a week.
 
 **Crash reports.** If the app crashes it sends the error message, the technical trace, your platform, and the app version. These reports carry no account ID or name, and we delete them after 30 days. An error message could in rare cases contain text from the screen you were on.
+
+**Website visits.** Pages on babillard.app load Cloudflare Web Analytics, which records the page you visited, the page that linked to it, your browser and device type, your country, and how long the page took to load. It doesn't set cookies, and we only see totals.
 
 ## Your consent
 
@@ -40,11 +42,11 @@ People in your city who share a topic with you can see your first name, age, pho
 
 Your date of birth and email address are never shown to other people. They see your age, not the date. Your stance on a question is never shown as yours. A group only sees the total number of people with each stance. People in your city can see percentages for a question once at least 10 people have answered and they don't all agree.
 
-People in a chat with you can see your messages and profile. Anyone with a meetup's share link can see its topic, time, and place, but not who's going. Your answers about how a meetup went only appear as percentages for its topic, once enough people have answered. If a moderator approves a takeaway line you wrote, it appears on the topic's public page without your name. If you report someone, we don't tell them it was you.
+People in a chat with you can see your messages and profile. Anyone with a meetup's share link can see its topic, time, and place, but not who's going. Your answers about how a meetup went only appear as percentages for its topic, once enough people have answered. If a moderator approves a takeaway line you wrote, it appears on the topic's public page without your name. That page also shows how many people have picked the topic, once at least 5 have, but not who. If you report someone, we don't tell them it was you.
 
 ## How we use it
 
-We use your information to sign you in, show you topics and people, form matches and groups, deliver messages, remind you about meetups, keep people safe, and fix problems. Your date of birth confirms you're 18 or older and gives the age shown on your profile. If you set the ages you want to meet, we only suggest people in that range whose own range includes you, and we lean toward similar ages when forming groups. We don't sell your information and we don't show ads.
+We use your information to sign you in, show you topics and people, form matches and groups, deliver messages, remind you about meetups, keep people safe, and fix problems. Your date of birth confirms you're 18 or older and gives the age shown on your profile. If you set the ages you want to meet, we only suggest people in that range whose own range includes you, and we lean toward similar ages when forming groups. When a group forms around a question and everyone in it gave the same answer, we swap its newest member for someone waiting who answered differently, if there is one. We don't sell your information and we don't show ads.
 
 ## How we choose what you see
 
@@ -52,7 +54,7 @@ The app ranks topics and people automatically, using your fields, the topics you
 
 ## Your messages
 
-Messages are end-to-end encrypted. Only the phones of the people in a chat can read them, and we can't, so we couldn't hand them over even if asked. If you report someone from a chat, your phone shares the reported message and the ones around it with us so a moderator can review them, and we keep that text with the report. We can see who you chat with and when. Meetup times and places, and notes the app itself adds to a chat, aren't encrypted, because we use them to send reminders and share links. Takeaway lines aren't encrypted either, because a moderator reads each one before it can be shown. If you sign in on a new phone or reinstall the app, it can't read older messages unless you restore a backup. A backup is a file you choose to save, protected by a passphrase we never see. Each chat's About screen has a security code you can compare in person, to check that nobody else was added.
+Messages are end-to-end encrypted. Only the phones of the people in a chat can read them, and we can't, so we couldn't hand them over even if asked. If you report someone from a chat, your phone automatically shares the reported message and up to five on each side of it with us, or the latest ten if you reported from their profile in that chat, so a moderator can review them. You don't choose which. If none of them is from the person you reported, it shares none. We keep that text with the report. We can see who you chat with and when. Meetup times and places, and notes the app itself adds to a chat, aren't encrypted, because we use them to send reminders and share links. Takeaway lines aren't encrypted either, because a moderator reads each one before it can be shown. If you sign in on a new phone or reinstall the app, it can't read older messages unless you restore a backup. A backup is a file you choose to save, protected by a passphrase we never see. Each chat's About screen has a security code you can compare in person, to check that nobody else was added.
 
 ## Emails and notifications
 
@@ -62,10 +64,10 @@ We email you only to sign you in, and about safety or your account. Push notific
 
 We use these companies to run the service, and only for that purpose:
 
-- Cloudflare hosts the app, the database, encrypted messages, and photos.
+- Cloudflare hosts the app, the database, encrypted messages, and photos, and counts visits to the website.
 - Amazon Web Services sends sign-in and moderation emails, so it handles your email address.
 - Expo, Google, and Apple deliver push notifications, so they handle your device token and the notification text, which says who wrote to you but not what they said.
-- Anthropic suggests clearer wording and French translations for topics people suggest, so it handles the text of those topics and nothing else: never messages, names, or contact details. It doesn't use that text to train its models.
+- Anthropic helps with topics people suggest. When you ask for clearer wording, it receives the topic's text and whether it's a question. When a moderator asks for a draft of the French version and where the topic should appear, it also receives the topic's fields and the name of the suggester's city and province. It never receives messages, names, or contact details, and it doesn't use this text to train its models.
 
 These companies may process information outside Canada, including in the United States, where other laws apply. We also disclose information if the law requires it, or if we believe it's needed to protect someone from serious harm. If Babillard moves to a company or a new owner, your information moves with it under this policy, and we'll tell you.
 
@@ -201,7 +203,7 @@ Safety concerns, including anything involving a child: safety@babillard.app. Hel
 
 const privacyFr = `# Politique de confidentialité
 
-Dernière mise à jour: 16 novembre 2026
+Dernière mise à jour: 17 novembre 2026
 
 Babillard aide les gens à trouver des personnes près de chez eux qui veulent parler des mêmes sujets, puis à se rencontrer en personne. Dans cette politique, « nous » désigne l'exploitant de Babillard, nommé dans nos Conditions d'utilisation. Nous sommes établis au Canada. Notre responsable de la protection des renseignements personnels répond de la façon dont nous traitons vos renseignements. Adressez vos questions et demandes à privacy@babillard.app.
 
@@ -214,6 +216,8 @@ Babillard aide les gens à trouver des personnes près de chez eux qui veulent p
 **Renseignements sur l'appareil.** Un jeton de notification si vous autorisez les notifications, et la clé publique de chiffrement de votre téléphone. Votre adresse IP parvient à notre hébergeur à chaque requête, et nous l'utilisons pour limiter les abus à la connexion. Notre hébergeur conserve les journaux de requêtes, y compris les adresses IP, jusqu'à une semaine.
 
 **Rapports de plantage.** Si l'application plante, elle envoie le message d'erreur, la trace technique, votre plateforme et la version de l'application. Ces rapports ne contiennent ni identifiant de compte ni nom, et nous les supprimons après 30 jours. Dans de rares cas, un message d'erreur pourrait contenir du texte de l'écran affiché.
+
+**Visites du site.** Les pages de babillard.app chargent Cloudflare Web Analytics, qui enregistre la page visitée, la page qui y menait, votre type de navigateur et d'appareil, votre pays et le temps de chargement de la page. Ce service ne dépose pas de témoins, et nous n'en voyons que des totaux.
 
 ## Votre consentement
 
@@ -229,11 +233,11 @@ Les personnes de votre ville qui partagent un sujet avec vous peuvent voir votre
 
 Votre date de naissance et votre adresse courriel ne sont jamais montrées aux autres. Ils voient votre âge, pas la date. Votre position sur une question n'est jamais présentée comme la vôtre. Un groupe voit seulement le nombre total de personnes par position. Les gens de votre ville peuvent voir des pourcentages pour une question lorsqu'au moins 10 personnes ont répondu et qu'elles ne sont pas toutes du même avis.
 
-Les personnes d'une conversation peuvent voir vos messages et votre profil. Toute personne qui a le lien de partage d'une rencontre peut en voir le sujet, l'heure et le lieu, mais pas qui y va. Vos réponses sur le déroulement d'une rencontre ne paraissent qu'en pourcentages pour son sujet, une fois qu'assez de gens ont répondu. Si un modérateur approuve une phrase à retenir que vous avez écrite, elle paraît sur la page publique du sujet, sans votre nom. Si vous signalez quelqu'un, nous ne lui disons pas que c'est vous.
+Les personnes d'une conversation peuvent voir vos messages et votre profil. Toute personne qui a le lien de partage d'une rencontre peut en voir le sujet, l'heure et le lieu, mais pas qui y va. Vos réponses sur le déroulement d'une rencontre ne paraissent qu'en pourcentages pour son sujet, une fois qu'assez de gens ont répondu. Si un modérateur approuve une phrase à retenir que vous avez écrite, elle paraît sur la page publique du sujet, sans votre nom. Cette page indique aussi combien de personnes ont choisi le sujet, à partir de 5, mais pas qui. Si vous signalez quelqu'un, nous ne lui disons pas que c'est vous.
 
 ## Comment nous les utilisons
 
-Nous utilisons vos renseignements pour vous connecter, vous montrer des sujets et des personnes, former des jumelages et des groupes, livrer les messages, vous rappeler les rencontres, assurer la sécurité et corriger les problèmes. Votre date de naissance confirme que vous avez 18 ans ou plus et donne l'âge affiché sur votre profil. Si vous indiquez les âges des personnes que vous voulez rencontrer, nous ne vous suggérons que des personnes dans cette tranche dont la propre tranche vous inclut, et nous privilégions des âges semblables pour former les groupes. Nous ne vendons pas vos renseignements et nous n'affichons pas de publicité.
+Nous utilisons vos renseignements pour vous connecter, vous montrer des sujets et des personnes, former des jumelages et des groupes, livrer les messages, vous rappeler les rencontres, assurer la sécurité et corriger les problèmes. Votre date de naissance confirme que vous avez 18 ans ou plus et donne l'âge affiché sur votre profil. Si vous indiquez les âges des personnes que vous voulez rencontrer, nous ne vous suggérons que des personnes dans cette tranche dont la propre tranche vous inclut, et nous privilégions des âges semblables pour former les groupes. Quand un groupe se forme autour d'une question et que tous ses membres ont donné la même réponse, nous remplaçons son membre le plus récent par une personne en attente qui a répondu autrement, s'il y en a une. Nous ne vendons pas vos renseignements et nous n'affichons pas de publicité.
 
 ## Comment nous choisissons ce que vous voyez
 
@@ -241,7 +245,7 @@ L'application classe automatiquement les sujets et les personnes selon vos domai
 
 ## Vos messages
 
-Les messages sont chiffrés de bout en bout. Seuls les téléphones des personnes d'une conversation peuvent les lire. Nous ne le pouvons pas, et nous ne pourrions donc pas les remettre même si on nous le demandait. Si vous signalez quelqu'un depuis une conversation, votre téléphone nous transmet le message signalé et ceux qui l'entourent pour qu'un modérateur les examine, et nous conservons ce texte avec le signalement. Nous pouvons voir avec qui vous discutez et quand. Les heures et lieux des rencontres, ainsi que les notes ajoutées par l'application, ne sont pas chiffrés, parce que nous les utilisons pour les rappels et les liens de partage. Les phrases à retenir ne le sont pas non plus, parce qu'un modérateur lit chacune avant qu'elle puisse être affichée. Si vous vous connectez sur un nouveau téléphone ou réinstallez l'application, elle ne pourra pas lire les anciens messages, sauf si vous restaurez une sauvegarde. Une sauvegarde est un fichier que vous choisissez d'enregistrer, protégé par une phrase secrète que nous ne voyons jamais. L'écran À propos de chaque conversation affiche un code de sécurité à comparer en personne, pour vérifier que personne d'autre n'a été ajouté.
+Les messages sont chiffrés de bout en bout. Seuls les téléphones des personnes d'une conversation peuvent les lire. Nous ne le pouvons pas, et nous ne pourrions donc pas les remettre même si on nous le demandait. Si vous signalez quelqu'un depuis une conversation, votre téléphone nous transmet automatiquement le message signalé et jusqu'à cinq messages de chaque côté, ou les dix derniers si vous avez signalé depuis son profil dans cette conversation, pour qu'un modérateur les examine. Vous ne choisissez pas lesquels. Si aucun ne vient de la personne signalée, il n'en transmet aucun. Nous conservons ce texte avec le signalement. Nous pouvons voir avec qui vous discutez et quand. Les heures et lieux des rencontres, ainsi que les notes ajoutées par l'application, ne sont pas chiffrés, parce que nous les utilisons pour les rappels et les liens de partage. Les phrases à retenir ne le sont pas non plus, parce qu'un modérateur lit chacune avant qu'elle puisse être affichée. Si vous vous connectez sur un nouveau téléphone ou réinstallez l'application, elle ne pourra pas lire les anciens messages, sauf si vous restaurez une sauvegarde. Une sauvegarde est un fichier que vous choisissez d'enregistrer, protégé par une phrase secrète que nous ne voyons jamais. L'écran À propos de chaque conversation affiche un code de sécurité à comparer en personne, pour vérifier que personne d'autre n'a été ajouté.
 
 ## Courriels et notifications
 
@@ -251,10 +255,10 @@ Nous vous écrivons seulement pour vous connecter, et au sujet de la sécurité 
 
 Nous faisons appel à ces entreprises pour faire fonctionner le service, et seulement à cette fin:
 
-- Cloudflare héberge l'application, la base de données, les messages chiffrés et les photos.
+- Cloudflare héberge l'application, la base de données, les messages chiffrés et les photos, et compte les visites du site.
 - Amazon Web Services envoie les courriels de connexion et de modération, et traite donc votre adresse courriel.
 - Expo, Google et Apple livrent les notifications, et traitent donc le jeton de votre appareil et le texte de la notification, qui indique qui vous a écrit mais pas ce qui a été écrit.
-- Anthropic suggère des formulations plus claires et des traductions françaises pour les sujets proposés, et traite donc le texte de ces sujets et rien d'autre: jamais les messages, les noms ou les coordonnées. Elle n'utilise pas ce texte pour entraîner ses modèles.
+- Anthropic aide pour les sujets proposés. Quand vous demandez une formulation plus claire, elle reçoit le texte du sujet et le fait qu'il s'agit ou non d'une question. Quand un modérateur demande une ébauche de la version française et de l'endroit où le sujet devrait paraître, elle reçoit aussi les domaines du sujet et le nom de la ville et de la province de la personne qui l'a proposé. Elle ne reçoit jamais de messages, de noms ni de coordonnées, et n'utilise pas ce texte pour entraîner ses modèles.
 
 Ces entreprises peuvent traiter des renseignements à l'extérieur du Canada, y compris aux États-Unis, où d'autres lois s'appliquent. Nous communiquons aussi des renseignements si la loi l'exige, ou si nous croyons que c'est nécessaire pour protéger quelqu'un d'un préjudice grave. Si Babillard passe à une société ou à un nouveau propriétaire, vos renseignements suivent sous cette politique, et nous vous en informerons.
 
