@@ -1,6 +1,6 @@
 import { outcomeSummary, VENUE_LABELS, type AppVersionInfo, versionCode, type OutcomeCounts, type TopicOutcomes } from "@babillard/shared";
 import { and, desc, eq, inArray, sql } from "drizzle-orm";
-import { Hono } from "hono";
+import { Hono, type Context } from "hono";
 import { html, raw } from "hono/html";
 import { getDb, schema } from "../db";
 import { LEGAL_PATHS, LEGAL_TEXT, type Language, type LegalPage } from "../legal/content";
@@ -11,10 +11,51 @@ import type { AppEnv } from "../types";
 
 const ANDROID_APK_KEY = "releases/babillard.apk";
 
+const CONTACT = "info@babillard.app";
+
 function getApp(language: Language = "en") {
   return language === "fr"
-    ? html`<p><a class="button" href="/download/android">Obtenir l'application Android</a></p><p class="muted">Bientôt sur iPhone.</p>`
-    : html`<p><a class="button" href="/download/android">Get the Android app</a></p><p class="muted">iPhone is coming soon.</p>`;
+    ? html`<p><a class="button" href="/download/android">Obtenir l'application Android</a></p><p class="muted">Seulement sur Android pour l'instant. Vous avez un iPhone? Écrivez à <a href="mailto:${CONTACT}">${CONTACT}</a> et nous vous dirons quand l'application sera prête.</p>`
+    : html`<p><a class="button" href="/download/android">Get the Android app</a></p><p class="muted">Android only for now. On an iPhone? Write to <a href="mailto:${CONTACT}">${CONTACT}</a> and we'll tell you when it's ready.</p>`;
+}
+
+/**
+ * Unknown paths, missing topics, and cancelled or unknown meetup links. Browsers get a page in
+ * the site's frame with a link home; everything else, like the app and calendar clients, gets
+ * the plain 404 it always did.
+ */
+export function notFoundPage(c: Context<AppEnv>) {
+  if (!c.req.header("accept")?.includes("text/html")) return c.text("404 Not Found", 404);
+  const path = c.req.path;
+  const language: Language = path === "/fr" || path.startsWith("/fr/") ? "fr" : requestLanguage(c);
+  const body =
+    language === "fr"
+      ? html`<h1>Cette page n'existe pas</h1>
+          <p>Le lien est peut-être mal tapé, ou ce qu'il désignait a été retiré. Le lien d'une rencontre cesse de fonctionner quand elle est annulée.</p>
+          <p><a class="button" href="/fr/">Aller à l'accueil</a></p>`
+      : html`<h1>This page isn't here</h1>
+          <p>The link may be mistyped, or what it pointed to was removed. A meetup's link stops working once the meetup is cancelled.</p>
+          <p><a class="button" href="/">Go to the home page</a></p>`;
+  return c.html(page(language === "fr" ? "Page introuvable" : "Page not found", body, language, { hidden: true }), 404);
+}
+
+/** A count of a few people reads as discouraging and says little, so the topic page only shows it from here. */
+const PICKED_MIN_SHOWN = 5;
+
+/** How many people with an account have swiped right on a topic, in every city. */
+async function pickedCount(db: ReturnType<typeof getDb>, topicId: string): Promise<number> {
+  const swipes = schema.topicSwipes;
+  const [row] = await db
+    .select({ count: sql<number>`count(*)` })
+    .from(swipes)
+    .innerJoin(schema.users, eq(schema.users.id, swipes.userId))
+    .where(and(eq(swipes.topicId, topicId), eq(swipes.direction, "right"), eq(schema.users.status, "active")));
+  return row?.count ?? 0;
+}
+
+function pickedLine(count: number, language: Language) {
+  if (count < PICKED_MIN_SHOWN) return "";
+  return html`<p class="muted">${language === "fr" ? `${count} personnes ont choisi ce sujet sur Babillard jusqu'ici.` : `${count} people have picked this topic on Babillard so far.`}</p>`;
 }
 
 const escapeHtml = (text: string) => text.replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;").replaceAll('"', "&quot;");
@@ -171,8 +212,8 @@ publicRoutes.get("/t/:id", async (c) => {
   if (!topic) return c.notFound();
   const language = requestLanguage(c);
   const { title, blurb } = localizeTopic(topic, language);
-  const { outcomes, takeaways } = await topicOutcomes(db, topic.id);
-  return c.html(page(title, html`<h1>${title}</h1><p>${blurb}</p>${outcomesSection(outcomes, takeaways, language)}${getApp(language)}`, language));
+  const [{ outcomes, takeaways }, picked] = await Promise.all([topicOutcomes(db, topic.id), pickedCount(db, topic.id)]);
+  return c.html(page(title, html`<h1>${title}</h1><p>${blurb}</p>${pickedLine(picked, language)}${outcomesSection(outcomes, takeaways, language)}${getApp(language)}`, language));
 });
 
 /** Reachable only through an unguessable token. Shows the plan, never who's going. */

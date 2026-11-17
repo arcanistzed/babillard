@@ -10,7 +10,7 @@ import deck from "./routes/deck";
 import me from "./routes/me";
 import meetups from "./routes/meetups";
 import people from "./routes/people";
-import publicRoutes from "./routes/public";
+import publicRoutes, { notFoundPage } from "./routes/public";
 import safety from "./routes/safety";
 import type { AppEnv } from "./types";
 
@@ -24,6 +24,7 @@ app.onError((error, c) => {
   console.error(JSON.stringify({ event: "unhandled_error", path: c.req.path, error: String(error), stack: error.stack }));
   return c.json({ error: "internal_error" }, 500);
 });
+app.notFound(notFoundPage);
 
 // The app loads avatars natively, and cross-origin rules don't apply to it.
 const addSecureHeaders = secureHeaders({ crossOriginResourcePolicy: false });
