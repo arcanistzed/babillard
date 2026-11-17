@@ -934,7 +934,7 @@ describe("automatic groups", () => {
   });
 
   it("puts someone who left a group back on the waiting list, and never back in that group", async () => {
-    const topicId = "development-economics";
+    const topicId = "sociology-of-class";
     const swipe = (client: Client) => client.post(`/deck/topics/${topicId}/swipe`, { direction: "right" });
     const [leaver, stays, other] = await Promise.all(Array.from({ length: 3 }, () => person("london")));
     await swipe(leaver!);
@@ -961,7 +961,7 @@ describe("automatic groups", () => {
   });
 
   it("frees someone who left a group before leaving was recorded", async () => {
-    const topicId = "economic-history";
+    const topicId = "oral-history-and-memory";
     const people = await Promise.all(Array.from({ length: 3 }, () => person("london")));
     let groupId: string | null = null;
     for (const client of people) groupId = (await client.post(`/deck/topics/${topicId}/swipe`, { direction: "right" })).groupConversationId ?? groupId;
