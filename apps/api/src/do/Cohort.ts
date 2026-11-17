@@ -1,8 +1,9 @@
 import { DurableObject } from "cloudflare:workers";
-import { GROUP_MAX_SIZE, ageOn, canJoin, formGroups, sizeBounds, topicPhrase, type Stance, type Waiter } from "@babillard/shared";
+import { GROUP_MAX_SIZE, ageOn, canJoin, formGroups, groupStanceSpread, sizeBounds, topicPhrase, type Lean, type Stance, type Waiter } from "@babillard/shared";
 import { and, eq, inArray, isNotNull } from "drizzle-orm";
 import { getDb, schema } from "../db";
 import { blocksBetween, blockedWith } from "../lib/blocks";
+import { isDevMode } from "../lib/config";
 import { sendPush } from "../lib/push";
 import { newId } from "../lib/tokens";
 
@@ -31,11 +32,14 @@ interface GroupRow extends Record<string, SqlStorageValue> {
   created_at: number;
 }
 
+// Also keeps each D1 lookup under its limit of bound parameters.
 const MAX_WAITERS_CHECKED = 90;
+const DAY_MS = 24 * 60 * 60 * 1000;
 
 /**
- * One per (topic, city). Joins run one at a time, because each one reads D1
- * between deciding and writing and two interleaved joins could split a group.
+ * One per (topic, city). Every call runs one at a time, because a join reads D1
+ * between deciding and writing, and anything interleaved could split a group or
+ * put someone back into one they just left.
  *
  * A new group is recorded here first and written to D1 afterwards. If the D1
  * write fails, the next join finishes it, so a group is never lost or doubled.
@@ -46,6 +50,7 @@ export class Cohort extends DurableObject<Env> {
   constructor(ctx: DurableObjectState, env: Env) {
     super(ctx, env);
     ctx.blockConcurrencyWhile(async () => {
+      // Only ever adds tables, so cohorts created before a change pick it up on their next start.
       this.ctx.storage.sql.exec(`
         CREATE TABLE IF NOT EXISTS members (
           user_id TEXT PRIMARY KEY,
@@ -59,19 +64,158 @@ export class Cohort extends DurableObject<Env> {
           flushed INTEGER NOT NULL DEFAULT 0,
           created_at INTEGER NOT NULL
         );
+        CREATE TABLE IF NOT EXISTS left_groups (
+          user_id TEXT NOT NULL,
+          group_id TEXT NOT NULL,
+          PRIMARY KEY (user_id, group_id)
+        );
+        CREATE TABLE IF NOT EXISTS group_stances (
+          group_id TEXT PRIMARY KEY,
+          counts TEXT NOT NULL
+        );
+        CREATE TABLE IF NOT EXISTS meta (
+          key TEXT PRIMARY KEY,
+          value INTEGER NOT NULL
+        );
       `);
     });
   }
 
-  /** Safe to call twice for the same user. Returns the conversation they ended up in, if any. */
-  join(input: CohortJoin): Promise<string | null> {
-    const run = this.tail.then(() => this.runJoin(input));
+  private serial<T>(work: () => Promise<T> | T): Promise<T> {
+    const run = this.tail.then(work);
     this.tail = run.catch(() => undefined);
     return run;
   }
 
+  /** Safe to call twice for the same user. Returns the conversation they ended up in, if any. */
+  join(input: CohortJoin): Promise<string | null> {
+    return this.serial(() => this.runJoin(input));
+  }
+
+  /** Keeps the waiting list's copy of someone's answer in step with the one they changed. */
+  setStance(userId: string, stance: Stance | null): Promise<void> {
+    return this.serial(() => {
+      this.ctx.storage.sql.exec("UPDATE members SET stance = ? WHERE user_id = ?", stance, userId);
+    });
+  }
+
+  /**
+   * Takes someone off the waiting list. Returns the group they're in instead, if they are in one,
+   * because only waiting can be undone here. Leaving a group happens in the chat.
+   */
+  leave(userId: string): Promise<{ groupConversationId: string | null }> {
+    return this.serial(async () => {
+      const sqlite = this.ctx.storage.sql;
+      const me = sqlite.exec<MemberRow>("SELECT * FROM members WHERE user_id = ?", userId).toArray()[0];
+      if (me?.group_id) {
+        const group = sqlite.exec<GroupRow>("SELECT * FROM groups WHERE id = ?", me.group_id).toArray()[0];
+        // A group still being written to D1 counts as one they're in.
+        if (!group || group.flushed === 0) return { groupConversationId: me.group_id };
+        const [membership] = await getDb(this.env)
+          .select({ userId: schema.conversationMembers.userId })
+          .from(schema.conversationMembers)
+          .where(and(eq(schema.conversationMembers.conversationId, me.group_id), eq(schema.conversationMembers.userId, userId)));
+        if (membership) return { groupConversationId: me.group_id };
+        // They left that group before leaving it was recorded here.
+        sqlite.exec("INSERT OR IGNORE INTO left_groups (user_id, group_id) VALUES (?, ?)", userId, me.group_id);
+      }
+      sqlite.exec("DELETE FROM members WHERE user_id = ?", userId);
+      return { groupConversationId: null };
+    });
+  }
+
+  /** Someone who left a group goes back on the waiting list, at the back, and is never put in that group again. */
+  leaveGroup(userId: string, groupId: string): Promise<void> {
+    return this.serial(() => this.requeue(userId, groupId));
+  }
+
+  /** Removes everything held about someone whose account is deleted. Returns how many places they were in. */
+  forget(userId: string): Promise<number> {
+    return this.serial(() => this.forgetNow([userId]));
+  }
+
+  /** The totals saved when this group formed, or null when the rule hid them or the group formed before they were saved. */
+  stanceSpread(groupId: string): Promise<Lean | null> {
+    return this.serial(() => {
+      const row = this.ctx.storage.sql.exec<{ counts: string }>("SELECT counts FROM group_stances WHERE group_id = ?", groupId).toArray()[0];
+      return row ? (JSON.parse(row.counts) as Lean) : null;
+    });
+  }
+
+  private requeue(userId: string, groupId: string): void {
+    const sqlite = this.ctx.storage.sql;
+    this.ctx.storage.transactionSync(() => {
+      sqlite.exec("INSERT OR IGNORE INTO left_groups (user_id, group_id) VALUES (?, ?)", userId, groupId);
+      sqlite.exec("UPDATE members SET group_id = NULL, joined_at = ? WHERE user_id = ? AND group_id = ?", Date.now(), userId, groupId);
+    });
+  }
+
+  private forgetNow(userIds: string[]): number {
+    const sqlite = this.ctx.storage.sql;
+    const gone = new Set(userIds);
+    let removed = 0;
+    this.ctx.storage.transactionSync(() => {
+      for (const userId of userIds) {
+        removed += sqlite.exec("DELETE FROM members WHERE user_id = ?", userId).rowsWritten;
+        sqlite.exec("DELETE FROM left_groups WHERE user_id = ?", userId);
+      }
+      // Group rosters keep IDs only to write a new group to D1. Removing the person also keeps a group not yet written from adding them.
+      for (const group of sqlite.exec<GroupRow>("SELECT * FROM groups").toArray()) {
+        const memberIds = JSON.parse(group.member_ids) as string[];
+        const kept = memberIds.filter((id) => !gone.has(id));
+        if (kept.length !== memberIds.length) sqlite.exec("UPDATE groups SET member_ids = ? WHERE id = ?", JSON.stringify(kept), group.id);
+      }
+    });
+    return removed;
+  }
+
+  /**
+   * At most daily, and on every join in development: removes anyone whose account was deleted without this cohort
+   * hearing about it (before deletion told cohorts, or from a city they had moved away from), and puts back on the
+   * waiting list anyone who left their group before leaving was recorded here. Banned people stay, in case of an unban.
+   */
+  private async purgeIfDue(input: CohortJoin): Promise<void> {
+    const sqlite = this.ctx.storage.sql;
+    const now = Date.now();
+    const last = sqlite.exec<{ value: number }>("SELECT value FROM meta WHERE key = 'purged_at'").toArray()[0]?.value ?? 0;
+    if (!isDevMode(this.env) && now - last < DAY_MS) return;
+
+    const db = getDb(this.env);
+    let removed = 0;
+    let requeued = 0;
+    let after = "";
+    for (;;) {
+      const page = sqlite.exec<MemberRow>("SELECT * FROM members WHERE user_id > ? ORDER BY user_id LIMIT ?", after, MAX_WAITERS_CHECKED).toArray();
+      if (page.length === 0) break;
+      after = page[page.length - 1]!.user_id;
+      const ids = page.map((row) => row.user_id);
+      const grouped = page.filter((row) => row.group_id !== null);
+      const [accounts, memberships] = await Promise.all([
+        db.select({ id: schema.users.id, status: schema.users.status }).from(schema.users).where(inArray(schema.users.id, ids)),
+        grouped.length
+          ? db
+              .select({ conversationId: schema.conversationMembers.conversationId, userId: schema.conversationMembers.userId })
+              .from(schema.conversationMembers)
+              .where(inArray(schema.conversationMembers.userId, grouped.map((row) => row.user_id)))
+          : Promise.resolve([]),
+      ]);
+      const live = new Set(accounts.filter((account) => account.status !== "deleted").map((account) => account.id));
+      const gone = ids.filter((id) => !live.has(id));
+      removed += gone.length ? this.forgetNow(gone) : 0;
+      const inGroup = new Set(memberships.map((row) => `${row.conversationId}|${row.userId}`));
+      for (const row of grouped) {
+        if (!live.has(row.user_id) || inGroup.has(`${row.group_id}|${row.user_id}`)) continue;
+        this.requeue(row.user_id, row.group_id!);
+        requeued += 1;
+      }
+    }
+    sqlite.exec("INSERT INTO meta (key, value) VALUES ('purged_at', ?) ON CONFLICT (key) DO UPDATE SET value = excluded.value", now);
+    if (removed || requeued) console.log(JSON.stringify({ event: "cohort_purged", cohort: `${input.topicId}:${input.cityId}`, removed, requeued }));
+  }
+
   private async runJoin(input: CohortJoin): Promise<string | null> {
     await this.flushPending(input);
+    await this.purgeIfDue(input);
 
     const sqlite = this.ctx.storage.sql;
     sqlite.exec(
@@ -93,6 +237,7 @@ export class Cohort extends DurableObject<Env> {
     const sqlite = this.ctx.storage.sql;
     const newest = sqlite.exec<GroupRow>("SELECT * FROM groups WHERE flushed = 1 ORDER BY created_at DESC LIMIT 1").toArray()[0];
     if (!newest) return null;
+    if (sqlite.exec("SELECT 1 FROM left_groups WHERE user_id = ? AND group_id = ?", input.userId, newest.id).toArray().length) return null;
 
     const db = getDb(this.env);
     const current = await db
@@ -166,8 +311,12 @@ export class Cohort extends DurableObject<Env> {
     if (!memberIds) return null;
 
     const groupId = newId();
+    // Saved now, while everyone in it arrives together, so later joins, leaves and changed answers can't be read off it.
+    const stanceOf = new Map(waiting.map((waiter) => [waiter.userId, waiter.stance]));
+    const spread = input.topicKind === "question" ? groupStanceSpread(memberIds.map((id) => stanceOf.get(id) ?? null)) : null;
     this.ctx.storage.transactionSync(() => {
       sqlite.exec("INSERT INTO groups (id, member_ids, created_at) VALUES (?, ?, ?)", groupId, JSON.stringify(memberIds), Date.now());
+      if (spread) sqlite.exec("INSERT INTO group_stances (group_id, counts) VALUES (?, ?)", groupId, JSON.stringify(spread));
       for (const memberId of memberIds) sqlite.exec("UPDATE members SET group_id = ? WHERE user_id = ?", groupId, memberId);
     });
     await this.flushPending(input);

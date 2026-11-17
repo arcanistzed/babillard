@@ -1,6 +1,7 @@
 import { and, eq, inArray, isNull, or, sql } from "drizzle-orm";
 import { getDb, schema } from "../db";
 import { blockedEmailTombstone, deletedEmail, releaseUnblockedTombstones } from "./blocks";
+import { forgetInCohorts } from "./cohorts";
 import { settleUpcomingMeetups } from "./meetupState";
 
 /**
@@ -25,6 +26,9 @@ export async function deleteAccount(env: Env, id: string): Promise<void> {
   const [profile] = await db.select({ key: schema.profiles.avatarKey, name: schema.profiles.displayName }).from(schema.profiles).where(eq(schema.profiles.userId, id));
   await Promise.all(memberships.map((row) => env.CHAT_ROOM.getByName(row.id).eraseUser(id, profile?.name ?? null)));
   if (profile?.key) await env.AVATARS.delete(profile.key);
+
+  // Before the batch below deletes the swipes and memberships that say which cohorts hold this person.
+  await forgetInCohorts(env, id);
 
   const conversationIds = memberships.map((row) => row.id);
   const namePrefix = profile ? `${profile.name} ` : null;

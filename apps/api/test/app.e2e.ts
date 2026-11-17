@@ -1,5 +1,6 @@
 import { execFileSync } from "node:child_process";
-import { readFileSync } from "node:fs";
+import { readFileSync, readdirSync } from "node:fs";
+import { DatabaseSync } from "node:sqlite";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { NEWCOMER_SWIPES, ageOn } from "@babillard/shared";
@@ -83,6 +84,39 @@ function sealedAlone(sender: Client, conversationId: string) {
 async function evidenceNear(reporter: Client, conversationId: string, messageId: string) {
   const nearby = await reporter.read(conversationId, `?around=${messageId}`);
   return nearby.filter((message) => message.contentKey).map((message) => ({ messageId: message.id, contentKey: message.contentKey }));
+}
+
+function d1(command: string): void {
+  execFileSync(join(apiDir, "../../node_modules/.bin/wrangler"), ["d1", "execute", "babillard", "--local", "--persist-to", DEV_DB, "--command", command], {
+    cwd: apiDir,
+    stdio: "pipe",
+    env: { ...process.env, CI: "true", WRANGLER_SEND_METRICS: "false" },
+  });
+}
+
+/** How many places in any cohort's storage still hold this person: waiting or grouped, left groups, and group rosters. */
+function cohortRowsFor(userId: string): number {
+  const dir = join(apiDir, DEV_DB, "v3/do/babillard-Cohort");
+  let found = 0;
+  for (const file of readdirSync(dir).filter((name) => name.endsWith(".sqlite"))) {
+    const db = new DatabaseSync(join(dir, file), { readOnly: true });
+    try {
+      const count = (query: string, ...args: string[]) => {
+        try {
+          return Number((db.prepare(query).get(...args) as { n: number }).n);
+        } catch {
+          // A cohort started before a table was added doesn't have it yet.
+          return 0;
+        }
+      };
+      found += count("SELECT count(*) AS n FROM members WHERE user_id = ?", userId);
+      found += count("SELECT count(*) AS n FROM left_groups WHERE user_id = ?", userId);
+      found += count("SELECT count(*) AS n FROM groups WHERE member_ids LIKE ?", `%${userId}%`);
+    } finally {
+      db.close();
+    }
+  }
+  return found;
 }
 
 async function match(a: Client, b: Client, topicId: string): Promise<string> {
@@ -849,7 +883,7 @@ describe("automatic groups", () => {
     expect((await latecomer.post(`/deck/topics/${topicId}/swipe`, { direction: "right" })).groupConversationId).toBeNull();
   });
 
-  it("shows a question group its spread of stances, and no individual's", async () => {
+  it("hides a question group's stances when someone is alone on a side", async () => {
     const topicId = "should-voting-be-mandatory";
     const stances = ["for", "for", "against", "unsure"];
     const people = await Promise.all(stances.map(() => person("london")));
@@ -859,8 +893,33 @@ describe("automatic groups", () => {
       groupId ??= result.groupConversationId;
     }
     const detail = await people[0]!.get(`/conversations/${groupId}`);
-    expect(detail.stanceSpread).toEqual({ for: 2, against: 1, unsure: 1 });
+    expect(detail.stanceSpread).toBeNull();
     expect(JSON.stringify(detail.members)).not.toContain("against");
+  });
+
+  it("shows a question group the stances it formed with, which joins, leaves and changed answers don't move", async () => {
+    const topicId = "should-public-transit-be-free";
+    const medium = { displayName: "Medium", bio: "", role: "other", fields: ["philosophy"], lookingFor: ["friends"], groupSize: "medium" };
+    const stances = ["for", "for", "against", "unsure", null];
+    const founders = await Promise.all(stances.map(() => person("london")));
+    for (const client of founders) await client.put("/me/profile", medium);
+    for (const [index, client] of founders.slice(0, 4).entries()) {
+      expect((await client.post(`/deck/topics/${topicId}/swipe`, { direction: "right", stance: stances[index] })).groupConversationId).toBeNull();
+    }
+    // Changing an answer while waiting changes the cohort's copy too.
+    await founders[3]!.post(`/deck/topics/${topicId}/stance`, { stance: "against" });
+    const groupId = (await founders[4]!.post(`/deck/topics/${topicId}/swipe`, { direction: "right", stance: null })).groupConversationId;
+    expect(groupId).toBeTruthy();
+    const spread = { for: 2, against: 2, unsure: 0 };
+    expect((await founders[0]!.get(`/conversations/${groupId}`)).stanceSpread).toEqual(spread);
+
+    const latecomer = await person("london");
+    expect((await latecomer.post(`/deck/topics/${topicId}/swipe`, { direction: "right", stance: "for" })).groupConversationId).toBe(groupId);
+    await founders[1]!.post(`/deck/topics/${topicId}/stance`, { stance: "against" });
+    await founders[2]!.post(`/conversations/${groupId}/leave`);
+    const detail = await latecomer.get(`/conversations/${groupId}`);
+    expect(detail.members).toHaveLength(5);
+    expect(detail.stanceSpread).toEqual(spread);
   });
 
   it("lets someone leave a group", async () => {
@@ -872,6 +931,117 @@ describe("automatic groups", () => {
     const detail = await people[1]!.get(`/conversations/${groupId}`);
     expect(detail.members).toHaveLength(3);
     expect(await status(people[0]!.post(`/conversations/${groupId!}/messages`, sealedAlone(people[0]!, groupId!)))).toBe(403);
+  });
+
+  it("puts someone who left a group back on the waiting list, and never back in that group", async () => {
+    const topicId = "development-economics";
+    const swipe = (client: Client) => client.post(`/deck/topics/${topicId}/swipe`, { direction: "right" });
+    const [leaver, stays, other] = await Promise.all(Array.from({ length: 3 }, () => person("london")));
+    await swipe(leaver!);
+    await swipe(stays!);
+    const groupId = (await swipe(other!)).groupConversationId;
+    expect(groupId).toBeTruthy();
+
+    await leaver!.post(`/conversations/${groupId}/leave`);
+    const mine = await leaver!.get("/deck/mine");
+    expect(mine.joined.find((topic: any) => topic.id === topicId)).toMatchObject({ groupConversationId: null });
+    // The group has room, but not for someone who left it.
+    expect((await leaver!.post(`/deck/topics/${topicId}/join`, {})).groupConversationId).toBeNull();
+    expect(await status(leaver!.get(`/conversations/${groupId}`))).toBe(404);
+
+    // Two newcomers who can't join that group form a new one with the person who left.
+    const [first, second] = await Promise.all(Array.from({ length: 2 }, () => person("london")));
+    for (const newcomer of [first!, second!]) await newcomer.post(`/safety/blocks/${stays!.id}`);
+    expect((await swipe(first!)).groupConversationId).toBeNull();
+    const newGroup = (await swipe(second!)).groupConversationId;
+    expect(newGroup).toBeTruthy();
+    expect(newGroup).not.toBe(groupId);
+    const members = (await leaver!.get(`/conversations/${newGroup}`)).members.map((member: any) => member.id).sort();
+    expect(members).toEqual([leaver!.id, first!.id, second!.id].sort());
+  });
+
+  it("frees someone who left a group before leaving was recorded", async () => {
+    const topicId = "economic-history";
+    const people = await Promise.all(Array.from({ length: 3 }, () => person("london")));
+    let groupId: string | null = null;
+    for (const client of people) groupId = (await client.post(`/deck/topics/${topicId}/swipe`, { direction: "right" })).groupConversationId ?? groupId;
+    // What leaving used to do: only the membership went.
+    d1(`DELETE FROM conversation_members WHERE conversation_id = '${groupId}' AND user_id = '${people[0]!.id}'`);
+    expect((await people[0]!.post(`/deck/topics/${topicId}/join`, {})).groupConversationId).toBeNull();
+    expect(await status(people[0]!.get(`/conversations/${groupId}`))).toBe(404);
+  });
+});
+
+describe("your topics", () => {
+  const question = "should-cars-be-banned-from-city-centers";
+  const interest = "labor-markets-and-the-future-of-work";
+
+  it("lists joined and passed topics, changes and clears an answer, and lets someone leave or join", async () => {
+    const me = await person("boston");
+    await me.post(`/deck/topics/${question}/swipe`, { direction: "right", stance: "for" });
+    await me.post(`/deck/topics/${interest}/swipe`, { direction: "left" });
+
+    let mine = await me.get("/deck/mine");
+    expect(mine.joined).toEqual([expect.objectContaining({ id: question, kind: "question", stance: "for", groupConversationId: null, pending: false })]);
+    expect(mine.passed).toEqual([expect.objectContaining({ id: interest, kind: "interest", stance: null })]);
+
+    expect((await me.post(`/deck/topics/${question}/stance`, { stance: "against" })).stance).toBe("against");
+    expect((await me.get("/deck/mine")).joined[0].stance).toBe("against");
+    await me.post(`/deck/topics/${question}/stance`, { stance: null });
+    expect((await me.get("/deck/mine")).joined[0].stance).toBeNull();
+    expect(await status(me.post(`/deck/topics/${interest}/stance`, { stance: "for" }))).toBe(404);
+
+    await me.post(`/deck/topics/${question}/leave`);
+    await me.post(`/deck/topics/${interest}/join`, {});
+    mine = await me.get("/deck/mine");
+    expect(mine.joined.map((topic: any) => topic.id)).toEqual([interest]);
+    expect(mine.passed.map((topic: any) => topic.id)).toEqual([question]);
+    // A topic left stays out of the deck, like a pass.
+    expect((await me.get("/deck/topics")).map((topic: any) => topic.id)).not.toContain(question);
+    expect(await status(me.post(`/deck/topics/${question}/leave`))).toBe(404);
+  });
+
+  it("takes someone who leaves a topic off its waiting list, and puts them back when they join again", async () => {
+    const topicId = "monetary-policy-and-central-banks";
+    const [leaver, b, c] = await Promise.all(Array.from({ length: 3 }, () => person("boston")));
+    await leaver!.post(`/deck/topics/${topicId}/swipe`, { direction: "right" });
+    await leaver!.post(`/deck/topics/${topicId}/leave`);
+    expect((await b!.post(`/deck/topics/${topicId}/swipe`, { direction: "right" })).groupConversationId).toBeNull();
+    expect((await c!.post(`/deck/topics/${topicId}/swipe`, { direction: "right" })).groupConversationId).toBeNull();
+
+    const groupId = (await leaver!.post(`/deck/topics/${topicId}/join`, {})).groupConversationId;
+    expect(groupId).toBeTruthy();
+    expect((await leaver!.get("/deck/mine")).joined.find((topic: any) => topic.id === topicId).groupConversationId).toBe(groupId);
+    // Someone in a group leaves it from the chat, not from their topics.
+    expect(await status(leaver!.post(`/deck/topics/${topicId}/leave`))).toBe(409);
+  });
+});
+
+describe("deleted accounts in cohorts", () => {
+  it("removes a deleted person, and their answer, from the cohorts they waited in and the groups they were in", async () => {
+    const leaving = await person("boston");
+    await leaving.post("/deck/topics/should-cities-charge-for-congestion/swipe", { direction: "right", stance: "against" });
+    const others = await Promise.all(Array.from({ length: 2 }, () => person("boston")));
+    let groupId: string | null = null;
+    for (const client of [leaving, ...others]) groupId = (await client.post("/deck/topics/comparative-politics/swipe", { direction: "right" })).groupConversationId ?? groupId;
+    expect(groupId).toBeTruthy();
+    // Waiting in one cohort, and in a group and its roster in another.
+    expect(cohortRowsFor(leaving.id)).toBeGreaterThanOrEqual(3);
+
+    await leaving.delete("/me");
+    await waitFor(async () => cohortRowsFor(leaving.id), (rows) => rows === 0, "cohort removal");
+  });
+
+  it("removes someone deleted before cohorts were told, the next time anyone joins that cohort", async () => {
+    const topicId = "should-college-be-tuition-free";
+    const earlier = await person("boston");
+    await earlier.post(`/deck/topics/${topicId}/swipe`, { direction: "right", stance: "for" });
+    // What deleting an account used to leave behind: the account emptied, but still in the cohort.
+    d1(`UPDATE users SET status = 'deleted', city_id = NULL WHERE id = '${earlier.id}'; DELETE FROM topic_swipes WHERE user_id = '${earlier.id}'`);
+    expect(cohortRowsFor(earlier.id)).toBe(1);
+
+    await (await person("boston")).post(`/deck/topics/${topicId}/swipe`, { direction: "right" });
+    await waitFor(async () => cohortRowsFor(earlier.id), (rows) => rows === 0, "cohort cleanup");
   });
 });
 

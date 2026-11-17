@@ -48,6 +48,9 @@ export const topicSwipeSchema = z.object({
   stance: z.enum(STANCES).nullable().default(null),
 });
 
+/** Changes or clears the answer on a question someone joined, or joins a topic they passed on. */
+export const topicStanceSchema = z.object({ stance: z.enum(STANCES).nullable().default(null) });
+
 export const peopleSwipeSchema = z.object({ direction: z.enum(["right", "left"]) });
 
 const publicKeySchema = z.string().regex(/^[A-Za-z0-9_-]{43}$/);

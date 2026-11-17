@@ -1,10 +1,11 @@
-import { ageOn, isCheckinPromptDue, sendMessageSchema, visibleLookingFor, type ChatMessage, type ConversationDetail, type InboxItem, type Stance } from "@babillard/shared";
+import { ageOn, isCheckinPromptDue, sendMessageSchema, visibleLookingFor, type ChatMessage, type ConversationDetail, type InboxItem } from "@babillard/shared";
 import { localizeTopic, requestLanguage } from "../lib/language";
 import { and, desc, eq, gt, inArray, lte, or, sql } from "drizzle-orm";
 import { Hono } from "hono";
 import { z } from "zod";
 import { getDb, schema, type Db } from "../db";
 import { blockedWith, blockedWithAmong, blocksBetween } from "../lib/blocks";
+import { requeueAfterLeaving, savedStanceSpread } from "../lib/cohorts";
 import { avatarUrl, jobOffsets } from "../lib/config";
 import { fail, parseJson } from "../lib/http";
 import { settleUpcomingMeetups } from "../lib/meetupState";
@@ -156,16 +157,7 @@ conversations.get("/:id", async (c) => {
   const topic = topicRows[0] ?? null;
   const localized = topic && localizeTopic(topic, requestLanguage(c));
 
-  let stanceSpread: Record<Stance, number> | null = null;
-  if (conversation.kind === "group" && topic?.kind === "question") {
-    const rows = await db
-      .select({ stance: schema.topicSwipes.stance, count: sql<number>`count(*)` })
-      .from(schema.topicSwipes)
-      .where(and(eq(schema.topicSwipes.topicId, topic.id), inArray(schema.topicSwipes.userId, roster.map((member) => member.id))))
-      .groupBy(schema.topicSwipes.stance);
-    stanceSpread = { for: 0, against: 0, unsure: 0 };
-    for (const row of rows) if (row.stance) stanceSpread[row.stance] = row.count;
-  }
+  const stanceSpread = await savedStanceSpread(c.env, conversation, topic);
 
   const devices = await db
     .select({ userId: schema.deviceKeys.userId, publicKey: schema.deviceKeys.publicKey, retiredAt: schema.deviceKeys.retiredAt })
@@ -266,6 +258,7 @@ conversations.post("/:id/leave", async (c) => {
   await stub.postSystem(id, `${profile?.name ?? "Someone"} left the group.`, { fr: `${profile?.name ?? "Quelqu'un"} a quitté le groupe.` });
   // Their yes stops counting now, so a meetup that needed it goes back to proposed without waiting for the sweep.
   await settleUpcomingMeetups(c.env, db, id, { waitUntil: (promise) => c.executionCtx.waitUntil(promise) });
+  await requeueAfterLeaving(c.env, conversation, user.id);
   return c.json({ ok: true });
 });
 

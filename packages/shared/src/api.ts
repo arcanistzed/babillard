@@ -84,6 +84,24 @@ export interface TopicSwipeResult {
   groupConversationId: string | null;
 }
 
+/** A topic someone joined or passed on, for the list of their own topics. */
+export interface MyTopic {
+  id: string;
+  kind: "interest" | "question";
+  title: string;
+  /** Their own answer on a question they joined. Only they ever see it. */
+  stance: Stance | null;
+  /** The group they're in for this topic, or null while they wait for one. Always null for a passed topic. */
+  groupConversationId: string | null;
+  /** A topic they suggested that a moderator hasn't approved yet. It forms no group until then. */
+  pending: boolean;
+}
+
+export interface MyTopics {
+  joined: MyTopic[];
+  passed: MyTopic[];
+}
+
 export interface PersonCard {
   id: string;
   displayName: string;
@@ -175,7 +193,7 @@ export interface ConversationDetail {
   members: ConversationMember[];
   /** Tap-to-send openers, offered until the first person writes something. */
   suggestedOpeners: string[];
-  /** Aggregate only. Individual stances are never exposed. */
+  /** Totals from when the group formed, under groupStanceSpread's rule. Null when they could give someone's answer away. */
   stanceSpread: Record<Stance, number> | null;
   meetups: MeetupSummary[];
   expiresAt: number | null;
