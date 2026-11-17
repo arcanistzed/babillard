@@ -2,8 +2,8 @@ import type { DemoResult } from "@babillard/shared/mls";
 import { Redirect } from "expo-router";
 import { useState } from "react";
 import { ScrollView, StyleSheet, View } from "react-native";
-import type { EngineDemoResult } from "@babillard/shared";
-import { runEngineOnPhone } from "@/mls/engineDemo";
+import { recoveryPassed, type EngineDemoResult, type RecoveryDemoResult } from "@babillard/shared";
+import { runEngineOnPhone, runRecoveryOnPhone } from "@/mls/engineDemo";
 import { nativeMlsAvailable, runNativeDemo, type NativeDemoResult } from "@/mlsNative";
 import { MLS_PROTOTYPE, describeRuntime, runDemo } from "@/mlsPrototype";
 import { Button, ErrorText, T } from "@/ui";
@@ -20,6 +20,7 @@ export default function MlsPrototype() {
   const [error, setError] = useState<string | null>(null);
   const [native, setNative] = useState<{ demo: NativeDemoResult; totalMs: number } | null>(null);
   const [engine, setEngine] = useState<{ demo: EngineDemoResult; totalMs: number } | null>(null);
+  const [recovery, setRecovery] = useState<{ demo: RecoveryDemoResult; totalMs: number } | null>(null);
   if (!MLS_PROTOTYPE) return <Redirect href="/" />;
 
   async function runEngine() {
@@ -30,6 +31,21 @@ export default function MlsPrototype() {
     try {
       const demo = await runEngineOnPhone();
       setEngine({ demo, totalMs: Math.round(performance.now() - start) });
+    } catch (caught) {
+      setError(caught instanceof Error ? `${caught.name}: ${caught.message}` : String(caught));
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function runRecovery() {
+    setBusy(true);
+    setError(null);
+    setRecovery(null);
+    const start = performance.now();
+    try {
+      const demo = await runRecoveryOnPhone();
+      setRecovery({ demo, totalMs: Math.round(performance.now() - start) });
     } catch (caught) {
       setError(caught instanceof Error ? `${caught.name}: ${caught.message}` : String(caught));
     } finally {
@@ -83,6 +99,7 @@ export default function MlsPrototype() {
         disabled={busy || !nativeMlsAvailable}
       />
       <Button testID="mls-run-engine" label="Run sync engine demo" kind="secondary" onPress={runEngine} disabled={busy || !nativeMlsAvailable} />
+      <Button testID="mls-run-recovery" label="Run recovery demo" kind="secondary" onPress={runRecovery} disabled={busy || !nativeMlsAvailable} />
       {error ? <ErrorText>{error}</ErrorText> : null}
       {result ? (
         <View style={styles.section} testID="mls-result">
@@ -135,6 +152,26 @@ export default function MlsPrototype() {
             </T>
           ))}
           <T variant="bodyBold">Total: {engine.totalMs} ms</T>
+        </View>
+      ) : null}
+      {recovery ? (
+        <View style={styles.section} testID="mls-recovery-result">
+          <T variant="heading">{recoveryPassed(recovery.demo) ? "Recovery passed" : "Recovery failed"}</T>
+          <T>
+            Alice's commits on record: {recovery.demo.pendingAfterDrop} after the lost answer, {recovery.demo.pendingAfterSettle} after her next send
+          </T>
+          <T>Carol read: {recovery.demo.carolRead.join(" | ")}</T>
+          <T>Alice's message with the lost answer: {recovery.demo.lostMessageStatus}</T>
+          <T>
+            Bob's phones after rejoining: {recovery.demo.bobPhonesAfterRejoin}. Bob then read: {recovery.demo.bobReadAfterRejoin.join(" | ")}
+          </T>
+          <T>Codes: {recovery.demo.codes.join(" / ")}</T>
+          {recovery.demo.steps.map((step) => (
+            <T key={step.label} variant="small">
+              {step.label}: {step.ms} ms
+            </T>
+          ))}
+          <T variant="bodyBold">Total: {recovery.totalMs} ms</T>
         </View>
       ) : null}
     </ScrollView>

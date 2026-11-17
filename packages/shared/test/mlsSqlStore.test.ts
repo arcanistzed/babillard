@@ -2,7 +2,10 @@ import { webcrypto } from "node:crypto";
 import { DatabaseSync } from "node:sqlite";
 import { describe, expect, it } from "vitest";
 import type { MlsStoredMessage } from "../src/mlsClient";
+import { recoveryPassed, runRecoveryDemo } from "../src/mlsEngineDemo";
 import { SqlMlsStore, type SqlDb } from "../src/mlsSqlStore";
+import { tsMlsCrypto } from "../src/mls/adapter";
+import { mlsCiphersuite } from "../src/mls/provider";
 
 const random = (length: number) => webcrypto.getRandomValues(new Uint8Array(length));
 
@@ -116,5 +119,10 @@ describe("the phone's encrypted MLS store", () => {
     await expect(broken.apply({ device: { userId: "alice", deviceId: "alice-phone", registered: true, signatureKey: new Uint8Array(32), state: random(10) }, cursors: { "chat-1": 2 } })).rejects.toThrow("disk full");
     expect((await store.loadDevice())!.state).toEqual(before);
     expect(await store.cursor("chat-1")).toBe(1);
+  });
+
+  it("carries the engine through its recovery cases, as on the phone", async () => {
+    const result = await runRecoveryDemo(tsMlsCrypto(mlsCiphersuite(random)), async () => new SqlMlsStore(nodeDb(), random(32), random));
+    expect(recoveryPassed(result)).toBe(true);
   });
 });
