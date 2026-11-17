@@ -5,7 +5,7 @@ import { useState } from "react";
 import { ActivityIndicator, Linking, ScrollView, Share, StyleSheet, View } from "react-native";
 import { api, friendlyError } from "@/api";
 import { useAuth } from "@/auth";
-import { RsvpChips, stateLine, useMeetup } from "@/components/MeetupCard";
+import { hasEnded, RsvpChips, stateLine, useMeetup } from "@/components/MeetupCard";
 import { OutcomeForm } from "@/components/OutcomeForm";
 import { describeWhen } from "@/format";
 import { useTheme } from "@/theme";
@@ -21,7 +21,15 @@ export default function MeetupScreen() {
   const [error, setError] = useState<string | null>(null);
   const invalidate = (meetup: unknown) => queryClient.setQueryData(["meetup", id], meetup);
 
-  const didMeet = useMutation({ mutationFn: (value: boolean) => api.post(`/meetups/${id}/did-meet`, { didMeet: value }), onSuccess: invalidate, onError: (caught) => setError(friendlyError(caught)) });
+  const didMeet = useMutation({
+    mutationFn: (value: boolean) => api.post(`/meetups/${id}/did-meet`, { didMeet: value }),
+    onSuccess: (meetup) => {
+      invalidate(meetup);
+      // The Chats tab stops asking about this meetup.
+      void queryClient.invalidateQueries({ queryKey: ["inbox"] });
+    },
+    onError: (caught) => setError(friendlyError(caught)),
+  });
   const cancel = useMutation({ mutationFn: () => api.post(`/meetups/${id}/cancel`), onSuccess: invalidate, onError: (caught) => setError(friendlyError(caught)) });
   const invited = useMutation({ mutationFn: () => api.post(`/meetups/${id}/invite`), onSuccess: invalidate });
   const stopRepeating = useMutation({ mutationFn: () => api.post(`/meetups/${id}/repeat`, { repeat: "none" }), onSuccess: invalidate, onError: (caught) => setError(friendlyError(caught)) });
@@ -32,7 +40,7 @@ export default function MeetupScreen() {
 
   const place = meetup.venueNote || venueLabel(meetup.venueKind);
   const when = describeWhen(meetup.startsAt);
-  const upcoming = meetup.state === "proposed" || meetup.state === "confirmed";
+  const upcoming = (meetup.state === "proposed" || meetup.state === "confirmed") && !hasEnded(meetup);
 
   /** Uses the phone's own share sheet. The chat hears that someone was invited once the sheet wasn't dismissed. */
   async function inviteSomeone() {

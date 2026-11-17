@@ -6,6 +6,7 @@ import { FlatList, Pressable, RefreshControl, StyleSheet, View } from "react-nat
 import { SafeAreaView } from "react-native-safe-area-context";
 import { api } from "@/api";
 import { useAuth } from "@/auth";
+import { CheckinPrompt } from "@/components/MeetupCard";
 import { readingKeys, readMessage } from "@/e2ee";
 import { describeWhen, timeLeft } from "@/format";
 import { inviteToApp } from "@/invite";
@@ -96,6 +97,8 @@ function Row({ item, preview }: { item: InboxItem; preview: string | null }) {
 export default function Inbox() {
   const inbox = useQuery({ queryKey: ["inbox"], queryFn: () => api.get<InboxItem[]>("/conversations") });
   const previews = usePreviews(inbox.data);
+  // One question at a time: the most recent meetup this person hasn't said whether they went to. Older servers don't send it.
+  const checkin = inbox.data?.filter((item) => item.checkin).sort((a, b) => b.checkin!.startsAt - a.checkin!.startsAt)[0];
 
   useFocusEffect(
     useCallback(() => {
@@ -111,7 +114,12 @@ export default function Inbox() {
         keyExtractor={(item) => item.id}
         renderItem={({ item }) => <Row item={item} preview={item.lastMessagePreview ?? previews[item.id] ?? null} />}
         refreshControl={<RefreshControl refreshing={inbox.isRefetching} onRefresh={() => void inbox.refetch()} />}
-        ListHeaderComponent={<T variant="title" style={styles.title}>{t("Chats", "Conversations")}</T>}
+        ListHeaderComponent={
+          <>
+            <T variant="title" style={styles.title}>{t("Chats", "Conversations")}</T>
+            {checkin?.checkin ? <CheckinPrompt key={checkin.checkin.meetupId} meetupId={checkin.checkin.meetupId} startsAt={checkin.checkin.startsAt} title={checkin.title} /> : null}
+          </>
+        }
         ListEmptyComponent={
           inbox.isPending ? undefined : inbox.isError ? (
             <View style={styles.empty}>
