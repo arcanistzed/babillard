@@ -41,6 +41,7 @@ export default function MeetupScreen() {
   const place = meetup.venueNote || venueLabel(meetup.venueKind);
   const when = describeWhen(meetup.startsAt);
   const upcoming = (meetup.state === "proposed" || meetup.state === "confirmed") && !hasEnded(meetup);
+  const live = meetup.state === "confirmed" && !hasEnded(meetup);
 
   /** Uses the phone's own share sheet. The chat hears that someone was invited once the sheet wasn't dismissed. */
   async function inviteSomeone() {
@@ -66,7 +67,7 @@ export default function MeetupScreen() {
     <ScrollView contentContainerStyle={styles.body}>
       <T variant="display">{when.replace(/^./, (letter) => letter.toUpperCase())}</T>
       <T variant="heading">{place}</T>
-      <T variant="bodyBold" style={meetup.state === "confirmed" ? { color: theme.good } : undefined} muted={meetup.state !== "confirmed"}>
+      <T variant="bodyBold" style={live ? { color: theme.good } : undefined} muted={!live}>
         {stateLine(meetup)}
       </T>
 
