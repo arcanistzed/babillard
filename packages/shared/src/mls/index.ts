@@ -1,6 +1,6 @@
 /**
- * The MLS prototype. It's a separate entry, so importing `@babillard/shared` doesn't pull in ts-mls.
- * The app's dev-mls route imports it, so app builds from this branch include it.
+ * MLS on ts-mls, for tests and scripts in Node. It's a separate entry, so importing `@babillard/shared`
+ * doesn't pull in ts-mls. The app must never import it: that would put ts-mls in the bundle.
  */
 export * from "./delivery";
 export * from "./demo";

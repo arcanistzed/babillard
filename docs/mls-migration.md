@@ -60,7 +60,7 @@ It also keeps the line clear. With ts-mls, we had to write our own crypto adapte
 ### What it costs
 
 - Every Android build now needs Rust 1.99 with the Android targets, `cargo-ndk` 4, and the NDK. EAS's builders don't have Rust, so the EAS build needs a custom step that installs it, or the built `.so` files get committed. That's not decided yet.
-- Expo Go can't load the module, so chat testing needs a dev build. The dev screen says so instead of crashing.
+- Expo Go can't load the module, so chat testing needs a dev build. In Expo Go, `isAvailable` is false and chats stay on v1.
 - The library adds 2.5 MB on arm64, 1.8 MB on 32-bit ARM, 3.0 MB on x86_64, and 3.4 MB on x86, before compression. Play delivers only the one a phone needs.
 - Autolinking compiles the module into every Android build from this branch, so any build now needs Rust. The library ships dormant: the app uses it only once the server says MLS is on.
 - Release builds minify. The module ships keep rules for JNA and UniFFI (`android/proguard-rules.pro`), but no release build has been run yet.
@@ -207,8 +207,8 @@ It runs on three interfaces:
 - Two end-to-end tests run engines with encrypted SQLite stores against the real Worker:
   - A four-person group forms by itself, delivers messages, removes a departed member before the next message, agrees on the security code, and tops key packages back up.
   - A chat waits until both people can do MLS, then a member's new phone joins by itself and reads what follows.
-- The dev screen's "Run sync engine demo" runs the three-phone demo on the device, on OpenMLS and real `expo-sqlite` databases. It passed on the x86_64 emulator in a debug build, in 3.6 s. Most of that was 1.3 s for three phones to make and upload 30 key packages, and each later sync or send took 180 to 390 ms.
-- The dev screen's "Run recovery demo" runs the three recovery cases on the device, also on OpenMLS and `expo-sqlite`. In it, Alice's commit adding Carol lands but its answer is lost, Alice's next send takes up that commit, a message whose answer was lost is marked sent, and Bob's phone fails one entry twice and then rejoins by itself. It passed on the emulator: Bob's phone appeared once in the roster after rejoining, it read the next message, and all three security codes matched. The shared tests run the same scenario on ts-mls, with both the memory store and the SQL store on `node:sqlite`.
+- The dev screen's "Run sync engine demo", since removed from the app, ran the three-phone demo on the device, on OpenMLS and real `expo-sqlite` databases. It passed on the x86_64 emulator in a debug build, in 3.6 s. Most of that was 1.3 s for three phones to make and upload 30 key packages, and each later sync or send took 180 to 390 ms.
+- Its "Run recovery demo" ran the three recovery cases on the device, also on OpenMLS and `expo-sqlite`. In it, Alice's commit adding Carol lands but its answer is lost, Alice's next send takes up that commit, a message whose answer was lost is marked sent, and Bob's phone fails one entry twice and then rejoins by itself. It passed on the emulator: Bob's phone appeared once in the roster after rejoining, it read the next message, and all three security codes matched. The shared tests run the same scenario on ts-mls, with both the memory store and the SQL store on `node:sqlite`.
 
 ### In the app
 
@@ -466,9 +466,9 @@ The ordering rule `admit` and the security-code function `codeForRoster` are wor
 
 ### On the dev screen and the build
 
-- `apps/mobile/app/dev-mls.tsx` runs both demos. It redirects home unless the build sets `EXPO_PUBLIC_MLS_PROTOTYPE=1`. It's reachable only by deep link (`babillard://dev-mls` in a dev build) and isn't linked from anywhere. In Expo Go, the OpenMLS button says the module isn't in the build.
-- The flag hides the screen but doesn't keep code out of the build. Metro bundles every route, so merging this branch as it stands would ship ts-mls inside the app, unused. Delete the route before merging.
-- `apps/mobile/metro.config.js` maps five modules that ts-mls and `@hpke` import dynamically to empty modules. It can go when ts-mls does.
+- The dev screen (`app/dev-mls.tsx`) and its demos are gone from the app, with the `EXPO_PUBLIC_MLS_PROTOTYPE` flag. Metro bundles every route and every `import()`, so they had pulled ts-mls into the app. The engine demos live on in `packages/shared/src/mlsEngineDemo.ts`, which the shared tests run on ts-mls. The commit before their removal can run them on a phone again.
+- `apps/mobile/metro.config.js` no longer maps the modules ts-mls and `@hpke` import dynamically, and is the same as on main.
+- ts-mls stays in `packages/shared`, under `@babillard/shared/mls`, as the Node test client for the end-to-end tests. The app never imports that path. The source map of an exported Android bundle lists 2,073 modules, none from ts-mls or `@hpke`.
 
 ### What they don't prove
 
@@ -479,7 +479,7 @@ The ordering rule `admit` and the security-code function `codeForRoster` are wor
 
 ## What's left, and roughly how long
 
-One developer who knows the codebase. Done on the branch since the first estimate: the server's header reader, the key package service, the delivery service, the readiness check, external commits with GroupInfo export, the phone's sync engine with its encrypted SQLite store, the chat screens on MLS, recovery from lost answers and stuck entries, hiding blocked people's MLS messages, a person's second phone, the roster security code on the chat info screen, deleting a chat's MLS copy once the person is out of it, limits on key package claims, franked reports, and the server's switch for a staged rollout, with a pause.
+One developer who knows the codebase. Done on the branch since the first estimate: the server's header reader, the key package service, the delivery service, the readiness check, external commits with GroupInfo export, the phone's sync engine with its encrypted SQLite store, the chat screens on MLS, recovery from lost answers and stuck entries, hiding blocked people's MLS messages, a person's second phone, the roster security code on the chat info screen, deleting a chat's MLS copy once the person is out of it, limits on key package claims, franked reports, the server's switch for a staged rollout, with a pause, and taking ts-mls out of the app.
 
 | Work | Estimate |
 |---|---|
@@ -488,9 +488,8 @@ One developer who knows the codebase. Done on the branch since the first estimat
 | Rust wrapper: last-resort key packages and per-chat state | 2 to 4 days |
 | Backup v2 and history store | 5 to 7 days |
 | Migration: the release itself, and watching the switch in production | 1 to 2 days |
-| Removing ts-mls and its adapter from the app once the native path covers everything | 1 day |
 | End-to-end tests with two devices, and on a real phone | 4 to 5 days |
-| **Total** | **16 to 23 working days, about 3 to 5 weeks** |
+| **Total** | **15 to 22 working days, about 3 to 4 weeks** |
 
 iOS isn't in this estimate. It would add a Swift module over the same Rust crate.
 

@@ -16,7 +16,6 @@ import { AuthProvider, useAuth } from "@/auth";
 import { UpdateRequired, useAppUpdate, useUpdateOffer } from "@/components/AppUpdate";
 import { Unreachable } from "@/components/Unreachable";
 import { installCrashReporter, reportCrash } from "@/crashReporter";
-import { MLS_PROTOTYPE } from "@/mlsPrototype";
 import { fonts, useTheme } from "@/theme";
 import { Button, T } from "@/ui";
 import { t } from "@/i18n";
@@ -55,7 +54,6 @@ function useRouteGuard() {
     // A session that couldn't be checked is still a session, so it never goes to sign-in.
     if (!ready || unreachable) return;
     const first = segments[0] as string | undefined;
-    if (MLS_PROTOTYPE && first === "dev-mls") return;
     const inSignedOutRoute = first !== undefined && SIGNED_OUT_ROUTES.has(first);
     if (!me) {
       if (!inSignedOutRoute) router.replace("/sign-in");
