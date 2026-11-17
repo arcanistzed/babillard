@@ -76,6 +76,13 @@ class BabillardMlsModule : Module() {
       }
     }
 
+    AsyncFunction("removeLeaves") { state: String, groupId: String, leafIndexes: List<Int> ->
+      mls {
+        val output = uniffi.babillard_mls.removeLeaves(bytes(state), bytes(groupId), leafIndexes.map { it.toUInt() })
+        mapOf("state" to text(output.state), "commit" to text(output.commit), "groupInfo" to text(output.groupInfo))
+      }
+    }
+
     AsyncFunction("updateKeys") { state: String, groupId: String ->
       mls {
         val output = uniffi.babillard_mls.updateKeys(bytes(state), bytes(groupId))

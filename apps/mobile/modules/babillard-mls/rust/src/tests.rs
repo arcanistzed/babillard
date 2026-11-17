@@ -344,3 +344,18 @@ fn a_phone_joins_by_itself_from_group_info() {
     let bobs_view = trust(&[&alice, &bob, &carol]);
     assert!(matches!(read(&mut bob, &late.commit, &bobs_view), Err(MlsError::UntrustedCredential)));
 }
+
+#[test]
+fn removing_by_leaf_matches_removing_by_user() {
+    let (mut alice, mut bob, mut carol) = (phone("alice"), phone("bob"), phone("carol"));
+    let trusted = trust(&[&alice, &bob, &carol]);
+    form(&mut alice, &mut [&mut bob, &mut carol], &trusted);
+    let carols_leaf = group_status(alice.state.clone(), GROUP.to_vec()).unwrap().roster.into_iter().find(|e| e.user_id == "carol").unwrap().leaf_index;
+    let removal = remove_leaves(alice.state.clone(), GROUP.to_vec(), vec![carols_leaf]).unwrap();
+    alice.state = removal.state;
+    assert!(matches!(read(&mut carol, &removal.commit, &trusted).unwrap(), Received::Commit { removed_me: true, .. }));
+    read(&mut bob, &removal.commit, &trusted).unwrap();
+    assert_eq!(roster_of(&alice), roster_of(&bob));
+    assert_eq!(roster_of(&alice).len(), 2);
+    assert!(remove_leaves(alice.state.clone(), GROUP.to_vec(), vec![]).is_err());
+}

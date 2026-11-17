@@ -6,3 +6,4 @@ export * from "./delivery";
 export * from "./demo";
 export * from "./group";
 export * from "./provider";
+export * from "./adapter";

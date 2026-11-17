@@ -33,6 +33,7 @@ interface NativeModule {
   addMembers(state: string, groupId: string, keyPackages: string[], trusted: Encoded<TrustedDevice>[]): Promise<{ state: string; commit: string; welcome: string | null; groupInfo: string }>;
   removeUser(state: string, groupId: string, userId: string): Promise<{ state: string; commit: string; groupInfo: string }>;
   updateKeys(state: string, groupId: string): Promise<{ state: string; commit: string; groupInfo: string }>;
+  removeLeaves(state: string, groupId: string, leafIndexes: number[]): Promise<{ state: string; commit: string; groupInfo: string }>;
   joinExternal(state: string, groupInfo: string, trusted: Encoded<TrustedDevice>[]): Promise<{ state: string; groupId: string; commit: string; groupInfo: string }>;
   joinFromWelcome(state: string, welcome: string, trusted: Encoded<TrustedDevice>[]): Promise<{ state: string; groupId: string }>;
   encrypt(state: string, groupId: string, plaintext: string, aad: string): Promise<{ state: string; message: string }>;
@@ -80,6 +81,12 @@ export async function addMembers(state: Uint8Array, conversationId: string, keyP
 
 export async function removeUser(state: Uint8Array, conversationId: string, userId: string) {
   const output = await module().removeUser(toBase64(state), toBase64(encoder.encode(conversationId)), userId);
+  return { state: fromBase64(output.state), commit: fromBase64(output.commit), groupInfo: fromBase64(output.groupInfo) };
+}
+
+/** Removes the phones at these leaves, as the server lists them under pending removals. */
+export async function removeLeaves(state: Uint8Array, conversationId: string, leafIndexes: number[]) {
+  const output = await module().removeLeaves(toBase64(state), toBase64(encoder.encode(conversationId)), leafIndexes);
   return { state: fromBase64(output.state), commit: fromBase64(output.commit), groupInfo: fromBase64(output.groupInfo) };
 }
 

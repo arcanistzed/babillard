@@ -18,6 +18,7 @@ import {
   encodeGroupState,
   encodeMlsMessage,
   generateKeyPackage,
+  generateKeyPackageWithKey,
   joinGroup,
   processMessage,
   type CiphersuiteImpl,
@@ -144,6 +145,19 @@ export async function removeUser(state: ClientState, userId: string, cs: Ciphers
   const leaves = roster(state).filter((member) => member.userId === userId);
   if (!leaves.length) throw new Error("Not in this group");
   return commit(state, leaves.map((member) => ({ proposalType: "remove", remove: { removed: member.leafIndex } })), cs);
+}
+
+/** Removes the phones at these leaves. */
+export async function removeLeaves(state: ClientState, leafIndexes: number[], cs: CiphersuiteImpl): Promise<CommitOutput> {
+  return commit(state, leafIndexes.map((removed) => ({ proposalType: "remove", remove: { removed } })), cs);
+}
+
+/** Another key package under the same identity and signing key. */
+export async function anotherKeyPackage(device: MlsDevice, cs: CiphersuiteImpl): Promise<MlsDevice> {
+  const credential = { credentialType: "basic" as const, identity: encoder.encode(`${device.userId}/${device.deviceId}`) };
+  const signatureKeyPair = { signKey: device.privatePackage.signaturePrivateKey, publicKey: device.keyPackage.leafNode.signaturePublicKey };
+  const { publicPackage, privatePackage } = await generateKeyPackageWithKey(credential, defaultCapabilities(), defaultLifetime, [], signatureKeyPair, cs);
+  return { ...device, keyPackage: publicPackage, privatePackage };
 }
 
 export async function joinFromWelcome(welcome: Uint8Array, device: MlsDevice, cs: CiphersuiteImpl, config: ClientConfig): Promise<ClientState> {

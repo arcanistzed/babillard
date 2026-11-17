@@ -371,6 +371,21 @@ pub fn remove_user(state: Vec<u8>, group_id: Vec<u8>, user_id: String) -> Result
     device.commit_output(&group, commit, welcome)
 }
 
+/// Removes the phones at these leaves. The server lists them under pending removals, with the same
+/// leaf numbers OpenMLS uses.
+#[uniffi::export]
+pub fn remove_leaves(state: Vec<u8>, group_id: Vec<u8>, leaf_indexes: Vec<u32>) -> Result<CommitOutput> {
+    let device = Device::load(&state)?;
+    let mut group = device.group(&group_id)?;
+    if leaf_indexes.is_empty() {
+        return Err(fail("nothing to remove"));
+    }
+    let leaves: Vec<_> = leaf_indexes.into_iter().map(LeafNodeIndex::new).collect();
+    let (commit, welcome, _) = group.remove_members(&device.provider, &device.signer()?, &leaves).map_err(fail)?;
+    group.merge_pending_commit(&device.provider).map_err(fail)?;
+    device.commit_output(&group, commit, welcome)
+}
+
 /// Joins a group by itself, from the server's latest GroupInfo, with an external commit. Nobody else
 /// needs to be online. If this phone was already in the group but lost its state, OpenMLS removes the
 /// old leaf in the same commit. Every member already in the group is checked first.

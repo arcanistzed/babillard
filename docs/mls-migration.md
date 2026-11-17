@@ -140,7 +140,55 @@ Open sockets get `{ type: "mls", seq, epoch }` after each accepted entry. Everyo
 - A chat stays on v1 while one member has no MLS phone, and moves once they do.
 - A member's new phone joins by itself from the stored GroupInfo, the other member applies the external commit later, and the new phone reads what follows.
 
-### Before turning it on
+## The phone's side
+
+Built on the branch, and not yet wired into the chat screens.
+
+### The sync engine
+
+`packages/shared/src/mlsClient.ts` is the phone's MLS logic, with no platform code in it. `MlsMessenger` keeps a phone's groups in step with the server:
+
+- `ensureIdentity` creates the phone's identity, registers its signing key, and keeps 10 key packages on the server. Each private half is saved before its public half is uploaded.
+- `sync` brings one chat up to date.
+  - If nobody has made the group, it makes it with an empty commit whose update path proves who made it. If the server answers `not_ready`, the chat stays on v1 and the engine waits.
+  - If the phone isn't in the group, it joins from a waiting Welcome, or failing that by itself from the stored GroupInfo.
+  - It reads the log from its cursor. For each entry it saves the new state, the cursor and any text in one step.
+  - Then it does the chores: commits the removal of phones that should be gone, and adds members' phones waiting to join.
+- `send` syncs first, encrypts, saves the new state and the pending message before sending, then submits. On `stale_epoch` or `pending_removal` it catches up, does the chores, and encrypts again. A message that couldn't be sent over the network stays pending with its exact bytes, and `retryPending` resends those bytes.
+- Every operation goes through one queue, because the state is one blob.
+- It checks the server's label for who sent a message against MLS's authenticated sender, and refuses a mismatch.
+
+It runs on three interfaces:
+- `MlsCrypto`: `nativeCrypto` on the phone, over the OpenMLS module. `tsMlsCrypto` in tests, over ts-mls. Its states are immutable snapshots, so old bytes stay valid, as the engine needs.
+- `MlsTransport`: `httpMlsTransport` over the `/mls` routes. The in-memory `MemoryMlsServer` applies the same `decide()` rules as the Durable Object.
+- `MlsStore`: `SqlMlsStore`, described next.
+
+### Storage
+
+`packages/shared/src/mlsSqlStore.ts` is the store, written against a four-method SQL interface. On the phone, `expo-sqlite` (added as a dependency) fills that interface. In tests, Node's built-in SQLite does. The MLS state and every message's text are sealed with XChaCha20-Poly1305 under a 32-byte key kept in SecureStore, and each value is bound to its row, so rows can't be swapped. Every change runs in one exclusive transaction. Deleting the account deletes the database and its key.
+
+### How it's tested
+
+- Store tests on Node's SQLite cover:
+  - the round trip
+  - nothing readable in the raw database
+  - a wrong key failing
+  - swapped rows detected
+  - a write that fails halfway leaving nothing behind
+- An engine test runs three phones against the in-memory server: the group forms by itself, Carol leaves, and Bob's next message removes her phone first.
+- Two end-to-end tests run engines with encrypted SQLite stores against the real Worker:
+  - A four-person group forms by itself, delivers messages, removes a departed member before the next message, agrees on the security code, and tops key packages back up.
+  - A chat waits until both people can do MLS, then a member's new phone joins by itself and reads what follows.
+- The dev screen's "Run sync engine demo" runs the three-phone demo on the device, on OpenMLS and real `expo-sqlite` databases. It passed on the x86_64 emulator in a debug build, in 3.6 s. Most of that was 1.3 s for three phones to make and upload 30 key packages, and each later sync or send took 180 to 390 ms.
+
+### Not done on the phone
+
+- **The chat screens.** `useChat`, the inbox preview and the security code screen still use v1. They need to read from the store, call `sync` when a socket says `mls`, and show a mixed timeline during migration.
+- **A commit whose outcome is unknown.** If the network drops after a commit is sent, the engine doesn't know whether it landed. It should keep the new state on the side until the log shows the commit, or shows another one at that epoch. Today it keeps the old state, and if the commit did land, the phone falls out of step and must rejoin.
+- **Being removed.** The engine stops with an error when the log removes this phone. The chat screen needs to show that the person left or was removed.
+- **Franking for reports, backup v2, and per-chat state** remain as designed above.
+
+## Before turning it on
 
 The flag hides the routes, but not everything:
 
@@ -319,21 +367,21 @@ The ordering rule `admit` and the security-code function `codeForRoster` are wor
 
 ## What's left, and roughly how long
 
-One developer who knows the codebase. Done on the branch since the first estimate: the server's header reader, the key package service, the delivery service, the readiness check, and external commits with GroupInfo export.
+One developer who knows the codebase. Done on the branch since the first estimate: the server's header reader, the key package service, the delivery service, the readiness check, external commits with GroupInfo export, and the phone's sync engine with its encrypted SQLite store.
 
 | Work | Estimate |
 |---|---|
 | Android build in EAS: install Rust there, or commit the built libraries | 2 to 3 days |
 | Server, still to do: rate-limiting key package claims, and a way for people to retire a lost phone | 1 to 2 days |
 | Rust wrapper: last-resort key packages and per-chat state | 2 to 4 days |
-| Phone: encrypted state in SQLite, local message store, sync loop, send and retry, joining, committing pending removals | 8 to 12 days |
+| Phone: wire the sync engine into the chat screen, inbox and security code; commits with an unknown outcome; showing a removal | 5 to 8 days |
 | Franking for reports | 2 days |
 | Roster security code on the chat info screen | 1 day |
 | Backup v2 and history store | 5 to 7 days |
 | Migration: dormant release, per-chat switch, version gate, mixed timeline | 3 to 5 days |
 | Removing ts-mls and its adapter from the app once the native path covers everything | 1 day |
 | End-to-end tests with two devices, and on a real phone | 4 to 5 days |
-| **Total** | **about 6 to 8 weeks** |
+| **Total** | **about 5 to 7 weeks** |
 
 iOS isn't in this estimate. It would add a Swift module over the same Rust crate.
 
