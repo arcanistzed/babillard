@@ -27,6 +27,8 @@ export class MemoryMlsServer {
   private readonly devices = new Map<string, { userId: string; signatureKey: string }>();
   private readonly packages = new Map<string, Uint8Array[]>();
   private readonly chats = new Map<string, Chat>();
+  /** False is MLS_ENABLED=paused: no chat starts a group, and groups that exist carry on. */
+  newGroups = true;
 
   /** Creates a chat with these members, or changes who's in it. */
   setMembers(conversationId: string, userIds: string[]): void {
@@ -112,6 +114,7 @@ export class MemoryMlsServer {
           roster: chat.roster,
           directory: this.directory(chat),
           memberIds: [...chat.members],
+          newGroups: this.newGroups,
           sender: { userId, deviceId: body.deviceId },
           message: body.message,
           ...(body.welcome ? { welcome: body.welcome } : {}),

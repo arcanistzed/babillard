@@ -62,7 +62,7 @@ export default function Report() {
    * the key that proves its text to the server. Messages that didn't check out are left out.
    */
   async function collectMlsEvidence() {
-    const mls = me ? mlsMessenger(me.id) : null;
+    const mls = mlsMessenger(me);
     if (!params.conversationId || !mls) return [];
     try {
       const provable = (await (await mls).messages(params.conversationId)).filter((message) => message.seq !== null && message.frankingKey);

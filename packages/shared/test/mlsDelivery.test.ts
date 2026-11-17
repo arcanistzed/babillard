@@ -89,6 +89,25 @@ describe("the server's MLS delivery rules", () => {
     expect(decide(commitBy(alice, start, { epoch: 0, roster: [], directory, memberIds: ["alice", "bob", "carol", "dana"] }))).toMatchObject({ ok: false, error: "not_ready" });
   });
 
+  it("while paused, starts no group but lets one that exists carry on", async () => {
+    const setup = await setUp();
+    const { cs, alice, bob, config, directory } = setup;
+    const start = await addDevices(await startGroup(ROOM, alice, cs, config), [], cs);
+    expect(decide({ ...commitBy(alice, start, { epoch: 0, roster: [], directory }), newGroups: false })).toMatchObject({ ok: false, error: "not_ready" });
+
+    const { state, roster } = await started(setup);
+    const add = await addDevices(state, [encodeKeyPackage(bob)], cs);
+    const added = decide({ ...commitBy(alice, add, { epoch: 1, roster, directory }), newGroups: false });
+    expect(added).toMatchObject({ ok: true, kind: "commit", added: [{ userId: "bob" }] });
+    const after = added.ok && added.kind === "commit" ? added.roster : [];
+    const sent = await encryptText(add.state, "still here", cs);
+    expect(decide({ conversationId: ROOM, epoch: 2, roster: after, directory, memberIds: [...directory.keys()], newGroups: false, sender: who(alice), message: sent.message })).toEqual({
+      ok: true,
+      kind: "application",
+      epoch: 2,
+    });
+  });
+
   it("refuses adding a phone the directory doesn't list", async () => {
     const setup = await setUp();
     const { state, roster } = await started(setup);

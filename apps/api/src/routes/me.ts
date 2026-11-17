@@ -3,7 +3,7 @@ import { and, desc, eq, inArray, isNull } from "drizzle-orm";
 import { Hono } from "hono";
 import { getDb, schema } from "../db";
 import { deleteAccount } from "../lib/accounts";
-import { avatarUrl } from "../lib/config";
+import { avatarUrl, mlsMode } from "../lib/config";
 import { fail, parseJson } from "../lib/http";
 import { newId } from "../lib/tokens";
 import { requireAuth } from "../middleware";
@@ -38,6 +38,7 @@ export async function loadMe(env: Env, user: UserRow): Promise<Me> {
     cityId: user.cityId,
     campusId: user.campusId,
     age: user.dob ? ageOn(user.dob) : null,
+    mls: mlsMode(env) !== "off",
     profile: profile
       ? {
           displayName: profile.displayName,

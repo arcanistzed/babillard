@@ -11,20 +11,22 @@ import type { ClientState } from "ts-mls";
 import { describe, expect, it } from "vitest";
 import { ApiError, Client, createPerson } from "../scripts/api-client.ts";
 
-const BASE = "http://localhost:8799";
-const PROD = "http://localhost:8798";
+const PORT_OFFSET = Number(process.env.E2E_PORT_OFFSET ?? 0);
+const BASE = `http://localhost:${8799 + PORT_OFFSET}`;
+const PROD = `http://localhost:${8798 + PORT_OFFSET}`;
+const PAUSED = `http://localhost:${8795 + PORT_OFFSET}`;
 const cs = mlsCiphersuite((length) => new Uint8Array(randomBytes(length)));
 
 let counter = 0;
-async function person(cityId: string): Promise<Client & { email: string }> {
+async function person(cityId: string, base = BASE): Promise<Client & { email: string }> {
   counter += 1;
   const email = `mls-${counter}-${Date.now()}@example.test`;
-  return Object.assign(await createPerson(BASE, email, { displayName: `MLS ${counter}`, cityId }), { email });
+  return Object.assign(await createPerson(base, email, { displayName: `MLS ${counter}`, cityId }), { email });
 }
 
 /** Two people who match on a topic, and their direct chat. */
-async function directChat(topicId: string) {
-  const [a, b] = await Promise.all([person("chicago-il-us"), person("chicago-il-us")]);
+async function directChat(topicId: string, base = BASE) {
+  const [a, b] = await Promise.all([person("chicago-il-us", base), person("chicago-il-us", base)]);
   await a.post(`/deck/topics/${topicId}/swipe`, { direction: "right" });
   await b.post(`/deck/topics/${topicId}/swipe`, { direction: "right" });
   await a.post(`/people/${b.id}/swipe`, { direction: "right" });
@@ -116,8 +118,25 @@ async function addAll(p: Phone, conversationId: string, others: Phone[]): Promis
 }
 
 describe("MLS delivery service", () => {
-  it("is off unless MLS_ENABLED is set", async () => {
+  it("is off unless MLS_ENABLED is set, and /me says when it's on", async () => {
     expect(await status(new Client(PROD).get("/mls/conversations/anything"))).toBe(404);
+    expect((await (await person("chicago-il-us")).get("/me")).mls).toBe(true);
+  });
+
+  it("while paused, serves MLS but moves no chat to it", async () => {
+    const { a, b, conversationId } = await directChat("astrophysics-and-cosmology", PAUSED);
+    expect((await a.get("/me")).mls).toBe(true);
+    const [alice] = await Promise.all([phone(a), phone(b)]);
+    const before: MlsGroupState = await a.get(`/mls/conversations/${conversationId}`);
+    expect(before.pendingAdds).toHaveLength(2);
+    // The engine reads not_ready as "wait": the chat stays on v1, and v1 keeps working.
+    const refused = await startOnServer(alice, conversationId).then(
+      () => null,
+      (error: unknown) => error,
+    );
+    expect(refused).toBeInstanceOf(ApiError);
+    expect(refused).toMatchObject({ status: 409, body: { error: "not_ready" } });
+    expect(await a.get(`/mls/conversations/${conversationId}`)).toMatchObject({ mode: "v1", roster: [] });
   });
 
   it("checks key packages, orders a two-person chat, and moves it off v1", async () => {

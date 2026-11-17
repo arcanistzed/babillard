@@ -23,7 +23,7 @@ function usePreviews(items: InboxItem[] | undefined): Record<string, string> {
   useEffect(() => {
     if (!me || !items) return;
     let active = true;
-    const mls = mlsMessenger(me.id);
+    const mls = mlsMessenger(me);
     void readingKeys(me.id)
       .then(async (keys) => {
         const next: Record<string, string> = {};
@@ -117,7 +117,7 @@ function useForgetLeftChats(items: InboxItem[] | undefined) {
   const { me } = useAuth();
   useEffect(() => {
     if (!me || !items) return;
-    const mls = mlsMessenger(me.id);
+    const mls = mlsMessenger(me);
     if (!mls) return;
     void mls.then((messenger) => messenger.forgetChatsLeft(items.map((item) => item.id))).catch(() => undefined);
   }, [items, me]);

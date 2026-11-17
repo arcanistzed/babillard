@@ -6,7 +6,7 @@ import { api, ApiError, openConversationSocket } from "./api";
 import { useBlockedIds } from "./blocked";
 import { forgetMlsChat } from "./leaving";
 import { ensureDeviceKey, readingKeys, readMessage, sealFor, type ReadableMessage } from "./e2ee";
-import { mlsMessenger } from "./mls";
+import { mlsMessenger, type MlsUser } from "./mls";
 
 export interface LocalMessage extends ReadableMessage {
   pending?: boolean;
@@ -55,7 +55,9 @@ function newClientId(): string {
   return `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 10)}`;
 }
 
-export function useChat(conversationId: string, myId: string | undefined, onRemoved: () => void) {
+export function useChat(conversationId: string, me: MlsUser | null | undefined, onRemoved: () => void) {
+  const myId = me?.id;
+  const mlsOn = me?.mls === true;
   const queryClient = useQueryClient();
   const [messages, setMessages] = useState<LocalMessage[]>([]);
   const [loaded, setLoaded] = useState(false);
@@ -73,13 +75,13 @@ export function useChat(conversationId: string, myId: string | undefined, onRemo
   const removedRef = useRef(() => {});
   useEffect(() => {
     removedRef.current = () => {
-      if (myId) void forgetMlsChat(myId, conversationId).catch((error) => console.warn("Couldn't forget the MLS chat", error));
+      if (myId) void forgetMlsChat({ id: myId, mls: mlsOn }, conversationId).catch((error) => console.warn("Couldn't forget the MLS chat", error));
       onRemovedRef.current();
     };
-  }, [conversationId, myId]);
+  }, [conversationId, myId, mlsOn]);
 
-  // MLS, when this build has it on. Null otherwise, and then nothing below changes how v1 works.
-  const mls = useMemo(() => (myId ? mlsMessenger(myId) : null), [myId]);
+  // MLS, when the server has it on. Null otherwise, and then nothing below changes how v1 works.
+  const mls = useMemo(() => (myId ? mlsMessenger({ id: myId, mls: mlsOn }) : null), [myId, mlsOn]);
   /** True once this phone is in the chat's MLS group. From then on it sends with MLS. */
   const [mlsActive, setMlsActive] = useState(false);
   const blocked = useBlockedIds(myId);

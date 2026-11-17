@@ -10,10 +10,14 @@ import { fileURLToPath } from "node:url";
 const apiDir = join(dirname(fileURLToPath(import.meta.url)), "..");
 const persist = ".wrangler/e2e";
 const wrangler = join(apiDir, "../../node_modules/.bin/wrangler");
-export const DEV_PORT = 8799;
-export const PROD_PORT = 8798;
-export const SES_PORT = 8797;
-export const ANTHROPIC_PORT = 8796;
+/** Set E2E_PORT_OFFSET to run this suite beside another copy of it, for example from a second worktree. */
+const OFFSET = Number(process.env.E2E_PORT_OFFSET ?? 0);
+export const DEV_PORT = 8799 + OFFSET;
+export const PROD_PORT = 8798 + OFFSET;
+export const SES_PORT = 8797 + OFFSET;
+export const ANTHROPIC_PORT = 8796 + OFFSET;
+/** A Worker with MLS_ENABLED=paused, its own database, and nothing else of note. */
+export const PAUSED_PORT = 8795 + OFFSET;
 
 /** Stands in for Amazon SES. Records each request, and refuses addresses containing "ses-reject". */
 function startFakeSes() {
@@ -116,9 +120,10 @@ export default async function setup() {
 
   const devDb = join(persist, "dev");
   const prodDb = join(persist, "prod");
+  const pausedDb = join(persist, "paused");
   execFileSync("node", ["scripts/gen-seed-sql.ts"], { cwd: apiDir, stdio: "pipe" });
   execFileSync("node", ["../site/scripts/build.ts"], { cwd: apiDir, stdio: "pipe" });
-  for (const dir of [devDb, prodDb]) {
+  for (const dir of [devDb, prodDb, pausedDb]) {
     runWrangler(["d1", "migrations", "apply", "babillard", "--local", "--persist-to", dir]);
     runWrangler(["d1", "execute", "babillard", "--local", "--persist-to", dir, "--file", "seed/seed.sql"]);
   }
@@ -155,11 +160,24 @@ export default async function setup() {
     SES_ACCESS_KEY_ID: "AKIAE2EFAKEKEY",
     SES_SECRET_ACCESS_KEY: "e2e-fake-secret-value",
   });
-  await Promise.all([waitForHealthy(DEV_PORT), waitForHealthy(PROD_PORT)]);
+  const paused = startServer(PAUSED_PORT, "paused.log", pausedDb, {
+    AUTH_SECRET: "e2e-secret",
+    DEV_MODE: "true",
+    PUSH_MODE: "log",
+    PUBLIC_ORIGIN: `http://localhost:${PAUSED_PORT}`,
+    EMAIL_FROM: "Babillard <login@example.test>",
+    SES_REGION: "ca-central-1",
+    SES_ENDPOINT: `http://localhost:${SES_PORT}`,
+    SES_ACCESS_KEY_ID: "AKIAE2EFAKEKEY",
+    SES_SECRET_ACCESS_KEY: "e2e-fake-secret-value",
+    MLS_ENABLED: "paused",
+  });
+  await Promise.all([waitForHealthy(DEV_PORT), waitForHealthy(PROD_PORT), waitForHealthy(PAUSED_PORT)]);
 
   return () => {
     dev.kill("SIGTERM");
     prod.kill("SIGTERM");
+    paused.kill("SIGTERM");
     ses.close();
     anthropic.close();
   };

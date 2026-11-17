@@ -10,8 +10,9 @@ import { randomBytes } from "node:crypto";
 import { generateDeviceKey, nearestCity, openMessage, sealMessage, searchCities, type Locality } from "@babillard/shared";
 
 const apiDir = join(dirname(fileURLToPath(import.meta.url)), "..");
-const BASE = "http://localhost:8799";
-const PROD = "http://localhost:8798";
+const PORT_OFFSET = Number(process.env.E2E_PORT_OFFSET ?? 0);
+const BASE = `http://localhost:${8799 + PORT_OFFSET}`;
+const PROD = `http://localhost:${8798 + PORT_OFFSET}`;
 const DEV_DB = ".wrangler/e2e/dev";
 
 let counter = 0;

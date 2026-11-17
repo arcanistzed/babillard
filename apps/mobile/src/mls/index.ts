@@ -5,7 +5,6 @@ import * as SQLite from "expo-sqlite";
 import { isAvailable } from "../../modules/babillard-mls";
 import { ApiError, request } from "../api";
 import { ensureDeviceKey } from "../e2ee";
-import { MLS_PROTOTYPE } from "../mlsPrototype";
 import { nativeCrypto } from "./nativeCrypto";
 
 /**
@@ -13,7 +12,9 @@ import { nativeCrypto } from "./nativeCrypto";
  * module, storing into an encrypted SQLite database. The database key lives in
  * SecureStore, so the database file alone opens nothing.
  *
- * Off unless the prototype flag is on and the native library loaded.
+ * Off unless the server carries MLS chats (`me.mls`, set from MLS_ENABLED) and the native library
+ * loaded. Until then the app makes no MLS request and opens no MLS database, so a release can ship
+ * with MLS dormant and the server can switch it on later.
  */
 
 const random = (length: number) => Crypto.getRandomBytes(length);
@@ -62,9 +63,16 @@ async function open(userId: string): Promise<MlsMessenger> {
   return messenger;
 }
 
-/** This phone's MLS messenger, or null when MLS is off for this build. A failure is forgotten, so the next call tries again. */
-export function mlsMessenger(userId: string): Promise<MlsMessenger> | null {
-  if (!MLS_PROTOTYPE || !isAvailable) return null;
+/** Who's signed in, as far as MLS cares: `mls` is the server's word that MLS is on. */
+export interface MlsUser {
+  id: string;
+  mls?: boolean;
+}
+
+/** This phone's MLS messenger, or null when MLS is off here. A failure is forgotten, so the next call tries again. */
+export function mlsMessenger(me: MlsUser | null | undefined): Promise<MlsMessenger> | null {
+  if (!me?.mls || !isAvailable) return null;
+  const userId = me.id;
   if (current?.userId !== userId) {
     const messenger = open(userId);
     current = { userId, messenger };

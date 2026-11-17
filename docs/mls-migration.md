@@ -62,14 +62,19 @@ It also keeps the line clear. With ts-mls, we had to write our own crypto adapte
 - Every Android build now needs Rust 1.99 with the Android targets, `cargo-ndk` 4, and the NDK. EAS's builders don't have Rust, so the EAS build needs a custom step that installs it, or the built `.so` files get committed. That's not decided yet.
 - Expo Go can't load the module, so chat testing needs a dev build. The dev screen says so instead of crashing.
 - The library adds 2.5 MB on arm64, 1.8 MB on 32-bit ARM, 3.0 MB on x86_64, and 3.4 MB on x86, before compression. Play delivers only the one a phone needs.
-- The module isn't behind the prototype flag, only the screen is. Autolinking compiles it into every Android build from this branch, so any build now needs Rust. Merging the branch as it stands would ship the library in the next release, unused.
+- Autolinking compiles the module into every Android build from this branch, so any build now needs Rust. The library ships dormant: the app uses it only once the server says MLS is on.
 - Release builds minify. The module ships keep rules for JNA and UniFFI (`android/proguard-rules.pro`), but no release build has been run yet.
 - If the library can't load on some phone, `isAvailable` is false and that phone stays on v1.
 - Rust and NDK upgrades become routine upkeep. The exact pins mean an upgrade is always a deliberate edit.
 
 ## The server's role
 
-The ChatRoom Durable Object is MLS's delivery service. It can't read any message, but it decides the order of commits, and that order is the group's history. This is built on the branch, behind `MLS_ENABLED`, which production's `wrangler.jsonc` sets to `"false"`. Every `/mls` route answers 404 when it's off.
+The ChatRoom Durable Object is MLS's delivery service. It can't read any message, but it decides the order of commits, and that order is the group's history. This is built on the branch, behind `MLS_ENABLED`, which production's `wrangler.jsonc` sets to `"false"`. It takes three values:
+- `"true"`: MLS is on, and chats move to it as their members become ready.
+- `"paused"`: chats already on MLS carry on as normal, including new phones joining them, but no other chat moves. The server refuses a group's first commit with `not_ready`, which phones already read as "wait".
+- Anything else is off: every `/mls` route answers 404.
+
+`/me` says `mls: true` when the value is `"true"` or `"paused"`, and the app uses MLS only then. See "Rolling it out" for when each is safe.
 
 ### What it can see
 
@@ -144,7 +149,7 @@ Open sockets get `{ type: "mls", seq, epoch }` after each accepted entry. Everyo
 
 ## The phone's side
 
-Built on the branch, and wired into the chat screens behind the prototype flag.
+Built on the branch, and wired into the chat screens, which use it once the server says MLS is on.
 
 ### The sync engine
 
@@ -207,13 +212,13 @@ It runs on three interfaces:
 
 ### In the app
 
-When the flag is on and the native library loaded, `mlsMessenger(userId)` in `apps/mobile/src/mls/index.ts` opens the user's encrypted database and runs `ensureIdentity`. Then:
+When `/me` says `mls: true` and the native library loaded, `mlsMessenger(me)` in `apps/mobile/src/mls/index.ts` opens the user's encrypted database and runs `ensureIdentity`. A build-time flag no longer decides this, so a release can carry MLS dormant until the server switches it on. Then:
 
 - `useChat` syncs the engine when the chat opens and whenever the socket says `mls`. It puts the stored MLS messages in the same timeline as v1 history and system messages, ordered by server time, since the two logs number entries separately. Once this phone is in the chat's group it sends through the engine. Until then it sends v1, which the server accepts only while the chat is still on v1. If the log removes this phone, the chat closes as it does when someone is removed.
 - The inbox shows an MLS chat's latest message from the phone's own store. The server keeps no preview for those.
 - The chat info screen shows the security code from the phone's own MLS group once it's in one, and the v1 code before that.
 
-With the flag off, `mlsMessenger` returns null and the screens behave exactly as before. The one shared change is that the timeline is now sorted by server time instead of v1's sequence number. Both come from the same Durable Object's clock, so for a v1-only chat the order is the same.
+With MLS off on the server, `mlsMessenger` returns null and the screens behave exactly as before: the app opens no MLS database and makes no MLS request. The one shared change is that the timeline is now sorted by server time instead of v1's sequence number. Both come from the same Durable Object's clock, so for a v1-only chat the order is the same.
 
 To try it on a device:
 1. Run a local Worker with `DEV_MODE=true` and `MLS_ENABLED=true`.
@@ -270,7 +275,7 @@ Tried on the emulator with `apps/api/scripts/mls-group-peers.ts` (its new "remov
 The flag hides the routes, but not everything:
 
 - **Deploy order.** Migration `0010` must be applied before this Worker is deployed. Account deletion now also deletes key packages, and that fails without the table. Every `ChatRoom` also creates its empty MLS tables when it wakes, flag or not. That's harmless, but it means the branch changes production storage the moment it's deployed.
-- **New members after the switch.** The readiness check covers the moment a chat moves to MLS. Someone who joins an open group later with an app that can't do MLS would be stuck. Before the flag goes on, `ANDROID_MIN_VERSION` must require an MLS-capable app.
+- **New members after the switch.** The readiness check covers the moment a chat moves to MLS. Someone who joins an open group later with an app that can't do MLS would be stuck. Before the flag goes on, `ANDROID_MIN_VERSION` must require an MLS-capable app. See "Rolling it out".
 - **Phones that are gone but not retired.** A phone is retired only when someone has more than five, so a lost phone stays "active" and keeps its leaf. Nothing breaks, but those leaves never go away. The app needs a way to retire a phone, such as a list of signed-in phones under You, and then the server's pending-removal rule takes care of the group.
 - **Directory refresh.** Phones check every credential against the server's directory. A phone must fetch the directory again before applying new commits, or it will refuse a member's new phone. The end-to-end test client does this.
 - **Burned packages.** A commit the server refuses has already used the key packages it claimed. The last-resort package covers the gap, but phones should top up when `GET /mls/key-packages/:deviceId` runs low.
@@ -385,13 +390,27 @@ Push stays "New message" with the sender's name. Inbox previews come from the lo
 
 Goal: nobody loses history they can read today.
 
-1. **Keep v1 for reading, indefinitely.** `openMessage`, every device key in SecureStore, and v1 backups stay. Old envelopes stay in `messages` and open exactly as now. Nothing gets re-encrypted.
-2. **Ship the MLS code dormant.** One release that creates the phone's MLS identity and uploads key packages, without using them. The server records which devices have key packages.
-3. **Switch one chat at a time.** The Durable Object flips a chat to `mls` once every current member has at least one phone with key packages. The first member to open it afterwards creates the group, as in "Groups forming". From then on the server refuses new v1 envelopes in that chat.
-4. **Bring up the stragglers.** Once most phones have the release, raise `ANDROID_MIN_VERSION` so the rest must update. Until then a chat with one old phone stays on v1. That's fine, because v1 still works.
-5. **History in the app.** The chat screen shows v1 messages above MLS ones in a single timeline, ordered by `seq` across both tables. The v1 security code stays visible for the old part until the switch, then the roster code takes over.
+- **v1 stays for reading, indefinitely.** `openMessage`, every device key in SecureStore, and v1 backups stay. Old envelopes stay in `messages` and open exactly as now. Nothing gets re-encrypted.
+- **One chat at a time.** A chat moves to MLS when its first commit is accepted, and the server accepts it only once every current member has at least one phone registered for MLS. The first phone to open the chat after that creates the group, as in "Groups forming". From then on the server refuses v1 in that chat.
+- **History in the app.** The chat screen shows v1 messages and MLS ones in a single timeline, ordered by server time. The v1 security code shows until this phone is in the group, then the roster code takes over.
 
-Rollback: before step 4, a chat can go back to v1 by flipping `mode`. MLS messages sent meanwhile stay readable on the phones that already decrypted them into their local stores.
+## Rolling it out
+
+Built on the branch: the server's three modes (`MLS_ENABLED`), `/me`'s `mls` flag, and the app following that flag instead of a build-time one. The steps:
+
+1. **Deploy the Worker with `MLS_ENABLED` still `"false"`.** Apply migration `0010` first (see "Before turning it on").
+2. **Release the app with MLS dormant.** It's the normal release, with the native module and the engine in it. While `/me` says `mls: false` it never opens the MLS database or calls an MLS route, so it behaves as the current release does.
+3. **Raise `ANDROID_MIN_VERSION` to that release** once most phones have it. Older builds then show the required-update screen. The app checks the minimum at launch and on coming back to the foreground, at most hourly, and `/app/version` is cached for 5 minutes. So wait a few hours, a day to be safe, before the next step.
+4. **Set `MLS_ENABLED` to `"true"`.** Each phone registers when it next loads `/me` and opens the inbox or a chat. Each chat moves once all its members have registered.
+
+This order matters because the readiness check counts members, not phones. A member with one MLS phone and one older build counts as ready. Once their chat moves, the older build can't read it, and its sends are refused with `mls_mode`, with no way to recover. With the minimum raised first, that build is already stuck on the update screen. A member's phone that registers after the switch joins by itself from the GroupInfo, but can't read what was sent before it joined until backup v2 exists.
+
+**Rolling back.** Once any chat has moved, use `"paused"`, never `"false"`:
+- `"paused"` keeps every MLS chat working, new phones included, and moves no others. Chats not yet moved stay on v1. Setting `"true"` again lets them move.
+- `"false"` strands every chat that moved. The `ChatRoom` refuses v1 there because its stored mode is `mls`, whatever the flag says. Every `/mls` route answers 404. And the app, seeing `mls: false`, stops showing the chat's MLS messages and sends v1, which is refused. So `"false"` is safe only before the first chat moves.
+- Sending a chat back to v1 isn't built. If it ever is, it must be the server's decision, never something a phone falls back to by itself, or a server could downgrade any chat it liked.
+
+Tested: `mlsDelivery.test.ts` checks the paused rule on its own. `mlsEngineFailures.test.ts` pauses the in-memory server after a chat moved: messages still go both ways, a new phone joins, another chat stays on v1 with no error, and it moves once unpaused. The end-to-end suite runs a third Worker with `MLS_ENABLED=paused`, where a chat's first commit gets 409 `not_ready` and the chat stays on v1, and checks that `/me` says `mls: true`.
 
 ## What the prototypes prove
 
@@ -460,7 +479,7 @@ The ordering rule `admit` and the security-code function `codeForRoster` are wor
 
 ## What's left, and roughly how long
 
-One developer who knows the codebase. Done on the branch since the first estimate: the server's header reader, the key package service, the delivery service, the readiness check, external commits with GroupInfo export, the phone's sync engine with its encrypted SQLite store, the chat screens on MLS behind the flag, recovery from lost answers and stuck entries, hiding blocked people's MLS messages, a person's second phone, the roster security code on the chat info screen, deleting a chat's MLS copy once the person is out of it, limits on key package claims, and franked reports.
+One developer who knows the codebase. Done on the branch since the first estimate: the server's header reader, the key package service, the delivery service, the readiness check, external commits with GroupInfo export, the phone's sync engine with its encrypted SQLite store, the chat screens on MLS, recovery from lost answers and stuck entries, hiding blocked people's MLS messages, a person's second phone, the roster security code on the chat info screen, deleting a chat's MLS copy once the person is out of it, limits on key package claims, franked reports, and the server's switch for a staged rollout, with a pause.
 
 | Work | Estimate |
 |---|---|
@@ -468,10 +487,10 @@ One developer who knows the codebase. Done on the branch since the first estimat
 | Server, still to do: a way for people to retire a lost phone | 1 day |
 | Rust wrapper: last-resort key packages and per-chat state | 2 to 4 days |
 | Backup v2 and history store | 5 to 7 days |
-| Migration: dormant release, per-chat switch, version gate, mixed timeline | 3 to 5 days |
+| Migration: the release itself, and watching the switch in production | 1 to 2 days |
 | Removing ts-mls and its adapter from the app once the native path covers everything | 1 day |
 | End-to-end tests with two devices, and on a real phone | 4 to 5 days |
-| **Total** | **18 to 26 working days, about 4 to 5 weeks** |
+| **Total** | **16 to 23 working days, about 3 to 5 weeks** |
 
 iOS isn't in this estimate. It would add a Swift module over the same Rust crate.
 

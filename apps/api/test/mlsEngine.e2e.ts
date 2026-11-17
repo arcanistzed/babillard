@@ -10,7 +10,8 @@ import { DatabaseSync } from "node:sqlite";
 import { describe, expect, it } from "vitest";
 import { Client, createPerson } from "../scripts/api-client.ts";
 
-const BASE = "http://localhost:8799";
+const PORT_OFFSET = Number(process.env.E2E_PORT_OFFSET ?? 0);
+const BASE = `http://localhost:${8799 + PORT_OFFSET}`;
 const crypto = tsMlsCrypto(mlsCiphersuite((length) => new Uint8Array(randomBytes(length))));
 
 let counter = 0;

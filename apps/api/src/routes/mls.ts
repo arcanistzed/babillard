@@ -2,6 +2,7 @@ import { fromBase64, mlsClaimSchema, mlsIdentitySchema, mlsKeyPackagesSchema, ml
 import { and, count, eq, isNull } from "drizzle-orm";
 import { Hono } from "hono";
 import { getDb, schema, type Db } from "../db";
+import { mlsMode } from "../lib/config";
 import { fail, parseJson } from "../lib/http";
 import { newId } from "../lib/tokens";
 import { requireAuth, requireOnboarded } from "../middleware";
@@ -9,8 +10,8 @@ import type { AppEnv } from "../types";
 import { requireMember, requireOpenMatch } from "./conversations";
 
 /**
- * MLS group chat, still a prototype: every route answers 404 unless the Worker
- * runs with MLS_ENABLED=true. Production's wrangler.jsonc sets it to "false".
+ * MLS group chat. Every route answers 404 unless MLS_ENABLED is "true" or "paused" (see mlsMode).
+ * Production's wrangler.jsonc sets it to "false".
  *
  * The server never holds a key. It keeps each phone's public signing key and
  * key packages in D1, and each chat's ordered log in its ChatRoom Durable Object.
@@ -21,7 +22,7 @@ const MAX_KEY_PACKAGES_PER_DEVICE = 100;
 
 const mls = new Hono<AppEnv>();
 mls.use("*", async (c, next) => {
-  if (c.env.MLS_ENABLED !== "true") throw fail(404, "not_found");
+  if (mlsMode(c.env) === "off") throw fail(404, "not_found");
   await next();
 });
 mls.use("*", requireAuth, requireOnboarded);
@@ -173,7 +174,7 @@ mls.post("/conversations/:id/messages", async (c) => {
   const user = c.get("user");
   const id = c.req.param("id");
   const input = await parseJson(c, mlsSubmitSchema);
-  const result = await c.env.CHAT_ROOM.getByName(id).mlsSubmit(id, user.id, input);
+  const result = await c.env.CHAT_ROOM.getByName(id).mlsSubmit(id, user.id, input, mlsMode(c.env) === "on");
   if (!result.ok) {
     const conflict = ["stale_epoch", "pending_removal", "no_group", "not_ready"].includes(result.error);
     return c.json({ error: result.error, epoch: result.epoch }, conflict ? 409 : 403);

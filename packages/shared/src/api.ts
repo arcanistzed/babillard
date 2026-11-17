@@ -16,6 +16,8 @@ export interface Me {
   campusId: string | null;
   /** From the date of birth. Others see it; the date itself stays hidden. */
   age: number | null;
+  /** True when the server carries MLS chats, even while paused. Phones leave MLS alone otherwise. Older servers leave it out. */
+  mls?: boolean;
   profile: {
     displayName: string;
     bio: string;

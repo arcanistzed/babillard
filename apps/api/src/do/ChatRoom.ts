@@ -255,6 +255,7 @@ export class ChatRoom extends DurableObject<Env> {
     conversationId: string,
     senderId: string,
     input: { deviceId: string; message: string; welcome?: string; groupInfo?: string; clientId?: string },
+    newGroups = true,
   ): Promise<{ ok: true; entry: MlsLogEntry } | { ok: false; error: string; epoch?: number }> {
     let audience;
     try {
@@ -266,7 +267,7 @@ export class ChatRoom extends DurableObject<Env> {
     const directory = await this.mlsDirectory(conversationId);
     // No await from here to the insert: the epoch check and the write happen together.
     const memberIds = audience.members.filter((member) => member.status === "active").map((member) => member.userId);
-    const result = this.mls.submit({ conversationId, directory, memberIds, sender: { userId: senderId, deviceId: input.deviceId }, ...input });
+    const result = this.mls.submit({ conversationId, directory, memberIds, newGroups, sender: { userId: senderId, deviceId: input.deviceId }, ...input });
     if (!result.ok) return result;
     if (result.duplicate) return { ok: true, entry: result.entry };
 

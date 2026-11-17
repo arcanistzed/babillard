@@ -44,7 +44,7 @@ export default function ChatInfo() {
   const mlsCode = useQuery({
     queryKey: ["mls-code", id, me?.id],
     queryFn: async () => {
-      const mls = me ? mlsMessenger(me.id) : null;
+      const mls = mlsMessenger(me);
       if (!mls) return null;
       const messenger = await mls;
       return (await messenger.inGroup(id)) ? messenger.securityCode(id) : null;
@@ -67,7 +67,7 @@ export default function ChatInfo() {
             markLeftHere(id, false);
             throw error;
           }
-          if (me) await forgetMlsChat(me.id, id).catch((error) => console.warn("Couldn't forget the MLS chat", error));
+          if (me) await forgetMlsChat(me, id).catch((error) => console.warn("Couldn't forget the MLS chat", error));
           await queryClient.invalidateQueries({ queryKey: ["inbox"] });
           router.replace("/inbox");
         },

@@ -37,7 +37,7 @@ export default function Chat() {
     if (router.canGoBack()) router.back();
     else router.replace("/inbox");
   }, [id]);
-  const { messages, loaded, send, loadOlder } = useChat(id, me?.id, onRemoved);
+  const { messages, loaded, send, loadOlder } = useChat(id, me, onRemoved);
 
   // Only messages that arrive while the chat is open slide in. History just appears.
   const [openedAt] = useState(() => Date.now());

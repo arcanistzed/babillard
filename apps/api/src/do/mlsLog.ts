@@ -126,6 +126,7 @@ export class MlsLog {
     conversationId: string;
     directory: Directory;
     memberIds: string[];
+    newGroups: boolean;
     sender: { userId: string; deviceId: string };
     message: string;
     welcome?: string;
@@ -147,6 +148,7 @@ export class MlsLog {
       roster: this.roster(),
       directory: input.directory,
       memberIds: input.memberIds,
+      newGroups: input.newGroups,
       sender: input.sender,
       message,
       ...(welcome ? { welcome } : {}),

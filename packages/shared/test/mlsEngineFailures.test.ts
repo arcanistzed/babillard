@@ -395,3 +395,35 @@ describe("the sync engine when someone is out of a chat", () => {
     expect((await alice.sync(OTHER)).map((m) => m.text)).toEqual(["still here"]);
   });
 });
+
+describe("the sync engine while MLS is paused", () => {
+  it("keeps a chat already on MLS going, adds new phones, and leaves other chats on v1", async () => {
+    const { server, phone } = world(["alice", "bob"]);
+    server.setMembers("unstarted", ["alice", "bob"]);
+    const [alice, bob] = [phone("alice"), phone("bob")];
+    await alice.ensureIdentity();
+    await bob.ensureIdentity();
+    await alice.sync(CHAT);
+    await bob.sync(CHAT);
+
+    server.newGroups = false;
+    await alice.send(CHAT, "paused but working");
+    expect(await texts(bob)).toEqual(["paused but working"]);
+    // A phone signing in now still joins the chat that's on MLS.
+    const bobsNewPhone = phone("bob", "bob-phone-2");
+    await bobsNewPhone.ensureIdentity();
+    await bobsNewPhone.sync(CHAT);
+    await bobsNewPhone.send(CHAT, "new phone");
+    expect(await texts(alice)).toEqual(["new phone"]);
+
+    // The other chat never had a group. Syncing it waits quietly, and it stays on v1.
+    await expect(alice.sync("unstarted")).resolves.toEqual([]);
+    expect(await alice.inGroup("unstarted")).toBe(false);
+    expect((await server.transportFor("alice", "alice-phone").groupState("unstarted")).mode).toBe("v1");
+
+    // Unpaused, it moves on the next sync.
+    server.newGroups = true;
+    await alice.sync("unstarted");
+    expect(await alice.inGroup("unstarted")).toBe(true);
+  });
+});
