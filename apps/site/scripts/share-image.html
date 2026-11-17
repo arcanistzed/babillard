@@ -1,0 +1,82 @@
+<!doctype html>
+<!--
+  The 1200x630 image link previews show (public/site/share.png and share-fr.png).
+  Render it with headless Chrome from this folder:
+
+    google-chrome --headless=new --allow-file-access-from-files --hide-scrollbars --window-size=1200,630 \
+      --screenshot=../public/site/share.png "file://$PWD/share-image.html"
+    google-chrome --headless=new --allow-file-access-from-files --hide-scrollbars --window-size=1200,630 \
+      --screenshot=../public/site/share-fr.png "file://$PWD/share-image.html?fr"
+-->
+<html>
+<head>
+<meta charset="utf-8">
+<style>
+@font-face { font-family: "Bricolage"; src: url("../public/site/fonts/bricolage-800.woff2") format("woff2"); font-weight: 800; }
+@font-face { font-family: "Atkinson"; src: url("../public/site/fonts/atkinson-700.woff2") format("woff2"); font-weight: 700; }
+* { box-sizing: border-box; margin: 0; }
+html, body { width: 1200px; height: 630px; overflow: hidden; }
+body { position: relative; background: #EEF0F8; color: #15173D; font-family: "Atkinson", sans-serif; }
+.copy { position: absolute; left: 72px; top: 64px; width: 600px; }
+.brand { display: flex; align-items: center; gap: 14px; font: 800 34px/1 "Bricolage", sans-serif; }
+.brand img { width: 52px; height: 52px; border-radius: 12px; }
+h1 { margin-top: 56px; font: 800 66px/.98 "Bricolage", sans-serif; letter-spacing: -.02em; }
+h1 span { display: block; color: #C7146F; margin-top: 8px; }
+.fr h1 { font-size: 54px; }
+.fr .title { font-size: 24px; }
+.fr .f2 .title { margin-top: 4px; margin-bottom: auto; }
+.where { position: absolute; left: 72px; bottom: 56px; font-size: 26px; color: #55597A; }
+.flyer { position: absolute; width: 230px; height: 315px; display: flex; flex-direction: column; filter: drop-shadow(0 12px 20px rgba(21, 23, 61, .2)); }
+.sheet { flex: 1; display: flex; flex-direction: column; padding: 34px 20px 14px; background: var(--bg); color: var(--fg); border-radius: 6px 6px 0 0; overflow: hidden; position: relative; }
+.sheet::before { content: ""; position: absolute; top: 10px; left: 50%; width: 16px; height: 16px; margin-left: -8px; border-radius: 50%; background: #C7146F; }
+.fields { font-size: 15px; line-height: 1.25; }
+.title { margin-block: auto; font: 800 31px/1.04 "Bricolage", sans-serif; }
+.tabs { display: flex; gap: 2px; height: 30px; }
+.tabs i { flex: 1; background: var(--bg); border-radius: 0 0 3px 3px; }
+.tabs i.taken { background: transparent; box-shadow: inset 0 4px 0 var(--bg); border-radius: 0; }
+.f1 { --bg: #FFC21A; --fg: #15173D; left: 690px; top: 40px; transform: rotate(-6deg); }
+.f2 { --bg: #4D7CFF; --fg: #15173D; left: 930px; top: 70px; transform: rotate(5deg); }
+.f3 { --bg: #2ED3A5; --fg: #15173D; left: 770px; top: 300px; transform: rotate(4deg); z-index: 1; }
+.f4 { --bg: #556B2F; --fg: #FFFFFF; left: 990px; top: 330px; transform: rotate(-4deg); }
+</style>
+</head>
+<body>
+<div class="copy">
+  <div class="brand"><img src="../public/site/icon.png" alt="">Babillard</div>
+  <h1 id="h1"></h1>
+</div>
+<p class="where" id="where"></p>
+<div id="board"></div>
+<script>
+const fr = location.search.includes("fr");
+const text = fr
+  ? {
+      h1: ["Choisissez un sujet.", "Rencontrez les gens près de chez vous qui l'ont choisi aussi."],
+      where: "babillard.app · D'abord à Ottawa et à Gatineau",
+      flyers: [
+        ["Économie, Sociologie et Affaires", "Le pourboire devrait-il être remplacé par de meilleurs salaires?"],
+        ["Jeux et sports électroniques et Sports", "Les sports électroniques devraient-ils compter comme des sports?"],
+        ["Psychologie et Sociologie", "Psychologie de la solitude et de l'amitié"],
+        ["Plein air et activité physique et Environnement et climat", "La randonnée près de la ville"],
+      ],
+    }
+  : {
+      h1: ["Pick a topic.", "Meet the people near you who picked it too."],
+      where: "babillard.app · Starting in Ottawa and Gatineau",
+      flyers: [
+        ["Economics, Sociology and Business", "Should tipping be replaced with higher wages?"],
+        ["Games & esports and Sports", "Should esports count as sports?"],
+        ["Psychology and Sociology", "Psychology of loneliness and friendship"],
+        ["Outdoors & fitness and Environment & climate", "Hiking near the city"],
+      ],
+    };
+if (fr) document.body.classList.add("fr");
+document.getElementById("h1").innerHTML = `${text.h1[0]}<span>${text.h1[1]}</span>`;
+document.getElementById("where").textContent = text.where;
+const taken = [[1, 4], [2], [0, 3, 5], [2, 6]];
+document.getElementById("board").innerHTML = text.flyers
+  .map(([fields, title], i) => `<div class="flyer f${i + 1}"><div class="sheet"><p class="fields">${fields}</p><p class="title">${title}</p></div><div class="tabs">${Array.from({ length: 8 }, (_, t) => `<i${taken[i].includes(t) ? ' class="taken"' : ""}></i>`).join("")}</div></div>`)
+  .join("");
+</script>
+</body>
+</html>

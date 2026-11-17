@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:xhtml="http://www.w3.org/1999/xhtml">
+  <url>
+    <loc>https://babillard.app/</loc>
+    <xhtml:link rel="alternate" hreflang="en-CA" href="https://babillard.app/"/>
+    <xhtml:link rel="alternate" hreflang="fr-CA" href="https://babillard.app/fr/"/>
+  </url>
+  <url>
+    <loc>https://babillard.app/fr/</loc>
+    <xhtml:link rel="alternate" hreflang="en-CA" href="https://babillard.app/"/>
+    <xhtml:link rel="alternate" hreflang="fr-CA" href="https://babillard.app/fr/"/>
+  </url>
+  <url>
+    <loc>https://babillard.app/privacy</loc>
+    <xhtml:link rel="alternate" hreflang="en-CA" href="https://babillard.app/privacy"/>
+    <xhtml:link rel="alternate" hreflang="fr-CA" href="https://babillard.app/confidentialite"/>
+  </url>
+  <url>
+    <loc>https://babillard.app/confidentialite</loc>
+    <xhtml:link rel="alternate" hreflang="en-CA" href="https://babillard.app/privacy"/>
+    <xhtml:link rel="alternate" hreflang="fr-CA" href="https://babillard.app/confidentialite"/>
+  </url>
+  <url>
+    <loc>https://babillard.app/terms</loc>
+    <xhtml:link rel="alternate" hreflang="en-CA" href="https://babillard.app/terms"/>
+    <xhtml:link rel="alternate" hreflang="fr-CA" href="https://babillard.app/conditions"/>
+  </url>
+  <url>
+    <loc>https://babillard.app/conditions</loc>
+    <xhtml:link rel="alternate" hreflang="en-CA" href="https://babillard.app/terms"/>
+    <xhtml:link rel="alternate" hreflang="fr-CA" href="https://babillard.app/conditions"/>
+  </url>
+  <url>
+    <loc>https://babillard.app/safety</loc>
+    <xhtml:link rel="alternate" hreflang="en-CA" href="https://babillard.app/safety"/>
+    <xhtml:link rel="alternate" hreflang="fr-CA" href="https://babillard.app/securite"/>
+  </url>
+  <url>
+    <loc>https://babillard.app/securite</loc>
+    <xhtml:link rel="alternate" hreflang="en-CA" href="https://babillard.app/safety"/>
+    <xhtml:link rel="alternate" hreflang="fr-CA" href="https://babillard.app/securite"/>
+  </url>
+</urlset>
