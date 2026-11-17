@@ -206,6 +206,8 @@ describe("production settings", () => {
     const client = new Client(PROD);
     const session = await client.post("/auth/verify", { email, code });
     expect(session.me.email).toBe(email);
+    // MLS_ENABLED isn't set here, so phones leave MLS alone.
+    expect(session.me.mls).toBe(false);
     expect(await status(client.post("/auth/verify", { token: new URL(link!).searchParams.get("token") }))).toBe(401);
   });
 

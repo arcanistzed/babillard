@@ -408,9 +408,9 @@ This order matters because the readiness check counts members, not phones. A mem
 **Rolling back.** Once any chat has moved, use `"paused"`, never `"false"`:
 - `"paused"` keeps every MLS chat working, new phones included, and moves no others. Chats not yet moved stay on v1. Setting `"true"` again lets them move.
 - `"false"` strands every chat that moved. The `ChatRoom` refuses v1 there because its stored mode is `mls`, whatever the flag says. Every `/mls` route answers 404. And the app, seeing `mls: false`, stops showing the chat's MLS messages and sends v1, which is refused. So `"false"` is safe only before the first chat moves.
-- Sending a chat back to v1 isn't built. If it ever is, it must be the server's decision, never something a phone falls back to by itself, or a server could downgrade any chat it liked.
+- Sending a chat back to v1 isn't built on the server. The phone, though, follows `/me`: if it says `mls: false`, the app sends v1 even in a chat where this phone is in an MLS group. An honest server refuses that with `mls_mode`. A dishonest one could accept it, which is a downgrade (see "Open security questions").
 
-Tested: `mlsDelivery.test.ts` checks the paused rule on its own. `mlsEngineFailures.test.ts` pauses the in-memory server after a chat moved: messages still go both ways, a new phone joins, another chat stays on v1 with no error, and it moves once unpaused. The end-to-end suite runs a third Worker with `MLS_ENABLED=paused`, where a chat's first commit gets 409 `not_ready` and the chat stays on v1, and checks that `/me` says `mls: true`.
+Tested: `mlsDelivery.test.ts` checks the paused rule on its own. `mlsEngineFailures.test.ts` pauses the in-memory server after a chat moved: messages still go both ways, a new phone joins, another chat stays on v1 with no error, and it moves once unpaused. The end-to-end suite runs a third Worker with `MLS_ENABLED=paused`, where a chat's first commit gets 409 `not_ready` and the chat stays on v1, and checks that `/me` says `mls: true` there and `mls: false` on the Worker with MLS off.
 
 ## What the prototypes prove
 
@@ -507,6 +507,7 @@ iOS isn't in this estimate. It would add a Swift module over the same Rust crate
    - **Per chat and phone, the real limit.** The ChatRoom records claims. One chat gets at most 3 fresh single-use packages for a phone in any 10 minutes, which covers a lost race or two. Past that, a claim gets the phone's last-resort package, which isn't used up, or nothing. The engine already treats nothing as "add them later". So a hostile member can use up at most 3 packages per 10 minutes, per chat they share with someone joining.
    - **Per person, a coarse limit.** A Workers rate limit (`MLS_CLAIM_LIMIT`, 30 a minute) answers 429 to anyone claiming across many chats at once.
    - **What's still open.** Phones don't upload a last-resort package yet (it's in the Rust wrapper row above). Until they do, a phone whose fresh packages are spoken for waits up to 10 minutes to be added.
-10. **The roster is the server's word.** It follows the commits the server accepted, and phones keep their own roster from the same commits. If they ever disagree, a phone should stop and show the security code, not trust either side.
+10. **Downgrade to v1.** The app uses MLS only while `/me` says `mls: true`, so a server that says `false` gets v1 from a phone that's already in a chat's MLS group. v1 is still end-to-end encrypted, but it has no forward secrecy or post-compromise security. A guard is simple: once this phone holds a chat's group, never send v1 there, and say the chat can't be used instead. Not built yet.
+11. **The roster is the server's word.** It follows the commits the server accepted, and phones keep their own roster from the same commits. If they ever disagree, a phone should stop and show the security code, not trust either side.
 
 The D1 migration on the branch is `0010`. Main has moved on since the branch started, so check the number before merging.
