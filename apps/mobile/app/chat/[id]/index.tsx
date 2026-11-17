@@ -19,6 +19,8 @@ import { isFrench, t } from "@/i18n";
 const SAME_RUN_MS = 5 * 60 * 1000;
 const NOT_SENT = t("Not sent. Tap to retry.", "Non envoyé. Touchez pour réessayer.");
 const UNREADABLE = t("Sent before you signed in on this phone", "Envoyé avant votre connexion sur ce téléphone");
+/** The sender's phone didn't commit to this text, so a report couldn't prove it was sent. */
+const UNVERIFIED = t("If reported, this message can't be confirmed", "En cas de signalement, ce message ne pourra pas être confirmé");
 
 export default function Chat() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -108,6 +110,11 @@ export default function Chat() {
           ) : (
             <T style={mine ? { color: theme.paper } : undefined}>{item.body}</T>
           )}
+            {item.unverified ? (
+              <T variant="small" muted style={styles.unreadable}>
+                {UNVERIFIED}
+              </T>
+            ) : null}
           </View>
           {item.failed ? (
             <T variant="small" style={{ color: theme.danger }}>

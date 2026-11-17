@@ -282,6 +282,10 @@ export class ChatRoom extends DurableObject<Env> {
     return this.mls.since(since, limit);
   }
 
+  mlsEntries(seqs: number[]): MlsLogEntry[] {
+    return this.mls.entries(seqs);
+  }
+
   mlsWelcome(deviceId: string): { seq: number; welcome: string } | null {
     return this.mls.welcome(deviceId);
   }

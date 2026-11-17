@@ -1,4 +1,4 @@
-import { REPORT_REASONS, type ChatMessage, type ReportReason } from "@babillard/shared";
+import { REPORT_REASONS, toBase64, type ChatMessage, type ReportReason } from "@babillard/shared";
 import { useQueryClient } from "@tanstack/react-query";
 import { router, useLocalSearchParams } from "expo-router";
 import { useState } from "react";
@@ -6,6 +6,7 @@ import { StyleSheet } from "react-native";
 import { api, friendlyError } from "@/api";
 import { useAuth } from "@/auth";
 import { readingKeys, readMessage } from "@/e2ee";
+import { mlsMessenger } from "@/mls";
 import { Button, Chip, ChipRow, ErrorText, Field, FormScreen, T } from "@/ui";
 import { t } from "@/i18n";
 
@@ -18,6 +19,9 @@ const REASON_LABELS: Record<ReportReason, string> = {
   safety: t("I feel unsafe", "Je ne me sens pas en sécurité"),
   other: t("Something else", "Autre chose"),
 };
+
+/** The reported MLS message and up to 9 on each side. The server takes 20 at most. */
+const MLS_EVIDENCE = 19;
 
 export default function Report() {
   const params = useLocalSearchParams<{ targetUserId: string; name: string; conversationId?: string; messageId?: string }>();
@@ -48,6 +52,24 @@ export default function Report() {
         const { contentKey } = readMessage(message, params.conversationId!, keys);
         return contentKey ? [{ messageId: message.id, contentKey }] : [];
       });
+    } catch {
+      return [];
+    }
+  }
+
+  /**
+   * From an MLS chat: the reported message and its neighbours, from this phone's own store, each with
+   * the key that proves its text to the server. Messages that didn't check out are left out.
+   */
+  async function collectMlsEvidence() {
+    const mls = me ? mlsMessenger(me.id) : null;
+    if (!params.conversationId || !mls) return [];
+    try {
+      const provable = (await (await mls).messages(params.conversationId)).filter((message) => message.seq !== null && message.frankingKey);
+      const reported = params.messageId?.startsWith("mls-") ? Number(params.messageId.slice(4)) : null;
+      const at = reported === null ? provable.length - 1 : provable.findIndex((message) => message.seq === reported);
+      const start = Math.max(0, (at < 0 ? provable.length - 1 : at) - (MLS_EVIDENCE - 1) / 2);
+      return provable.slice(start, start + MLS_EVIDENCE).map((message) => ({ seq: message.seq!, text: message.text, frankingKey: toBase64(message.frankingKey!) }));
     } catch {
       return [];
     }
@@ -89,6 +111,7 @@ export default function Report() {
                 reason,
                 note: note.trim(),
                 evidence: await collectEvidence(),
+                mlsEvidence: await collectMlsEvidence(),
                 ...(params.conversationId ? { conversationId: params.conversationId } : {}),
                 ...(params.messageId ? { messageId: params.messageId } : {}),
               });

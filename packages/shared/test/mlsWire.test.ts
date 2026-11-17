@@ -33,7 +33,7 @@ describe("the server's MLS reader, on real messages", () => {
     expect(removed.epoch).toBe(1);
 
     const sent = await encryptText(removal.state, "hello", cs);
-    expect(readFrame(sent.message)).toEqual({ wireformat: "private", groupId: "room-1", epoch: 2, kind: "application" });
+    expect(readFrame(sent.message)).toEqual({ wireformat: "private", groupId: "room-1", epoch: 2, kind: "application", authenticatedData: new Uint8Array() });
   });
 
   it("refuses anything malformed", () => {

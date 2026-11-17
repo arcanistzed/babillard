@@ -98,6 +98,16 @@ describe("the server's rules on real OpenMLS messages", () => {
   });
 });
 
+describe("franking commitments in OpenMLS messages", () => {
+  it("lets the server read the authenticated data a phone put on its message", () => {
+    // The Rust fixture encrypts its one message with the authenticated data "commitment".
+    const sent = fixture.steps.find((step) => step.kind === "application")!;
+    const frame = readFrame(bytes(sent.message));
+    expect(frame).toMatchObject({ wireformat: "private", kind: "application" });
+    expect(frame.wireformat === "private" && new TextDecoder().decode(frame.authenticatedData)).toBe("commitment");
+  });
+});
+
 describe("GroupInfo between OpenMLS and ts-mls", () => {
   it("lets a ts-mls phone join by itself from a GroupInfo OpenMLS made", async () => {
     // This needs the patch in patches/: ts-mls 1.6.4 read external_pub without its length prefix.

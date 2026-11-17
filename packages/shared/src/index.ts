@@ -14,6 +14,7 @@ export * from "./rules/cities";
 export * from "./rules/blocking";
 export * from "./version";
 export * from "./mlsWire";
+export * from "./franking";
 export * from "./mlsDelivery";
 export * from "./mlsClient";
 export * from "./mlsTransport";

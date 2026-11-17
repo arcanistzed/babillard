@@ -263,7 +263,7 @@ Tried on the emulator with `apps/api/scripts/mls-group-peers.ts` (its new "remov
 
 - **Typing and sending states.** A message sent with MLS shows as pending until the engine returns, with no echo over the socket. That's fine on a quick connection and untested on a slow one.
 - **Recovery in the app.** The recovery cases have run in the engine on the emulator, but not through the chat screens with a live Worker. Nothing has run on a real ARM phone.
-- **Franking for reports, backup v2, and per-chat state** remain as designed above.
+- **Backup v2 and per-chat state** remain as designed above.
 
 ## Before turning it on
 
@@ -367,7 +367,15 @@ Use **message franking** instead:
 - Phones check the commitment against what they decrypted, and show the message as unverifiable if it doesn't match.
 - A reporter sends the text and the franking key. The server recomputes the HMAC and compares it with what it stored from the sender's own socket.
 
-Nothing else in the chat becomes readable, the same as today. The wrapper's `encrypt` already takes the `aad` and `receive` returns it, so the commitment is ready to wire up.
+Nothing else in the chat becomes readable, the same as today.
+
+Built:
+- `packages/shared/src/franking.ts` holds the format. Inside the encryption: a version byte, the 32-byte franking key, then the text. In the authenticated data: a version byte, then `HMAC-SHA256(key, "babillard-franking-v1" ‖ conversationId ‖ senderId ‖ text)`, each input with a 4-byte length in front.
+- The engine franks every message it sends, with a new key each time. It keeps each message's key in the store, sealed like the text, including for its own messages.
+- On receipt it checks the commitment. A message that doesn't match, or isn't franked, is kept and marked `unverified`, with no key. It's never refused: refusing it would leave the phone stuck on that entry, and let one member stop the chat for everyone. The chat shows such a message with "If reported, this message can't be confirmed" under it.
+- The report screen sends the reported message and up to 9 on each side, each with its text and key. The server reads the commitment from the message as the sender's session submitted it, and uses its own record of who sent it, not the reporter's. Only matching messages become evidence, in the same list as v1 evidence, so the moderator's view is unchanged.
+- The server's reader now returns a private message's authenticated data. The OpenMLS fixture's message, which carries the authenticated data `commitment`, checks that.
+- Tests: `franking.test.ts` covers the format and both ends of the engine, including a phone that commits to different text than it sends. `mlsEngine.e2e.ts` reports a message through the real Worker and checks that the admin queue shows its text and not the words a reporter made up.
 
 ### Previews and push
 
@@ -446,25 +454,24 @@ The ordering rule `admit` and the security-code function `codeForRoster` are wor
 ### What they don't prove
 
 - Two real devices through a real Durable Object. The server is built and tested end to end, but with ts-mls phones in Node, not the app's OpenMLS module. OpenMLS output is checked against the server's rules by replaying a recorded session, not live.
-- External commits, franking, the phone's storage and sync loop, backup, and migration. Those are designed above and not built.
+- Backup and migration. Those are designed above and not built.
 - Performance on a real phone, or with 8 members.
 - Anything on ARM. All four ABIs compile, but only the x86_64 library has run, on the emulator. Nothing has run on a real phone yet.
 
 ## What's left, and roughly how long
 
-One developer who knows the codebase. Done on the branch since the first estimate: the server's header reader, the key package service, the delivery service, the readiness check, external commits with GroupInfo export, the phone's sync engine with its encrypted SQLite store, the chat screens on MLS behind the flag, recovery from lost answers and stuck entries, hiding blocked people's MLS messages, a person's second phone, the roster security code on the chat info screen, deleting a chat's MLS copy once the person is out of it, and limits on key package claims.
+One developer who knows the codebase. Done on the branch since the first estimate: the server's header reader, the key package service, the delivery service, the readiness check, external commits with GroupInfo export, the phone's sync engine with its encrypted SQLite store, the chat screens on MLS behind the flag, recovery from lost answers and stuck entries, hiding blocked people's MLS messages, a person's second phone, the roster security code on the chat info screen, deleting a chat's MLS copy once the person is out of it, limits on key package claims, and franked reports.
 
 | Work | Estimate |
 |---|---|
 | Android build in EAS: install Rust there, or commit the built libraries | 2 to 3 days |
 | Server, still to do: a way for people to retire a lost phone | 1 day |
 | Rust wrapper: last-resort key packages and per-chat state | 2 to 4 days |
-| Franking for reports | 2 days |
 | Backup v2 and history store | 5 to 7 days |
 | Migration: dormant release, per-chat switch, version gate, mixed timeline | 3 to 5 days |
 | Removing ts-mls and its adapter from the app once the native path covers everything | 1 day |
 | End-to-end tests with two devices, and on a real phone | 4 to 5 days |
-| **Total** | **20 to 28 working days, about 4 to 6 weeks** |
+| **Total** | **18 to 26 working days, about 4 to 5 weeks** |
 
 iOS isn't in this estimate. It would add a Swift module over the same Rust crate.
 

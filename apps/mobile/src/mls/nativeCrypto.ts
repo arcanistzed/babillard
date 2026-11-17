@@ -1,4 +1,5 @@
 import type { MlsCrypto } from "@babillard/shared";
+import * as Crypto from "expo-crypto";
 import * as Mls from "../../modules/babillard-mls";
 
 /** The sync engine's crypto, on OpenMLS through the native module. */
@@ -14,6 +15,7 @@ export const nativeCrypto: MlsCrypto = {
   joinExternal: (state, groupInfo, trusted) => Mls.joinExternal(state, groupInfo, trusted),
   forgetGroup: (state, conversationId) => Mls.forgetGroup(state, conversationId),
   encrypt: (state, conversationId, plaintext, aad) => Mls.encrypt(state, conversationId, plaintext, aad),
+  randomBytes: (length) => Crypto.getRandomBytes(length),
   receive: (state, conversationId, message, trusted) => Mls.receive(state, conversationId, message, trusted),
   async groupStatus(state, conversationId) {
     try {

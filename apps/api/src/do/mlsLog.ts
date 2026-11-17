@@ -197,6 +197,16 @@ export class MlsLog {
       .map(toEntry);
   }
 
+  /** Particular entries, for checking a report against what was really sent. */
+  entries(seqs: number[]): MlsLogEntry[] {
+    const wanted = [...new Set(seqs)].slice(0, 50);
+    if (!wanted.length) return [];
+    return this.storage.sql
+      .exec<LogRow>(`SELECT * FROM mls_log WHERE seq IN (${wanted.map(() => "?").join(", ")})`, ...wanted)
+      .toArray()
+      .map(toEntry);
+  }
+
   welcome(deviceId: string): { seq: number; welcome: string } | null {
     const row = this.storage.sql.exec<{ seq: number; welcome: ArrayBuffer }>("SELECT seq, welcome FROM mls_welcomes WHERE device_id = ?", deviceId).toArray()[0];
     return row ? { seq: row.seq, welcome: toBase64(new Uint8Array(row.welcome)) } : null;

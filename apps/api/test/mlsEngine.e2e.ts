@@ -3,7 +3,7 @@
 // interface. Cities and topics are ones no other test uses, and physics topics
 // on purpose: right swipes raise a topic for everyone, and a deck test expects
 // a physics topic first.
-import { MlsMessenger, SqlMlsStore, httpMlsTransport, type HttpCall, type SqlDb } from "@babillard/shared";
+import { MlsMessenger, SqlMlsStore, httpMlsTransport, toBase64, type HttpCall, type SqlDb } from "@babillard/shared";
 import { mlsCiphersuite, tsMlsCrypto } from "@babillard/shared/mls";
 import { randomBytes } from "node:crypto";
 import { DatabaseSync } from "node:sqlite";
@@ -139,5 +139,40 @@ describe("the phone's MLS sync engine", () => {
     expect(await newPhone.texts(id)).toEqual(["Welcome back"]);
     expect(await bob.texts(id)).toEqual(["Welcome back"]);
     expect(await newPhone.messenger.securityCode(id)).toBe(await alice.messenger.securityCode(id));
+  });
+
+  it("proves a reported MLS message to the moderator, and nothing the reporter made up", async () => {
+    const a = await createPerson(BASE, `franked-${Date.now()}@example.test`, { displayName: "Franked Sender", cityId: "austin-tx-us" });
+    const b = await person("austin-tx-us");
+    for (const client of [a, b]) await client.post("/deck/topics/everyday-physics/swipe", { direction: "right" });
+    await a.post(`/people/${b.id}/swipe`, { direction: "right" });
+    const id = (await b.post(`/people/${a.id}/swipe`, { direction: "right" })).conversationId as string;
+    const sender = phoneFor(a);
+    const reporter = phoneFor(b);
+    await sender.messenger.ensureIdentity();
+    await reporter.messenger.ensureIdentity();
+    await sender.texts(id);
+    await reporter.texts(id);
+    await sender.messenger.send(id, "a really rude franked message");
+    await reporter.texts(id);
+
+    const [stored] = await reporter.store.messages(id);
+    expect(stored!.frankingKey).toHaveLength(32);
+    const frankingKey = toBase64(stored!.frankingKey!);
+    await b.post("/safety/reports", {
+      targetUserId: a.id,
+      conversationId: id,
+      reason: "harassment",
+      mlsEvidence: [
+        { seq: stored!.seq, text: stored!.text, frankingKey },
+        // The same key with other words, as a reporter trying to put words in someone's mouth would send.
+        { seq: stored!.seq, text: "words the sender never wrote", frankingKey },
+      ],
+    });
+
+    const queue = await (await fetch(`${BASE}/admin/reports`)).text();
+    const report = queue.split("<article>").find((part) => part.includes("Franked Sender"));
+    expect(report).toContain("a really rude franked message");
+    expect(report).not.toContain("words the sender never wrote");
   });
 });

@@ -121,6 +121,32 @@ describe("the phone's encrypted MLS store", () => {
     expect(await store.cursor("chat-1")).toBe(1);
   });
 
+  it("keeps each message's franking key sealed, and whether it checked out", async () => {
+    const db = nodeDb();
+    const store = new SqlMlsStore(db, random(32), random);
+    const frankingKey = random(32);
+    await store.apply({ messages: [{ ...message("1", "reportable", 1), frankingKey }, { ...message("2", "not provable", 2), unverified: true }] });
+    const [first, second] = await store.messages("chat-1");
+    expect(first!.frankingKey).toEqual(frankingKey);
+    expect(first!.unverified).toBeUndefined();
+    expect(second!.frankingKey).toBeUndefined();
+    expect(second!.unverified).toBe(true);
+    // The key is sealed like the text: its bytes don't appear in the database.
+    const [row] = db.raw.prepare("SELECT franking_key FROM mls_messages WHERE id = '1'").all() as { franking_key: Uint8Array }[];
+    expect(Buffer.from(row!.franking_key).includes(Buffer.from(frankingKey))).toBe(false);
+  });
+
+  it("adds the franking columns to a database from before them", async () => {
+    const raw = new DatabaseSync(":memory:");
+    raw.exec(`CREATE TABLE mls_messages (
+      conversation_id TEXT NOT NULL, id TEXT NOT NULL, seq INTEGER, sender_id TEXT NOT NULL, sender_device_id TEXT NOT NULL,
+      text BLOB NOT NULL, created_at INTEGER NOT NULL, status TEXT NOT NULL, ciphertext BLOB, client_id TEXT,
+      PRIMARY KEY (conversation_id, id))`);
+    const store = new SqlMlsStore(nodeDb(raw), random(32), random);
+    await store.apply({ messages: [{ ...message("1", "after the upgrade", 1), frankingKey: random(32) }] });
+    expect((await store.messages("chat-1"))[0]!.frankingKey).toHaveLength(32);
+  });
+
   it("forgets a whole chat in one step, and nothing else", async () => {
     const store = new SqlMlsStore(nodeDb(), random(32), random);
     const pending = { epoch: 3, commit: random(20), state: random(30) };

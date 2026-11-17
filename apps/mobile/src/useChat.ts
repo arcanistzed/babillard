@@ -11,6 +11,8 @@ import { mlsMessenger } from "./mls";
 export interface LocalMessage extends ReadableMessage {
   pending?: boolean;
   failed?: boolean;
+  /** An MLS message whose franking didn't check out, so a report couldn't prove it. */
+  unverified?: boolean;
 }
 
 const RECONNECT_BASE_MS = 1000;
@@ -45,6 +47,7 @@ function fromMls(message: MlsStoredMessage): LocalMessage {
     createdAt: message.createdAt,
     ...(message.status === "sent" ? {} : { pending: true }),
     ...(message.status === "failed" ? { failed: true } : {}),
+    ...(message.unverified ? { unverified: true } : {}),
   };
 }
 

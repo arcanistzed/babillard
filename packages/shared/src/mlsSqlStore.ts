@@ -45,6 +45,8 @@ const SCHEMA = `
     status TEXT NOT NULL,
     ciphertext BLOB,
     client_id TEXT,
+    franking_key BLOB,
+    unverified INTEGER NOT NULL DEFAULT 0,
     PRIMARY KEY (conversation_id, id)
   );
   CREATE INDEX IF NOT EXISTS mls_messages_order ON mls_messages (conversation_id, seq);
@@ -73,7 +75,15 @@ interface MessageRow {
   status: string;
   ciphertext: Uint8Array | null;
   client_id: string | null;
+  franking_key: Uint8Array | null;
+  unverified: number;
 }
+
+/** Columns added after the first prototype. `CREATE TABLE IF NOT EXISTS` leaves an older table as it was. */
+const ADDED_COLUMNS: [table: string, column: string, definition: string][] = [
+  ["mls_messages", "franking_key", "BLOB"],
+  ["mls_messages", "unverified", "INTEGER NOT NULL DEFAULT 0"],
+];
 
 export class SqlMlsStore implements MlsStore {
   private ready: Promise<void> | null = null;
@@ -88,7 +98,13 @@ export class SqlMlsStore implements MlsStore {
   }
 
   private init(): Promise<void> {
-    this.ready ??= this.db.exec(SCHEMA);
+    this.ready ??= (async () => {
+      await this.db.exec(SCHEMA);
+      for (const [table, column, definition] of ADDED_COLUMNS) {
+        const columns = await this.db.all<{ name: string }>(`PRAGMA table_info(${table})`, []);
+        if (!columns.some((existing) => existing.name === column)) await this.db.exec(`ALTER TABLE ${table} ADD COLUMN ${column} ${definition}`);
+      }
+    })();
     return this.ready;
   }
 
@@ -138,6 +154,8 @@ export class SqlMlsStore implements MlsStore {
       status: row.status as MlsStoredMessage["status"],
       ...(row.ciphertext ? { ciphertext: new Uint8Array(row.ciphertext) } : {}),
       ...(row.client_id ? { clientId: row.client_id } : {}),
+      ...(row.franking_key ? { frankingKey: this.open(new Uint8Array(row.franking_key), `mls-franking:${row.conversation_id}:${row.id}`) } : {}),
+      ...(row.unverified ? { unverified: true } : {}),
     }));
   }
 
@@ -166,7 +184,11 @@ export class SqlMlsStore implements MlsStore {
     // Seal outside the transaction, so it holds the lock only for the writes.
     const device = change.device;
     const state = device ? this.seal(device.state, `mls-state:${device.deviceId}`) : null;
-    const messages = (change.messages ?? []).map((m) => ({ m, text: this.seal(encoder.encode(m.text), `mls-text:${m.conversationId}:${m.id}`) }));
+    const messages = (change.messages ?? []).map((m) => ({
+      m,
+      text: this.seal(encoder.encode(m.text), `mls-text:${m.conversationId}:${m.id}`),
+      frankingKey: m.frankingKey ? this.seal(m.frankingKey, `mls-franking:${m.conversationId}:${m.id}`) : null,
+    }));
     const pending = Object.entries(change.pendingCommits ?? {}).map(([conversationId, commit]) => ({
       conversationId,
       commit,
@@ -200,10 +222,10 @@ export class SqlMlsStore implements MlsStore {
         await tx.run("DELETE FROM mls_cursors WHERE conversation_id = ?", [conversationId]);
         await tx.run("DELETE FROM mls_pending_commits WHERE conversation_id = ?", [conversationId]);
       }
-      for (const { m, text } of messages) {
+      for (const { m, text, frankingKey } of messages) {
         await tx.run(
-          "INSERT OR REPLACE INTO mls_messages (conversation_id, id, seq, sender_id, sender_device_id, text, created_at, status, ciphertext, client_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
-          [m.conversationId, m.id, m.seq, m.senderId, m.senderDeviceId, text, m.createdAt, m.status, m.ciphertext ?? null, m.clientId ?? null],
+          "INSERT OR REPLACE INTO mls_messages (conversation_id, id, seq, sender_id, sender_device_id, text, created_at, status, ciphertext, client_id, franking_key, unverified) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+          [m.conversationId, m.id, m.seq, m.senderId, m.senderDeviceId, text, m.createdAt, m.status, m.ciphertext ?? null, m.clientId ?? null, frankingKey, m.unverified ? 1 : 0],
         );
       }
     });

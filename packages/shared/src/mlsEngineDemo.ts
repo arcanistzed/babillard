@@ -1,3 +1,4 @@
+import { decodeFrankedPayload } from "./franking";
 import { MlsMessenger, type MlsCrypto, type MlsStore, type MlsTransport } from "./mlsClient";
 import { MemoryMlsServer } from "./mlsMemoryServer";
 
@@ -115,7 +116,7 @@ export async function runRecoveryDemo(
     ...crypto,
     receive: async (...args) => {
       const result = await crypto.receive(...args);
-      if (result.kind === "application" && new TextDecoder().decode(result.plaintext) === "garbled") throw new Error("can't apply this entry");
+      if (result.kind === "application" && decodeFrankedPayload(result.plaintext)?.text === "garbled") throw new Error("can't apply this entry");
       return result;
     },
   };

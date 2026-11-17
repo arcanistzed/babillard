@@ -119,7 +119,7 @@ export type Frame =
       sender: { type: "member"; leafIndex: number } | { type: "other"; senderType: number };
       commit?: CommitSummary;
     }
-  | { wireformat: "private"; groupId: string; epoch: number; kind: "application" | "proposal" | "commit" };
+  | { wireformat: "private"; groupId: string; epoch: number; kind: "application" | "proposal" | "commit"; authenticatedData: Uint8Array };
 
 function credential(reader: Reader): string {
   const type = reader.u16();
@@ -207,11 +207,12 @@ export function readFrame(bytes: Uint8Array): Frame {
     const groupId = decoder.decode(reader.vector());
     const epoch = reader.u64();
     const kind = contentType(reader.u8());
-    reader.vector(); // authenticated data
+    // In the clear, and bound to the message by its encryption: where a message's franking commitment goes.
+    const authenticatedData = reader.vector().slice();
     reader.vector(); // encrypted sender data
     reader.vector(); // ciphertext
     finish(reader);
-    return { wireformat: "private", groupId, epoch, kind };
+    return { wireformat: "private", groupId, epoch, kind, authenticatedData };
   }
   if (wireformat !== WIRE.public) throw new MlsWireError("not a group message");
 

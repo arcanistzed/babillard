@@ -1,4 +1,4 @@
-import { openWithContentKey, orderedPair, reportSchema, type ReportEvidence } from "@babillard/shared";
+import { checkFranking, fromBase64, openWithContentKey, orderedPair, readFrame, reportSchema, type ReportEvidence } from "@babillard/shared";
 import { and, eq, gt, inArray, sql } from "drizzle-orm";
 import { Hono } from "hono";
 import { getDb, schema } from "../db";
@@ -31,19 +31,35 @@ safety.post("/reports", async (c) => {
 
   // The reporter's phone supplies the keys, and the stored ciphertext proves the text is what was really sent.
   const evidence: ReportEvidence[] = [];
-  if (input.conversationId && input.evidence.length) {
+  if (input.conversationId && (input.evidence.length || input.mlsEvidence.length)) {
     const conversationId = input.conversationId;
     const [member] = await db
       .select({ id: schema.conversationMembers.userId })
       .from(schema.conversationMembers)
       .where(and(eq(schema.conversationMembers.conversationId, conversationId), eq(schema.conversationMembers.userId, user.id)));
     if (!member) throw fail(404, "conversation_not_found");
-    const stored = await c.env.CHAT_ROOM.getByName(conversationId).getMessages(input.evidence.map((item) => item.messageId));
+    const room = c.env.CHAT_ROOM.getByName(conversationId);
+    const stored = input.evidence.length ? await room.getMessages(input.evidence.map((item) => item.messageId)) : [];
     for (const item of input.evidence) {
       const message = stored.find((row) => row.id === item.messageId);
       if (!message?.envelope || !message.senderId) continue;
       const body = openWithContentKey(message.envelope, conversationId, message.senderId, item.contentKey);
       if (body !== null) evidence.push({ id: message.id, senderId: message.senderId, body, createdAt: message.createdAt });
+    }
+    // MLS messages: the reporter gives the text and franking key, and the commitment in the message, as the
+    // sender's own session submitted it, proves both. The sender is the server's record, not the reporter's word.
+    const entries = input.mlsEvidence.length ? await room.mlsEntries(input.mlsEvidence.map((item) => item.seq)) : [];
+    for (const item of input.mlsEvidence) {
+      const entry = entries.find((row) => row.seq === item.seq);
+      if (!entry || entry.kind !== "application") continue;
+      let frame;
+      try {
+        frame = readFrame(fromBase64(entry.message));
+      } catch {
+        continue;
+      }
+      if (frame.wireformat !== "private" || !checkFranking(frame.authenticatedData, fromBase64(item.frankingKey), conversationId, entry.senderId, item.text)) continue;
+      evidence.push({ id: `mls-${entry.seq}`, senderId: entry.senderId, body: item.text, createdAt: entry.createdAt });
     }
     evidence.sort((a, b) => a.createdAt - b.createdAt);
   }

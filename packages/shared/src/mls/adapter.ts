@@ -114,6 +114,7 @@ export function tsMlsCrypto(cs: CiphersuiteImpl): MlsCrypto {
       const conversationId = conversationOf(output.state);
       return { ...output, state: withGroup(snapshot, conversationId, output.state), conversationId };
     },
+    randomBytes: (length) => cs.rng.randomBytes(length),
     async encrypt(state, conversationId, plaintext, aad) {
       const snapshot = load(state);
       const result = await createApplicationMessage(group(snapshot, conversationId), plaintext, cs, aad);
@@ -124,7 +125,7 @@ export function tsMlsCrypto(cs: CiphersuiteImpl): MlsCrypto {
       const snapshot = load(state);
       const result = await receive(group(snapshot, conversationId, trusted), message, cs);
       const next = withGroup(snapshot, conversationId, result.state);
-      if (result.kind === "text") return { kind: "application", state: next, plaintext: new TextEncoder().encode(result.text), aad: new Uint8Array() };
+      if (result.kind === "text") return { kind: "application", state: next, plaintext: result.bytes, aad: result.aad };
       const removedMe = !roster(result.state).some((entry) => entry.deviceId === identity(snapshot).deviceId);
       return { kind: "commit", state: next, removedMe };
     },

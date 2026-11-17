@@ -120,6 +120,11 @@ export const reportSchema = z.object({
   note: z.string().trim().max(1000).default(""),
   /** Message keys from the reporter's phone. The server checks each against the stored message. */
   evidence: z.array(z.object({ messageId: z.string().min(1).max(64), contentKey: encodedSchema.max(60) })).max(20).default([]),
+  /** From an MLS chat: the text and franking key of each message. The server checks them against the commitment it stored. */
+  mlsEvidence: z
+    .array(z.object({ seq: z.number().int().positive(), text: z.string().max(10_000), frankingKey: encodedSchema.max(60) }))
+    .max(20)
+    .default([]),
 });
 
 export const topicSubmissionSchema = z.object({

@@ -1,5 +1,6 @@
 import { webcrypto } from "node:crypto";
 import { describe, expect, it } from "vitest";
+import { decodeFrankedPayload } from "../src/franking";
 import { MemoryMlsStore, MlsMessenger, MlsRemovedError, isOutOfChat, type MlsCrypto, type MlsTransport } from "../src/mlsClient";
 import { MemoryMlsServer } from "../src/mlsMemoryServer";
 import { tsMlsCrypto } from "../src/mls/adapter";
@@ -296,7 +297,7 @@ describe("the sync engine when it doesn't know what happened", () => {
       ...crypto,
       receive: async (...args) => {
         const result = await crypto.receive(...args);
-        if (result.kind === "application" && new TextDecoder().decode(result.plaintext) === "garbled") throw new Error("can't apply");
+        if (result.kind === "application" && decodeFrankedPayload(result.plaintext)?.text === "garbled") throw new Error("can't apply");
         return result;
       },
     };

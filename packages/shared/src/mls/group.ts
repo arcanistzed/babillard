@@ -171,7 +171,8 @@ export async function encryptText(state: ClientState, text: string, cs: Ciphersu
   return { state: result.newState, message: encodeMlsMessage({ version: "mls10", wireformat: "mls_private_message", privateMessage: result.privateMessage }) };
 }
 
-export type Received = { state: ClientState; kind: "text"; text: string } | { state: ClientState; kind: "commit" };
+/** `bytes` is the message as sent, and `text` the same read as UTF-8. `aad` was checked by the decryption. */
+export type Received = { state: ClientState; kind: "text"; text: string; bytes: Uint8Array; aad: Uint8Array } | { state: ClientState; kind: "commit" };
 
 /**
  * Applies one message from the chat's log, in order. Each message decrypts once:
@@ -181,7 +182,11 @@ export async function receive(state: ClientState, bytes: Uint8Array, cs: Ciphers
   const message = decodeMlsMessage(bytes, 0)?.[0];
   if (message?.wireformat !== "mls_private_message" && message?.wireformat !== "mls_public_message") throw new Error("Not a group message");
   const result = await processMessage(message, state, emptyPskIndex, acceptAll, cs);
-  if (result.kind === "applicationMessage") return { state: result.newState, kind: "text", text: decoder.decode(result.message) };
+  if (result.kind === "applicationMessage") {
+    // ts-mls doesn't hand back the authenticated data, but the decryption above checked it.
+    const aad = message.wireformat === "mls_private_message" ? message.privateMessage.authenticatedData : new Uint8Array();
+    return { state: result.newState, kind: "text", text: decoder.decode(result.message), bytes: result.message, aad };
+  }
   return { state: result.newState, kind: "commit" };
 }
 

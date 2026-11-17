@@ -1,6 +1,7 @@
 import { sha256 } from "@noble/hashes/sha2.js";
 import type { MlsGroupState, MlsLogEntry } from "./api";
 import { fromBase64, toBase64 } from "./e2ee";
+import { FRANKING_KEY_LENGTH, checkFranking, decodeFrankedPayload, encodeFrankedPayload, frankingCommitment } from "./franking";
 import { MlsHttpError } from "./mlsTransport";
 
 /**
@@ -55,6 +56,8 @@ export interface MlsCrypto {
   /** Drops this phone's copy of a group, before rejoining it. */
   forgetGroup(state: Uint8Array, conversationId: string): Promise<Uint8Array>;
   encrypt(state: Uint8Array, conversationId: string, plaintext: Uint8Array, aad: Uint8Array): Promise<{ state: Uint8Array; message: Uint8Array }>;
+  /** Secure random bytes, for each message's franking key. */
+  randomBytes(length: number): Uint8Array;
   receive(state: Uint8Array, conversationId: string, message: Uint8Array, trusted: TrustedDevice[]): Promise<MlsReceived>;
   /** Null if this phone has no group for the chat. */
   groupStatus(state: Uint8Array, conversationId: string): Promise<{ epoch: number; roster: { leafIndex: number; userId: string; deviceId: string; signatureKey: Uint8Array }[] } | null>;
@@ -88,6 +91,10 @@ export interface MlsStoredMessage {
   /** Kept only while pending, so a resend uses exactly the same bytes. */
   ciphertext?: Uint8Array;
   clientId?: string;
+  /** The key that opens this message's franking commitment, so the person can report it. Absent when it didn't check out. */
+  frankingKey?: Uint8Array;
+  /** The sender's franking commitment didn't match the text, so a report can't prove what this said. */
+  unverified?: boolean;
 }
 
 export interface MlsDeviceRecord {
@@ -265,7 +272,10 @@ export class MlsMessenger {
       const localId = `local-${this.newClientId()}`;
       for (let attempt = 0; attempt < MAX_ATTEMPTS; attempt++) {
         const state = (await this.device()).state;
-        const sealed = await this.crypto.encrypt(state, conversationId, encoder.encode(text), new Uint8Array());
+        // A fresh franking key for every message, so a report reveals only the message reported.
+        const frankingKey = this.crypto.randomBytes(FRANKING_KEY_LENGTH);
+        const commitment = frankingCommitment(frankingKey, conversationId, this.me.userId, text);
+        const sealed = await this.crypto.encrypt(state, conversationId, encodeFrankedPayload(text, frankingKey), commitment);
         const pending: MlsStoredMessage = {
           conversationId,
           id: localId,
@@ -277,6 +287,8 @@ export class MlsMessenger {
           status: "pending",
           ciphertext: sealed.message,
           clientId: this.newClientId(),
+          // Kept too, so a report can show a moderator this side of the conversation as well.
+          frankingKey,
         };
         // Saved first: the key is used up whether or not the send gets through.
         await this.saveState(sealed.state, { messages: [pending] });
@@ -473,15 +485,20 @@ export class MlsMessenger {
         }
         // MLS authenticates the sender. The server's label must agree with it.
         if (result.senderUserId && result.senderUserId !== entry.senderId) throw new MlsSyncError("The server named the wrong sender");
+        // A message whose franking doesn't check out is kept and marked, never refused: refusing it here
+        // would leave this phone stuck on the entry, and let one member stop the chat for everyone.
+        const opened = decodeFrankedPayload(result.plaintext);
+        const franked = opened !== null && checkFranking(result.aad, opened.frankingKey, conversationId, entry.senderId, opened.text);
         const message: MlsStoredMessage = {
           conversationId,
           id: String(entry.seq),
           seq: entry.seq,
           senderId: entry.senderId,
           senderDeviceId: result.senderDeviceId ?? entry.deviceId,
-          text: decoder.decode(result.plaintext),
+          text: opened?.text ?? decoder.decode(result.plaintext),
           createdAt: entry.createdAt,
           status: "sent",
+          ...(franked ? { frankingKey: opened.frankingKey } : { unverified: true }),
         };
         await this.saveState(result.state, { cursors: { [conversationId]: cursor }, messages: [message] });
         received.push(message);
