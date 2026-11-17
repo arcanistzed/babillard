@@ -144,7 +144,7 @@ export const copy = {
     steps: [
       { h: "Glissez sur ce dont vous aimeriez parler", p: "Chaque carte est un sujet, comme le pourboire, les villes marchables ou la question de savoir si les sports électroniques sont des sports. Certaines posent une question, et vous pouvez dire où vous vous situez avant de glisser." },
       { h: "Trois personnes ouvrent un groupe", p: "Les languettes au bas d'une carte sont des places. Quand la troisième personne de votre ville en détache une, une discussion de groupe s'ouvre avec vous trois. Vous pouvez demander un petit groupe de trois ou quatre, un plus grand de cinq à huit, ou l'un ou l'autre." },
-      { h: "Ou commencez à deux", p: "Les gens qui ont choisi le même sujet apparaissent aussi sous forme de cartes. Si vous glissez tous les deux à droite, une discussion s'ouvre avec une question sur le sujet pour lancer la conversation." },
+      { h: "Ou commencez à deux", p: "Les gens qui ont choisi le même sujet apparaissent aussi sous forme de cartes. Si vous glissez à droite sur vos cartes respectives, une discussion s'ouvre avec une question sur le sujet pour lancer la conversation." },
       { h: "Puis rencontrez-vous", p: "Choisissez un moment et un lieu en quelques touches. Dès qu'assez de gens disent oui, c'est confirmé. Ensuite, l'application vous demande comment ça s'est passé." },
     ],
     rulesTitle: "Quelques choix que nous avons faits",
@@ -167,7 +167,7 @@ export const copy = {
     phone: {
       chips: ["Tous", "Société", "Humanités", "Arts"],
       walk: { fields: "Villes et urbanisme et Environnement et climat", title: "Villes marchables", blurb: "Pourquoi certains lieux sont agréables à pied.", nearby: "5 à proximité" },
-      vote: { fields: "Politique et Mathématiques", title: "Le Canada devrait-il remplacer le scrutin uninominal à un tour?", stances: ["Pour", "Contre", "Incertain"], nearby: "2 à proximité. Vous ouvririez le groupe." },
+      vote: { fields: "Politique et Mathématiques", title: "Le Canada devrait-il remplacer le scrutin uninominal à un tour?", stances: ["Pour", "Contre", "J'hésite"], nearby: "2 à proximité. Vous ouvririez le groupe." },
       skip: "Passer",
       like: "J'embarque",
       opened: "Un groupe sur la réforme électorale vient de s'ouvrir à Ottawa.",
@@ -182,7 +182,7 @@ export const copy = {
       ],
       pairName: "Sam",
       pairSub: "Villes marchables",
-      pairOpener: "Vous avez tous les deux choisi Villes marchables. Quelle est la plus belle marche de cette ville?",
+      pairOpener: "Vous partagez l'envie d'explorer Villes marchables. Quelle est la plus belle marche de cette ville?",
       pair: [
         ["them", "Le long du canal en octobre, sans hésiter"],
         ["me", "Je ne l'ai jamais faite au complet"],
