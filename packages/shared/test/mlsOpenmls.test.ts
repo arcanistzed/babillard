@@ -37,13 +37,15 @@ describe("the server's rules on real OpenMLS messages", () => {
     }
   });
 
-  it("keeps the same roster as OpenMLS through adds, a removal, leaf reuse, an update, an external join, and a message", () => {
+  it("keeps the same roster as OpenMLS through adds, a removal, leaf reuse, an update, an external join, a rejoin, and a message", () => {
     // Who the chat has at each step: Carol leaves before step 1, Dave joins before step 2, and Erin before step 4.
+    // At step 5 Bob's phone rejoins by itself, replacing its own leaf.
     const members = [
       ["alice", "bob", "carol"],
       ["alice", "bob"],
       ["alice", "bob", "dave"],
       ["alice", "bob", "dave"],
+      ["alice", "bob", "dave", "erin"],
       ["alice", "bob", "dave", "erin"],
       ["alice", "bob", "dave", "erin"],
     ];

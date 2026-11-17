@@ -129,7 +129,7 @@ In D1, `device_keys` gains `mls_signature_key`, set once per phone, since changi
 
 Open sockets get `{ type: "mls", seq, epoch }` after each accepted entry. Everyone gets every entry, blockers included, because skipping entries would break their copy of the group.
 
-`packages/shared/test/mlsOpenmls.test.ts` replays real OpenMLS messages, written by a Rust test, through the same rules. The server's roster matches OpenMLS's leaf by leaf through adds, a removal, a new member reusing the freed leaf, a key update, an external join, and a message.
+`packages/shared/test/mlsOpenmls.test.ts` replays real OpenMLS messages, written by a Rust test, through the same rules. The server's roster matches OpenMLS's leaf by leaf through adds, a removal, a new member reusing the freed leaf, a key update, an external join, a phone rejoining in its own place, and a message.
 
 `apps/api/test/mls.e2e.ts` runs the routes through the real Worker, with ts-mls phones:
 
@@ -161,6 +161,12 @@ Built on the branch, and wired into the chat screens behind the prototype flag.
 - It checks credentials in the group's history (commits it reads, the tree in a Welcome or GroupInfo) against every phone the server has ever admitted to the chat. Phones it adds must be in today's directory. Without the history list, a phone that was offline while someone joined and left could never catch up, and nor could a newcomer whose Welcome predates a departure.
 - If registering its signing key fails, the identity is already saved, so the next `ensureIdentity` retries with the same key.
 - If another phone has already added someone, the server refuses this phone's claim for them. The engine treats that like a lost race: it reads the log and looks again.
+- **A commit whose answer never comes back.**
+  - Before submitting any commit, the engine records it, with the state it would lead to and its epoch.
+  - Every operation starts by settling such records. If the server's epoch hasn't moved, or the log shows someone else's commit at that epoch, the record is dropped and the phone carries on from its old state. If the log shows this phone's own commit, the phone applies everything before it with the old state, then takes up the recorded one.
+  - The state is one blob for every chat, so nothing else may run until this is settled. Taking up an old snapshot later would undo another chat's progress. If the server can't be reached, every operation fails until it can.
+- **A message whose answer never came back** stays pending with its exact bytes. When it shows up in the log as this phone's, with the same `clientId`, it's marked sent. `retryPending` resends any still pending, and the server drops duplicates.
+- **An entry that won't apply.** Applying an entry is deterministic, so if the same entry fails twice, the engine stops retrying. It drops its copy of the group and rejoins by itself with an external commit that replaces its own old leaf. OpenMLS does that by matching the signing key, and the server allows exactly that self-removal. Messages sent between the bad entry and the rejoin stay unreadable on that phone, and nobody else is affected.
 
 It runs on three interfaces:
 - `MlsCrypto`: `nativeCrypto` on the phone, over the OpenMLS module. `tsMlsCrypto` in tests, over ts-mls. Its states are immutable snapshots, so old bytes stay valid, as the engine needs.
@@ -188,6 +194,10 @@ It runs on three interfaces:
   - A send fails on the network and `retryPending` delivers it exactly once.
   - Two phones do the same chore at once.
   - A claim is refused because another phone got there first.
+  - A commit lands but its answer is lost: the phone takes up its state on the next operation.
+  - A commit never reaches the server while another phone takes that epoch: the phone drops it and redoes the chore.
+  - A message lands but its answer is lost: it's marked sent from the log and isn't sent twice.
+  - An entry fails twice: the phone rejoins by itself and reads what follows.
 - Two end-to-end tests run engines with encrypted SQLite stores against the real Worker:
   - A four-person group forms by itself, delivers messages, removes a departed member before the next message, agrees on the security code, and tops key packages back up.
   - A chat waits until both people can do MLS, then a member's new phone joins by itself and reads what follows.
@@ -216,9 +226,7 @@ Tried this way on the emulator:
 
 ### Not done on the phone
 
-- **A commit whose outcome is unknown.** If the network drops after a commit is sent, the engine doesn't know whether it landed. It should keep the new state on the side until the log shows the commit, or shows another one at that epoch. Today it keeps the old state, and if the commit did land, the phone falls out of step and must rejoin.
 - **Being removed.** The engine stops with an error when the log removes this phone. The chat screen needs to show that the person left or was removed.
-- **An entry that won't apply.** If `receive` fails on some log entry, the cursor stays there and every later sync fails at the same place. The plan: after a second failure on the same entry, the phone rejoins by itself with an external commit that removes its own old leaf. The server already allows that self-removal. The skipped messages stay unreadable on that phone. Not built.
 - **Typing and sending states.** A message sent with MLS shows as pending until the engine returns, with no echo over the socket. That's fine on a quick connection and untested on a slow one.
 - **Blocking.** v1 hides a blocked person's messages on the server. MLS delivers everything, as designed above, but the phone doesn't hide a blocked person's MLS messages yet.
 - **Only a direct chat has been tried on the device.** Groups, leaving, and new phones are covered by the engine tests, not by the app on a phone.
@@ -403,21 +411,21 @@ The ordering rule `admit` and the security-code function `codeForRoster` are wor
 
 ## What's left, and roughly how long
 
-One developer who knows the codebase. Done on the branch since the first estimate: the server's header reader, the key package service, the delivery service, the readiness check, external commits with GroupInfo export, the phone's sync engine with its encrypted SQLite store, and the chat screens on MLS behind the flag.
+One developer who knows the codebase. Done on the branch since the first estimate: the server's header reader, the key package service, the delivery service, the readiness check, external commits with GroupInfo export, the phone's sync engine with its encrypted SQLite store, the chat screens on MLS behind the flag, and recovery from lost answers and stuck entries.
 
 | Work | Estimate |
 |---|---|
 | Android build in EAS: install Rust there, or commit the built libraries | 2 to 3 days |
 | Server, still to do: rate-limiting key package claims, and a way for people to retire a lost phone | 1 to 2 days |
 | Rust wrapper: last-resort key packages and per-chat state | 2 to 4 days |
-| Phone: commits with an unknown outcome, rejoining after an entry that won't apply, hiding blocked people's messages, and trying groups on devices | 3 to 5 days |
+| Phone: hiding blocked people's MLS messages, and trying groups, leaving and new phones on devices | 2 to 3 days |
 | Franking for reports | 2 days |
 | Roster security code on the chat info screen | 1 day |
 | Backup v2 and history store | 5 to 7 days |
 | Migration: dormant release, per-chat switch, version gate, mixed timeline | 3 to 5 days |
 | Removing ts-mls and its adapter from the app once the native path covers everything | 1 day |
 | End-to-end tests with two devices, and on a real phone | 4 to 5 days |
-| **Total** | **about 5 to 6 weeks** |
+| **Total** | **about 4 to 5 weeks** |
 
 iOS isn't in this estimate. It would add a Swift module over the same Rust crate.
 

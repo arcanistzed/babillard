@@ -124,10 +124,10 @@ async function commit(state: ClientState, proposals: Proposal[], cs: Ciphersuite
 }
 
 /** Joins from the server's latest GroupInfo with an external commit, with nobody else's help. */
-export async function joinExternally(groupInfo: Uint8Array, device: MlsDevice, cs: CiphersuiteImpl, config: ClientConfig): Promise<CommitOutput> {
+export async function joinExternally(groupInfo: Uint8Array, device: MlsDevice, cs: CiphersuiteImpl, config: ClientConfig, resync = false): Promise<CommitOutput> {
   const message = decodeMlsMessage(groupInfo, 0)?.[0];
   if (message?.wireformat !== "mls_group_info") throw new Error("Not a group info");
-  const result = await joinGroupExternal(message.groupInfo, device.keyPackage, device.privatePackage, false, cs, undefined, config);
+  const result = await joinGroupExternal(message.groupInfo, device.keyPackage, device.privatePackage, resync, cs, undefined, config);
   return {
     state: result.newState,
     commit: encodeMlsMessage({ version: "mls10", wireformat: "mls_public_message", publicMessage: result.publicMessage }),

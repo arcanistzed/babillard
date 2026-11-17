@@ -1,5 +1,5 @@
 import { xchacha20poly1305 } from "@noble/ciphers/chacha.js";
-import type { MlsChange, MlsDeviceRecord, MlsStore, MlsStoredMessage } from "./mlsClient";
+import type { MlsChange, MlsDeviceRecord, MlsPendingCommit, MlsStore, MlsStoredMessage } from "./mlsClient";
 
 /**
  * The sync engine's storage on SQLite, encrypted at rest. The phone runs it on
@@ -48,6 +48,7 @@ const SCHEMA = `
     PRIMARY KEY (conversation_id, id)
   );
   CREATE INDEX IF NOT EXISTS mls_messages_order ON mls_messages (conversation_id, seq);
+  CREATE TABLE IF NOT EXISTS mls_pending_commits (conversation_id TEXT PRIMARY KEY, epoch INTEGER NOT NULL, commit_message BLOB NOT NULL, state BLOB NOT NULL);
 `;
 
 const encoder = new TextEncoder();
@@ -140,12 +141,28 @@ export class SqlMlsStore implements MlsStore {
     }));
   }
 
+  async pendingCommits(): Promise<Record<string, MlsPendingCommit>> {
+    await this.init();
+    const rows = await this.db.all<{ conversation_id: string; epoch: number; commit_message: Uint8Array; state: Uint8Array }>("SELECT * FROM mls_pending_commits", []);
+    return Object.fromEntries(
+      rows.map((row) => [
+        row.conversation_id,
+        { epoch: row.epoch, commit: new Uint8Array(row.commit_message), state: this.open(new Uint8Array(row.state), `mls-pending:${row.conversation_id}`) },
+      ]),
+    );
+  }
+
   async apply(change: MlsChange): Promise<void> {
     await this.init();
     // Seal outside the transaction, so it holds the lock only for the writes.
     const device = change.device;
     const state = device ? this.seal(device.state, `mls-state:${device.deviceId}`) : null;
     const messages = (change.messages ?? []).map((m) => ({ m, text: this.seal(encoder.encode(m.text), `mls-text:${m.conversationId}:${m.id}`) }));
+    const pending = Object.entries(change.pendingCommits ?? {}).map(([conversationId, commit]) => ({
+      conversationId,
+      commit,
+      state: commit ? this.seal(commit.state, `mls-pending:${conversationId}`) : null,
+    }));
     await this.db.transaction(async (tx) => {
       if (device && state) {
         await tx.run("INSERT OR REPLACE INTO mls_device (id, user_id, device_id, registered, signature_key, state) VALUES (1, ?, ?, ?, ?, ?)", [
@@ -155,6 +172,13 @@ export class SqlMlsStore implements MlsStore {
           device.signatureKey,
           state,
         ]);
+      }
+      for (const { conversationId, commit, state: sealed } of pending) {
+        if (commit && sealed) {
+          await tx.run("INSERT OR REPLACE INTO mls_pending_commits (conversation_id, epoch, commit_message, state) VALUES (?, ?, ?, ?)", [conversationId, commit.epoch, commit.commit, sealed]);
+        } else {
+          await tx.run("DELETE FROM mls_pending_commits WHERE conversation_id = ?", [conversationId]);
+        }
       }
       for (const [conversationId, seq] of Object.entries(change.cursors ?? {})) {
         await tx.run("INSERT OR REPLACE INTO mls_cursors (conversation_id, seq) VALUES (?, ?)", [conversationId, seq]);

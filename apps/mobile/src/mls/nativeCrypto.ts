@@ -10,7 +10,9 @@ export const nativeCrypto: MlsCrypto = {
   removeLeaves: (state, conversationId, leafIndexes) => Mls.removeLeaves(state, conversationId, leafIndexes),
   updateKeys: (state, conversationId) => Mls.updateKeys(state, conversationId),
   joinFromWelcome: (state, welcome, trusted) => Mls.joinFromWelcome(state, welcome, trusted),
+  // OpenMLS replaces this phone's old leaf by itself when its signing key is already in the group.
   joinExternal: (state, groupInfo, trusted) => Mls.joinExternal(state, groupInfo, trusted),
+  forgetGroup: (state, conversationId) => Mls.forgetGroup(state, conversationId),
   encrypt: (state, conversationId, plaintext, aad) => Mls.encrypt(state, conversationId, plaintext, aad),
   receive: (state, conversationId, message, trusted) => Mls.receive(state, conversationId, message, trusted),
   async groupStatus(state, conversationId) {

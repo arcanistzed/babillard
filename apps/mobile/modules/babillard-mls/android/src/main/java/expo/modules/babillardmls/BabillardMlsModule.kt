@@ -90,6 +90,10 @@ class BabillardMlsModule : Module() {
       }
     }
 
+    AsyncFunction("forgetGroup") { state: String, groupId: String ->
+      mls { text(uniffi.babillard_mls.forgetGroup(bytes(state), bytes(groupId))) }
+    }
+
     AsyncFunction("joinExternal") { state: String, groupInfo: String, devices: List<Map<String, String>> ->
       mls {
         val joined = uniffi.babillard_mls.joinExternal(bytes(state), bytes(groupInfo), trusted(devices))

@@ -1,6 +1,6 @@
 import { webcrypto } from "node:crypto";
 import { describe, expect, it } from "vitest";
-import { MemoryMlsStore, MlsMessenger, MlsRemovedError, type MlsTransport } from "../src/mlsClient";
+import { MemoryMlsStore, MlsMessenger, MlsRemovedError, type MlsCrypto, type MlsTransport } from "../src/mlsClient";
 import { MemoryMlsServer } from "../src/mlsMemoryServer";
 import { tsMlsCrypto } from "../src/mls/adapter";
 import { mlsCiphersuite } from "../src/mls/provider";
@@ -13,14 +13,16 @@ function world(members: string[]) {
   const server = new MemoryMlsServer();
   server.setMembers(CHAT, members);
   const phones = new Map<string, { messenger: MlsMessenger; store: MemoryMlsStore }>();
-  const phone = (name: string, deviceId = `${name}-phone`, transport?: (base: MlsTransport) => MlsTransport) => {
+  const stores = new Map<string, MemoryMlsStore>();
+  const phone = (name: string, deviceId = `${name}-phone`, transport?: (base: MlsTransport) => MlsTransport, withCrypto: MlsCrypto = crypto) => {
     const store = new MemoryMlsStore();
     const base = server.transportFor(name, deviceId);
-    const messenger = new MlsMessenger(crypto, transport ? transport(base) : base, store, { userId: name, deviceId });
+    const messenger = new MlsMessenger(withCrypto, transport ? transport(base) : base, store, { userId: name, deviceId });
     phones.set(deviceId, { messenger, store });
+    stores.set(deviceId, store);
     return messenger;
   };
-  return { server, phone };
+  return { server, phone, stores };
 }
 
 const texts = async (messenger: MlsMessenger) => (await messenger.sync(CHAT)).map((m) => m.text);
@@ -193,5 +195,127 @@ describe("what the chat screens ask the engine", () => {
     server.retireDevice("bob-phone");
     await alice.send(CHAT, "bye, old phone");
     await expect(bob.sync(CHAT)).rejects.toBeInstanceOf(MlsRemovedError);
+  });
+});
+
+describe("the sync engine when it doesn't know what happened", () => {
+  /** A transport whose next submit of the given kind does or doesn't reach the server, but never answers. */
+  function flaky(kind: "commit" | "application") {
+    const control = { mode: "off" as "off" | "lands" | "lost" };
+    const wrap = (base: MlsTransport): MlsTransport => ({
+      ...base,
+      submit: async (conversationId, body) => {
+        const isCommit = body.groupInfo !== undefined;
+        if (control.mode === "off" || isCommit !== (kind === "commit")) return base.submit(conversationId, body);
+        const mode = control.mode;
+        control.mode = "off";
+        if (mode === "lands") await base.submit(conversationId, body);
+        throw new Error("connection dropped");
+      },
+    });
+    return { control, wrap };
+  }
+
+  async function groupOf(...names: string[]) {
+    const made = world(names);
+    return made;
+  }
+
+  it("adopts a commit that landed although its answer was lost", async () => {
+    const { server, phone, stores } = await groupOf("alice", "bob");
+    const net = flaky("commit");
+    const alice = phone("alice", "alice-phone", net.wrap);
+    const bob = phone("bob");
+    await alice.ensureIdentity();
+    await bob.ensureIdentity();
+    await alice.sync(CHAT);
+    await bob.sync(CHAT);
+
+    server.setMembers(CHAT, ["alice", "bob", "carol"]);
+    const carol = phone("carol");
+    await carol.ensureIdentity();
+    // Alice adds Carol. The server takes the commit, but the answer never reaches Alice.
+    net.control.mode = "lands";
+    await expect(alice.sync(CHAT)).rejects.toThrow("connection dropped");
+    expect(Object.keys(await stores.get("alice-phone")!.pendingCommits())).toEqual([CHAT]);
+
+    // Her next operation finds the commit in the log and takes up the state it led to.
+    await alice.send(CHAT, "hi Carol");
+    expect(await stores.get("alice-phone")!.pendingCommits()).toEqual({});
+    expect(await texts(carol)).toEqual(["hi Carol"]);
+    expect(await texts(bob)).toEqual(["hi Carol"]);
+    expect(await alice.securityCode(CHAT)).toBe(await carol.securityCode(CHAT));
+  });
+
+  it("drops a commit that never reached the server, and does the chore again", async () => {
+    const { server, phone, stores } = await groupOf("alice", "bob");
+    const net = flaky("commit");
+    const alice = phone("alice", "alice-phone", net.wrap);
+    const bob = phone("bob");
+    await alice.ensureIdentity();
+    await bob.ensureIdentity();
+    await alice.sync(CHAT);
+    await bob.sync(CHAT);
+
+    server.setMembers(CHAT, ["alice", "bob", "carol"]);
+    const carol = phone("carol");
+    await carol.ensureIdentity();
+    net.control.mode = "lost";
+    await expect(alice.sync(CHAT)).rejects.toThrow("connection dropped");
+    // Bob adds Carol meanwhile, at the epoch Alice's lost commit was for.
+    await bob.sync(CHAT);
+    await alice.send(CHAT, "hello all");
+    expect(await stores.get("alice-phone")!.pendingCommits()).toEqual({});
+    expect(await texts(carol)).toEqual(["hello all"]);
+    expect(await texts(bob)).toEqual(["hello all"]);
+  });
+
+  it("marks a message sent when it shows up in the log, without sending it twice", async () => {
+    const { phone, stores } = await groupOf("alice", "bob");
+    const net = flaky("application");
+    const alice = phone("alice", "alice-phone", net.wrap);
+    const bob = phone("bob");
+    await alice.ensureIdentity();
+    await bob.ensureIdentity();
+    await alice.sync(CHAT);
+    await bob.sync(CHAT);
+
+    net.control.mode = "lands";
+    await expect(alice.send(CHAT, "did this go?")).rejects.toThrow("connection dropped");
+    expect((await stores.get("alice-phone")!.messages(CHAT)).map((m) => m.status)).toEqual(["pending"]);
+    await alice.sync(CHAT);
+    expect((await stores.get("alice-phone")!.messages(CHAT)).map((m) => [m.text, m.status])).toEqual([["did this go?", "sent"]]);
+    await alice.retryPending(CHAT);
+    expect(await texts(bob)).toEqual(["did this go?"]);
+  });
+
+  it("rejoins by itself when an entry fails twice", async () => {
+    const { server, phone } = await groupOf("alice", "bob");
+    // Bob's phone can't apply one particular message, however often it tries.
+    const brokenForBob: MlsCrypto = {
+      ...crypto,
+      receive: async (...args) => {
+        const result = await crypto.receive(...args);
+        if (result.kind === "application" && new TextDecoder().decode(result.plaintext) === "garbled") throw new Error("can't apply");
+        return result;
+      },
+    };
+    const alice = phone("alice");
+    const bob = phone("bob", "bob-phone", undefined, brokenForBob);
+    await alice.ensureIdentity();
+    await bob.ensureIdentity();
+    await alice.sync(CHAT);
+    await bob.sync(CHAT);
+
+    await alice.send(CHAT, "garbled");
+    await expect(bob.sync(CHAT)).rejects.toThrow("can't apply");
+    // The second failure on the same entry makes Bob's phone rejoin, replacing its old leaf.
+    await bob.sync(CHAT);
+    const state = await server.transportFor("bob", "bob-phone").groupState(CHAT);
+    expect(state.roster.map((entry) => entry.deviceId).sort()).toEqual(["alice-phone", "bob-phone"]);
+
+    await alice.send(CHAT, "can you read this?");
+    expect(await texts(bob)).toEqual(["can you read this?"]);
+    expect(await alice.securityCode(CHAT)).toBe(await bob.securityCode(CHAT));
   });
 });

@@ -35,6 +35,7 @@ interface NativeModule {
   updateKeys(state: string, groupId: string): Promise<{ state: string; commit: string; groupInfo: string }>;
   removeLeaves(state: string, groupId: string, leafIndexes: number[]): Promise<{ state: string; commit: string; groupInfo: string }>;
   joinExternal(state: string, groupInfo: string, trusted: Encoded<TrustedDevice>[]): Promise<{ state: string; groupId: string; commit: string; groupInfo: string }>;
+  forgetGroup(state: string, groupId: string): Promise<string>;
   joinFromWelcome(state: string, welcome: string, trusted: Encoded<TrustedDevice>[]): Promise<{ state: string; groupId: string }>;
   encrypt(state: string, groupId: string, plaintext: string, aad: string): Promise<{ state: string; message: string }>;
   receive(state: string, groupId: string, message: string, trusted: Encoded<TrustedDevice>[]): Promise<Record<string, string | boolean>>;
@@ -93,6 +94,11 @@ export async function removeLeaves(state: Uint8Array, conversationId: string, le
 export async function updateKeys(state: Uint8Array, conversationId: string) {
   const output = await module().updateKeys(toBase64(state), toBase64(encoder.encode(conversationId)));
   return { state: fromBase64(output.state), commit: fromBase64(output.commit), groupInfo: fromBase64(output.groupInfo) };
+}
+
+/** Drops this phone's copy of a chat's group, before rejoining it. */
+export async function forgetGroup(state: Uint8Array, conversationId: string): Promise<Uint8Array> {
+  return fromBase64(await module().forgetGroup(toBase64(state), toBase64(encoder.encode(conversationId))));
 }
 
 /** Joins a chat by itself from the server's latest GroupInfo. Submit `commit` with `groupInfo`, like any commit. */

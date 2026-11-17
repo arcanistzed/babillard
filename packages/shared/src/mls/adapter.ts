@@ -102,9 +102,15 @@ export function tsMlsCrypto(cs: CiphersuiteImpl): MlsCrypto {
       }
       throw new Error("No key package matches this Welcome");
     },
-    async joinExternal(state, groupInfo, trusted) {
+    async forgetGroup(state, conversationId) {
       const snapshot = load(state);
-      const output = await joinExternally(groupInfo, identity(snapshot), cs, configFor(trusted));
+      const groups = new Map(snapshot.groups);
+      groups.delete(conversationId);
+      return save({ packages: snapshot.packages, groups });
+    },
+    async joinExternal(state, groupInfo, trusted, rejoin) {
+      const snapshot = load(state);
+      const output = await joinExternally(groupInfo, identity(snapshot), cs, configFor(trusted), rejoin === true);
       const conversationId = conversationOf(output.state);
       return { ...output, state: withGroup(snapshot, conversationId, output.state), conversationId };
     },

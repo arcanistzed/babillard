@@ -50,7 +50,10 @@ export interface MlsCrypto {
   removeLeaves(state: Uint8Array, conversationId: string, leafIndexes: number[]): Promise<MlsCommit>;
   updateKeys(state: Uint8Array, conversationId: string): Promise<MlsCommit>;
   joinFromWelcome(state: Uint8Array, welcome: Uint8Array, trusted: TrustedDevice[]): Promise<{ state: Uint8Array; conversationId: string }>;
-  joinExternal(state: Uint8Array, groupInfo: Uint8Array, trusted: TrustedDevice[]): Promise<MlsCommit & { conversationId: string }>;
+  /** `rejoin` says this phone is already in the group and wants its old leaf replaced. OpenMLS works that out by itself. */
+  joinExternal(state: Uint8Array, groupInfo: Uint8Array, trusted: TrustedDevice[], rejoin?: boolean): Promise<MlsCommit & { conversationId: string }>;
+  /** Drops this phone's copy of a group, before rejoining it. */
+  forgetGroup(state: Uint8Array, conversationId: string): Promise<Uint8Array>;
   encrypt(state: Uint8Array, conversationId: string, plaintext: Uint8Array, aad: Uint8Array): Promise<{ state: Uint8Array; message: Uint8Array }>;
   receive(state: Uint8Array, conversationId: string, message: Uint8Array, trusted: TrustedDevice[]): Promise<MlsReceived>;
   /** Null if this phone has no group for the chat. */
@@ -96,9 +99,21 @@ export interface MlsDeviceRecord {
   registered: boolean;
 }
 
+/**
+ * A commit sent to the server with no answer back, so the phone doesn't know whether it landed.
+ * Kept with the state it would lead to, until the log says.
+ */
+export interface MlsPendingCommit {
+  epoch: number;
+  commit: Uint8Array;
+  state: Uint8Array;
+}
+
 /** Everything one step changes. A store applies it all or nothing. */
 export interface MlsChange {
   device?: MlsDeviceRecord;
+  /** Set to record a commit in flight, or null to clear it. */
+  pendingCommits?: Record<string, MlsPendingCommit | null>;
   cursors?: Record<string, number>;
   messages?: MlsStoredMessage[];
   /** Local message IDs to delete, when a pending message is replaced by its sent copy. */
@@ -109,6 +124,7 @@ export interface MlsStore {
   loadDevice(): Promise<MlsDeviceRecord | null>;
   cursor(conversationId: string): Promise<number>;
   messages(conversationId: string): Promise<MlsStoredMessage[]>;
+  pendingCommits(): Promise<Record<string, MlsPendingCommit>>;
   apply(change: MlsChange): Promise<void>;
 }
 
@@ -159,9 +175,20 @@ export class MlsMessenger {
     private readonly newClientId: () => string = () => `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 10)}`,
   ) {}
 
-  /** Runs one operation after the last one finishes, whether or not it succeeded. */
+  /** Entries that failed once. A second failure on the same one makes the phone rejoin the group. */
+  private readonly failedOnce = new Set<string>();
+
+  /**
+   * Runs one operation after the last one finishes, whether or not it succeeded. Each starts by
+   * settling commits whose outcome is unknown. The state is one blob for every chat, so no other
+   * chat may move on until those are settled: adopting a saved state later would undo its progress.
+   */
   private serial<T>(operation: () => Promise<T>): Promise<T> {
-    const result = this.queue.then(operation, operation);
+    const run = async () => {
+      await this.settleCommits();
+      return operation();
+    };
+    const result = this.queue.then(run, run);
     this.queue = result.catch(() => undefined);
     return result;
   }
@@ -266,16 +293,63 @@ export class MlsMessenger {
     return sent;
   }
 
-  /** Submits a commit and adopts its state only if the server takes it. */
-  private async commit(conversationId: string, output: MlsCommit): Promise<SubmitResult> {
+  /**
+   * Submits a commit made at `epoch`, and adopts its state only if the server takes it. If no answer
+   * comes back, the commit stays recorded, and the next operation settles it from the log.
+   */
+  private async commit(conversationId: string, output: MlsCommit, epoch: number): Promise<SubmitResult> {
+    await this.store.apply({ pendingCommits: { [conversationId]: { epoch, commit: output.commit, state: output.state } } });
     const result = await this.transport.submit(conversationId, {
       deviceId: this.me.deviceId,
       message: output.commit,
       groupInfo: output.groupInfo,
       ...(output.welcome ? { welcome: output.welcome } : {}),
     });
-    if (result.ok) await this.saveState(output.state, { cursors: { [conversationId]: result.entry.seq } });
+    if (result.ok) await this.saveState(output.state, { cursors: { [conversationId]: result.entry.seq }, pendingCommits: { [conversationId]: null } });
+    else await this.store.apply({ pendingCommits: { [conversationId]: null } });
     return result;
+  }
+
+  /** Works out from the log whether each commit in flight landed, and adopts its state if it did. */
+  private async settleCommits(): Promise<void> {
+    for (const [conversationId, pending] of Object.entries(await this.store.pendingCommits())) {
+      const server = await this.transport.groupState(conversationId);
+      let landed: MlsLogEntry | undefined;
+      if (server.epoch > pending.epoch) {
+        // Exactly one commit was accepted at that epoch. Was it this one?
+        let cursor = await this.store.cursor(conversationId);
+        for (;;) {
+          const entries = await this.transport.log(conversationId, cursor);
+          if (!entries.length) break;
+          landed = entries.find((entry) => entry.kind === "commit" && entry.epoch === pending.epoch);
+          if (landed) break;
+          cursor = entries.at(-1)!.seq;
+        }
+        if (landed && (landed.deviceId !== this.me.deviceId || landed.message !== toBase64(pending.commit))) landed = undefined;
+      }
+      if (!landed) {
+        // It never landed, or someone else's commit took that epoch. Carry on from the old state.
+        await this.store.apply({ pendingCommits: { [conversationId]: null } });
+        continue;
+      }
+      // It landed. Entries before it were sent at the old epoch, so read them with the old state first.
+      await this.catchUp(conversationId, trustedEver(server), landed.seq);
+      await this.saveState(pending.state, { cursors: { [conversationId]: landed.seq }, pendingCommits: { [conversationId]: null } });
+    }
+  }
+
+  /**
+   * Drops this phone's copy of a group and joins again by itself, replacing its old leaf. For when an
+   * entry in the log can't be applied. What was sent in between stays unreadable on this phone.
+   */
+  private async rejoin(conversationId: string): Promise<void> {
+    const server = await this.transport.groupState(conversationId);
+    const groupInfo = await this.transport.groupInfo(conversationId);
+    if (!groupInfo) throw new MlsSyncError("Can't rejoin: the server has no GroupInfo");
+    const forgotten = await this.crypto.forgetGroup((await this.device()).state, conversationId);
+    const joined = await this.crypto.joinExternal(forgotten, groupInfo, trustedEver(server), true);
+    const result = await this.commit(conversationId, joined, server.epoch);
+    if (!result.ok) throw new MlsSyncError(`Rejoin refused: ${result.error}`);
   }
 
   private async syncLocked(conversationId: string): Promise<MlsStoredMessage[]> {
@@ -308,7 +382,7 @@ export class MlsMessenger {
       // other phones are added in the next commit, by the chores below.
       const created = await this.crypto.createGroup(state, conversationId);
       const output = await this.crypto.updateKeys(created, conversationId);
-      const result = await this.commit(conversationId, output);
+      const result = await this.commit(conversationId, output, server.epoch);
       if (result.ok) return "joined";
       if (result.error === "not_ready") return "wait"; // Someone can't do MLS yet. The chat stays on v1.
       if (result.error === "stale_epoch") return "retry"; // Someone else made it first.
@@ -325,28 +399,46 @@ export class MlsMessenger {
     const groupInfo = await this.transport.groupInfo(conversationId);
     if (!groupInfo) return "wait";
     const joined = await this.crypto.joinExternal(state, groupInfo, trusted);
-    const result = await this.commit(conversationId, joined);
+    const result = await this.commit(conversationId, joined, server.epoch);
     if (result.ok) return "joined";
     if (result.error === "stale_epoch") return "retry";
     throw new MlsSyncError(result.error);
   }
 
-  /** Applies the log from this phone's cursor, saving state, cursor, and text together for each entry. */
-  private async catchUp(conversationId: string, trusted: TrustedDevice[]): Promise<MlsStoredMessage[]> {
+  /**
+   * Applies the log from this phone's cursor, saving state, cursor, and text together for each
+   * entry. Stops before `until` if given.
+   */
+  private async catchUp(conversationId: string, trusted: TrustedDevice[], until = Infinity): Promise<MlsStoredMessage[]> {
     const received: MlsStoredMessage[] = [];
     let cursor = await this.store.cursor(conversationId);
     for (;;) {
-      const entries = await this.transport.log(conversationId, cursor);
+      const entries = (await this.transport.log(conversationId, cursor)).filter((entry) => entry.seq < until);
       if (!entries.length) return received;
       for (const entry of entries) {
         cursor = entry.seq;
         if (entry.deviceId === this.me.deviceId) {
-          // This phone's own entry, applied when it was sent.
+          // This phone's own entry, applied when it was sent. A message whose send went unanswered is marked sent now.
+          const pending = entry.clientId ? (await this.store.messages(conversationId)).find((m) => m.status === "pending" && m.clientId === entry.clientId) : undefined;
+          if (pending) await this.markSent(pending, entry);
           await this.store.apply({ cursors: { [conversationId]: cursor } });
           continue;
         }
         const state = (await this.device()).state;
-        const result = await this.crypto.receive(state, conversationId, fromBase64(entry.message), trusted);
+        let result: MlsReceived;
+        try {
+          result = await this.crypto.receive(state, conversationId, fromBase64(entry.message), trusted);
+        } catch (error) {
+          // Applying an entry is deterministic, so failing twice means it will never work. Start over in this chat.
+          const key = `${conversationId}/${entry.seq}`;
+          if (!this.failedOnce.has(key)) {
+            this.failedOnce.add(key);
+            throw error;
+          }
+          this.failedOnce.delete(key);
+          await this.rejoin(conversationId);
+          return received;
+        }
         if (result.kind === "commit") {
           await this.saveState(result.state, { cursors: { [conversationId]: cursor } });
           if (result.removedMe) throw new MlsRemovedError("This phone was removed from the chat");
@@ -377,7 +469,7 @@ export class MlsMessenger {
     if (server.pendingRemovals.length) {
       const state = (await this.device()).state;
       const output = await this.crypto.removeLeaves(state, conversationId, server.pendingRemovals.map((entry) => entry.leafIndex));
-      const result = await this.commit(conversationId, output);
+      const result = await this.commit(conversationId, output, server.epoch);
       if (!result.ok) {
         if (result.error === "stale_epoch") return "retry";
         throw new MlsSyncError(result.error);
@@ -396,7 +488,8 @@ export class MlsMessenger {
       if (packages.length) {
         const state = (await this.device()).state;
         const output = await this.crypto.addMembers(state, conversationId, packages.map((p) => p.keyPackage), trusted);
-        const result = await this.commit(conversationId, output);
+        // The removal above, if any, moved the epoch on by one.
+        const result = await this.commit(conversationId, output, server.epoch + (server.pendingRemovals.length ? 1 : 0));
         if (!result.ok) {
           if (result.error === "stale_epoch") return "retry";
           throw new MlsSyncError(result.error);
@@ -435,6 +528,11 @@ export class MemoryMlsStore implements MlsStore {
   private device: MlsDeviceRecord | null = null;
   private readonly cursors = new Map<string, number>();
   private readonly stored = new Map<string, MlsStoredMessage>();
+  private readonly pending = new Map<string, MlsPendingCommit>();
+
+  async pendingCommits() {
+    return Object.fromEntries(this.pending);
+  }
 
   async loadDevice() {
     return this.device;
@@ -448,6 +546,10 @@ export class MemoryMlsStore implements MlsStore {
   async apply(change: MlsChange) {
     if (change.device) this.device = change.device;
     for (const [id, cursor] of Object.entries(change.cursors ?? {})) this.cursors.set(id, cursor);
+    for (const [id, commit] of Object.entries(change.pendingCommits ?? {})) {
+      if (commit) this.pending.set(id, commit);
+      else this.pending.delete(id);
+    }
     for (const message of change.deleteMessages ?? []) this.stored.delete(`${message.conversationId}/${message.id}`);
     for (const message of change.messages ?? []) this.stored.set(`${message.conversationId}/${message.id}`, message);
   }

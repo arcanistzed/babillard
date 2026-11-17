@@ -293,6 +293,14 @@ fn server_fixture() {
     }
     fixture_step(&mut steps, "erin", 4, "commit", &joined.commit, None, Some(&joined.group_info), roster_json(&erin));
 
+    // Bob's phone drops its copy and rejoins by itself, replacing its own old leaf.
+    let rejoined = join_external(forget_group(bob.state.clone(), GROUP.to_vec()).unwrap(), joined.group_info.clone(), trusted.clone()).unwrap();
+    bob.state = rejoined.state;
+    for member in [&mut alice, &mut dave, &mut erin] {
+        read(member, &rejoined.commit, &trusted).unwrap();
+    }
+    fixture_step(&mut steps, "bob", 5, "commit", &rejoined.commit, None, Some(&rejoined.group_info), roster_json(&bob));
+
     let sent = encrypt(alice.state.clone(), GROUP.to_vec(), b"hello".to_vec(), b"commitment".to_vec()).unwrap();
     alice.state = sent.state;
     match read(&mut dave, &sent.message, &trusted).unwrap() {
@@ -300,7 +308,8 @@ fn server_fixture() {
         Received::Commit { .. } => panic!("expected a message"),
     }
     assert_eq!(text(read(&mut erin, &sent.message, &trusted).unwrap()).0, "hello");
-    fixture_step(&mut steps, "alice", 5, "application", &sent.message, None, None, roster_json(&alice));
+    assert_eq!(text(read(&mut bob, &sent.message, &trusted).unwrap()).0, "hello");
+    fixture_step(&mut steps, "alice", 6, "application", &sent.message, None, None, roster_json(&alice));
 
     let Ok(path) = std::env::var("BABILLARD_MLS_FIXTURE") else { return };
     let devices: Vec<String> = [&alice, &bob, &carol, &dave, &erin]
@@ -358,4 +367,25 @@ fn removing_by_leaf_matches_removing_by_user() {
     assert_eq!(roster_of(&alice), roster_of(&bob));
     assert_eq!(roster_of(&alice).len(), 2);
     assert!(remove_leaves(alice.state.clone(), GROUP.to_vec(), vec![]).is_err());
+}
+
+#[test]
+fn a_phone_that_forgets_a_group_rejoins_in_its_own_place() {
+    let (mut alice, mut bob) = (phone("alice"), phone("bob"));
+    let trusted = trust(&[&alice, &bob]);
+    form(&mut alice, &mut [&mut bob], &trusted);
+    let latest = update_keys(alice.state.clone(), GROUP.to_vec()).unwrap();
+    alice.state = latest.state;
+    read(&mut bob, &latest.commit, &trusted).unwrap();
+
+    // Bob's phone drops its copy and joins again from the GroupInfo. OpenMLS removes his old leaf in the same commit.
+    let forgotten = forget_group(bob.state.clone(), GROUP.to_vec()).unwrap();
+    assert!(group_status(forgotten.clone(), GROUP.to_vec()).is_err());
+    let rejoined = join_external(forgotten, latest.group_info, trusted.clone()).unwrap();
+    bob.state = rejoined.state;
+    read(&mut alice, &rejoined.commit, &trusted).unwrap();
+    assert_eq!(roster_of(&alice).len(), 2);
+    assert_eq!(roster_of(&alice), roster_of(&bob));
+    let hello = send(&mut alice, "welcome back");
+    assert_eq!(text(read(&mut bob, &hello, &trusted).unwrap()).0, "welcome back");
 }

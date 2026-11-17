@@ -386,6 +386,15 @@ pub fn remove_leaves(state: Vec<u8>, group_id: Vec<u8>, leaf_indexes: Vec<u32>) 
     device.commit_output(&group, commit, welcome)
 }
 
+/// Drops this phone's copy of a group, so it can rejoin from the GroupInfo after an entry it can't apply.
+#[uniffi::export]
+pub fn forget_group(state: Vec<u8>, group_id: Vec<u8>) -> Result<Vec<u8>> {
+    let device = Device::load(&state)?;
+    let mut group = device.group(&group_id)?;
+    group.delete(device.provider.storage()).map_err(fail)?;
+    device.save()
+}
+
 /// Joins a group by itself, from the server's latest GroupInfo, with an external commit. Nobody else
 /// needs to be online. If this phone was already in the group but lost its state, OpenMLS removes the
 /// old leaf in the same commit. Every member already in the group is checked first.
