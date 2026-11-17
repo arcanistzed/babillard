@@ -6,7 +6,7 @@ import type { PushData } from "@babillard/shared";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { useFonts } from "expo-font";
 import * as Notifications from "expo-notifications";
-import { Stack, router, useSegments, type ErrorBoundaryProps } from "expo-router";
+import { Stack, router, usePathname, useSegments, type ErrorBoundaryProps } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
 import { StatusBar } from "expo-status-bar";
 import { useEffect } from "react";
@@ -16,6 +16,7 @@ import { AuthProvider, useAuth } from "@/auth";
 import { UpdateRequired, useAppUpdate, useUpdateOffer } from "@/components/AppUpdate";
 import { Unreachable } from "@/components/Unreachable";
 import { installCrashReporter, reportCrash } from "@/crashReporter";
+import { keepLink, takeLink } from "@/pendingLink";
 import { fonts, useTheme } from "@/theme";
 import { Button, T } from "@/ui";
 import { t } from "@/i18n";
@@ -49,12 +50,15 @@ const SIGNED_OUT_ROUTES = new Set(["sign-in", "check-inbox", "auth"]);
 function useRouteGuard() {
   const { ready, me, unreachable } = useAuth();
   const segments = useSegments();
+  const pathname = usePathname();
 
   useEffect(() => {
     // A session that couldn't be checked is still a session, so it never goes to sign-in.
     if (!ready || unreachable) return;
     const first = segments[0] as string | undefined;
     const inSignedOutRoute = first !== undefined && SIGNED_OUT_ROUTES.has(first);
+    // A topic link waits for someone to sign in and finish setting up.
+    if (!me?.onboarded || !me.termsAccepted) keepLink(pathname);
     if (!me) {
       if (!inSignedOutRoute) router.replace("/sign-in");
     } else if (!me.onboarded) {
@@ -62,9 +66,9 @@ function useRouteGuard() {
     } else if (!me.termsAccepted) {
       if (first !== "agree") router.replace("/agree");
     } else if (inSignedOutRoute || first === "onboard" || first === "agree" || first === undefined) {
-      router.replace("/deck");
+      router.replace(takeLink() ?? "/deck");
     }
-  }, [ready, me, unreachable, segments]);
+  }, [ready, me, unreachable, segments, pathname]);
 }
 
 function usePushRouting() {
@@ -118,6 +122,8 @@ function Navigator() {
         <Stack.Screen name="key-backup" options={{ title: t("Back up messages", "Sauvegarder les messages") }} />
         <Stack.Screen name="blocked" options={{ title: t("Blocked people", "Personnes bloquées") }} />
         <Stack.Screen name="topics" options={{ title: t("Your topics", "Vos sujets") }} />
+        <Stack.Screen name="t/[id]" options={{ title: t("Topic", "Sujet") }} />
+        <Stack.Screen name="invite" options={{ headerShown: false }} />
         <Stack.Screen name="profile-edit" options={{ title: t("Edit profile", "Modifier le profil") }} />
       </Stack>
       {ready && unreachable && !me ? <Unreachable /> : null}
