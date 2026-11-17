@@ -48,7 +48,7 @@ async function nudgeMatches(env: Env, db: Db, now: number): Promise<number> {
 
     const [topic] = match.topicId ? await db.select().from(schema.topics).where(eq(schema.topics.id, match.topicId)) : [];
     const opener = pickBilingualOpener(topic);
-    await env.CHAT_ROOM.getByName(match.conversationId).postSystem(match.conversationId, `Still curious? ${opener.en}`, { fr: `Encore envie d'en parler? ${opener.fr}` });
+    await env.CHAT_ROOM.getByName(match.conversationId).postSystem(match.conversationId, `Still curious? ${opener.en}`, { fr: `Encore envie d'en parler? ${opener.fr}`, unread: true });
     await sendPush(env, [match.userA, match.userB], {
       title: "Your match is about to expire",
       body: `Two days left to say hi. ${opener.en}`,
@@ -205,7 +205,7 @@ async function cancelStaleProposals(env: Env, db: Db, now: number): Promise<numb
       fr: `La rencontre est annulée (${where.fr}): il n'y avait pas assez de oui à l'heure prévue.`,
     };
     const stub = env.CHAT_ROOM.getByName(meetup.conversationId);
-    await stub.postSystem(meetup.conversationId, body.en, { fr: body.fr, kind: "meetup", meetupId: meetup.id });
+    await stub.postSystem(meetup.conversationId, body.en, { fr: body.fr, kind: "meetup", meetupId: meetup.id, unread: true });
     await stub.notifyMeetupChanged(meetup.id);
     // The body carries the proposer's venue note.
     await sendPush(env, await withoutBlocksWithAny(db, await responders(db, meetup, ["yes", "maybe"]), [meetup.proposedBy]), {
@@ -276,6 +276,7 @@ async function continueSeries(env: Env, db: Db, now: number): Promise<number> {
         fr: weekly ? "La rencontre de la semaine prochaine est proposée, même heure et même lieu. Vous venez?" : "La rencontre dans deux semaines est proposée, même heure et même lieu. Vous venez?",
         kind: "meetup",
         meetupId: nextId,
+        unread: true,
       },
     );
     await sendPush(env, members.map((member) => member.id), {

@@ -136,6 +136,8 @@ meetups.post("/", async (c) => {
     kind: "meetup",
     meetupId: meetup.id,
     actorId: user.id,
+    unread: true,
+    unreadExcept: [user.id],
   });
   const others = await withoutBlocksWith(db, user.id, (await memberIds(db, conversationId)).filter((id) => id !== user.id));
   c.executionCtx.waitUntil(
@@ -191,7 +193,7 @@ meetups.post("/:id/respond", async (c) => {
     const [profile] = await db.select({ name: schema.profiles.displayName }).from(schema.profiles).where(eq(schema.profiles.userId, user.id));
     backout = { userId: user.id, name: { en: profile?.name ?? "Someone", fr: profile?.name ?? "Quelqu'un" }, response, yesAt: previous.respondedAt };
   }
-  await settleMeetup(c.env, db, meetup, conversation.kind, { now, backout, waitUntil: (promise) => c.executionCtx.waitUntil(promise) });
+  await settleMeetup(c.env, db, meetup, conversation.kind, { now, backout, causedBy: user.id, waitUntil: (promise) => c.executionCtx.waitUntil(promise) });
   const stub = c.env.CHAT_ROOM.getByName(meetup.conversationId);
   await stub.notifyMeetupChanged(meetup.id);
 
@@ -306,7 +308,7 @@ meetups.post("/:id/cancel", async (c) => {
 
   await db.update(schema.meetups).set({ state: "cancelled" }).where(eq(schema.meetups.id, meetup.id));
   const stub = c.env.CHAT_ROOM.getByName(meetup.conversationId);
-  await stub.postSystem(meetup.conversationId, "The meetup was cancelled.", { fr: "La rencontre a été annulée.", kind: "meetup", meetupId: meetup.id });
+  await stub.postSystem(meetup.conversationId, "The meetup was cancelled.", { fr: "La rencontre a été annulée.", kind: "meetup", meetupId: meetup.id, unread: true, unreadExcept: [user.id] });
   await stub.notifyMeetupChanged(meetup.id);
   const [fresh] = await db.select().from(schema.meetups).where(eq(schema.meetups.id, meetup.id));
   return c.json(await summaryFor(c.env, db, fresh!, conversation.kind, user.id));

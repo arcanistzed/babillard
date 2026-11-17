@@ -709,7 +709,8 @@ describe("chat", () => {
     expect(pushes[0]?.userIds).toEqual([b.id]);
 
     const item = (await b.get("/conversations")).find((c: any) => c.id === conversationId);
-    expect(item.unreadCount).toBe(1);
+    // The new match counts too.
+    expect(item.unreadCount).toBe(2);
     expect(item.lastMessagePreview).toBeNull();
     expect(openMessage({ envelope: item.lastMessageEnvelope, conversationId, senderId: a.id, me: b.device })?.text).toBe("are you there");
     expect(item.expiresAt).toBeNull();
@@ -1141,6 +1142,37 @@ describe("meetups", () => {
     expect((await meetupMessages(p0, groupId, meetup.id)).at(-1).body).toBe(`Person ${counter - 2} can't make it anymore. The meetup at Blue Door, Main St isn't confirmed anymore: 2 more yeses are needed.`);
   });
 
+  it("counts new chats and meetup news as unread, but not someone's own actions", async () => {
+    const unread = async (client: Client, conversationId: string) => (await client.get("/conversations")).find((item: any) => item.id === conversationId).unreadCount;
+    const a = await person("new-york");
+    const b = await person("new-york");
+    const conversationId = await match(a, b, "constitutional-law");
+    // The new match counts for both people.
+    expect([await unread(a, conversationId), await unread(b, conversationId)]).toEqual([1, 1]);
+    for (const client of [a, b]) await client.post(`/conversations/${conversationId}/read`);
+
+    // A proposal counts for the other person, not the one who proposed.
+    const meetup = await a.post(`/meetups?conversationId=${conversationId}`, proposal());
+    expect([await unread(a, conversationId), await unread(b, conversationId)]).toEqual([0, 1]);
+    await b.post(`/conversations/${conversationId}/read`);
+
+    // The confirmation counts for the proposer, not the person whose yes confirmed it.
+    expect((await b.post(`/meetups/${meetup.id}/respond`, { response: "yes" })).state).toBe("confirmed");
+    expect([await unread(a, conversationId), await unread(b, conversationId)]).toEqual([1, 0]);
+    await a.post(`/conversations/${conversationId}/read`);
+
+    // A cancellation counts for everyone but the person who cancelled.
+    await a.post(`/meetups/${meetup.id}/cancel`);
+    expect([await unread(a, conversationId), await unread(b, conversationId)]).toEqual([0, 1]);
+
+    // A new group counts for everyone in it. People joining or leaving don't.
+    const { people, groupId } = await groupOf(3, "international-law");
+    const [p0, p1, p2] = people as [Client, Client, Client];
+    expect(await Promise.all(people.map((client) => unread(client, groupId)))).toEqual([1, 1, 1]);
+    await p2.post(`/conversations/${groupId}/leave`);
+    expect([await unread(p0, groupId), await unread(p1, groupId)]).toEqual([1, 1]);
+  });
+
   it("leaves a meetup alone once a block closes the one-on-one chat", async () => {
     const a = await person("new-york");
     const b = await person("new-york");
@@ -1383,6 +1415,7 @@ describe("safety", () => {
     let groupId: string | null = null;
     for (const client of people) groupId = (await client.post("/deck/topics/open-source-communities/swipe", { direction: "right" })).groupConversationId ?? groupId;
     const [a, b, c] = people;
+    for (const client of people) await client.post(`/conversations/${groupId}/read`);
     await a!.post(`/safety/blocks/${b!.id}`);
     await b!.say(groupId!, "visible to some");
 
@@ -1396,6 +1429,7 @@ describe("safety", () => {
     const [b, c, d] = [await person("san-francisco"), await person("san-francisco"), await person("san-francisco")];
     let groupId: string | null = null;
     for (const client of [a, b, c, d]) groupId = (await client.post("/deck/topics/philosophy-of-mind/swipe", { direction: "right" })).groupConversationId ?? groupId;
+    for (const client of [a, b, c, d]) await client.post(`/conversations/${groupId}/read`);
     const [aSocket, bSocket, cSocket] = [await openSocket(a, groupId!), await openSocket(b, groupId!), await openSocket(c, groupId!)];
 
     const blocked = await a.post(`/safety/blocks/${b.id}`);

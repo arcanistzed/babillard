@@ -223,21 +223,41 @@ export class ChatRoom extends DurableObject<Env> {
    * `actorId` names the person whose action this reports. A meetup message without one is about
    * whoever proposed the meetup. People with a block either way with the actor aren't sent it,
    * so a blocked person can't reach the blocker through a meetup's free-text note.
+   *
+   * Most app messages don't count as unread. `unread` makes one count, for everyone except `unreadExcept`, usually whoever
+   * caused it, and anyone it's hidden from. The first message in a chat always counts, since it announces a new match or group.
    */
-  async postSystem(conversationId: string, body: string, options: { fr?: string; kind?: "system" | "meetup"; meetupId?: string; actorId?: string } = {}): Promise<ChatMessage> {
+  async postSystem(
+    conversationId: string,
+    body: string,
+    options: { fr?: string; kind?: "system" | "meetup"; meetupId?: string; actorId?: string; unread?: boolean; unreadExcept?: (string | null | undefined)[] } = {},
+  ): Promise<ChatMessage> {
     const db = getDb(this.env);
     let actorId = options.actorId ?? null;
     if (!actorId && options.meetupId) {
       const [meetup] = await db.select({ proposedBy: schema.meetups.proposedBy }).from(schema.meetups).where(eq(schema.meetups.id, options.meetupId));
       actorId = meetup?.proposedBy ?? null;
     }
+    const first = this.ctx.storage.sql.exec("SELECT 1 FROM messages LIMIT 1").toArray().length === 0;
     const message = this.insert({ senderId: null, actorId, body, bodyFr: options.fr ?? null, kind: options.kind ?? "system", meetupId: options.meetupId ?? null, clientId: null });
-    this.broadcast({ type: "message", message }, actorId ? await blockedWith(db, actorId) : undefined);
-    await db
-      .update(schema.conversations)
-      // The actor goes in as the sender, so the inbox hides this preview from anyone with a block with them.
-      .set({ lastMessagePreview: body.slice(0, PREVIEW_LENGTH), lastMessagePreviewFr: options.fr?.slice(0, PREVIEW_LENGTH) ?? null, lastMessageEnvelope: null, lastMessageSenderId: actorId, lastMessageAt: message.createdAt })
-      .where(eq(schema.conversations.id, conversationId));
+    const hiddenFrom = actorId ? await blockedWith(db, actorId) : new Set<string>();
+    this.broadcast({ type: "message", message }, hiddenFrom);
+    const skipped = [...hiddenFrom, ...(options.unreadExcept ?? []).filter((id): id is string => Boolean(id))];
+    await db.batch([
+      db
+        .update(schema.conversations)
+        // The actor goes in as the sender, so the inbox hides this preview from anyone with a block with them.
+        .set({ lastMessagePreview: body.slice(0, PREVIEW_LENGTH), lastMessagePreviewFr: options.fr?.slice(0, PREVIEW_LENGTH) ?? null, lastMessageEnvelope: null, lastMessageSenderId: actorId, lastMessageAt: message.createdAt })
+        .where(eq(schema.conversations.id, conversationId)),
+      ...(options.unread || first
+        ? [
+            db
+              .update(schema.conversationMembers)
+              .set({ unreadCount: sql`${schema.conversationMembers.unreadCount} + 1` })
+              .where(and(eq(schema.conversationMembers.conversationId, conversationId), skipped.length ? notInArray(schema.conversationMembers.userId, skipped) : undefined)),
+          ]
+        : []),
+    ]);
     return message;
   }
 
