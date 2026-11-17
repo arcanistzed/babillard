@@ -1,4 +1,4 @@
-import { ActivityIndicator, Keyboard, KeyboardAvoidingView, Pressable, ScrollView, StyleSheet, Text, TextInput, View, type PressableProps, type StyleProp, type TextInputProps, type TextProps, type TextStyle, type ViewStyle } from "react-native";
+import { ActivityIndicator, Keyboard, KeyboardAvoidingView, Pressable, ScrollView, StyleSheet, Text, TextInput, View, type PressableProps, type StyleProp, type TextInputProps, type TextProps, type TextStyle, type ViewProps, type ViewStyle } from "react-native";
 import { HeaderHeightContext } from "expo-router/react-navigation";
 import { useContext, useEffect, useState, type ReactNode } from "react";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -70,33 +70,56 @@ export function Button({ label, kind = "primary", busy, disabled, style, textCol
   );
 }
 
-export function Chip({ label, selected, onPress, disabled }: { label: string; selected?: boolean; onPress?: () => void; disabled?: boolean }) {
+/**
+ * A tappable chip says what kind of control it is: one of several picks (checkbox), one choice in a
+ * radiogroup (radio), or an action (button, whose label should say what tapping does). Without
+ * `onPress` it's a plain label.
+ */
+type ChipProps = { label: string; selected?: boolean; disabled?: boolean; accessibilityLabel?: string; accessibilityHint?: string } & (
+  | { onPress?: undefined; role?: undefined }
+  | { onPress: () => void; role: "checkbox" | "radio" | "button" }
+);
+
+export function Chip({ label, selected, onPress, disabled, role, accessibilityLabel, accessibilityHint }: ChipProps) {
   const theme = useTheme();
   const scale = useSharedValue(1);
   const popStyle = useAnimatedStyle(() => ({ transform: [{ scale: scale.value }] }));
+  const look = [styles.chip, { borderColor: selected ? theme.ink : theme.line, backgroundColor: selected ? theme.ink : "transparent", opacity: disabled ? 0.45 : 1 }];
+  const text = <Text style={[VARIANTS.small, { fontFamily: fonts.bodyBold, color: selected ? theme.paper : theme.ink }]}>{label}</Text>;
+  if (!onPress) {
+    return (
+      <View accessibilityLabel={accessibilityLabel} style={look}>
+        {text}
+      </View>
+    );
+  }
   return (
     <AnimatedPressable
-      accessibilityRole={onPress ? "checkbox" : "text"}
-      accessibilityState={{ checked: !!selected, disabled: !!disabled }}
-      onPress={
-        onPress &&
-        (() => {
-          haptics.select();
-          scale.value = withSequence(withTiming(1.06, { duration: 70 }), withSpring(1, SETTLE));
-          onPress();
-        })
-      }
-      disabled={disabled || !onPress}
+      accessibilityRole={role}
+      accessibilityState={role === "button" ? { disabled: !!disabled } : { checked: !!selected, disabled: !!disabled }}
+      accessibilityLabel={accessibilityLabel}
+      accessibilityHint={accessibilityHint}
+      onPress={() => {
+        haptics.select();
+        scale.value = withSequence(withTiming(1.06, { duration: 70 }), withSpring(1, SETTLE));
+        onPress();
+      }}
+      disabled={disabled}
       hitSlop={4}
-      style={[styles.chip, { borderColor: selected ? theme.ink : theme.line, backgroundColor: selected ? theme.ink : "transparent", opacity: disabled ? 0.45 : 1 }, popStyle]}
+      style={[look, popStyle]}
     >
-      <Text style={[VARIANTS.small, { fontFamily: fonts.bodyBold, color: selected ? theme.paper : theme.ink }]}>{label}</Text>
+      {text}
     </AnimatedPressable>
   );
 }
 
-export function ChipRow({ children, style }: { children: ReactNode; style?: StyleProp<ViewStyle> }) {
-  return <View style={[styles.chipRow, style]}>{children}</View>;
+/** Pass accessibilityRole="radiogroup" when the chips inside are radios. */
+export function ChipRow({ children, style, ...props }: ViewProps & { children: ReactNode }) {
+  return (
+    <View {...props} style={[styles.chipRow, style]}>
+      {children}
+    </View>
+  );
 }
 
 export function Field({ label, error, style, trailing, ...props }: TextInputProps & { label: string; error?: string | null; trailing?: ReactNode }) {

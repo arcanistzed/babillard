@@ -2,7 +2,7 @@ import { FIELD_GROUPS, GROUP_MIN_SIZE, type FieldGroupId, type Stance, type Topi
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { router } from "expo-router";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { ActivityIndicator, ScrollView, StyleSheet, View } from "react-native";
+import { ActivityIndicator, StyleSheet, View } from "react-native";
 import Animated, { FadeIn, FadeOut } from "react-native-reanimated";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { api } from "@/api";
@@ -11,7 +11,7 @@ import { DeckControls } from "@/components/DeckControls";
 import { Flyer } from "@/components/Flyer";
 import { SwipeDeck, type SwipeDeckHandle, type SwipeDirection } from "@/components/SwipeDeck";
 import { inviteToApp, inviteToTopic } from "@/invite";
-import { Button, Chip, ErrorText, T } from "@/ui";
+import { Button, Chip, ChipRow, ErrorText, T } from "@/ui";
 import { shortGroupLabel, t } from "@/i18n";
 
 const REFILL_AT = 5;
@@ -140,12 +140,13 @@ export default function Deck() {
         )}
       </View>
 
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.filterRow} contentContainerStyle={styles.filters}>
-        <Chip label={t("All", "Tous")} selected={group === null} onPress={() => chooseGroup(null)} />
+      {/* Wraps rather than scrolls, so at large text sizes no filter hides off the edge. */}
+      <ChipRow accessibilityRole="radiogroup" accessibilityLabel={t("Show topics from", "Afficher les sujets de")} style={styles.filters}>
+        <Chip role="radio" label={t("All", "Tous")} selected={group === null} onPress={() => chooseGroup(null)} />
         {FIELD_GROUPS.map((entry) => (
-          <Chip key={entry.id} label={shortGroupLabel(entry.id)} selected={group === entry.id} onPress={() => chooseGroup(entry.id)} />
+          <Chip key={entry.id} role="radio" label={shortGroupLabel(entry.id)} selected={group === entry.id} onPress={() => chooseGroup(entry.id)} />
         ))}
-      </ScrollView>
+      </ChipRow>
 
       <View style={styles.deck}>
         {empty ? (
@@ -210,8 +211,7 @@ const styles = StyleSheet.create({
   screen: { flex: 1 },
   // Tall enough for two lines of title, so swapping in the invite prompt doesn't resize the card.
   header: { paddingHorizontal: 20, paddingTop: 10, paddingBottom: 8, minHeight: 80, justifyContent: "center" },
-  filterRow: { flexGrow: 0 },
-  filters: { gap: 8, paddingHorizontal: 16, paddingBottom: 10 },
+  filters: { paddingHorizontal: 16, paddingBottom: 10 },
   nudge: { flexDirection: "row", alignItems: "center", gap: 12 },
   nudgeText: { flex: 1 },
   deck: { flex: 1, marginHorizontal: 16 },

@@ -53,10 +53,10 @@ export function RsvpChips({ meetup, onRespond, disabled }: { meetup: MeetupSumma
   const open = (meetup.state === "proposed" || meetup.state === "confirmed") && !hasEnded(meetup);
   if (!open) return null;
   return (
-    <ChipRow>
-      <Chip label={t("I'll be there", "J'y serai")} selected={meetup.myResponse === "yes"} disabled={disabled} onPress={() => onRespond("yes")} />
-      <Chip label={t("Maybe", "Peut-être")} selected={meetup.myResponse === "maybe"} disabled={disabled} onPress={() => onRespond("maybe")} />
-      <Chip label={t("Can't make it", "Je ne peux pas")} selected={meetup.myResponse === "no"} disabled={disabled} onPress={() => onRespond("no")} />
+    <ChipRow accessibilityRole="radiogroup" accessibilityLabel={t("Your answer", "Votre réponse")}>
+      <Chip role="radio" label={t("I'll be there", "J'y serai")} selected={meetup.myResponse === "yes"} disabled={disabled} onPress={() => onRespond("yes")} />
+      <Chip role="radio" label={t("Maybe", "Peut-être")} selected={meetup.myResponse === "maybe"} disabled={disabled} onPress={() => onRespond("maybe")} />
+      <Chip role="radio" label={t("Can't make it", "Je ne peux pas")} selected={meetup.myResponse === "no"} disabled={disabled} onPress={() => onRespond("no")} />
     </ChipRow>
   );
 }

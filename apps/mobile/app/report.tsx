@@ -77,13 +77,13 @@ export default function Report() {
     <FormScreen>
         <T variant="title">{t(`What's wrong with ${params.name}?`, `Quel est le problème avec ${params.name}?`)}</T>
         <T muted>{t(`${params.name} won't be told.`, `${params.name} n'en sera pas informé.`)}{params.conversationId ? t(" Your phone will share the nearby messages with a moderator.", " Votre téléphone transmettra les messages voisins à un modérateur.") : ""}</T>
-        <ChipRow>
+        <ChipRow accessibilityRole="radiogroup">
           {REPORT_REASONS.map((value) => (
-            <Chip key={value} label={REASON_LABELS[value]} selected={reason === value} onPress={() => setReason(value)} />
+            <Chip key={value} role="radio" label={REASON_LABELS[value]} selected={reason === value} onPress={() => setReason(value)} />
           ))}
         </ChipRow>
         <Field label={t("Anything else we should know?", "Autre chose à nous dire?")} value={note} onChangeText={setNote} multiline maxLength={1000} style={styles.note} />
-        <Chip label={t(`Also block ${params.name}`, `Bloquer aussi ${params.name}`)} selected={alsoBlock} onPress={() => setAlsoBlock(!alsoBlock)} />
+        <Chip role="checkbox" label={t(`Also block ${params.name}`, `Bloquer aussi ${params.name}`)} selected={alsoBlock} onPress={() => setAlsoBlock(!alsoBlock)} />
         {error ? <ErrorText>{error}</ErrorText> : null}
       <Button
           label={t("Send report", "Envoyer le signalement")}

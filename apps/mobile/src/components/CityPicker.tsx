@@ -124,9 +124,9 @@ export function CityPicker({
         {campuses.length > 0 ? (
           <>
             <T variant="heading">{t("Are you on a campus?", "Êtes-vous sur un campus?")}</T>
-            <ChipRow>
+            <ChipRow accessibilityRole="radiogroup">
               {campuses.map((campus) => (
-                <Chip key={campus.id} label={campus.name} selected={campusId === campus.id} onPress={() => {
+                <Chip key={campus.id} role="radio" label={campus.name} selected={campusId === campus.id} onPress={() => {
                     touched.current = true;
                     onChange(selected.id, campusId === campus.id ? null : campus.id);
                   }} />

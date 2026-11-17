@@ -52,9 +52,10 @@ export default function NewMeetup() {
     <FormScreen gap={22}>
         <View style={styles.section}>
           <T variant="heading">{t("When?", "Quand?")}</T>
-          <ChipRow>
+          <ChipRow accessibilityRole="radiogroup">
             {slots.map((slot, index) => (
               <Chip
+                role="radio"
                 key={slot.startsAt}
                 label={slotLabel(slot.label)}
                 selected={!customOpen && index === slotIndex}
@@ -64,13 +65,14 @@ export default function NewMeetup() {
                 }}
               />
             ))}
-            <Chip label={t("Pick another time", "Choisir un autre moment")} selected={customOpen} onPress={() => setCustomOpen(true)} />
+            <Chip role="radio" label={t("Pick another time", "Choisir un autre moment")} selected={customOpen} onPress={() => setCustomOpen(true)} />
           </ChipRow>
           {customOpen ? (
             <>
-              <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chipLine}>
+              <ScrollView horizontal persistentScrollbar accessibilityRole="radiogroup" contentContainerStyle={styles.chipLine}>
                 {days.map((day, index) => (
                   <Chip
+                    role="radio"
                     key={day.getTime()}
                     label={day.toLocaleDateString(undefined, { weekday: "short", month: "short", day: "numeric" })}
                     selected={index === dayIndex}
@@ -82,9 +84,9 @@ export default function NewMeetup() {
                 ))}
               </ScrollView>
               {times.length ? (
-                <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chipLine}>
+                <ScrollView horizontal persistentScrollbar accessibilityRole="radiogroup" contentContainerStyle={styles.chipLine}>
                   {times.map((time) => (
-                    <Chip key={time.getTime()} label={time.toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit" })} selected={time.getTime() === customTime?.getTime()} onPress={() => setCustomTime(time)} />
+                    <Chip role="radio" key={time.getTime()} label={time.toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit" })} selected={time.getTime() === customTime?.getTime()} onPress={() => setCustomTime(time)} />
                   ))}
                 </ScrollView>
               ) : (
@@ -95,18 +97,18 @@ export default function NewMeetup() {
         </View>
         <View style={styles.section}>
           <T variant="heading">{t("Where?", "Où?")}</T>
-          <ChipRow>
+          <ChipRow accessibilityRole="radiogroup">
             {VENUE_KINDS.map((kind) => (
-              <Chip key={kind} label={venueLabel(kind)} selected={kind === venueKind} onPress={() => setVenueKind(kind)} />
+              <Chip role="radio" key={kind} label={venueLabel(kind)} selected={kind === venueKind} onPress={() => setVenueKind(kind)} />
             ))}
           </ChipRow>
           <Field label={t("Name the place (optional)", "Nom du lieu (facultatif)")} value={venueNote} onChangeText={setVenueNote} maxLength={200} placeholder={t("Blue Door on Main Street", "La Porte bleue, rue Principale")} />
         </View>
         <View style={styles.section}>
           <T variant="heading">{t("How often?", "À quelle fréquence?")}</T>
-          <ChipRow>
+          <ChipRow accessibilityRole="radiogroup">
             {MEETUP_REPEATS.map((value) => (
-              <Chip key={value} label={REPEAT_LABELS[value]} selected={repeat === value} onPress={() => setRepeat(value)} />
+              <Chip role="radio" key={value} label={REPEAT_LABELS[value]} selected={repeat === value} onPress={() => setRepeat(value)} />
             ))}
           </ChipRow>
           {repeat !== "none" ? <T variant="small" muted>{t("After each meetup, the next date is proposed to everyone.", "Après chaque rencontre, la date suivante est proposée à tout le monde.")}</T> : null}
@@ -114,9 +116,9 @@ export default function NewMeetup() {
         {isGroup ? (
           <View style={styles.section}>
             <T variant="heading">{t("Guests", "Invités")}</T>
-            <ChipRow>
-              <Chip label={t("Welcome", "Bienvenus")} selected={guestsWelcome} onPress={() => setGuestsWelcome(true)} />
-              <Chip label={t("Group only", "Groupe seulement")} selected={!guestsWelcome} onPress={() => setGuestsWelcome(false)} />
+            <ChipRow accessibilityRole="radiogroup">
+              <Chip role="radio" label={t("Welcome", "Bienvenus")} selected={guestsWelcome} onPress={() => setGuestsWelcome(true)} />
+              <Chip role="radio" label={t("Group only", "Groupe seulement")} selected={!guestsWelcome} onPress={() => setGuestsWelcome(false)} />
             </ChipRow>
           </View>
         ) : null}

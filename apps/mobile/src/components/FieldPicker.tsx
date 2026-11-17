@@ -18,6 +18,7 @@ export function FieldPicker({ value, onChange, max }: { value: Field[]; onChange
               return (
                 <Chip
                   key={field}
+                  role="checkbox"
                   label={fieldLabel(field)}
                   selected={selected}
                   disabled={!selected && value.length >= max}

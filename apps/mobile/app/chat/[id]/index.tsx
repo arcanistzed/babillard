@@ -159,9 +159,9 @@ export default function Chat() {
 
       <View style={[styles.composerArea, { borderTopColor: theme.line, backgroundColor: theme.paper, paddingBottom: bottomPadding }]}>
         {openers.length > 0 ? (
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.openers} keyboardShouldPersistTaps="handled">
+          <ScrollView horizontal persistentScrollbar contentContainerStyle={styles.openers} keyboardShouldPersistTaps="handled">
             {openers.map((opener) => (
-              <Chip key={opener} label={opener} onPress={() => submit(opener)} />
+              <Chip key={opener} role="button" label={opener} accessibilityLabel={t(`Send "${opener}"`, `Envoyer « ${opener} »`)} onPress={() => submit(opener)} />
             ))}
           </ScrollView>
         ) : null}

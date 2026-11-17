@@ -8,11 +8,11 @@ import { Button, Chip, ChipRow, ErrorText, Field, T } from "@/ui";
 
 function Question<Value extends string>({ label, options, value, onChange }: { label: string; options: [Value, string][]; value: Value | null; onChange: (value: Value) => void }) {
   return (
-    <View style={styles.question} accessibilityRole="radiogroup" accessibilityLabel={label}>
+    <View style={styles.question}>
       <T variant="bodyBold">{label}</T>
-      <ChipRow>
+      <ChipRow accessibilityRole="radiogroup" accessibilityLabel={label}>
         {options.map(([option, text]) => (
-          <Chip key={option} label={text} selected={value === option} onPress={() => onChange(option)} />
+          <Chip key={option} role="radio" label={text} selected={value === option} onPress={() => onChange(option)} />
         ))}
       </ChipRow>
     </View>

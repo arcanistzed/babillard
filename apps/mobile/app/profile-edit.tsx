@@ -61,14 +61,14 @@ export default function ProfileEdit() {
         <Field label={t("Your first name", "Votre prénom")} value={displayName} onChangeText={setDisplayName} maxLength={50} />
         <Field label={t("A line about you", "Une phrase sur vous")} value={bio} onChangeText={setBio} multiline maxLength={500} style={styles.bio} />
         <T variant="heading">{t("What do you do?", "Que faites-vous?")}</T>
-        <ChipRow>{ROLES.map((value) => <Chip key={value} label={roleLabel(value)} selected={role === value} onPress={() => setRole(value)} />)}</ChipRow>
+        <ChipRow accessibilityRole="radiogroup">{ROLES.map((value) => <Chip key={value} role="radio" label={roleLabel(value)} selected={role === value} onPress={() => setRole(value)} />)}</ChipRow>
         <T variant="heading">{t("What are you looking for?", "Que recherchez-vous?")}</T>
         <LookingForPicker value={lookingFor} onChange={setLookingFor} />
         <AgeRangeField value={ageRange} onChange={setAgeRange} error={range.error} />
         <T variant="heading">{t("Group size", "Taille du groupe")}</T>
-        <ChipRow>
+        <ChipRow accessibilityRole="radiogroup">
           {GROUP_SIZES.map((value) => (
-            <Chip key={value} label={GROUP_SIZE_LABELS[value]} selected={groupSize === value} onPress={() => setGroupSize(value)} />
+            <Chip key={value} role="radio" label={GROUP_SIZE_LABELS[value]} selected={groupSize === value} onPress={() => setGroupSize(value)} />
           ))}
         </ChipRow>
         <T variant="small" muted>

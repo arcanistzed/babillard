@@ -15,12 +15,12 @@ export function LookingForPicker({ value, onChange }: { value: LookingFor[]; onC
     <View style={styles.picker}>
       <ChipRow>
         {LOOKING_FOR.filter((item) => item !== PRIVATE_OPTION).map((item) => (
-          <Chip key={item} label={lookingForLabel(item)} selected={value.includes(item)} onPress={() => toggle(item)} />
+          <Chip key={item} role="checkbox" label={lookingForLabel(item)} selected={value.includes(item)} onPress={() => toggle(item)} />
         ))}
       </ChipRow>
       <View style={[styles.privateBox, { borderColor: theme.line, backgroundColor: theme.surface }]}>
         <ChipRow>
-          <Chip label={lookingForLabel(PRIVATE_OPTION)} selected={value.includes(PRIVATE_OPTION)} onPress={() => toggle(PRIVATE_OPTION)} />
+          <Chip role="checkbox" label={lookingForLabel(PRIVATE_OPTION)} selected={value.includes(PRIVATE_OPTION)} onPress={() => toggle(PRIVATE_OPTION)} />
         </ChipRow>
         <T variant="small" muted>
           {t("Only shown to people who also choose this.", "Visible seulement par les personnes qui font le même choix.")}

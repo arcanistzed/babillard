@@ -100,9 +100,9 @@ export default function Onboard() {
             {step === 1 ? (
               <>
                 <T variant="title">{t("What do you study or work on?", "Qu'étudiez-vous, ou sur quoi travaillez-vous?")}</T>
-                <ChipRow>
+                <ChipRow accessibilityRole="radiogroup">
                   {ROLES.map((value) => (
-                    <Chip key={value} label={roleLabel(value)} selected={role === value} onPress={() => setRole(value)} />
+                    <Chip key={value} role="radio" label={roleLabel(value)} selected={role === value} onPress={() => setRole(value)} />
                   ))}
                 </ChipRow>
                 <T variant="heading">{t("Pick the fields you care about", "Choisissez les domaines qui vous intéressent")}</T>

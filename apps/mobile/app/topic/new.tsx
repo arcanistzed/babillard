@@ -57,9 +57,9 @@ export default function NewTopic() {
 
   return (
     <FormScreen>
-        <ChipRow>
-          <Chip label={t("An interest", "Un intérêt")} selected={kind === "interest"} onPress={() => setKind("interest")} />
-          <Chip label={t("A question to debate", "Une question à débattre")} selected={kind === "question"} onPress={() => setKind("question")} />
+        <ChipRow accessibilityRole="radiogroup">
+          <Chip role="radio" label={t("An interest", "Un intérêt")} selected={kind === "interest"} onPress={() => setKind("interest")} />
+          <Chip role="radio" label={t("A question to debate", "Une question à débattre")} selected={kind === "question"} onPress={() => setKind("question")} />
         </ChipRow>
         <Field
           label={kind === "question" ? t("The question", "La question") : t("The topic", "Le sujet")}

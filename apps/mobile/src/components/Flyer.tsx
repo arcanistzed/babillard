@@ -81,14 +81,14 @@ export function Flyer({ topic, stance, onStance, isTop = true, pull }: { topic: 
 
         {isQuestion ? (
           <View style={styles.stances}>
-            <View style={styles.stanceRow}>
+            <View style={styles.stanceRow} accessibilityRole="radiogroup">
               {(Object.keys(STANCE_LABELS) as Stance[]).map((value) => {
                 const selected = stance === value;
                 return (
                   <Pressable
                     key={value}
                     accessibilityRole="radio"
-                    accessibilityState={{ selected }}
+                    accessibilityState={{ checked: selected }}
                     accessibilityLabel={STANCE_LABELS[value]}
                     accessibilityHint={t("Joins this topic with your answer", "Rejoint ce sujet avec votre réponse")}
                     onPress={() => onStance(selected ? null : value)}

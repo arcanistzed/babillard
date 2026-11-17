@@ -104,10 +104,11 @@ export default function YourTopics() {
                   <T variant="small" muted>
                     {t("Your answer. Nobody else sees it, and you can change it or leave it blank.", "Votre réponse. Personne d'autre ne la voit, et vous pouvez la changer ou la laisser vide.")}
                   </T>
-                  <ChipRow>
+                  <ChipRow accessibilityRole="radiogroup">
                     {(Object.keys(STANCE_LABELS) as Stance[]).map((stance) => (
                       <Chip
                         key={stance}
+                        role="radio"
                         label={STANCE_LABELS[stance]}
                         selected={item.stance === stance}
                         disabled={busy}
