@@ -103,7 +103,7 @@ export default function TopicLinkScreen() {
     <SafeAreaView edges={["bottom"]} style={styles.screen}>
       <ScrollView contentContainerStyle={styles.body}>
         <View style={styles.flyer}>
-          <Flyer topic={topic} stance={mine === "joined" ? stance : null} onStance={chooseStance} />
+          <Flyer topic={topic} stance={mine === "joined" ? stance : null} onStance={chooseStance} joined={mine === "joined"} />
         </View>
         {error ? <ErrorText>{error}</ErrorText> : null}
 

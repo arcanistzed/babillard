@@ -49,7 +49,7 @@ function CityLean({ lean, fg }: { lean: Lean; fg: string }) {
   );
 }
 
-export function Flyer({ topic, stance, onStance, isTop = true, pull }: { topic: TopicCard; stance: Stance | null; onStance: (stance: Stance | null) => void; isTop?: boolean; pull?: SharedValue<number> }) {
+export function Flyer({ topic, stance, onStance, isTop = true, pull, joined = false }: { topic: TopicCard; stance: Stance | null; onStance: (stance: Stance | null) => void; isTop?: boolean; pull?: SharedValue<number>; joined?: boolean }) {
   const { bg, fg } = flyerInk(topic.fieldTags[0]);
   const fields = listOf(topic.fieldTags.map((tag) => fieldLabel(tag as Field) ?? tag));
   const isQuestion = topic.kind === "question";
@@ -90,7 +90,7 @@ export function Flyer({ topic, stance, onStance, isTop = true, pull }: { topic: 
                     accessibilityRole="radio"
                     accessibilityState={{ checked: selected }}
                     accessibilityLabel={STANCE_LABELS[value]}
-                    accessibilityHint={t("Joins this topic with your answer", "Rejoint ce sujet avec votre réponse")}
+                    accessibilityHint={joined ? t("Changes your answer. Tap again to clear it.", "Change votre réponse. Touchez de nouveau pour l'effacer.") : t("Joins this topic with your answer", "Rejoint ce sujet avec votre réponse")}
                     onPress={() => onStance(selected ? null : value)}
                     style={[styles.stance, { borderColor: fg, backgroundColor: selected ? fg : "transparent" }]}
                   >
