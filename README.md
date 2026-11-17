@@ -2,7 +2,7 @@
 
 A mobile app where people find each other through the ideas they want to talk about, then meet in person.
 
-People swipe on a deck of topics: research areas, books, methods, and policy questions. When three people in one city pick the same topic, a group chat opens on its own, and people can ask for small groups of three or four or bigger ones up to eight. People who share a topic also see each other as cards, and a mutual swipe opens a one-on-one chat with a conversation starter already in it. Any chat can propose a meetup in one tap.
+People swipe on a deck of topics: everyday questions like tipping and the four-day week, research areas, books, sports, games, food, and the outdoors. When three people in one city pick the same topic, a group chat opens on its own, and people can ask for small groups of three or four or bigger ones up to eight. People who share a topic also see each other as cards, and a mutual swipe opens a one-on-one chat with a conversation starter already in it. Any chat can propose a meetup in one tap.
 
 ## How it's built
 
