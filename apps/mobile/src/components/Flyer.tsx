@@ -4,7 +4,7 @@ import Animated, { Extrapolation, FadeIn, interpolate, useAnimatedStyle, type Sh
 import { fonts, flyerInk } from "@/theme";
 import { fieldLabel, listOf, t } from "@/i18n";
 
-const STANCE_LABELS: Record<Stance, string> = { for: t("For", "Pour"), against: t("Against", "Contre"), unsure: t("Not sure", "Sans avis") };
+const STANCE_LABELS: Record<Stance, string> = { for: t("For", "Pour"), against: t("Against", "Contre"), unsure: t("Not sure", "J'hésite") };
 
 function nearbyLine(count: number): string | null {
   if (count === 0) return null;
@@ -36,7 +36,7 @@ function TearOffTabs({ nearby, bg, pull }: { nearby: number; bg: string; pull?: 
 
 /** Only appears after someone picks a stance, so seeing the totals can't sway the answer. */
 function CityLean({ lean, fg }: { lean: Lean; fg: string }) {
-  const summary = t(`In your city: ${lean.for}% for, ${lean.against}% against, ${lean.unsure}% not sure`, `Dans votre ville: ${lean.for} % pour, ${lean.against} % contre, ${lean.unsure} % sans avis`);
+  const summary = t(`In your city: ${lean.for}% for, ${lean.against}% against, ${lean.unsure}% not sure`, `Dans votre ville: ${lean.for} % pour, ${lean.against} % contre, ${lean.unsure} % hésitent`);
   return (
     <Animated.View entering={FadeIn.duration(200)} style={styles.lean} accessible accessibilityLabel={summary}>
       <View style={styles.leanBar}>

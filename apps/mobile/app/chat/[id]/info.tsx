@@ -9,7 +9,7 @@ import { fonts, useTheme } from "@/theme";
 import { Avatar, Button, T } from "@/ui";
 import { t } from "@/i18n";
 
-const STANCE_LABELS: Record<Stance, string> = { for: t("For", "Pour"), against: t("Against", "Contre"), unsure: t("Not sure", "Sans avis") };
+const STANCE_LABELS: Record<Stance, string> = { for: t("For", "Pour"), against: t("Against", "Contre"), unsure: t("Not sure", "Hésitation") };
 
 function StanceSpread({ spread }: { spread: Record<Stance, number> }) {
   const theme = useTheme();

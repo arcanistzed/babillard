@@ -76,7 +76,7 @@ export default function Report() {
   return (
     <FormScreen>
         <T variant="title">{t(`What's wrong with ${params.name}?`, `Quel est le problème avec ${params.name}?`)}</T>
-        <T muted>{t(`${params.name} won't be told.`, `${params.name} n'en saura rien.`)}{params.conversationId ? t(" Your phone will share the nearby messages with a moderator.", " Votre téléphone transmettra les messages concernés à l'équipe de modération.") : ""}</T>
+        <T muted>{t(`${params.name} won't be told.`, `${params.name} n'en saura rien.`)}{params.conversationId ? t(" Your phone will share the nearby messages with a moderator.", " Votre téléphone transmettra à l'équipe de modération les messages autour du signalement.") : ""}</T>
         <ChipRow accessibilityRole="radiogroup">
           {REPORT_REASONS.map((value) => (
             <Chip key={value} role="radio" label={REASON_LABELS[value]} selected={reason === value} onPress={() => setReason(value)} />

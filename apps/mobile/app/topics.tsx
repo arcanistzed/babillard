@@ -8,7 +8,7 @@ import { useTheme } from "@/theme";
 import { Button, Chip, ChipRow, ErrorText, T } from "@/ui";
 import { t } from "@/i18n";
 
-const STANCE_LABELS: Record<Stance, string> = { for: t("For", "Pour"), against: t("Against", "Contre"), unsure: t("Not sure", "Sans avis") };
+const STANCE_LABELS: Record<Stance, string> = { for: t("For", "Pour"), against: t("Against", "Contre"), unsure: t("Not sure", "J'hésite") };
 
 /** The topics someone joined, with their answer and whether a group opened, and the ones they passed on. */
 export default function YourTopics() {
