@@ -5,6 +5,7 @@ import { copy, type Lang } from "../src/copy.ts";
 
 const ORIGIN = "https://babillard.app";
 const DOWNLOAD = "/download/android";
+const CONTACT = "info@babillard.app";
 const SEATS = 8;
 const root = join(dirname(fileURLToPath(import.meta.url)), "..", "public");
 
@@ -47,14 +48,14 @@ function phone(lang: Lang): string {
   <section class="scene scene-deck">
     <div class="chips">${p.chips.map((c, i) => `<span class="chip${i === 0 ? " on" : ""}">${esc(c)}</span>`).join("")}</div>
     <div class="stack">
-      <div class="card under">${flyer(vote, stances + `<p class="nearby">${esc(p.vote.nearby)}</p>`, 3).replace('<span class="tab"></span>', '<span class="tab next"></span>')}</div>
+      <div class="card under">${flyer(vote, stances + `<p class="nearby">${esc(p.vote.nearby)}</p>`, 2).replace('<span class="tab"></span>', '<span class="tab next"></span>')}</div>
       <div class="card top">${flyer(walk, `<p class="nearby">${esc(p.walk.nearby)}</p>`, 5)}</div>
     </div>
-    <div class="controls"><span class="ctl skip">✕</span><span class="ctl like">✓</span></div>
+    <div class="controls"><span class="ctl pass">${esc(p.skip)}</span><span class="ctl like">${esc(p.like)}</span></div>
     ${tabBar("topics")}
   </section>
   <section class="scene scene-group">
-    ${chatHead(p.groupTitle, p.groupSub, ["Maya", "Jon", "Priya", "Y"])}
+    ${chatHead(p.groupTitle, p.groupSub, ["Maya", "Jon", "Y"])}
     <div class="log">
       <p class="sys">${esc(p.opened)}</p>
       ${p.group.map(([who, text], i) => (who === "me" ? `<div class="msg me" style="--i:${i}"><span>${esc(text)}</span></div>` : `<div class="msg them" style="--i:${i}"><small>${esc(who)}</small><span>${esc(text)}</span></div>`)).join("")}
@@ -70,7 +71,7 @@ function phone(lang: Lang): string {
     ${composer}
   </section>
   <section class="scene scene-meet">
-    ${chatHead(p.groupTitle, p.groupSub, ["Maya", "Jon", "Priya", "Y"])}
+    ${chatHead(p.groupTitle, p.groupSub, ["Maya", "Jon", "Y"])}
     <div class="log">
       ${p.group.slice(-2).map(([who, text]) => (who === "me" ? `<div class="msg me"><span>${esc(text)}</span></div>` : `<div class="msg them"><small>${esc(who)}</small><span>${esc(text)}</span></div>`)).join("")}
       <p class="sys">${esc(p.meetLine)}</p>
@@ -89,6 +90,7 @@ function phone(lang: Lang): string {
 function page(lang: Lang): string {
   const c = copy[lang];
   const download = (cls: string) => `<a class="${cls}" href="${DOWNLOAD}">${esc(c.download)}</a>`;
+  const iphone = `<p class="iphone">${esc(c.iphone[0])} <a href="mailto:${CONTACT}">${CONTACT}</a> ${esc(c.iphone[1])}</p>`;
   return `<!doctype html>
 <html lang="${c.htmlLang}">
 <head>
@@ -99,11 +101,20 @@ function page(lang: Lang): string {
 <link rel="canonical" href="${ORIGIN}${c.path}">
 <link rel="alternate" hreflang="${c.htmlLang}" href="${ORIGIN}${c.path}">
 <link rel="alternate" hreflang="${c.otherLang}" href="${ORIGIN}${c.otherPath}">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Babillard">
+<meta property="og:locale" content="${c.htmlLang.replace("-", "_")}">
 <meta property="og:title" content="${esc(c.title)}">
 <meta property="og:description" content="${esc(c.description)}">
-<meta property="og:image" content="${ORIGIN}/site/icon.png">
+<meta property="og:image" content="${ORIGIN}${c.shareImage}">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="${esc(c.shareAlt)}">
 <meta property="og:url" content="${ORIGIN}${c.path}">
-<meta name="theme-color" content="#EEF0F8">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="color-scheme" content="light dark">
+<meta name="theme-color" content="#EEF0F8" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#13142E" media="(prefers-color-scheme: dark)">
 <link rel="icon" href="/site/icon.png">
 <link rel="preload" href="/site/fonts/bricolage-800.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="stylesheet" href="/site/site.css">
@@ -120,7 +131,9 @@ function page(lang: Lang): string {
   <section class="hero">
     <div class="hero-copy">
       <h1><span>${esc(c.hero.h1[0])}</span> <span>${esc(c.hero.h1[1])}</span></h1>
+      <p class="lede">${esc(c.hero.lede)}</p>
       <p class="cta">${download("btn")}<span class="note">${esc(c.hero.note)}</span></p>
+      ${iphone}
     </div>
     <div class="board" aria-hidden="true">
       ${c.board.map((f, i) => `<div class="pinned p${i}" style="--n:${i}">${flyer(f, "", [2, 5, 1, 3, 6, 0, 4, 2, 3][i])}</div>`).join("\n      ")}
@@ -145,6 +158,7 @@ function page(lang: Lang): string {
     <h2 id="end-title">${esc(c.end.h)}</h2>
     <p>${esc(c.end.p)}</p>
     ${download("btn invert")}
+    ${iphone}
   </section>
   <div class="endtabs" aria-hidden="true">${Array.from({ length: 12 }, (_, i) => `<span${[1, 4, 5, 9].includes(i) ? ' class="taken"' : ""}></span>`).join("")}</div>
 </main>
