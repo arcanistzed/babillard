@@ -1602,12 +1602,20 @@ describe("moderation", () => {
   it("emails a warning, then closes the report as warned", async () => {
     const reporter = await person("toronto");
     const target = await createPerson(BASE, "warn-me@example.test", { displayName: "Warned Person", cityId: "toronto" });
-    await reporter.post("/safety/reports", { targetUserId: target.id, reason: "harassment" });
+    const conversationId = await match(reporter, target, "literary-theory");
+    await reporter.post("/safety/reports", { targetUserId: target.id, conversationId, reason: "harassment" });
     const response = await adminPost(`/admin/reports/${await openReportId("Warned Person")}`, { action: "warned" });
     expect(response.status).toBe(302);
     expect(response.headers.get("location")).toBe("/admin/reports");
     const [warning] = sesRequests("warn-me@example.test");
     expect(warning?.body.Content.Simple.Subject.Data).toBe("A note about your conduct on Babillard");
+    // In a one-on-one chat, a push that opened the reported chat would name the reporter.
+    const [push] = await waitFor(
+      async () => pushLog().filter((row) => row.userIds.includes(target.id) && row.title === "A note about your conduct"),
+      (rows) => rows.length > 0,
+      "the warning push",
+    );
+    expect(push?.data).toEqual({});
     expect(await adminPage("/admin/reports")).not.toContain("Warned Person");
     expect(await adminPage(`/admin/users/${target.id}`)).toContain("warned");
   });

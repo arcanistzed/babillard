@@ -236,16 +236,14 @@ admin.post("/reports/:id", async (c) => {
       console.error(JSON.stringify({ event: "warning_email_failed", error: String(error) }));
       return c.redirect("/admin/reports?error=warning_failed");
     }
-    if (report.conversationId) {
-      c.executionCtx.waitUntil(
-        sendPush(c.env, [target], {
-          title: "A note about your conduct",
-          body: "Please keep conversations respectful, or your account may be closed.",
-          fr: { title: "Un mot sur votre comportement", body: "Merci de garder vos échanges respectueux, sinon votre compte pourrait être fermé." },
-          data: { screen: "chat", id: report.conversationId },
-        }),
-      );
-    }
+    // No link to the reported chat: in a one-on-one chat that would point at the reporter.
+    c.executionCtx.waitUntil(
+      sendPush(c.env, [target], {
+        title: "A note about your conduct",
+        body: "Please keep conversations respectful, or your account may be closed.",
+        fr: { title: "Un mot sur votre comportement", body: "Merci de garder vos échanges respectueux, sinon votre compte pourrait être fermé." },
+      }),
+    );
   }
   if (action === "banned") await banUser(c.env, db, target);
 
