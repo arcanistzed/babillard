@@ -225,12 +225,18 @@ Tried this way on the emulator:
 - The phone sent "ping", Bob answered "pong", and both showed in the chat.
 - The phone's security code matched Bob's, and the inbox previewed "pong from Bob".
 
+A group was tried the same way, with `apps/api/scripts/mls-group-peers.ts` playing Bob, Carol and Dave in a four-person group with the phone as Alice:
+- Until the phone had registered, the server refused the others' attempts to start the group with `not_ready`. Once it had, the group formed, and the phone showed all three hellos.
+- The phone sent "ping", which all three read, and Bob's "pong" showed on the phone.
+- Blocking Carol from her profile, with "Just block Carol", hid her earlier hello at once. Her next message reached Bob and Dave but not the phone's screen, and the inbox showed no preview while her message was the latest.
+- Dave left. Bob's next message removed Dave's phone first, which left 3 phones at epoch 3. The phone showed "Dave left" and the notice, its info screen listed 3 people, and its security code changed to match Bob's new one.
+- Unblocking Carol brought both of her messages back in place.
+
 ### Not done on the phone
 
 - **Being removed.** The engine stops with an error when the log removes this phone. The chat screen needs to show that the person left or was removed.
 - **Typing and sending states.** A message sent with MLS shows as pending until the engine returns, with no echo over the socket. That's fine on a quick connection and untested on a slow one.
-- **Blocking has only run in tests.** The rule and the server's unread count are tested, and the phone code typechecks. Nobody has yet blocked someone in a group on a device and watched their messages disappear.
-- **Only a direct chat has been tried on the device.** Groups, leaving, and new phones are covered by the engine tests, not by the app on a phone.
+- **New phones and recovery in the app.** A second phone for the same person joining by external commit, and the recovery cases, have run in the engine on the emulator, but not through the chat screens with a live Worker. Nothing has run on a real ARM phone.
 - **Franking for reports, backup v2, and per-chat state** remain as designed above.
 
 ## Before turning it on
@@ -427,7 +433,7 @@ One developer who knows the codebase. Done on the branch since the first estimat
 | Android build in EAS: install Rust there, or commit the built libraries | 2 to 3 days |
 | Server, still to do: rate-limiting key package claims, and a way for people to retire a lost phone | 1 to 2 days |
 | Rust wrapper: last-resort key packages and per-chat state | 2 to 4 days |
-| Phone: trying groups, blocking, leaving and new phones on devices | 2 days |
+| Phone: a second phone for the same person, and the chat screen's handling of being removed | 1 to 2 days |
 | Franking for reports | 2 days |
 | Roster security code on the chat info screen | 1 day |
 | Backup v2 and history store | 5 to 7 days |
