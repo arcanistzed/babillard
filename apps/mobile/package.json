@@ -10,7 +10,8 @@
     "ios": "expo run:ios",
     "typecheck": "tsc --noEmit",
     "lint": "eslint .",
-    "release:android": "node scripts/release-android.ts"
+    "release:android": "node scripts/release-android.ts",
+    "update:android": "node scripts/update-android.ts"
   },
   "dependencies": {
     "@babillard/shared": "workspace:*",
@@ -41,6 +42,7 @@
     "expo-splash-screen": "~58.0.13",
     "expo-status-bar": "~58.0.4",
     "expo-system-ui": "~58.0.7",
+    "expo-updates": "~58.0.22",
     "expo-web-browser": "~58.0.8",
     "react": "19.3.0",
     "react-native": "0.88.1",

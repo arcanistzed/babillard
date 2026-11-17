@@ -201,11 +201,19 @@ pnpm --filter @babillard/api deploy
 
 The deploy also publishes the landing page. The Worker serves `apps/site/public` at `/`, `/fr/`, and `/site/*`, and sends every other path to the API. Edit the page text in `apps/site/src/copy.ts`, not the generated HTML.
 
+Most app changes don't need a new APK. Publish them as an over-the-air update, and installs download it in the background and switch to it on their next launch:
+
+```bash
+cd apps/mobile && node scripts/update-android.ts "What changed"
+```
+
+An update only reaches installs whose native code has the same fingerprint (`runtimeVersion` in `app.config.ts`, tuned by `fingerprint.config.js`). The script compares this checkout's fingerprint with the one the latest GitHub release recorded, and refuses when native code changed, such as a new Expo module. Then release a new APK instead.
+
 To release a new Android version:
 
 1. Raise `version` in `apps/mobile/app.config.ts` and commit it. Android's version code comes from it (0.3.2 is 302, 1.0.0 is 10000), so it's the only number to change.
-2. Build: `npx eas-cli build --platform android --profile preview` from `apps/mobile`.
-3. Release: `node scripts/release-android.ts` from `apps/mobile`. It refuses a version that isn't newer than the one out, uploads the APK to R2 as `releases/babillard.apk`, sets `ANDROID_LATEST_VERSION` in `apps/api/wrangler.jsonc`, and deploys. Then it publishes the APK as a [GitHub release](https://github.com/arcanistzed/babillard/releases), tagged on the build's commit, with notes from the `feat` and `fix` commits since the last one. That step needs the GitHub CLI signed in and the commit pushed. Commit the `wrangler.jsonc` change.
+2. Build: `npx eas-cli build --platform android --profile preview` from `apps/mobile`. When EAS's free builds run out for the month, add `--local --output babillard.apk` to build on your own computer, which needs the Android SDK and JDK 17 or 21, then pass `--apk babillard.apk` to the release script.
+3. Release: `node scripts/release-android.ts` from `apps/mobile`. It refuses a version that isn't newer than the one out, uploads the APK to R2 as `releases/babillard.apk`, sets `ANDROID_LATEST_VERSION` in `apps/api/wrangler.jsonc`, and deploys. Then it publishes the APK as a [GitHub release](https://github.com/arcanistzed/babillard/releases), tagged on the build's commit, with notes from the `feat` and `fix` commits to the app since the last one, and the APK's runtime fingerprint for the update script. That step needs the GitHub CLI signed in and the commit pushed. Commit the `wrangler.jsonc` change.
 
 Older installs then offer the update once per launch. When old versions would break against the API, also set `ANDROID_MIN_VERSION`. Installs below it show a screen that only offers the download.
 

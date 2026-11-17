@@ -8,6 +8,8 @@ const version = "0.3.4";
 const apiHost = new URL(process.env.EXPO_PUBLIC_API_URL ?? "https://babillard.app").hostname;
 const isRealHost = !["localhost", "10.0.2.2", "127.0.0.1"].includes(apiHost);
 
+const projectId = "90b977e9-6bcd-4b3b-9059-d63e4b4d5bc1";
+
 const config: ExpoConfig = {
   name: "Babillard",
   slug: "babillard",
@@ -17,6 +19,10 @@ const config: ExpoConfig = {
   scheme: "babillard",
   userInterfaceStyle: "automatic",
   icon: "./assets/icon.png",
+  // An over-the-air update only reaches installs whose native code has the same fingerprint, so an update
+  // that needs new native code is never applied to an APK that can't run it.
+  runtimeVersion: { policy: "fingerprint" },
+  updates: { url: `https://u.expo.dev/${projectId}`, checkAutomatically: "ON_LOAD", fallbackToCacheTimeout: 0 },
   ios: {
     bundleIdentifier: "com.babillard",
     buildNumber: String(versionCode(version)),
@@ -56,7 +62,7 @@ const config: ExpoConfig = {
     ["expo-location", { locationWhenInUsePermission: "Babillard uses your location once to suggest your city. It stays on your phone.", locationAlwaysAndWhenInUsePermission: false, locationAlwaysPermission: false }],
   ],
   extra: {
-    eas: { projectId: "90b977e9-6bcd-4b3b-9059-d63e4b4d5bc1" },
+    eas: { projectId },
   },
 };
 

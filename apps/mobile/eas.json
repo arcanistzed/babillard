@@ -22,7 +22,8 @@
       },
       "env": {
         "EXPO_PUBLIC_API_URL": "https://babillard.app"
-      }
+      },
+      "channel": "preview"
     },
     "production": {
       "node": "24.18.1",
@@ -30,7 +31,8 @@
       "env": {
         "EXPO_PUBLIC_API_URL": "https://babillard.app",
         "EXPO_PUBLIC_DISTRIBUTION": "play"
-      }
+      },
+      "channel": "production"
     },
     "ios-simulator": {
       "extends": "preview",

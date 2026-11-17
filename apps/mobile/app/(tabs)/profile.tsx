@@ -1,5 +1,6 @@
 import * as Application from "expo-application";
 import { router } from "expo-router";
+import * as Updates from "expo-updates";
 import { useState } from "react";
 import { Alert, Pressable, ScrollView, StyleSheet, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -113,6 +114,10 @@ export default function Profile() {
           <T variant="small" muted style={styles.version} selectable>
             {/* The same word in English and French. */}
             Version {Application.nativeApplicationVersion}
+            {/* Shown when this launch runs an over-the-air update rather than the code inside the APK. */}
+            {!Updates.isEmbeddedLaunch && Updates.createdAt
+              ? t(`, updated ${Updates.createdAt.toLocaleDateString(undefined, { month: "short", day: "numeric" })}`, `, mise à jour le ${Updates.createdAt.toLocaleDateString(undefined, { month: "short", day: "numeric" })}`)
+              : ""}
           </T>
         ) : null}
       </ScrollView>

@@ -11,6 +11,7 @@ import { copyFileSync, existsSync, mkdtempSync, readdirSync, readFileSync, rmSyn
 import { homedir, tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import config from "../app.config.ts";
+import { runtimeVersion } from "./update-android.ts";
 
 const ORIGIN = "https://babillard.app";
 const mobileDir = resolve(import.meta.dirname, "..");
@@ -117,7 +118,8 @@ try {
     console.warn(`Skipped the GitHub release: push ${commit.slice(0, 7)} first, then run gh release create v${version} by hand.`);
   } else {
     const notes = join(dir, "notes.md");
-    writeFileSync(notes, `${releaseNotes()}\n\nAlso at https://babillard.app/download/android\n`);
+    // The update script reads this back, to check an over-the-air update can run on this APK.
+    writeFileSync(notes, `${releaseNotes()}\n\nAlso at https://babillard.app/download/android\n\nRuntime fingerprint: ${runtimeVersion(mobileDir)}\n`);
     run("gh", ["release", "create", `v${version}`, apk, "--target", commit, "--title", version, "--notes-file", notes], mobileDir);
     console.log(`Published v${version} on GitHub.`);
   }
