@@ -1255,7 +1255,8 @@ describe("meetups", () => {
     const b = await person("new-york");
     const conversationId = await match(a, b, "philosophy-of-sport-and-play");
     const now = Date.now();
-    const meetup = await a.post(`/meetups?conversationId=${conversationId}`, proposal({ startsAt: now + 3000, endsAt: now + 4000 }));
+    // The app starts asking shortly after the end (half a second here), so leave room to check it isn't open yet.
+    const meetup = await a.post(`/meetups?conversationId=${conversationId}`, proposal({ startsAt: now + 8000, endsAt: now + 9000 }));
     await b.post(`/meetups/${meetup.id}/respond`, { response: "yes" });
     expect(await status(a.post(`/meetups/${meetup.id}/did-meet`, { didMeet: true }))).toBe(409);
 
@@ -1269,7 +1270,7 @@ describe("meetups", () => {
     await sweep();
     expect(pushLog().filter((push) => push.title === "Your meetup is coming up" && push.data.id === meetup.id)).toHaveLength(1);
 
-    await sleep(4800);
+    await sleep(Math.max(0, meetup.endsAt - Date.now()) + 800);
     await sweep();
     await waitFor(
       async () => pushLog().filter((push) => push.title === "Did you meet?" && push.data.id === meetup.id),
@@ -1287,7 +1288,8 @@ describe("meetups", () => {
     const b = await person("new-york");
     const conversationId = await match(a, b, "law-and-technology");
     const now = Date.now();
-    const meetup = await a.post(`/meetups?conversationId=${conversationId}`, proposal({ startsAt: now + 2000, endsAt: now + 3000 }));
+    // Room for a slow machine to confirm it and read the inbox before it ends.
+    const meetup = await a.post(`/meetups?conversationId=${conversationId}`, proposal({ startsAt: now + 9000, endsAt: now + 10_000 }));
     expect((await b.post(`/meetups/${meetup.id}/respond`, { response: "yes" })).state).toBe("confirmed");
     const inboxOf = async (client: Client, language = "en") =>
       ((await (await fetch(`${BASE}/conversations`, { headers: { authorization: `Bearer ${client.token}`, "accept-language": language } })).json()) as any[]).find((item) => item.id === conversationId);
