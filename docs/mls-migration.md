@@ -90,6 +90,9 @@ Because it can read commits, the server keeps its own copy of the roster: which 
 - **Update paths keep identity.** A committer's new leaf must keep its own identity and registered key.
 - **Shape.** Commits must be public and application messages encrypted. Lone proposals, proposals by reference, update or other proposal types, and non-basic credentials are all refused.
 - **Atomicity.** A commit that adds phones needs its Welcome, and they're stored together.
+- **Readiness.** The first commit, which moves a chat to MLS, is refused with `not_ready` until every member of the chat has a registered MLS phone. After it, v1 is refused, so nobody may be left behind.
+- **GroupInfo with every commit.** Every commit must carry the next epoch's GroupInfo, checked for the right chat and epoch. The server always holds a current one, so a phone can always join by itself.
+- **External commits.** A member's registered phone that isn't in the group may add itself from the stored GroupInfo, with an external commit. It may remove only its own old leaf (a phone that lost its state rejoining), it must not already be in the group, and it lands on the leftmost free leaf, as OpenMLS places it. This is how a newcomer joins with nobody else online, and how a chat recovers when every phone in it is gone.
 
 ### What it stores
 
@@ -98,7 +101,7 @@ In the Durable Object's SQLite, apart from the `messages` table (`apps/api/src/d
 - `mls_log` holds every accepted commit and message in order, with sender, phone, and an optional `clientId` so a resend doesn't duplicate.
 - `mls_roster` is the server's copy of who's at each leaf.
 - `mls_welcomes` holds a Welcome per new phone, with the `seq` to read the log from.
-- `mls_group_info` holds the latest GroupInfo, when the committer supplied one. It's served only while it matches the current epoch.
+- `mls_group_info` holds the GroupInfo every commit must carry, served only while it matches the current epoch.
 - The epoch and the mode (`v1` until the first commit, then `mls`) are kept in the object's key-value storage.
 
 `MlsLog.submit` is synchronous: the epoch check, the roster update and the insert happen with no `await` between them, because a Durable Object can take other requests while it awaits D1. D1 reads happen before it, and the inbox, unread counts and pushes after.
@@ -125,7 +128,7 @@ In D1, `device_keys` gains `mls_signature_key`, set once per phone, since changi
 
 Open sockets get `{ type: "mls", seq, epoch }` after each accepted entry. Everyone gets every entry, blockers included, because skipping entries would break their copy of the group.
 
-`packages/shared/test/mlsOpenmls.test.ts` replays real OpenMLS messages, written by a Rust test, through the same rules. The server's roster matches OpenMLS's leaf by leaf through adds, a removal, a new member reusing the freed leaf, a key update, and a message.
+`packages/shared/test/mlsOpenmls.test.ts` replays real OpenMLS messages, written by a Rust test, through the same rules. The server's roster matches OpenMLS's leaf by leaf through adds, a removal, a new member reusing the freed leaf, a key update, an external join, and a message.
 
 `apps/api/test/mls.e2e.ts` runs the routes through the real Worker, with ts-mls phones:
 
@@ -134,14 +137,17 @@ Open sockets get `{ type: "mls", seq, epoch }` after each accepted entry. Everyo
 - A direct chat forms, both sides send and read, and a resend with the same `clientId` isn't stored twice.
 - A message from an old epoch is refused, and v1 is refused once the chat is on MLS.
 - In a four-person group, after someone leaves, messages wait until their phone is removed, kicking a current member is refused, and the leaver can no longer read the log.
+- A chat stays on v1 while one member has no MLS phone, and moves once they do.
+- A member's new phone joins by itself from the stored GroupInfo, the other member applies the external commit later, and the new phone reads what follows.
 
 ### Before turning it on
 
 The flag hides the routes, but not everything:
 
 - **Deploy order.** Migration `0010` must be applied before this Worker is deployed. Account deletion now also deletes key packages, and that fails without the table. Every `ChatRoom` also creates its empty MLS tables when it wakes, flag or not. That's harmless, but it means the branch changes production storage the moment it's deployed.
-- **Readiness.** Today the first accepted commit moves a chat to MLS, and v1 sends are refused from then on, even if some member has no MLS phone yet. That member would be locked out. The switch must wait until every member has a registered MLS phone, as "Moving existing chats over" says. Not built.
-- **Recovery.** If every phone in a group's roster is gone (the creator alone left, or everyone reinstalled), nobody can commit, and a fresh group is refused because the roster isn't empty. External commits would fix this. Until they're accepted, such a chat is stuck. Not built.
+- **New members after the switch.** The readiness check covers the moment a chat moves to MLS. Someone who joins an open group later with an app that can't do MLS would be stuck. Before the flag goes on, `ANDROID_MIN_VERSION` must require an MLS-capable app.
+- **Phones that are gone but not retired.** A phone is retired only when someone has more than five, so a lost phone stays "active" and keeps its leaf. Nothing breaks, but those leaves never go away. The app needs a way to retire a phone, such as a list of signed-in phones under You, and then the server's pending-removal rule takes care of the group.
+- **Directory refresh.** Phones check every credential against the server's directory. A phone must fetch the directory again before applying new commits, or it will refuse a member's new phone. The end-to-end test client does this.
 - **Burned packages.** A commit the server refuses has already used the key packages it claimed. The last-resort package covers the gap, but phones should top up when `GET /mls/key-packages/:deviceId` runs low.
 
 ## How each feature works under MLS
@@ -168,7 +174,7 @@ Until then, the chat shows "Waiting for someone in the group to open the chat". 
 `tryJoinOpenGroup` adds the D1 row, and the newcomer's phones show up in `pendingAdds`. Two ways to finish it:
 
 - **External commit, which I recommend.** The new member's phone fetches the latest GroupInfo from the Durable Object and adds itself. The Durable Object serves GroupInfo only to people D1 lists as members. Nobody else needs to be online.
-- The next member who opens the chat adds them with a normal commit. This is what's built today. The server already stores the latest GroupInfo for the external-commit route, but it doesn't accept external commits yet.
+- The next member who opens the chat adds them with a normal commit. Both are built, so the app can do whichever comes first.
 
 Either way the newcomer reads only from their join onward, the same as today.
 
@@ -306,20 +312,20 @@ The ordering rule `admit` and the security-code function `codeForRoster` are wor
 
 ### What they don't prove
 
-- Two real devices through a real Durable Object. The server is built and tested end to end, but with ts-mls phones in Node, not the app's OpenMLS module.
+- Two real devices through a real Durable Object. The server is built and tested end to end, but with ts-mls phones in Node, not the app's OpenMLS module. OpenMLS output is checked against the server's rules by replaying a recorded session, not live.
 - External commits, franking, the phone's storage and sync loop, backup, and migration. Those are designed above and not built.
 - Performance on a real phone, or with 8 members.
 - Anything on ARM. All four ABIs compile, but only the x86_64 library has run, on the emulator. Nothing has run on a real phone yet.
 
 ## What's left, and roughly how long
 
-One developer who knows the codebase. Done on the branch since the first estimate: the server's header reader, the key package service, and the delivery service.
+One developer who knows the codebase. Done on the branch since the first estimate: the server's header reader, the key package service, the delivery service, the readiness check, and external commits with GroupInfo export.
 
 | Work | Estimate |
 |---|---|
 | Android build in EAS: install Rust there, or commit the built libraries | 2 to 3 days |
-| Server, still to do: the readiness check before switching a chat, accepting external commits (also the recovery path), rate-limiting claims, exporting GroupInfo from the wrapper | 3 to 5 days |
-| Rust wrapper: external commits for joining, last-resort key packages, per-chat state | 3 to 5 days |
+| Server, still to do: rate-limiting key package claims, and a way for people to retire a lost phone | 1 to 2 days |
+| Rust wrapper: last-resort key packages and per-chat state | 2 to 4 days |
 | Phone: encrypted state in SQLite, local message store, sync loop, send and retry, joining, committing pending removals | 8 to 12 days |
 | Franking for reports | 2 days |
 | Roster security code on the chat info screen | 1 day |
@@ -327,7 +333,7 @@ One developer who knows the codebase. Done on the branch since the first estimat
 | Migration: dormant release, per-chat switch, version gate, mixed timeline | 3 to 5 days |
 | Removing ts-mls and its adapter from the app once the native path covers everything | 1 day |
 | End-to-end tests with two devices, and on a real phone | 4 to 5 days |
-| **Total** | **about 6 to 9 weeks** |
+| **Total** | **about 6 to 8 weeks** |
 
 iOS isn't in this estimate. It would add a Swift module over the same Rust crate.
 

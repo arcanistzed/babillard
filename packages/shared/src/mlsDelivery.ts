@@ -12,6 +12,11 @@ import { MlsWireError, isWelcome, parseIdentity, readFrame, readGroupInfo, type 
  * - adding a phone that isn't a current member's registered phone
  * - removing anyone who should still be there (members can't kick each other)
  * - new messages while a phone that should be gone is still in the group
+ * - moving a chat to MLS before every member has a phone that can follow
+ *
+ * It also accepts external commits, where a member's phone adds itself from the
+ * latest GroupInfo. Every commit must carry that GroupInfo, so a chat can always
+ * recover, even if no phone in its group is ever online again.
  */
 
 export interface RosterEntry {
@@ -39,7 +44,10 @@ export type DeliveryError =
   | "bad_group_info"
   | "pending_removal"
   | "must_be_encrypted"
-  | "must_be_public";
+  | "must_be_public"
+  | "not_ready"
+  | "group_info_required"
+  | "already_in_group";
 
 export type Decision =
   | { ok: true; kind: "application"; epoch: number }
@@ -51,6 +59,8 @@ export interface Submission {
   epoch: number;
   roster: RosterEntry[];
   directory: Directory;
+  /** Every active member of the chat, including anyone with no MLS phone yet. */
+  memberIds: string[];
   sender: { userId: string; deviceId: string };
   message: Uint8Array;
   welcome?: Uint8Array;
@@ -101,27 +111,73 @@ export function decide(input: Submission): Decision {
   }
 
   if (frame.kind !== "commit") return refuse("not_mls");
-  if (frame.wireformat !== "public" || frame.sender.type !== "member" || !frame.commit) return refuse("must_be_public");
-  const { leafIndex } = frame.sender;
+  if (frame.wireformat !== "public" || !frame.commit) return refuse("must_be_public");
   const summary = frame.commit;
 
+  // Every commit carries the next epoch's GroupInfo. Keeping it current is what lets a phone
+  // rejoin on its own later, even if no phone left in the group is ever online again.
+  if (!input.groupInfo) return refuse("group_info_required");
+  try {
+    const info = readGroupInfo(input.groupInfo);
+    if (info.groupId !== conversationId || info.epoch !== epoch + 1) return refuse("bad_group_info");
+  } catch {
+    return refuse("bad_group_info");
+  }
+
+  // Whoever commits, their new leaf must keep their own identity and registered key.
+  if (summary.pathLeaf) {
+    const who = vouched(directory, summary.pathLeaf);
+    if (who?.userId !== sender.userId || who.deviceId !== sender.deviceId) return refuse("bad_credential");
+  }
+
+  const freeLeaf = (entries: RosterEntry[]) => {
+    const taken = new Set(entries.map((entry) => entry.leafIndex));
+    let free = 0;
+    while (taken.has(free)) free++;
+    return free;
+  };
+  const done = (next: RosterEntry[], added: RosterEntry[]): Decision => ({
+    ok: true,
+    kind: "commit",
+    epoch,
+    nextEpoch: epoch + 1,
+    roster: [...next].sort((a, b) => a.leafIndex - b.leafIndex),
+    added,
+  });
+
+  if (frame.sender.type !== "member") {
+    // An external commit: a member's phone adds itself from the stored GroupInfo. This is how a
+    // phone joins with nobody else online, and how a chat recovers if every phone in it is gone.
+    if (frame.sender.senderType !== 4 || summary.externalInits !== 1 || summary.adds.length || input.welcome) return refuse("must_be_public");
+    if (roster.length === 0) return refuse("no_group");
+    if (!summary.pathLeaf) return refuse("bad_credential");
+    // It may remove only the same phone's old leaf, which is how a phone that lost its state rejoins.
+    let next = roster.map((entry) => ({ ...entry }));
+    for (const removed of summary.removes) {
+      const entry = next.find((candidate) => candidate.leafIndex === removed);
+      if (entry?.deviceId !== sender.deviceId) return refuse("removal_not_allowed");
+      next = next.filter((candidate) => candidate.leafIndex !== removed);
+    }
+    if (next.some((entry) => entry.deviceId === sender.deviceId)) return refuse("already_in_group");
+    const entry = { leafIndex: freeLeaf(next), ...sender };
+    return done([...next, entry], []);
+  }
+
+  if (summary.externalInits) return refuse("must_be_public");
+  const { leafIndex } = frame.sender;
   let next: RosterEntry[];
   if (roster.length === 0) {
     // The first commit creates the group on the server. Its author is leaf 0, and it must carry
     // an update path, whose leaf shows the author's identity. Otherwise anyone could replay a
     // creator's commit and claim leaf 0. OpenMLS always includes the path when adding.
     if (epoch !== 0 || leafIndex !== 0 || !summary.pathLeaf) return refuse("wrong_sender");
+    // A chat moves to MLS only once everyone in it can follow. After this, v1 is refused.
+    if (input.memberIds.some((memberId) => !directory.get(memberId)?.size)) return refuse("not_ready");
     next = [{ leafIndex: 0, ...sender }];
   } else {
     const author = roster.find((entry) => entry.leafIndex === leafIndex);
     if (author?.deviceId !== sender.deviceId || author.userId !== sender.userId) return refuse("wrong_sender");
     next = roster.map((entry) => ({ ...entry }));
-  }
-
-  // A committer's new leaf must keep its own identity and registered key.
-  if (summary.pathLeaf) {
-    const who = vouched(directory, summary.pathLeaf);
-    if (who?.userId !== sender.userId || who.deviceId !== sender.deviceId) return refuse("bad_credential");
   }
 
   // RFC 9420 applies removals before adds, so an add can reuse a leaf freed in the same commit.
@@ -136,25 +192,12 @@ export function decide(input: Submission): Decision {
   for (const add of summary.adds) {
     const who = vouched(directory, add);
     if (!who || next.some((entry) => entry.deviceId === who.deviceId)) return refuse("add_not_allowed");
-    const taken = new Set(next.map((entry) => entry.leafIndex));
-    let free = 0;
-    while (taken.has(free)) free++;
-    const entry = { leafIndex: free, ...who };
+    const entry = { leafIndex: freeLeaf(next), ...who };
     next.push(entry);
     added.push(entry);
   }
 
   if (added.length && !input.welcome) return refuse("welcome_required");
   if (input.welcome && (!added.length || !isWelcome(input.welcome))) return refuse("not_mls");
-  if (input.groupInfo) {
-    try {
-      const info = readGroupInfo(input.groupInfo);
-      if (info.groupId !== conversationId || info.epoch !== epoch + 1) return refuse("bad_group_info");
-    } catch {
-      return refuse("bad_group_info");
-    }
-  }
-
-  next.sort((a, b) => a.leafIndex - b.leafIndex);
-  return { ok: true, kind: "commit", epoch, nextEpoch: epoch + 1, roster: next, added };
+  return done(next, added);
 }

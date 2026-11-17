@@ -244,17 +244,19 @@ fn roster_json(phone: &Phone) -> String {
     format!("[{}]", entries.join(","))
 }
 
-fn fixture_step(steps: &mut Vec<String>, sender: &str, epoch: u64, kind: &str, message: &[u8], welcome: Option<&[u8]>, roster: String) {
+#[allow(clippy::too_many_arguments)]
+fn fixture_step(steps: &mut Vec<String>, sender: &str, epoch: u64, kind: &str, message: &[u8], welcome: Option<&[u8]>, group_info: Option<&[u8]>, roster: String) {
     let welcome = welcome.map(|w| format!(r#","welcome":"{}""#, hex(w))).unwrap_or_default();
-    steps.push(format!(r#"{{"sender":"{sender}","epoch":{epoch},"kind":"{kind}","message":"{}"{welcome},"roster":{roster}}}"#, hex(message)));
+    let group_info = group_info.map(|g| format!(r#","groupInfo":"{}""#, hex(g))).unwrap_or_default();
+    steps.push(format!(r#"{{"sender":"{sender}","epoch":{epoch},"kind":"{kind}","message":"{}"{welcome}{group_info},"roster":{roster}}}"#, hex(message)));
 }
 
 /// Writes real OpenMLS messages for the TypeScript server tests, when BABILLARD_MLS_FIXTURE names a file.
 /// The steps cover leaf reuse: Carol leaves leaf 2 empty, and Dave should take it.
 #[test]
 fn server_fixture() {
-    let (mut alice, mut bob, mut carol, mut dave) = (phone("alice"), phone("bob"), phone("carol"), phone("dave"));
-    let trusted = trust(&[&alice, &bob, &carol, &dave]);
+    let (mut alice, mut bob, mut carol, mut dave, mut erin) = (phone("alice"), phone("bob"), phone("carol"), phone("dave"), phone("erin"));
+    let trusted = trust(&[&alice, &bob, &carol, &dave, &erin]);
     let mut steps: Vec<String> = Vec::new();
 
     // The first commit adds Bob and Carol. OpenMLS forces an update path, which the server requires.
@@ -264,39 +266,81 @@ fn server_fixture() {
     for joiner in [&mut bob, &mut carol] {
         joiner.state = join_from_welcome(joiner.state.clone(), first.welcome.clone().unwrap(), trusted.clone()).unwrap().state;
     }
-    fixture_step(&mut steps, "alice", 0, "commit", &first.commit, first.welcome.as_deref(), roster_json(&alice));
+    fixture_step(&mut steps, "alice", 0, "commit", &first.commit, first.welcome.as_deref(), Some(&first.group_info), roster_json(&alice));
 
     let removal = remove_user(alice.state.clone(), GROUP.to_vec(), "carol".into()).unwrap();
     alice.state = removal.state;
     read(&mut bob, &removal.commit, &trusted).unwrap();
-    fixture_step(&mut steps, "alice", 1, "commit", &removal.commit, None, roster_json(&alice));
+    fixture_step(&mut steps, "alice", 1, "commit", &removal.commit, None, Some(&removal.group_info), roster_json(&alice));
 
     let add = add_members(alice.state.clone(), GROUP.to_vec(), vec![dave.key_package.clone()], trusted.clone()).unwrap();
     alice.state = add.state;
     read(&mut bob, &add.commit, &trusted).unwrap();
     dave.state = join_from_welcome(dave.state.clone(), add.welcome.clone().unwrap(), trusted.clone()).unwrap().state;
-    fixture_step(&mut steps, "alice", 2, "commit", &add.commit, add.welcome.as_deref(), roster_json(&alice));
+    fixture_step(&mut steps, "alice", 2, "commit", &add.commit, add.welcome.as_deref(), Some(&add.group_info), roster_json(&alice));
 
     let update = update_keys(bob.state.clone(), GROUP.to_vec()).unwrap();
     bob.state = update.state;
     read(&mut alice, &update.commit, &trusted).unwrap();
     read(&mut dave, &update.commit, &trusted).unwrap();
-    fixture_step(&mut steps, "bob", 3, "commit", &update.commit, None, roster_json(&bob));
+    fixture_step(&mut steps, "bob", 3, "commit", &update.commit, None, Some(&update.group_info), roster_json(&bob));
 
-    let sent = encrypt(alice.state.clone(), GROUP.to_vec(), b"hello".to_vec(), Vec::new()).unwrap();
+    // Erin joins by herself from Bob's GroupInfo, with an external commit, and takes leaf 3.
+    let joined = join_external(erin.state.clone(), update.group_info.clone(), trusted.clone()).unwrap();
+    erin.state = joined.state;
+    for member in [&mut alice, &mut bob, &mut dave] {
+        read(member, &joined.commit, &trusted).unwrap();
+    }
+    fixture_step(&mut steps, "erin", 4, "commit", &joined.commit, None, Some(&joined.group_info), roster_json(&erin));
+
+    let sent = encrypt(alice.state.clone(), GROUP.to_vec(), b"hello".to_vec(), b"commitment".to_vec()).unwrap();
     alice.state = sent.state;
     match read(&mut dave, &sent.message, &trusted).unwrap() {
         Received::Application { plaintext, .. } => assert_eq!(plaintext, b"hello"),
         Received::Commit { .. } => panic!("expected a message"),
     }
-    fixture_step(&mut steps, "alice", 4, "application", &sent.message, None, roster_json(&alice));
+    assert_eq!(text(read(&mut erin, &sent.message, &trusted).unwrap()).0, "hello");
+    fixture_step(&mut steps, "alice", 5, "application", &sent.message, None, None, roster_json(&alice));
 
     let Ok(path) = std::env::var("BABILLARD_MLS_FIXTURE") else { return };
-    let devices: Vec<String> = [&alice, &bob, &carol, &dave]
+    let devices: Vec<String> = [&alice, &bob, &carol, &dave, &erin]
         .iter()
         .map(|p| format!(r#"{{"userId":"{}","deviceId":"{}-phone","signatureKey":"{}","keyPackage":"{}"}}"#, p.user, p.user, hex(&p.signature_key), hex(&p.key_package)))
         .collect();
     let group = String::from_utf8(GROUP.to_vec()).unwrap();
     let json = format!(r#"{{"groupId":"{group}","devices":[{}],"steps":[{}]}}"#, devices.join(","), steps.join(","));
     std::fs::write(path, json + "\n").unwrap();
+}
+
+#[test]
+fn a_phone_joins_by_itself_from_group_info() {
+    let (mut alice, mut bob, mut carol) = (phone("alice"), phone("bob"), phone("carol"));
+    let trusted = trust(&[&alice, &bob, &carol]);
+    let first = form(&mut alice, &mut [&mut bob], &trusted);
+    drop(first);
+    // Alice's latest GroupInfo, as the server would store it.
+    let update = update_keys(alice.state.clone(), GROUP.to_vec()).unwrap();
+    alice.state = update.state;
+    read(&mut bob, &update.commit, &trusted).unwrap();
+
+    // Carol joins with nobody's help, and the others accept her commit.
+    let joined = join_external(carol.state.clone(), update.group_info.clone(), trusted.clone()).unwrap();
+    assert_eq!(joined.group_id, GROUP);
+    carol.state = joined.state;
+    read(&mut alice, &joined.commit, &trusted).unwrap();
+    read(&mut bob, &joined.commit, &trusted).unwrap();
+    let hello = send(&mut carol, "I'm in");
+    assert_eq!(text(read(&mut alice, &hello, &trusted).unwrap()).0, "I'm in");
+    assert_eq!(roster_of(&alice), roster_of(&carol));
+
+    // A phone that doesn't vouch for everyone already in the group refuses to join it.
+    let dave = phone("dave");
+    let daves_view = trust(&[&alice, &dave]);
+    let result = join_external(dave.state.clone(), update.group_info, daves_view);
+    assert!(matches!(result, Err(MlsError::UntrustedCredential)));
+    // And members refuse an external commit from a phone they don't vouch for.
+    let mallory = phone("mallory");
+    let late = join_external(mallory.state.clone(), joined.group_info, trust(&[&alice, &bob, &carol, &mallory])).unwrap();
+    let bobs_view = trust(&[&alice, &bob, &carol]);
+    assert!(matches!(read(&mut bob, &late.commit, &bobs_view), Err(MlsError::UntrustedCredential)));
 }

@@ -65,21 +65,28 @@ class BabillardMlsModule : Module() {
     AsyncFunction("addMembers") { state: String, groupId: String, keyPackages: List<String>, devices: List<Map<String, String>> ->
       mls {
         val output = uniffi.babillard_mls.addMembers(bytes(state), bytes(groupId), keyPackages.map { bytes(it) }, trusted(devices))
-        mapOf("state" to text(output.state), "commit" to text(output.commit), "welcome" to output.welcome?.let { text(it) })
+        mapOf("state" to text(output.state), "commit" to text(output.commit), "welcome" to output.welcome?.let { text(it) }, "groupInfo" to text(output.groupInfo))
       }
     }
 
     AsyncFunction("removeUser") { state: String, groupId: String, userId: String ->
       mls {
         val output = uniffi.babillard_mls.removeUser(bytes(state), bytes(groupId), userId)
-        mapOf("state" to text(output.state), "commit" to text(output.commit))
+        mapOf("state" to text(output.state), "commit" to text(output.commit), "groupInfo" to text(output.groupInfo))
       }
     }
 
     AsyncFunction("updateKeys") { state: String, groupId: String ->
       mls {
         val output = uniffi.babillard_mls.updateKeys(bytes(state), bytes(groupId))
-        mapOf("state" to text(output.state), "commit" to text(output.commit))
+        mapOf("state" to text(output.state), "commit" to text(output.commit), "groupInfo" to text(output.groupInfo))
+      }
+    }
+
+    AsyncFunction("joinExternal") { state: String, groupInfo: String, devices: List<Map<String, String>> ->
+      mls {
+        val joined = uniffi.babillard_mls.joinExternal(bytes(state), bytes(groupInfo), trusted(devices))
+        mapOf("state" to text(joined.state), "groupId" to text(joined.groupId), "commit" to text(joined.commit), "groupInfo" to text(joined.groupInfo))
       }
     }
 

@@ -92,7 +92,7 @@ class Reader {
 const VERSION_MLS10 = 1;
 const WIRE = { public: 1, private: 2, welcome: 3, groupInfo: 4, keyPackage: 5 } as const;
 const CONTENT = { 1: "application", 2: "proposal", 3: "commit" } as const;
-const PROPOSAL = { add: 1, update: 2, remove: 3 } as const;
+const PROPOSAL = { add: 1, update: 2, remove: 3, externalInit: 6 } as const;
 
 export interface Identity {
   /** The basic credential's identity, as text. Babillard uses `userId/deviceId`. */
@@ -106,6 +106,8 @@ export interface CommitSummary {
   adds: Identity[];
   /** The committer's new leaf, if the commit carries an update path. */
   pathLeaf?: Identity;
+  /** How many ExternalInit proposals it has. An external commit, where a phone adds itself, has exactly one. */
+  externalInits: number;
 }
 
 export type Frame =
@@ -157,12 +159,16 @@ function proposal(reader: Reader, summary: CommitSummary): void {
   const type = reader.u16();
   if (type === PROPOSAL.add) summary.adds.push(keyPackageBody(reader));
   else if (type === PROPOSAL.remove) summary.removes.push(reader.u32());
-  // Babillard commits only add and remove. Anything else, including updates by value, is refused.
+  else if (type === PROPOSAL.externalInit) {
+    reader.vector(); // KEM output
+    summary.externalInits += 1;
+  }
+  // Babillard commits only add, remove, and join externally. Anything else, including updates by value, is refused.
   else throw new MlsWireError(`unsupported proposal type ${type}`);
 }
 
 function commit(reader: Reader): CommitSummary {
-  const summary: CommitSummary = { removes: [], adds: [] };
+  const summary: CommitSummary = { removes: [], adds: [], externalInits: 0 };
   const inner = new Reader(reader.vector());
   while (!inner.done) {
     const kind = inner.u8();

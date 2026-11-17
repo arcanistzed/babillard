@@ -166,7 +166,7 @@ mls.post("/conversations/:id/messages", async (c) => {
   const input = await parseJson(c, mlsSubmitSchema);
   const result = await c.env.CHAT_ROOM.getByName(id).mlsSubmit(id, user.id, input);
   if (!result.ok) {
-    const conflict = ["stale_epoch", "pending_removal", "no_group"].includes(result.error);
+    const conflict = ["stale_epoch", "pending_removal", "no_group", "not_ready"].includes(result.error);
     return c.json({ error: result.error, epoch: result.epoch }, conflict ? 409 : 403);
   }
   return c.json(result.entry, 201);

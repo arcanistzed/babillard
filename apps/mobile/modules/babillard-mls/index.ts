@@ -30,9 +30,10 @@ interface NativeModule {
   createIdentity(userId: string, deviceId: string): Promise<Encoded<{ state: Uint8Array; keyPackage: Uint8Array; signatureKey: Uint8Array }>>;
   createKeyPackage(state: string): Promise<Encoded<{ state: Uint8Array; keyPackage: Uint8Array }>>;
   createGroup(state: string, groupId: string): Promise<string>;
-  addMembers(state: string, groupId: string, keyPackages: string[], trusted: Encoded<TrustedDevice>[]): Promise<{ state: string; commit: string; welcome: string | null }>;
-  removeUser(state: string, groupId: string, userId: string): Promise<{ state: string; commit: string }>;
-  updateKeys(state: string, groupId: string): Promise<{ state: string; commit: string }>;
+  addMembers(state: string, groupId: string, keyPackages: string[], trusted: Encoded<TrustedDevice>[]): Promise<{ state: string; commit: string; welcome: string | null; groupInfo: string }>;
+  removeUser(state: string, groupId: string, userId: string): Promise<{ state: string; commit: string; groupInfo: string }>;
+  updateKeys(state: string, groupId: string): Promise<{ state: string; commit: string; groupInfo: string }>;
+  joinExternal(state: string, groupInfo: string, trusted: Encoded<TrustedDevice>[]): Promise<{ state: string; groupId: string; commit: string; groupInfo: string }>;
   joinFromWelcome(state: string, welcome: string, trusted: Encoded<TrustedDevice>[]): Promise<{ state: string; groupId: string }>;
   encrypt(state: string, groupId: string, plaintext: string, aad: string): Promise<{ state: string; message: string }>;
   receive(state: string, groupId: string, message: string, trusted: Encoded<TrustedDevice>[]): Promise<Record<string, string | boolean>>;
@@ -69,17 +70,33 @@ export async function createGroup(state: Uint8Array, conversationId: string): Pr
 
 export async function addMembers(state: Uint8Array, conversationId: string, keyPackages: Uint8Array[], trusted: TrustedDevice[]) {
   const output = await module().addMembers(toBase64(state), toBase64(encoder.encode(conversationId)), keyPackages.map(toBase64), encodeTrusted(trusted));
-  return { state: fromBase64(output.state), commit: fromBase64(output.commit), welcome: output.welcome === null ? undefined : fromBase64(output.welcome) };
+  return {
+    state: fromBase64(output.state),
+    commit: fromBase64(output.commit),
+    welcome: output.welcome === null ? undefined : fromBase64(output.welcome),
+    groupInfo: fromBase64(output.groupInfo),
+  };
 }
 
 export async function removeUser(state: Uint8Array, conversationId: string, userId: string) {
   const output = await module().removeUser(toBase64(state), toBase64(encoder.encode(conversationId)), userId);
-  return { state: fromBase64(output.state), commit: fromBase64(output.commit) };
+  return { state: fromBase64(output.state), commit: fromBase64(output.commit), groupInfo: fromBase64(output.groupInfo) };
 }
 
 export async function updateKeys(state: Uint8Array, conversationId: string) {
   const output = await module().updateKeys(toBase64(state), toBase64(encoder.encode(conversationId)));
-  return { state: fromBase64(output.state), commit: fromBase64(output.commit) };
+  return { state: fromBase64(output.state), commit: fromBase64(output.commit), groupInfo: fromBase64(output.groupInfo) };
+}
+
+/** Joins a chat by itself from the server's latest GroupInfo. Submit `commit` with `groupInfo`, like any commit. */
+export async function joinExternal(state: Uint8Array, groupInfo: Uint8Array, trusted: TrustedDevice[]) {
+  const joined = await module().joinExternal(toBase64(state), toBase64(groupInfo), encodeTrusted(trusted));
+  return {
+    state: fromBase64(joined.state),
+    conversationId: new TextDecoder().decode(fromBase64(joined.groupId)),
+    commit: fromBase64(joined.commit),
+    groupInfo: fromBase64(joined.groupInfo),
+  };
 }
 
 export async function joinFromWelcome(state: Uint8Array, welcome: Uint8Array, trusted: TrustedDevice[]) {

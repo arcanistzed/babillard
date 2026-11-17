@@ -3,6 +3,8 @@ import {
   acceptAll,
   createApplicationMessage,
   createCommit,
+  createGroupInfoWithExternalPubAndRatchetTree,
+  joinGroupExternal,
   createGroup,
   decodeGroupState,
   decodeMlsMessage,
@@ -100,6 +102,14 @@ export interface CommitOutput {
   /** A PublicMessage, so the server can read its epoch and order it. */
   commit: Uint8Array;
   welcome?: Uint8Array;
+  /** The new epoch's GroupInfo, with the ratchet tree. The server requires it with every commit. */
+  groupInfo: Uint8Array;
+}
+
+/** The GroupInfo a phone needs to join this group on its own. */
+async function groupInfoOf(state: ClientState, cs: CiphersuiteImpl): Promise<Uint8Array> {
+  const groupInfo = await createGroupInfoWithExternalPubAndRatchetTree(state, [], cs);
+  return encodeMlsMessage({ version: "mls10", wireformat: "mls_group_info", groupInfo });
 }
 
 async function commit(state: ClientState, proposals: Proposal[], cs: CiphersuiteImpl): Promise<CommitOutput> {
@@ -108,6 +118,19 @@ async function commit(state: ClientState, proposals: Proposal[], cs: Ciphersuite
     state: result.newState,
     commit: encodeMlsMessage(result.commit),
     ...(result.welcome ? { welcome: encodeMlsMessage({ version: "mls10", wireformat: "mls_welcome", welcome: result.welcome }) } : {}),
+    groupInfo: await groupInfoOf(result.newState, cs),
+  };
+}
+
+/** Joins from the server's latest GroupInfo with an external commit, with nobody else's help. */
+export async function joinExternally(groupInfo: Uint8Array, device: MlsDevice, cs: CiphersuiteImpl, config: ClientConfig): Promise<CommitOutput> {
+  const message = decodeMlsMessage(groupInfo, 0)?.[0];
+  if (message?.wireformat !== "mls_group_info") throw new Error("Not a group info");
+  const result = await joinGroupExternal(message.groupInfo, device.keyPackage, device.privatePackage, false, cs, undefined, config);
+  return {
+    state: result.newState,
+    commit: encodeMlsMessage({ version: "mls10", wireformat: "mls_public_message", publicMessage: result.publicMessage }),
+    groupInfo: await groupInfoOf(result.newState, cs),
   };
 }
 

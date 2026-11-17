@@ -68,6 +68,18 @@ pub struct CommitOutput {
     /// A PublicMessage, so the server can read its epoch.
     pub commit: Vec<u8>,
     pub welcome: Option<Vec<u8>>,
+    /// The new epoch's GroupInfo, with the ratchet tree. The server requires it with every commit,
+    /// so any member's phone can always join on its own.
+    pub group_info: Vec<u8>,
+}
+
+#[derive(uniffi::Record)]
+pub struct ExternalJoin {
+    pub state: Vec<u8>,
+    pub group_id: Vec<u8>,
+    /// An external commit, for the server's log.
+    pub commit: Vec<u8>,
+    pub group_info: Vec<u8>,
 }
 
 #[derive(uniffi::Record)]
@@ -271,8 +283,17 @@ impl Device {
         MlsGroup::load(self.provider.storage(), &GroupId::from_slice(group_id)).map_err(fail)?.ok_or_else(|| fail("no such group"))
     }
 
-    fn commit_output(&self, commit: MlsMessageOut, welcome: Option<MlsMessageOut>) -> Result<CommitOutput> {
-        Ok(CommitOutput { state: self.save()?, commit: write_message(&commit)?, welcome: welcome.as_ref().map(write_message).transpose()? })
+    fn group_info(&self, group: &MlsGroup) -> Result<Vec<u8>> {
+        write_message(&group.export_group_info(self.provider.crypto(), &self.signer()?, true).map_err(fail)?)
+    }
+
+    fn commit_output(&self, group: &MlsGroup, commit: MlsMessageOut, welcome: Option<MlsMessageOut>) -> Result<CommitOutput> {
+        Ok(CommitOutput {
+            state: self.save()?,
+            commit: write_message(&commit)?,
+            welcome: welcome.as_ref().map(write_message).transpose()?,
+            group_info: self.group_info(group)?,
+        })
     }
 }
 
@@ -322,7 +343,7 @@ pub fn add_members(state: Vec<u8>, group_id: Vec<u8>, key_packages: Vec<Vec<u8>>
     let mut group = device.group(&group_id)?;
     let (commit, welcome, _) = group.add_members(&device.provider, &device.signer()?, &packages).map_err(fail)?;
     group.merge_pending_commit(&device.provider).map_err(fail)?;
-    device.commit_output(commit, Some(welcome))
+    device.commit_output(&group, commit, Some(welcome))
 }
 
 /// A commit with no proposals. It replaces this phone's own keys, which is what gives post-compromise security.
@@ -333,7 +354,7 @@ pub fn update_keys(state: Vec<u8>, group_id: Vec<u8>) -> Result<CommitOutput> {
     let bundle = group.self_update(&device.provider, &device.signer()?, LeafNodeParameters::default()).map_err(fail)?;
     group.merge_pending_commit(&device.provider).map_err(fail)?;
     let (commit, _, _) = bundle.into_contents();
-    device.commit_output(commit, None)
+    device.commit_output(&group, commit, None)
 }
 
 /// Removes every phone a person has, for a leave, a ban, or a deleted account.
@@ -347,7 +368,38 @@ pub fn remove_user(state: Vec<u8>, group_id: Vec<u8>, user_id: String) -> Result
     }
     let (commit, welcome, _) = group.remove_members(&device.provider, &device.signer()?, &leaves).map_err(fail)?;
     group.merge_pending_commit(&device.provider).map_err(fail)?;
-    device.commit_output(commit, welcome)
+    device.commit_output(&group, commit, welcome)
+}
+
+/// Joins a group by itself, from the server's latest GroupInfo, with an external commit. Nobody else
+/// needs to be online. If this phone was already in the group but lost its state, OpenMLS removes the
+/// old leaf in the same commit. Every member already in the group is checked first.
+#[uniffi::export]
+pub fn join_external(state: Vec<u8>, group_info: Vec<u8>, trusted: Vec<TrustedDevice>) -> Result<ExternalJoin> {
+    let device = Device::load(&state)?;
+    let MlsMessageBodyIn::GroupInfo(info) = read_message(&group_info)? else {
+        return Err(fail("not a group info"));
+    };
+    let (group, bundle) = MlsGroup::external_commit_builder()
+        .with_config(join_config())
+        .build_group(&device.provider, info, device.credential())
+        .map_err(fail)?
+        .load_psks(device.provider.storage())
+        .map_err(fail)?
+        .build(device.provider.rand(), device.provider.crypto(), &device.signer()?, |_| true)
+        .map_err(fail)?
+        .finalize(&device.provider)
+        .map_err(fail)?;
+    for member in group.members() {
+        check(&trusted, &member.credential, &member.signature_key)?;
+    }
+    let (commit, _, _) = bundle.into_messages();
+    Ok(ExternalJoin {
+        group_id: group.group_id().as_slice().to_vec(),
+        commit: write_message(&commit)?,
+        group_info: device.group_info(&group)?,
+        state: device.save()?,
+    })
 }
 
 /// Joins from a Welcome, after checking every member already in the group.
@@ -402,6 +454,8 @@ pub fn receive(state: Vec<u8>, group_id: Vec<u8>, message: Vec<u8>, trusted: Vec
                     Proposal::Add(add) => check_leaf(&trusted, add.key_package().leaf_node())?,
                     Proposal::Update(update) => check_leaf(&trusted, update.leaf_node())?,
                     Proposal::Remove(_) => {}
+                    // Only valid in an external commit, where the joiner is the update path leaf checked above.
+                    Proposal::ExternalInit(_) => {}
                     // Group extensions could add an external sender. Babillard never uses them, so refuse.
                     other => return Err(fail(format!("unsupported proposal {:?}", other.proposal_type()))),
                 }

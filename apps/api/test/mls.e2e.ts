@@ -4,7 +4,7 @@
 // ts-mls clients in Node: the wire format is standard MLS, so the server can't
 // tell them from the app's OpenMLS module.
 import { fromBase64, toBase64, type MlsGroupState, type MlsLogEntry } from "@babillard/shared";
-import { addDevices, clientConfig, createDevice, encodeKeyPackage, encryptText, joinFromWelcome, receive, removeUser, startGroup, type MlsDevice } from "@babillard/shared/mls";
+import { addDevices, clientConfig, createDevice, encodeKeyPackage, encryptText, joinExternally, joinFromWelcome, receive, removeUser, startGroup, type MlsDevice } from "@babillard/shared/mls";
 import { mlsCiphersuite } from "@babillard/shared/mls";
 import { randomBytes } from "node:crypto";
 import type { ClientState } from "ts-mls";
@@ -16,9 +16,21 @@ const PROD = "http://localhost:8798";
 const cs = mlsCiphersuite((length) => new Uint8Array(randomBytes(length)));
 
 let counter = 0;
-async function person(cityId: string): Promise<Client> {
+async function person(cityId: string): Promise<Client & { email: string }> {
   counter += 1;
-  return createPerson(BASE, `mls-${counter}-${Date.now()}@example.test`, { displayName: `MLS ${counter}`, cityId });
+  const email = `mls-${counter}-${Date.now()}@example.test`;
+  return Object.assign(await createPerson(BASE, email, { displayName: `MLS ${counter}`, cityId }), { email });
+}
+
+/** Two people who match on a topic, and their direct chat. */
+async function directChat(topicId: string) {
+  const [a, b] = await Promise.all([person("chicago-il-us"), person("chicago-il-us")]);
+  await a.post(`/deck/topics/${topicId}/swipe`, { direction: "right" });
+  await b.post(`/deck/topics/${topicId}/swipe`, { direction: "right" });
+  await a.post(`/people/${b.id}/swipe`, { direction: "right" });
+  const { conversationId } = await b.post(`/people/${a.id}/swipe`, { direction: "right" });
+  expect(conversationId).toBeTruthy();
+  return { a, b, conversationId: conversationId as string };
 }
 
 async function status(promise: Promise<unknown>): Promise<number> {
@@ -52,17 +64,21 @@ function trustFrom(state: MlsGroupState) {
   return clientConfig(({ userId, deviceId }, key) => state.directory.some((d) => d.userId === userId && d.deviceId === deviceId && d.signatureKey === toBase64(key)));
 }
 
-async function submit(p: Phone, conversationId: string, message: Uint8Array, extra: { welcome?: Uint8Array; clientId?: string } = {}): Promise<MlsLogEntry> {
+async function submit(p: Phone, conversationId: string, message: Uint8Array, extra: { welcome?: Uint8Array; groupInfo?: Uint8Array; clientId?: string } = {}): Promise<MlsLogEntry> {
   return p.client.post(`/mls/conversations/${conversationId}/messages`, {
     deviceId: p.client.device.publicKey,
     message: toBase64(message),
     ...(extra.welcome ? { welcome: toBase64(extra.welcome) } : {}),
+    ...(extra.groupInfo ? { groupInfo: toBase64(extra.groupInfo) } : {}),
     ...(extra.clientId ? { clientId: extra.clientId } : {}),
   });
 }
 
 /** Applies everything new in the log, skipping the phone's own entries. Returns the texts it read. */
 async function catchUp(p: Phone, conversationId: string): Promise<string[]> {
+  // The directory changes as people add phones, so check credentials against the latest one.
+  const server: MlsGroupState = await p.client.get(`/mls/conversations/${conversationId}`);
+  p.state = { ...p.state!, clientConfig: trustFrom(server) };
   const entries: MlsLogEntry[] = await p.client.get(`/mls/conversations/${conversationId}/messages?since=${p.cursor}`);
   const texts: string[] = [];
   for (const entry of entries) {
@@ -79,7 +95,7 @@ async function catchUp(p: Phone, conversationId: string): Promise<string[]> {
 async function startOnServer(p: Phone, conversationId: string): Promise<void> {
   const server: MlsGroupState = await p.client.get(`/mls/conversations/${conversationId}`);
   const created = await addDevices(await startGroup(conversationId, p.device, cs, trustFrom(server)), [], cs);
-  const entry = await submit(p, conversationId, created.commit);
+  const entry = await submit(p, conversationId, created.commit, { groupInfo: created.groupInfo });
   p.state = created.state;
   p.cursor = entry.seq;
 }
@@ -88,7 +104,7 @@ async function addAll(p: Phone, conversationId: string, others: Phone[]): Promis
   const claimed = await p.client.post(`/mls/conversations/${conversationId}/key-packages`, { deviceIds: others.map((o) => o.client.device.publicKey) });
   expect(claimed.missing).toEqual([]);
   const added = await addDevices(p.state!, claimed.keyPackages.map((k: { keyPackage: string }) => fromBase64(k.keyPackage)), cs);
-  const entry = await submit(p, conversationId, added.commit, { welcome: added.welcome! });
+  const entry = await submit(p, conversationId, added.commit, { welcome: added.welcome!, groupInfo: added.groupInfo });
   p.state = added.state;
   p.cursor = entry.seq;
   for (const other of others) {
@@ -105,12 +121,7 @@ describe("MLS delivery service", () => {
   });
 
   it("checks key packages, orders a two-person chat, and moves it off v1", async () => {
-    const [a, b] = await Promise.all([person("chicago-il-us"), person("chicago-il-us")]);
-    await a.post("/deck/topics/astrophysics-and-cosmology/swipe", { direction: "right" });
-    await b.post("/deck/topics/astrophysics-and-cosmology/swipe", { direction: "right" });
-    await a.post(`/people/${b.id}/swipe`, { direction: "right" });
-    const { conversationId } = await b.post(`/people/${a.id}/swipe`, { direction: "right" });
-    expect(conversationId).toBeTruthy();
+    const { a, b, conversationId } = await directChat("astrophysics-and-cosmology");
 
     const [alice, bob] = await Promise.all([phone(a), phone(b)]);
     // A key package must be the uploading phone's own, with its registered key.
@@ -173,10 +184,10 @@ describe("MLS delivery service", () => {
     expect(await status(submit(first, id, blocked.message))).toBe(409);
     // Removing someone who's still a member isn't allowed.
     const kick = await removeUser(first.state!, second.client.id, cs);
-    expect(await status(submit(first, id, kick.commit))).toBe(403);
+    expect(await status(submit(first, id, kick.commit, { groupInfo: kick.groupInfo }))).toBe(403);
 
     const removal = await removeUser(first.state!, leaver.client.id, cs);
-    await submit(first, id, removal.commit);
+    await submit(first, id, removal.commit, { groupInfo: removal.groupInfo });
     first.state = removal.state;
     const now = await encryptText(first.state, "now it's just us", cs);
     await submit(first, id, now.message);
@@ -184,5 +195,42 @@ describe("MLS delivery service", () => {
     expect(await catchUp(second, id)).toEqual(["now it's just us"]);
     // The leaver can't read the log any more.
     expect(await status(leaver.client.get(`/mls/conversations/${id}/messages?since=0`))).toBe(404);
+  });
+  it("waits to move a chat to MLS until everyone has a phone that can follow", async () => {
+    const { a, b, conversationId } = await directChat("philosophy-of-science");
+    const alice = await phone(a);
+    // Bob's app can't do MLS yet, so starting the group would lock him out.
+    await expect(startOnServer(alice, conversationId)).rejects.toMatchObject({ status: 409, body: { error: "not_ready" } });
+    expect((await a.get(`/mls/conversations/${conversationId}`)).mode).toBe("v1");
+    await phone(b);
+    await startOnServer(alice, conversationId);
+    expect((await a.get(`/mls/conversations/${conversationId}`)).mode).toBe("mls");
+  });
+
+  it("lets a new phone join by itself, with nobody else online", async () => {
+    const { a, b, conversationId } = await directChat("quantum-mechanics-and-interpretation");
+    const [alice, bob] = await Promise.all([phone(a), phone(b)]);
+    await startOnServer(alice, conversationId);
+    await addAll(alice, conversationId, [bob]);
+
+    // Bob signs in on a new phone. It has its own keys, and nobody adds it.
+    const newPhone = await phone(await new Client(BASE).signIn(b.email));
+    const server: MlsGroupState = await newPhone.client.get(`/mls/conversations/${conversationId}`);
+    expect(server.pendingAdds.map((device) => device.deviceId)).toEqual([newPhone.client.device.publicKey]);
+    const { groupInfo } = await newPhone.client.get(`/mls/conversations/${conversationId}/group-info`);
+    const joined = await joinExternally(fromBase64(groupInfo), newPhone.device, cs, trustFrom(server));
+    const entry = await submit(newPhone, conversationId, joined.commit, { groupInfo: joined.groupInfo });
+    newPhone.state = joined.state;
+    newPhone.cursor = entry.seq;
+
+    // Alice applies the external commit when she's next online, and the new phone reads what she sends.
+    expect(await catchUp(alice, conversationId)).toEqual([]);
+    const hello = await encryptText(alice.state!, "Welcome back", cs);
+    await submit(alice, conversationId, hello.message);
+    alice.state = hello.state;
+    expect(await catchUp(newPhone, conversationId)).toEqual(["Welcome back"]);
+    const after: MlsGroupState = await a.get(`/mls/conversations/${conversationId}`);
+    expect(after.roster.filter((entry) => entry.userId === b.id)).toHaveLength(2);
+    expect(after.pendingAdds).toEqual([]);
   });
 });

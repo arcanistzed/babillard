@@ -96,6 +96,7 @@ export class MlsLog {
   submit(input: {
     conversationId: string;
     directory: Directory;
+    memberIds: string[];
     sender: { userId: string; deviceId: string };
     message: string;
     welcome?: string;
@@ -116,6 +117,7 @@ export class MlsLog {
       epoch: this.epoch,
       roster: this.roster(),
       directory: input.directory,
+      memberIds: input.memberIds,
       sender: input.sender,
       message,
       ...(welcome ? { welcome } : {}),

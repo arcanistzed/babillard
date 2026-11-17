@@ -13,7 +13,7 @@ import { isWelcome, readFrame, readKeyPackage } from "../src/mlsWire";
 interface Fixture {
   groupId: string;
   devices: { userId: string; deviceId: string; signatureKey: string; keyPackage: string }[];
-  steps: { sender: string; epoch: number; kind: string; message: string; welcome?: string; roster: RosterEntry[] }[];
+  steps: { sender: string; epoch: number; kind: string; message: string; welcome?: string; groupInfo?: string; roster: RosterEntry[] }[];
 }
 
 const fixture = JSON.parse(readFileSync(new URL("./fixtures/openmls.json", import.meta.url), "utf8")) as Fixture;
@@ -37,9 +37,17 @@ describe("the server's rules on real OpenMLS messages", () => {
     }
   });
 
-  it("keeps the same roster as OpenMLS through adds, a removal, leaf reuse, an update, and a message", () => {
-    // Who the directory lists at each step: Carol leaves before step 1, and Dave joins the chat before step 2.
-    const members = [["alice", "bob", "carol"], ["alice", "bob"], ["alice", "bob", "dave"], ["alice", "bob", "dave"], ["alice", "bob", "dave"]];
+  it("keeps the same roster as OpenMLS through adds, a removal, leaf reuse, an update, an external join, and a message", () => {
+    // Who the chat has at each step: Carol leaves before step 1, Dave joins before step 2, and Erin before step 4.
+    const members = [
+      ["alice", "bob", "carol"],
+      ["alice", "bob"],
+      ["alice", "bob", "dave"],
+      ["alice", "bob", "dave"],
+      ["alice", "bob", "dave", "erin"],
+      ["alice", "bob", "dave", "erin"],
+    ];
+    expect(fixture.steps).toHaveLength(members.length);
     let roster: RosterEntry[] = [];
     let epoch = 0;
     fixture.steps.forEach((step, index) => {
@@ -50,9 +58,11 @@ describe("the server's rules on real OpenMLS messages", () => {
         epoch,
         roster,
         directory: directoryOf(...members[index]!),
+        memberIds: members[index]!,
         sender: { userId: sender.userId, deviceId: sender.deviceId },
         message: bytes(step.message),
         ...(step.welcome ? { welcome: bytes(step.welcome) } : {}),
+        ...(step.groupInfo ? { groupInfo: bytes(step.groupInfo) } : {}),
       });
       expect(decision, `step ${index}`).toMatchObject({ ok: true, kind: step.kind });
       if (decision.ok && decision.kind === "commit") {
@@ -73,9 +83,12 @@ describe("the server's rules on real OpenMLS messages", () => {
       epoch: 3,
       roster: fixture.steps[2]!.roster,
       directory: directoryOf("alice", "bob", "dave"),
+      memberIds: ["alice", "bob", "dave"],
       sender: { userId: alice.userId, deviceId: alice.deviceId },
       message: bytes(update.message),
+      groupInfo: bytes(update.groupInfo!),
     });
-    expect(decision).toMatchObject({ ok: false, error: "wrong_sender" });
+    // Its update path names Bob, so it fails the identity check before the leaf check.
+    expect(decision).toMatchObject({ ok: false, error: "bad_credential" });
   });
 });
