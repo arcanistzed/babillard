@@ -245,7 +245,7 @@ A person's second phone was tried with `apps/api/scripts/mls-second-phone.ts`. A
 
 ### Being out of a chat
 
-When the person is no longer in a chat, the phone deletes its MLS copy of it: the group, the stored messages, the cursor and any commit in flight, in one step (`forgetChat`). That matches v1, where the server stops showing a chat to someone once they're out of it. It's a product default worth confirming: some apps keep history after you leave.
+When the person is no longer in a chat, the phone deletes its MLS copy of it: the group, the stored messages, the cursor and any commit in flight, in one step (`forgetChat`). That matches v1, where the server stops showing a chat to someone once they're out of it. Decided on 2026-11-17: the phone deletes it, rather than keeping the history as some apps do.
 
 - **What counts as out.** Only the server's own answers: 404 `conversation_not_found` or 410 `conversation_closed` from the chat or MLS routes, or the socket closing with code 4001. A bare 404 from an MLS route never counts, because every MLS route answers 404 while MLS is switched off on the server, and a rollback mustn't erase every chat.
 - **On the chat screen.** The chat closes with "You're no longer in this chat", which doesn't say who or why: in an MLS chat the removal commit comes from whichever phone wrote next. Someone who taps "Leave group" themselves sees no notice.
