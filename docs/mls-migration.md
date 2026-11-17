@@ -202,6 +202,7 @@ It runs on three interfaces:
   - A four-person group forms by itself, delivers messages, removes a departed member before the next message, agrees on the security code, and tops key packages back up.
   - A chat waits until both people can do MLS, then a member's new phone joins by itself and reads what follows.
 - The dev screen's "Run sync engine demo" runs the three-phone demo on the device, on OpenMLS and real `expo-sqlite` databases. It passed on the x86_64 emulator in a debug build, in 3.6 s. Most of that was 1.3 s for three phones to make and upload 30 key packages, and each later sync or send took 180 to 390 ms.
+- The dev screen's "Run recovery demo" runs the three recovery cases on the device, also on OpenMLS and `expo-sqlite`. In it, Alice's commit adding Carol lands but its answer is lost, Alice's next send takes up that commit, a message whose answer was lost is marked sent, and Bob's phone fails one entry twice and then rejoins by itself. It passed on the emulator: Bob's phone appeared once in the roster after rejoining, it read the next message, and all three security codes matched. The shared tests run the same scenario on ts-mls, with both the memory store and the SQL store on `node:sqlite`.
 
 ### In the app
 
