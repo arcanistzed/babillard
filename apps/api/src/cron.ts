@@ -1,7 +1,7 @@
 import { GROUP_MEETUP_CONFIRM_YES, MEETUP_REPEAT_MS, isCheckinDue, isMatchExpired, isNudgeDue, isProposalStale, isReminderDue, pickBilingualOpener } from "@babillard/shared";
 import { deleteAccount } from "./lib/accounts";
 import { sendEmail } from "./lib/email";
-import { settleMeetup } from "./lib/meetupState";
+import { settleMeetup, withoutBlocksWithAny } from "./lib/meetupState";
 import { and, eq, gt, inArray, isNotNull, isNull, lt, lte, sql } from "drizzle-orm";
 import { getDb, schema, type Db } from "./db";
 import { jobOffsets, meetupAnnounceCooldownMs } from "./lib/config";
@@ -133,7 +133,8 @@ async function remindMeetups(env: Env, db: Db, now: number): Promise<number> {
       .where(and(eq(schema.meetups.id, meetup.id), eq(schema.meetups.state, "confirmed"), isNull(schema.meetups.reminderSentAt)))
       .returning({ id: schema.meetups.id });
     if (claimed.length === 0) continue;
-    await sendPush(env, await responders(db, meetup, ["yes", "maybe"]), {
+    // The body carries the proposer's venue note.
+    await sendPush(env, await withoutBlocksWithAny(db, await responders(db, meetup, ["yes", "maybe"]), [meetup.proposedBy]), {
       title: "Your meetup is coming up",
       body: meetup.venueNote ? `Soon at ${meetup.venueNote}` : "It starts soon.",
       fr: { title: "Votre rencontre approche", body: meetup.venueNote ? `Bientôt à ${meetup.venueNote}` : "Ça commence bientôt." },
@@ -203,7 +204,8 @@ async function cancelStaleProposals(env: Env, db: Db, now: number): Promise<numb
     const stub = env.CHAT_ROOM.getByName(meetup.conversationId);
     await stub.postSystem(meetup.conversationId, body.en, { fr: body.fr, kind: "meetup", meetupId: meetup.id });
     await stub.notifyMeetupChanged(meetup.id);
-    await sendPush(env, await responders(db, meetup, ["yes", "maybe"]), {
+    // The body carries the proposer's venue note.
+    await sendPush(env, await withoutBlocksWithAny(db, await responders(db, meetup, ["yes", "maybe"]), [meetup.proposedBy]), {
       title: "Your meetup is off",
       body: body.en,
       fr: { title: "Votre rencontre est annulée", body: body.fr },

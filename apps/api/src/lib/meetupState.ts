@@ -1,6 +1,7 @@
 import { isAnnouncementDue, requiredYesCount, yesStillNeeded, type ConversationKind } from "@babillard/shared";
 import { and, eq, gt, inArray, sql } from "drizzle-orm";
 import { schema, type Db } from "../db";
+import { blockedWith } from "./blocks";
 import { meetupAnnounceCooldownMs } from "./config";
 import { venueNames } from "./language";
 import { sendPush } from "./push";
@@ -29,6 +30,17 @@ export async function attendees(db: Db, meetupId: string, conversationId: string
     .innerJoin(schema.conversationMembers, and(eq(schema.conversationMembers.userId, schema.meetupResponses.userId), eq(schema.conversationMembers.conversationId, conversationId)))
     .where(and(eq(schema.meetupResponses.meetupId, meetupId), inArray(schema.meetupResponses.response, ["yes", "maybe"])));
   return rows.map((row) => row.userId);
+}
+
+/**
+ * Leaves out anyone with a block in either direction with one of these people. Meetup pushes carry the proposer's
+ * venue note, and a backout push carries the name of whoever changed their answer.
+ */
+export async function withoutBlocksWithAny(db: Db, userIds: string[], people: string[]): Promise<string[]> {
+  if (userIds.length === 0) return userIds;
+  const hidden = new Set<string>();
+  for (const person of new Set(people)) for (const id of await blockedWith(db, person)) hidden.add(id);
+  return userIds.filter((id) => !hidden.has(id));
 }
 
 function moreYeses(needed: number) {
@@ -110,14 +122,15 @@ export async function settleMeetup(env: Env, db: Db, meetup: MeetupRow, kind: Co
       // Someone who said they can't come doesn't need to hear it's on.
       const declined = new Set(await answered(db, meetup.id, "no"));
       pushes.push(
-        sendPush(env, everyone.filter((id) => !declined.has(id)), { title: "Your meetup is on", body: where.en, fr: { title: "Votre rencontre est confirmée", body: where.fr }, data: { screen: "meetup", id: meetup.id } }),
+        sendPush(env, await withoutBlocksWithAny(db, everyone.filter((id) => !declined.has(id)), [meetup.proposedBy]), { title: "Your meetup is on", body: where.en, fr: { title: "Votre rencontre est confirmée", body: where.fr }, data: { screen: "meetup", id: meetup.id } }),
       );
     } else if (claimed.length > 0) {
       const more = moreYeses(yesStillNeeded(kind, fresh?.yes ?? 0, everyone.length));
       const off = { en: `The meetup at ${where.en} isn't confirmed anymore: ${more.en}.`, fr: `La rencontre n'est plus confirmée (${where.fr}): ${more.fr}.` };
       const body = backout ? { en: `${changedText(backout).en} ${off.en}`, fr: `${changedText(backout).fr} ${off.fr}` } : off;
       await stub.postSystem(meetup.conversationId, body.en, { fr: body.fr, kind: "meetup", meetupId: meetup.id });
-      const recipients = (await attendees(db, meetup.id, meetup.conversationId)).filter((id) => id !== backout?.userId);
+      const attending = (await attendees(db, meetup.id, meetup.conversationId)).filter((id) => id !== backout?.userId);
+      const recipients = await withoutBlocksWithAny(db, attending, backout ? [meetup.proposedBy, backout.userId] : [meetup.proposedBy]);
       pushes.push(sendPush(env, recipients, { title: "Your meetup isn't confirmed anymore", body: body.en, fr: { title: "Votre rencontre n'est plus confirmée", body: body.fr }, data: { screen: "meetup", id: meetup.id } }));
     }
   } else if (backout && state === "confirmed" && isAnnouncementDue(backout.yesAt, now, cooldown)) {
@@ -126,7 +139,8 @@ export async function settleMeetup(env: Env, db: Db, meetup: MeetupRow, kind: Co
     const changed = changedText(backout);
     const body = started ? changed : { en: `${changed.en} The meetup at ${where.en} is still on.`, fr: `${changed.fr} La rencontre est toujours confirmée: ${where.fr}.` };
     await stub.postSystem(meetup.conversationId, body.en, { fr: body.fr, kind: "meetup", meetupId: meetup.id });
-    const recipients = (await attendees(db, meetup.id, meetup.conversationId)).filter((id) => id !== backout.userId);
+    const attending = (await attendees(db, meetup.id, meetup.conversationId)).filter((id) => id !== backout.userId);
+    const recipients = await withoutBlocksWithAny(db, attending, [meetup.proposedBy, backout.userId]);
     pushes.push(sendPush(env, recipients, { title: "A change to your meetup", body: body.en, fr: { title: "Changement pour votre rencontre", body: body.fr }, data: { screen: "meetup", id: meetup.id } }));
   }
 

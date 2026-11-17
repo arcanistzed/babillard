@@ -1054,6 +1054,23 @@ describe("meetups", () => {
     expect(pushes[0]!.userIds.sort()).toEqual([p0.id, p2.id, p3.id].sort());
   });
 
+  it("doesn't push the proposer's venue to someone with a block with them", async () => {
+    const { people, groupId } = await groupOfFour("social-movements");
+    const [p0, p1, p2, p3] = people;
+    const meetup = await p0.post(`/meetups?conversationId=${groupId}`, proposal());
+    await p3.post(`/safety/blocks/${p0.id}`);
+    await p1.post(`/meetups/${meetup.id}/respond`, { response: "yes" });
+    expect((await p2.post(`/meetups/${meetup.id}/respond`, { response: "yes" })).state).toBe("confirmed");
+    const on = await waitFor(async () => pushesFor(meetup.id, "Your meetup is on"), (rows) => rows.length > 0, "confirmation push");
+    expect(on[0]!.userIds.sort()).toEqual([p0.id, p1.id, p2.id].sort());
+
+    await p3.post(`/meetups/${meetup.id}/respond`, { response: "yes" });
+    await afterCooldown();
+    expect((await p1.post(`/meetups/${meetup.id}/respond`, { response: "no" })).state).toBe("confirmed");
+    const change = await waitFor(async () => pushesFor(meetup.id, "A change to your meetup"), (rows) => rows.length > 0, "still-on push");
+    expect(change[0]!.userIds.sort()).toEqual([p0.id, p2.id].sort());
+  });
+
   it("confirms on the next sweep when the group shrinks to the people who said yes", async () => {
     const { people, groupId } = await groupOf(3, "philosophy-of-mind");
     const [p0, p1, p2] = people as [Client, Client, Client];
