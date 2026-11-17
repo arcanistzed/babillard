@@ -28,6 +28,8 @@ Babillard helps people find others nearby who want to talk about the same topics
 
 **Website visits.** Pages on babillard.app load Cloudflare Web Analytics, which records the page you visited, the page that linked to it, your browser, operating system and device type, your country, and how long the page took to load. It doesn't set cookies, and we only see totals.
 
+**iPhone waitlist.** If you join the waitlist on the website, we keep the email address you enter and the language of the page. We count the list to decide whether to make an iPhone version, and we use your address once, to tell you when it's ready. Joining doesn't create an account.
+
 ## Your consent
 
 You agree to this policy by ticking the box when you sign up. Some of what you tell us is sensitive: your date of birth, your stance on questions, and whether you're open to dating. We require your date of birth because the app is only for adults, and other people see the age it gives. You can withdraw your consent at any time by deleting your account, but you can't use the app without one.
@@ -76,6 +78,7 @@ These companies may process information outside Canada, including in the United 
 - Sign-in codes: up to one day.
 - Signed-in sessions: 90 days from sign-in, or until you sign out.
 - Crash reports: 30 days.
+- The iPhone waitlist: until we've sent the email saying the iPhone app is ready, and two years at most. Write to info@babillard.app to be removed sooner.
 - Reports, including any messages shared with them, and moderation history: two years after the case closes.
 - A banned person's email address: for as long as the ban lasts, so they can't sign up again.
 - If you delete your account after someone blocked you: their block, and a code made from your email address with a secret key. The code isn't your address, but whoever holds the key, which includes us, can check whether a given address made it. If you sign up again with that address, the blocks move to your new account and the code is dropped, so a fresh start can't be used to reach someone who blocked you. The code is also dropped once no block on you remains, because each person unblocked you or deleted their own account. A banned person can't do either, so a block they made lasts as long as their ban, and the code with it.
@@ -219,6 +222,8 @@ Babillard aide les gens à trouver des personnes près de chez eux qui veulent p
 
 **Visites du site.** Les pages de babillard.app chargent Cloudflare Web Analytics, qui enregistre la page visitée, la page qui y menait, votre navigateur, votre système d'exploitation, votre type d'appareil, votre pays et le temps de chargement de la page. Ce service ne dépose pas de témoins, et nous n'en voyons que des totaux.
 
+**Liste d'attente iPhone.** Si vous vous inscrivez à la liste d'attente sur le site, nous gardons l'adresse courriel saisie et la langue de la page. Nous comptons les inscriptions pour décider s'il faut faire une version iPhone, et nous utilisons votre adresse une seule fois, pour vous dire qu'elle est prête. L'inscription ne crée pas de compte.
+
 ## Votre consentement
 
 Vous acceptez cette politique en cochant la case à l'inscription. Certains renseignements que vous nous donnez sont sensibles: votre date de naissance, votre position sur les questions, et le fait que vous êtes ouvert ou ouverte aux rencontres amoureuses. Nous exigeons votre date de naissance parce que l'application est réservée aux adultes, et les autres voient l'âge qui en découle. Vous pouvez retirer votre consentement à tout moment en supprimant votre compte, mais vous ne pouvez pas utiliser l'application sans compte.
@@ -267,6 +272,7 @@ Ces entreprises peuvent traiter des renseignements à l'extérieur du Canada, y 
 - Codes de connexion: jusqu'à un jour.
 - Sessions: 90 jours après la connexion, ou jusqu'à la déconnexion.
 - Rapports de plantage: 30 jours.
+- Liste d'attente iPhone: jusqu'à l'envoi du courriel annonçant l'application iPhone, et deux ans au plus. Écrivez à info@babillard.app pour retirer votre adresse plus tôt.
 - Signalements, y compris les messages transmis, et historique de modération: deux ans après la fermeture du dossier.
 - Adresse courriel d'une personne bannie: tant que dure le bannissement, pour l'empêcher de se réinscrire.
 - Si vous supprimez votre compte après que quelqu'un vous a bloqué: son blocage, et un code tiré de votre adresse courriel avec une clé secrète. Ce code n'est pas votre adresse, mais quiconque détient la clé, nous y compris, peut vérifier si une adresse donnée l'a produit. Si vous vous réinscrivez avec cette adresse, les blocages passent à votre nouveau compte et le code est supprimé, pour qu'un nouveau départ ne permette pas de joindre quelqu'un qui vous a bloqué. Le code est aussi supprimé dès qu'il ne reste plus aucun blocage contre vous, parce que chaque personne vous a débloqué ou a supprimé son propre compte. Une personne bannie ne peut faire ni l'un ni l'autre, donc un blocage qu'elle a fait dure tant que son bannissement, et le code avec lui.

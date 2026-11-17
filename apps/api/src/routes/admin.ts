@@ -88,7 +88,7 @@ admin.get("/", async (c) => {
   const db = getDb(c.env);
   const count = async (query: Promise<{ count: number }[]>) => (await query)[0]?.count ?? 0;
   const counter = sql<number>`count(*)`;
-  const [members, matches, groups, confirmed, met, openReports, pendingTopics] = await Promise.all([
+  const [members, matches, groups, confirmed, met, openReports, pendingTopics, iphone] = await Promise.all([
     count(db.select({ count: counter }).from(schema.users).where(and(eq(schema.users.status, "active"), isNotNull(schema.users.onboardedAt)))),
     count(db.select({ count: counter }).from(schema.matches)),
     count(db.select({ count: counter }).from(schema.conversations).where(eq(schema.conversations.kind, "group"))),
@@ -96,6 +96,7 @@ admin.get("/", async (c) => {
     count(db.select({ count: sql<number>`count(DISTINCT ${schema.meetupResponses.meetupId})` }).from(schema.meetupResponses).where(eq(schema.meetupResponses.didMeet, true))),
     count(db.select({ count: counter }).from(schema.reports).where(isNull(schema.reports.resolvedAt))),
     count(db.select({ count: counter }).from(schema.topics).where(eq(schema.topics.status, "pending"))),
+    count(db.select({ count: counter }).from(schema.iphoneWaitlist)),
   ]);
   return c.html(
     page(
@@ -108,6 +109,7 @@ admin.get("/", async (c) => {
         <dt>Members</dt><dd>${members}</dd>
         <dt>Open reports</dt><dd>${openReports}</dd>
         <dt>Topics awaiting review</dt><dd>${pendingTopics}</dd>
+        <dt>Waiting for an iPhone version</dt><dd>${iphone}</dd>
       </dl>`,
     ),
   );

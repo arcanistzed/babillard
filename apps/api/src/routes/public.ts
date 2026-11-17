@@ -1,9 +1,10 @@
-import { outcomeSummary, type AppVersionInfo, versionCode, type OutcomeCounts, type TopicOutcomes } from "@babillard/shared";
+import { emailSchema, outcomeSummary, type AppVersionInfo, versionCode, type OutcomeCounts, type TopicOutcomes } from "@babillard/shared";
 import { and, desc, eq, inArray, sql } from "drizzle-orm";
 import { Hono, type Context } from "hono";
 import { html, raw } from "hono/html";
 import { getDb, schema } from "../db";
 import { LEGAL_PATHS, LEGAL_TEXT, type Language, type LegalPage } from "../legal/content";
+import { isDevMode } from "../lib/config";
 import { buildIcs } from "../lib/ics";
 import { localizeTopic, requestLanguage, venueNames } from "../lib/language";
 import { legalTabs, page } from "../lib/page";
@@ -13,10 +14,51 @@ const ANDROID_APK_KEY = "releases/babillard.apk";
 
 const CONTACT = "info@babillard.app";
 
+const IPHONE_PATHS: Record<Language, string> = { en: "/iphone", fr: "/fr/iphone" };
+
 function getApp(language: Language = "en") {
   return language === "fr"
-    ? html`<p><a class="button" href="/download/android">Obtenir l'application Android</a></p><p class="muted">Seulement sur Android pour l'instant. Vous avez un iPhone? Écrivez à <a href="mailto:${CONTACT}">${CONTACT}</a> et nous vous dirons quand l'application sera prête.</p>`
-    : html`<p><a class="button" href="/download/android">Get the Android app</a></p><p class="muted">Android only for now. On an iPhone? Write to <a href="mailto:${CONTACT}">${CONTACT}</a> and we'll tell you when it's ready.</p>`;
+    ? html`<p><a class="button" href="/download/android">Obtenir l'application Android</a></p><p class="muted">Seulement sur Android pour l'instant. Vous avez un iPhone? <a href="${IPHONE_PATHS.fr}">Inscrivez-vous à la liste d'attente</a> et nous vous dirons quand l'application sera prête.</p>`
+    : html`<p><a class="button" href="/download/android">Get the Android app</a></p><p class="muted">Android only for now. On an iPhone? <a href="${IPHONE_PATHS.en}">Join the waitlist</a> and we'll tell you when it's ready.</p>`;
+}
+
+type WaitlistState = "form" | "invalid" | "joined" | "limited";
+
+/** The iPhone waitlist: one form, and the page it answers with. Every outcome renders the same frame. */
+function waitlistPage(language: Language, state: WaitlistState, email = "") {
+  const fr = language === "fr";
+  const privacy = LEGAL_PATHS.privacy[language];
+  const alternate = IPHONE_PATHS[fr ? "en" : "fr"];
+  if (state === "joined") {
+    const body = fr
+      ? html`<h1>Vous êtes sur la liste</h1><p>Nous vous écrirons une seule fois, quand Babillard sera sur iPhone, puis nous supprimerons votre adresse.</p><p><a class="button" href="/fr/">Retour à l'accueil</a></p>`
+      : html`<h1>You're on the list</h1><p>We'll email you once, when Babillard is on the iPhone, and then delete your address.</p><p><a class="button" href="/">Back to the home page</a></p>`;
+    return page(fr ? "Inscription reçue" : "You're on the list", body, language, { hidden: true });
+  }
+  const error =
+    state === "invalid"
+      ? html`<p class="error" id="waitlist-error" role="alert">${fr ? "Cette adresse courriel ne semble pas valide." : "That doesn't look like an email address."}</p>`
+      : state === "limited"
+        ? html`<p class="error" id="waitlist-error" role="alert">${fr ? "Trop d'essais depuis ce réseau. Attendez une minute et réessayez." : "Too many tries from this network. Wait a minute and try again."}</p>`
+        : "";
+  const flagged = state === "form" ? "" : raw(' aria-invalid="true" aria-describedby="waitlist-error"');
+  const form = html`<form class="form" method="post" action="/iphone">
+    <input type="hidden" name="language" value="${language}" />
+    <label>${fr ? "Courriel" : "Email"}<input type="email" name="email" value="${email}" required maxlength="254" autocomplete="email"${flagged} /></label>
+    <label class="trap" aria-hidden="true">Website<input type="text" name="website" tabindex="-1" autocomplete="off" /></label>
+    <button class="button" type="submit">${fr ? "Prévenez-moi" : "Tell me when it's ready"}</button>
+    ${error}
+  </form>`;
+  const body = fr
+    ? html`<h1>Babillard sur iPhone</h1>
+        <p>Babillard n'existe que sur Android pour l'instant. Laissez votre courriel et nous vous écrirons une seule fois, quand l'application iPhone sera prête. Le nombre d'inscriptions nous aide à décider quand la faire.</p>
+        ${form}
+        <p class="muted">Nous ne gardons que votre adresse et votre langue, seulement pour ce courriel, et nous les supprimons ensuite. Pour retirer votre adresse plus tôt, écrivez à <a href="mailto:${CONTACT}">${CONTACT}</a>. Voir la <a href="${privacy}">politique de confidentialité</a>.</p>`
+    : html`<h1>Babillard for iPhone</h1>
+        <p>Babillard is only on Android for now. Leave your email and we'll write once, when the iPhone app is ready. How many people sign up helps us decide when to make it.</p>
+        ${form}
+        <p class="muted">We keep only your address and language, use them for that one email, and delete them afterwards. To be removed sooner, write to <a href="mailto:${CONTACT}">${CONTACT}</a>. See the <a href="${privacy}">privacy policy</a>.</p>`;
+  return page(fr ? "Babillard sur iPhone" : "Babillard for iPhone", body, language, { alternate });
 }
 
 /**
@@ -193,6 +235,31 @@ for (const pageName of Object.keys(LEGAL_PATHS) as LegalPage[]) {
     publicRoutes.get(LEGAL_PATHS[pageName][language], (c) => c.html(legalPage(pageName, language)));
   }
 }
+
+for (const language of ["en", "fr"] as const) {
+  publicRoutes.get(IPHONE_PATHS[language], (c) => c.html(waitlistPage(language, "form")));
+}
+
+/**
+ * A plain form post, so it works without JavaScript. The answer is the same whether or not the
+ * address was already on the list, so the form can't tell anyone who signed up. Nothing is
+ * emailed now: a confirmation would let anyone send mail to any address through this form.
+ */
+publicRoutes.post("/iphone", async (c) => {
+  const form = await c.req.parseBody();
+  const language: Language = form.language === "fr" ? "fr" : "en";
+  // Only bots fill the hidden field. Tell them it worked and keep nothing.
+  if (typeof form.website === "string" && form.website !== "") return c.html(waitlistPage(language, "joined"));
+  const entered = typeof form.email === "string" ? form.email : "";
+  const parsed = emailSchema.safeParse(entered);
+  if (!parsed.success) return c.html(waitlistPage(language, "invalid", entered.slice(0, 254)), 400);
+  if (!isDevMode(c.env)) {
+    const { success } = await c.env.WAITLIST_LIMIT.limit({ key: c.req.header("cf-connecting-ip") ?? "unknown" });
+    if (!success) return c.html(waitlistPage(language, "limited", parsed.data), 429);
+  }
+  await getDb(c.env).insert(schema.iphoneWaitlist).values({ email: parsed.data, language, createdAt: Date.now() }).onConflictDoNothing();
+  return c.html(waitlistPage(language, "joined"));
+});
 
 publicRoutes.get("/invite", (c) => {
   const language = requestLanguage(c);

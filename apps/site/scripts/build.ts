@@ -5,7 +5,6 @@ import { copy, type Lang } from "../src/copy.ts";
 
 const ORIGIN = "https://babillard.app";
 const DOWNLOAD = "/download/android";
-const CONTACT = "info@babillard.app";
 const SEATS = 8;
 const root = join(dirname(fileURLToPath(import.meta.url)), "..", "public");
 
@@ -91,7 +90,7 @@ function phone(lang: Lang): string {
 function page(lang: Lang): string {
   const c = copy[lang];
   const download = (cls: string) => `<a class="${cls}" href="${DOWNLOAD}">${esc(c.download)}</a>`;
-  const iphone = `<p class="iphone">${esc(c.iphone[0])} <a href="mailto:${CONTACT}">${CONTACT}</a> ${esc(c.iphone[1])}</p>`;
+  const iphone = `<p class="iphone">${esc(c.iphone[0])} <a href="${lang === "fr" ? "/fr/iphone" : "/iphone"}">${esc(c.iphone[1])}</a> ${esc(c.iphone[2])}</p>`;
   return `<!doctype html>
 <html lang="${c.htmlLang}">
 <head>

@@ -330,3 +330,13 @@ export const deviceKeys = sqliteTable(
   },
   (t) => [index("device_keys_user_idx").on(t.userId)],
 );
+
+/**
+ * People asking to hear when an iPhone version exists. Counted on the admin overview to judge
+ * whether one is worth making. Holds only the address and its language: no network or device.
+ */
+export const iphoneWaitlist = sqliteTable("iphone_waitlist", {
+  email: text("email").primaryKey(),
+  language: text("language").$type<"en" | "fr">().notNull(),
+  createdAt: integer("created_at").notNull(),
+});

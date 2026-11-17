@@ -299,6 +299,7 @@ async function continueSeries(env: Env, db: Db, now: number): Promise<number> {
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 const MODERATION_RETENTION_MS = 730 * DAY_MS;
+const WAITLIST_RETENTION_MS = 730 * DAY_MS;
 
 async function removeOldRecords(_env: Env, db: Db, now: number): Promise<number> {
   const results = await db.batch([
@@ -308,6 +309,8 @@ async function removeOldRecords(_env: Env, db: Db, now: number): Promise<number>
     // An open report stays until someone handles it, however old it gets.
     db.delete(schema.reports).where(lt(schema.reports.resolvedAt, now - MODERATION_RETENTION_MS)).returning({ id: schema.reports.id }),
     db.delete(schema.moderationLog).where(lt(schema.moderationLog.createdAt, now - MODERATION_RETENTION_MS)).returning({ id: schema.moderationLog.id }),
+    // The policy promises the iPhone waitlist is gone after two years, whether or not the app shipped.
+    db.delete(schema.iphoneWaitlist).where(lt(schema.iphoneWaitlist.createdAt, now - WAITLIST_RETENTION_MS)).returning({ email: schema.iphoneWaitlist.email }),
   ]);
   return results.reduce((total, rows) => total + rows.length, 0);
 }

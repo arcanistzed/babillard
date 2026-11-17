@@ -49,6 +49,13 @@ strong { font-weight: 700; }
 .tabs a[aria-current="page"] { background: var(--ink); color: var(--paper); }
 .button { display: inline-flex; align-items: center; min-height: 50px; padding: 0 22px; border-radius: 10px; background: var(--accent); color: var(--on-accent); font-weight: 700; text-decoration: none; }
 .button:hover { background: var(--accent-hover); }
+button.button { border: 0; font: inherit; font-weight: 700; cursor: pointer; }
+.form { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 12px; margin: 0 0 20px; }
+.form label { display: flex; flex-direction: column; gap: 6px; flex: 1 1 16rem; font-weight: 700; }
+.form input[type="email"] { min-height: 50px; padding: 0 14px; border: 2px solid var(--line); border-radius: 10px; background: var(--surface); color: var(--ink); font: inherit; }
+.form input[type="email"]:focus-visible, .form input[aria-invalid="true"] { border-color: var(--accent); }
+.form .error { flex-basis: 100%; margin: 0; color: var(--accent); font-weight: 700; }
+.trap { position: absolute; left: -10000px; width: 1px; height: 1px; overflow: hidden; }
 blockquote { margin: 0 0 14px; padding: 14px 18px; background: var(--surface); border-left: 4px solid var(--accent); border-radius: 0 10px 10px 0; }
 .card { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 20px 22px; margin: 0 0 20px; }
 .foot { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 12px 24px; padding: 24px var(--gutter) 32px; background: var(--panel); color: var(--on-panel); font-size: 0.95rem; }

@@ -40,4 +40,14 @@
     <xhtml:link rel="alternate" hreflang="en-CA" href="https://babillard.app/safety"/>
     <xhtml:link rel="alternate" hreflang="fr-CA" href="https://babillard.app/securite"/>
   </url>
+  <url>
+    <loc>https://babillard.app/iphone</loc>
+    <xhtml:link rel="alternate" hreflang="en-CA" href="https://babillard.app/iphone"/>
+    <xhtml:link rel="alternate" hreflang="fr-CA" href="https://babillard.app/fr/iphone"/>
+  </url>
+  <url>
+    <loc>https://babillard.app/fr/iphone</loc>
+    <xhtml:link rel="alternate" hreflang="en-CA" href="https://babillard.app/iphone"/>
+    <xhtml:link rel="alternate" hreflang="fr-CA" href="https://babillard.app/fr/iphone"/>
+  </url>
 </urlset>

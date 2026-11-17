@@ -2366,6 +2366,55 @@ describe("crash reports and public pages", () => {
     expect(page).toContain("2 times");
   });
 
+  it("keeps an iPhone waitlist from a plain form, counts it for moderators, and tells nobody who is on it", async () => {
+    const waiting = async () => Number(/Waiting for an iPhone version<\/dt><dd>(\d+)</.exec(await adminPage("/admin"))?.[1]);
+    const join = (fields: Record<string, string>, base = BASE) =>
+      fetch(`${base}/iphone`, { method: "POST", headers: { "content-type": "application/x-www-form-urlencoded" }, body: new URLSearchParams(fields) });
+
+    for (const [path, lang, button] of [["/iphone", "en", "Tell me when it's ready"], ["/fr/iphone", "fr", "Prévenez-moi"]] as const) {
+      const form = await (await fetch(`${BASE}${path}`)).text();
+      expect(form).toContain(`<html lang="${lang}-CA">`);
+      expect(form).toContain(`name="language" value="${lang}"`);
+      expect(form).toContain(button.replace("'", "&#39;"));
+    }
+
+    const before = await waiting();
+    const address = `waitlist-${Date.now()}@example.test`;
+    const first = await join({ email: address, language: "fr" });
+    expect(first.status).toBe(200);
+    const thanks = await first.text();
+    expect(thanks).toContain("Vous êtes sur la liste");
+    // The same address again, in other casing, answers the same and isn't counted twice.
+    const again = await join({ email: address.toUpperCase(), language: "en" });
+    expect(again.status).toBe(200);
+    expect(await again.text()).toContain("You&#39;re on the list");
+    expect(await waiting()).toBe(before + 1);
+
+    const invalid = await join({ email: "<b>not an address</b>", language: "en" });
+    expect(invalid.status).toBe(400);
+    const invalidPage = await invalid.text();
+    expect(invalidPage).toContain("doesn&#39;t look like an email address");
+    expect(invalidPage).toContain('aria-invalid="true"');
+    expect(invalidPage).not.toContain("<b>not an address</b>");
+
+    // A filled hidden field means a bot: it hears that it worked, and nothing is kept.
+    const bot = await join({ email: `bot-${Date.now()}@example.test`, website: "https://spam.example", language: "en" });
+    expect(bot.status).toBe(200);
+    expect(await waiting()).toBe(before + 1);
+    expect(sesRequests(address)).toHaveLength(0);
+
+    // Production settings slow one network adding many addresses.
+    const statuses: number[] = [];
+    for (let i = 0; i < 7; i += 1) statuses.push((await join({ email: `waitlist-limited-${i}@example.test`, language: "en" }, PROD)).status);
+    expect(statuses).toContain(429);
+    expect(statuses.lastIndexOf(200)).toBeLessThan(statuses.indexOf(429));
+  });
+
+  it("links the iPhone waitlist from the invite and topic pages", async () => {
+    expect(await (await fetch(`${BASE}/invite`)).text()).toContain('href="/iphone"');
+    expect(await (await fetch(`${BASE}/invite`, { headers: { "accept-language": "fr" } })).text()).toContain('href="/fr/iphone"');
+  });
+
   it("publishes the policy, terms, and safety page in English and French, and escapes nothing into markup", async () => {
     for (const [path, title, lang] of [["/privacy", "Privacy policy", "en"], ["/terms", "Terms of use", "en"], ["/safety", "Safety standards", "en"], ["/confidentialite", "Politique de confidentialité", "fr"], ["/conditions", "Conditions d'utilisation", "fr"], ["/securite", "Normes de sécurité", "fr"]] as const) {
       const response = await fetch(`${BASE}${path}`);
