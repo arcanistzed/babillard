@@ -1,11 +1,11 @@
-import { outcomeSummary, VENUE_LABELS, type AppVersionInfo, versionCode, type OutcomeCounts, type TopicOutcomes } from "@babillard/shared";
+import { outcomeSummary, type AppVersionInfo, versionCode, type OutcomeCounts, type TopicOutcomes } from "@babillard/shared";
 import { and, desc, eq, inArray, sql } from "drizzle-orm";
 import { Hono, type Context } from "hono";
 import { html, raw } from "hono/html";
 import { getDb, schema } from "../db";
 import { LEGAL_PATHS, LEGAL_TEXT, type Language, type LegalPage } from "../legal/content";
 import { buildIcs } from "../lib/ics";
-import { localizeTopic, requestLanguage } from "../lib/language";
+import { localizeTopic, requestLanguage, venueNames } from "../lib/language";
 import { legalTabs, page } from "../lib/page";
 import type { AppEnv } from "../types";
 
@@ -224,20 +224,23 @@ publicRoutes.get("/m/:file", async (c) => {
   const db = getDb(c.env);
 
   const [row] = await db
-    .select({ meetup: schema.meetups, topicTitle: schema.topics.title, topicId: schema.topics.id, kind: schema.conversations.kind })
+    .select({ meetup: schema.meetups, englishTitle: schema.topics.title, topicFr: schema.topics.fr, topicId: schema.topics.id, kind: schema.conversations.kind })
     .from(schema.meetups)
     .innerJoin(schema.conversations, eq(schema.conversations.id, schema.meetups.conversationId))
     .leftJoin(schema.topics, eq(schema.topics.id, schema.conversations.topicId))
     .where(eq(schema.meetups.shareToken, token));
   if (!row || row.meetup.state === "cancelled") return c.notFound();
 
-  const { meetup, topicTitle, topicId, kind } = row;
+  const { meetup, englishTitle, topicFr, topicId, kind } = row;
   const language = requestLanguage(c);
   const fr = language === "fr";
+  // Topics people suggest have no French version, so they show as written.
+  const topicTitle = fr && topicFr ? topicFr.title : englishTitle;
   // The page only invites people in when the group welcomed guests and the meetup hasn't happened yet.
   const welcomesGuests = kind === "group" && meetup.guestsWelcome && meetup.state !== "done" && meetup.startsAt > Date.now();
-  const summary = topicTitle ? `Babillard meetup: ${topicTitle}` : "Babillard meetup";
-  const location = meetup.venueNote || VENUE_LABELS[meetup.venueKind];
+  const brand = fr ? "Rencontre Babillard" : "Babillard meetup";
+  const summary = topicTitle ? `${brand}: ${topicTitle}` : brand;
+  const location = venueNames(meetup)[language];
   const url = `${c.env.PUBLIC_ORIGIN}/m/${token}`;
 
   if (wantsIcs) {
@@ -248,12 +251,12 @@ publicRoutes.get("/m/:file", async (c) => {
   return c.html(
     page(
       summary,
-      html`<h1>${topicTitle ?? "A meetup"}</h1>
+      html`<h1>${topicTitle ?? (fr ? "Une rencontre" : "A meetup")}</h1>
         <p><strong>${location}</strong></p>
         <p><time datetime="${new Date(meetup.startsAt).toISOString()}" data-local>${new Date(meetup.startsAt).toUTCString()}</time></p>
         <p><a class="button" href="${url}.ics">${fr ? "Ajouter au calendrier" : "Add to calendar"}</a></p>
         ${welcomesGuests
-          ? html`<p>${fr ? "Les invités sont les bienvenus. Venez en parler avec le groupe." : "Guests are welcome. Come and talk about it with the group."}</p>
+          ? html`<p>${fr ? "Les personnes invitées sont les bienvenues. Venez en parler avec le groupe." : "Guests are welcome. Come and talk about it with the group."}</p>
               ${topicId ? html`<p><a href="/t/${topicId}">${fr ? "En savoir plus sur ce sujet" : "More about this topic"}</a></p>` : ""}
               <p>${fr ? "Pour trouver d'autres groupes près de chez vous, obtenez Babillard." : "To find more groups near you, get Babillard."}</p>
               ${getApp(language)}`

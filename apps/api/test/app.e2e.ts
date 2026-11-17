@@ -1439,6 +1439,24 @@ describe("meetups", () => {
     expect((await fetch(`${BASE}/m/not-a-real-token`)).status).toBe(404);
   });
 
+  it("shows the share page's topic and venue in French to French visitors", async () => {
+    const a = await person("new-york");
+    const b = await person("new-york");
+    const conversationId = await match(a, b, "sleep-science");
+    const meetup = await a.post(`/meetups?conversationId=${conversationId}`, proposal({ venueKind: "library", venueNote: "" }));
+    const french = { headers: { "accept-language": "fr-CA" } };
+
+    const page = await (await fetch(meetup.shareUrl, french)).text();
+    expect(page).toContain("<h1>Science du sommeil</h1>");
+    expect(page).toContain("<strong>Bibliothèque</strong>");
+    expect(page).not.toContain("Sleep science");
+    expect(await (await fetch(`${meetup.shareUrl}.ics`, french)).text()).toContain("SUMMARY:Rencontre Babillard: Science du sommeil");
+
+    const english = await (await fetch(meetup.shareUrl)).text();
+    expect(english).toContain("<h1>Sleep science</h1>");
+    expect(english).toContain("<strong>Library</strong>");
+  });
+
   it("reminds before, asks did-you-meet after, and records the answer", async () => {
     const a = await person("new-york");
     const b = await person("new-york");
