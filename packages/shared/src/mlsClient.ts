@@ -118,6 +118,8 @@ export interface MlsChange {
   messages?: MlsStoredMessage[];
   /** Local message IDs to delete, when a pending message is replaced by its sent copy. */
   deleteMessages?: { conversationId: string; id: string }[];
+  /** Chats to drop entirely: their messages, cursor and any commit in flight. */
+  forgetChats?: string[];
 }
 
 export interface MlsStore {
@@ -125,13 +127,26 @@ export interface MlsStore {
   cursor(conversationId: string): Promise<number>;
   messages(conversationId: string): Promise<MlsStoredMessage[]>;
   pendingCommits(): Promise<Record<string, MlsPendingCommit>>;
+  /** Every chat the store holds anything for. */
+  conversationIds(): Promise<string[]>;
   apply(change: MlsChange): Promise<void>;
 }
 
 export class MlsSyncError extends Error {}
 
-/** The log removed this phone from the chat. The person left, was removed, or the phone was retired. */
+/**
+ * The log removed this phone from the chat's group. The engine has already dropped its copy of the
+ * group. If the person is still in the chat, the next sync joins again. If not, the server says so.
+ */
 export class MlsRemovedError extends MlsSyncError {}
+
+/**
+ * Whether the server said this person isn't in the chat, or the chat has closed. Only these two
+ * answers mean that: every MLS route also answers 404 while MLS is switched off on the server.
+ */
+export function isOutOfChat(error: unknown): boolean {
+  return error instanceof MlsHttpError && ((error.status === 404 && error.error === "conversation_not_found") || (error.status === 410 && error.error === "conversation_closed"));
+}
 
 const encoder = new TextEncoder();
 const decoder = new TextDecoder();
@@ -183,9 +198,9 @@ export class MlsMessenger {
    * settling commits whose outcome is unknown. The state is one blob for every chat, so no other
    * chat may move on until those are settled: adopting a saved state later would undo its progress.
    */
-  private serial<T>(operation: () => Promise<T>): Promise<T> {
+  private serial<T>(operation: () => Promise<T>, settle = true): Promise<T> {
     const run = async () => {
-      await this.settleCommits();
+      if (settle) await this.settleCommits();
       return operation();
     };
     const result = this.queue.then(run, run);
@@ -313,7 +328,15 @@ export class MlsMessenger {
   /** Works out from the log whether each commit in flight landed, and adopts its state if it did. */
   private async settleCommits(): Promise<void> {
     for (const [conversationId, pending] of Object.entries(await this.store.pendingCommits())) {
-      const server = await this.transport.groupState(conversationId);
+      let server: MlsGroupState;
+      try {
+        server = await this.transport.groupState(conversationId);
+      } catch (error) {
+        // The person has left this chat since. Its commit doesn't matter any more, and it mustn't hold up the others.
+        if (!isOutOfChat(error)) throw error;
+        await this.store.apply({ pendingCommits: { [conversationId]: null } });
+        continue;
+      }
       let landed: MlsLogEntry | undefined;
       if (server.epoch > pending.epoch) {
         // Exactly one commit was accepted at that epoch. Was it this one?
@@ -440,8 +463,12 @@ export class MlsMessenger {
           return received;
         }
         if (result.kind === "commit") {
+          if (result.removedMe) {
+            // The group goes with it. Kept, it would look like a group this phone is still in.
+            await this.saveState(await this.crypto.forgetGroup(result.state, conversationId), { cursors: { [conversationId]: cursor } });
+            throw new MlsRemovedError("This phone was removed from the chat");
+          }
           await this.saveState(result.state, { cursors: { [conversationId]: cursor } });
-          if (result.removedMe) throw new MlsRemovedError("This phone was removed from the chat");
           continue;
         }
         // MLS authenticates the sender. The server's label must agree with it.
@@ -499,6 +526,41 @@ export class MlsMessenger {
     return "done";
   }
 
+  /**
+   * Deletes everything this phone holds for a chat: its copy of the group, the messages, the cursor
+   * and any commit in flight, in one step. For when the person is no longer in the chat. Works offline.
+   */
+  forgetChat(conversationId: string): Promise<void> {
+    return this.serial(async () => {
+      const device = await this.store.loadDevice();
+      const hasGroup = device !== null && (await this.crypto.groupStatus(device.state, conversationId)) !== null;
+      const change: MlsChange = { forgetChats: [conversationId] };
+      if (device && hasGroup) change.device = { ...device, state: await this.crypto.forgetGroup(device.state, conversationId) };
+      await this.store.apply(change);
+    }, false);
+  }
+
+  /**
+   * Of the chats this phone holds anything for, forgets those the server says the person has left,
+   * except `current`. Each is checked with the server first, so a stale list can't delete a chat
+   * the person is still in, and a chat that can't be checked right now is kept.
+   */
+  async forgetChatsLeft(current: string[]): Promise<string[]> {
+    const keep = new Set(current);
+    const forgotten: string[] = [];
+    for (const conversationId of await this.store.conversationIds()) {
+      if (keep.has(conversationId)) continue;
+      try {
+        await this.transport.groupState(conversationId);
+      } catch (error) {
+        if (!isOutOfChat(error)) continue;
+        await this.forgetChat(conversationId);
+        forgotten.push(conversationId);
+      }
+    }
+    return forgotten;
+  }
+
   /** Whether this phone is in the chat's MLS group. If so, it sends with MLS, and the server refuses v1. */
   async inGroup(conversationId: string): Promise<boolean> {
     const device = await this.store.loadDevice();
@@ -543,6 +605,9 @@ export class MemoryMlsStore implements MlsStore {
   async messages(conversationId: string) {
     return [...this.stored.values()].filter((m) => m.conversationId === conversationId).sort((a, b) => (a.seq ?? Infinity) - (b.seq ?? Infinity));
   }
+  async conversationIds() {
+    return [...new Set([...this.cursors.keys(), ...this.pending.keys(), ...[...this.stored.values()].map((m) => m.conversationId)])];
+  }
   async apply(change: MlsChange) {
     if (change.device) this.device = change.device;
     for (const [id, cursor] of Object.entries(change.cursors ?? {})) this.cursors.set(id, cursor);
@@ -552,5 +617,10 @@ export class MemoryMlsStore implements MlsStore {
     }
     for (const message of change.deleteMessages ?? []) this.stored.delete(`${message.conversationId}/${message.id}`);
     for (const message of change.messages ?? []) this.stored.set(`${message.conversationId}/${message.id}`, message);
+    for (const conversationId of change.forgetChats ?? []) {
+      this.cursors.delete(conversationId);
+      this.pending.delete(conversationId);
+      for (const [key, message] of this.stored) if (message.conversationId === conversationId) this.stored.delete(key);
+    }
   }
 }

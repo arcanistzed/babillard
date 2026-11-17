@@ -243,9 +243,23 @@ A person's second phone was tried with `apps/api/scripts/mls-second-phone.ts`. A
 - The server refuses a GroupInfo whose `external_pub` isn't well formed, so no client, whatever its library, can leave the group with one a new phone can't join from.
 - Tests: `mlsWire.test.ts` checks the server's refusal, and `mlsOpenmls.test.ts` has a ts-mls phone join by itself from a GroupInfo OpenMLS made.
 
+### Being out of a chat
+
+When the person is no longer in a chat, the phone deletes its MLS copy of it: the group, the stored messages, the cursor and any commit in flight, in one step (`forgetChat`). That matches v1, where the server stops showing a chat to someone once they're out of it. It's a product default worth confirming: some apps keep history after you leave.
+
+- **What counts as out.** Only the server's own answers: 404 `conversation_not_found` or 410 `conversation_closed` from the chat or MLS routes, or the socket closing with code 4001. A bare 404 from an MLS route never counts, because every MLS route answers 404 while MLS is switched off on the server, and a rollback mustn't erase every chat.
+- **On the chat screen.** The chat closes with "You're no longer in this chat", which doesn't say who or why: in an MLS chat the removal commit comes from whichever phone wrote next. Someone who taps "Leave group" themselves sees no notice.
+- **While the app wasn't open.** Each time the inbox loads, the phone checks every chat it holds MLS data for that isn't in the list. It asks the server about each one first, so a stale list can't delete a chat the person is still in, and a chat it can't check right now is kept.
+- **Removed from the group but still in the chat.** When the log removes this phone, the engine drops its copy of the group at once and syncs again: if the person is still in the chat, the phone joins again. If not, the server says so and the chat closes as above.
+- **A commit in flight.** If the person leaves a chat while one of their commits in it has no answer yet, the record is dropped when the server says they're out. Before this, it would have stopped every operation in every chat.
+
+Tried on the emulator with `apps/api/scripts/mls-group-peers.ts` (its new "remove me" makes Alice leave from her other session):
+- With the group open, Alice leaving elsewhere closed the chat with the notice, and the inbox showed no chats. The phone's database, copied off the emulator, went from one cursor and two messages for that chat to nothing.
+- In a second group, tapping "Leave group" went straight to the inbox with no notice, and the database went from three messages to nothing.
+- The engine tests cover rejoining after removal while still a member, a commit in flight for a chat the person left, and the inbox check given an empty list. The SQL store test covers forgetting one chat and keeping another.
+
 ### Not done on the phone
 
-- **Being removed.** The engine stops with an error when the log removes this phone. The chat screen needs to show that the person left or was removed.
 - **Typing and sending states.** A message sent with MLS shows as pending until the engine returns, with no echo over the socket. That's fine on a quick connection and untested on a slow one.
 - **Recovery in the app.** The recovery cases have run in the engine on the emulator, but not through the chat screens with a live Worker. Nothing has run on a real ARM phone.
 - **Franking for reports, backup v2, and per-chat state** remain as designed above.
@@ -437,21 +451,19 @@ The ordering rule `admit` and the security-code function `codeForRoster` are wor
 
 ## What's left, and roughly how long
 
-One developer who knows the codebase. Done on the branch since the first estimate: the server's header reader, the key package service, the delivery service, the readiness check, external commits with GroupInfo export, the phone's sync engine with its encrypted SQLite store, the chat screens on MLS behind the flag, recovery from lost answers and stuck entries, and hiding blocked people's MLS messages.
+One developer who knows the codebase. Done on the branch since the first estimate: the server's header reader, the key package service, the delivery service, the readiness check, external commits with GroupInfo export, the phone's sync engine with its encrypted SQLite store, the chat screens on MLS behind the flag, recovery from lost answers and stuck entries, hiding blocked people's MLS messages, a person's second phone, the roster security code on the chat info screen, and deleting a chat's MLS copy once the person is out of it.
 
 | Work | Estimate |
 |---|---|
 | Android build in EAS: install Rust there, or commit the built libraries | 2 to 3 days |
 | Server, still to do: rate-limiting key package claims, and a way for people to retire a lost phone | 1 to 2 days |
 | Rust wrapper: last-resort key packages and per-chat state | 2 to 4 days |
-| Phone: the chat screen's handling of being removed | 1 day |
 | Franking for reports | 2 days |
-| Roster security code on the chat info screen | 1 day |
 | Backup v2 and history store | 5 to 7 days |
 | Migration: dormant release, per-chat switch, version gate, mixed timeline | 3 to 5 days |
 | Removing ts-mls and its adapter from the app once the native path covers everything | 1 day |
 | End-to-end tests with two devices, and on a real phone | 4 to 5 days |
-| **Total** | **about 4 to 5 weeks** |
+| **Total** | **20 to 29 working days, about 4 to 6 weeks** |
 
 iOS isn't in this estimate. It would add a Swift module over the same Rust crate.
 

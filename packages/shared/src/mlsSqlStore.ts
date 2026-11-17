@@ -141,6 +141,15 @@ export class SqlMlsStore implements MlsStore {
     }));
   }
 
+  async conversationIds(): Promise<string[]> {
+    await this.init();
+    const rows = await this.db.all<{ id: string }>(
+      "SELECT conversation_id AS id FROM mls_cursors UNION SELECT conversation_id FROM mls_messages UNION SELECT conversation_id FROM mls_pending_commits",
+      [],
+    );
+    return rows.map((row) => row.id);
+  }
+
   async pendingCommits(): Promise<Record<string, MlsPendingCommit>> {
     await this.init();
     const rows = await this.db.all<{ conversation_id: string; epoch: number; commit_message: Uint8Array; state: Uint8Array }>("SELECT * FROM mls_pending_commits", []);
@@ -185,6 +194,11 @@ export class SqlMlsStore implements MlsStore {
       }
       for (const { conversationId, id } of change.deleteMessages ?? []) {
         await tx.run("DELETE FROM mls_messages WHERE conversation_id = ? AND id = ?", [conversationId, id]);
+      }
+      for (const conversationId of change.forgetChats ?? []) {
+        await tx.run("DELETE FROM mls_messages WHERE conversation_id = ?", [conversationId]);
+        await tx.run("DELETE FROM mls_cursors WHERE conversation_id = ?", [conversationId]);
+        await tx.run("DELETE FROM mls_pending_commits WHERE conversation_id = ?", [conversationId]);
       }
       for (const { m, text } of messages) {
         await tx.run(

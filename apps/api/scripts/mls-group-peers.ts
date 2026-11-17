@@ -1,13 +1,14 @@
 // Plays three other members of an MLS group chat, so the app can be tried on a phone against a local Worker.
 // Run a local Worker with DEV_MODE=true and MLS_ENABLED=true, then:
-//   ../../node_modules/.bin/tsx scripts/mls-group-peers.ts http://localhost:8787
+//   ../../node_modules/.bin/tsx scripts/mls-group-peers.ts http://localhost:8787 [topic]
 // It creates Alice, Bob, Carol and Dave in one city, forms a group on a topic they all like, and prints a
 // link that signs the phone in as Alice. Bob, Carol and Dave then run the shared sync engine (with ts-mls).
 // Each says hello once the group exists. They answer what the phone sends:
 //   "ping"  → Bob answers "pong from Bob".
 //   "carol" → Carol says "Carol again". Block Carol on the phone first, and this shouldn't show.
 //   "leave" → Dave leaves the chat, and Bob then says "Dave left", which removes Dave's phone first.
-// It stops after "leave" is handled, or after fifteen minutes.
+//   "remove me" → Alice leaves from her other session, and Bob says "Alice left", which removes the phone.
+// It stops after "leave" or "remove me" is handled, or after fifteen minutes.
 import { MemoryMlsStore, MlsMessenger, httpMlsTransport, type HttpCall } from "@babillard/shared";
 import { mlsCiphersuite, tsMlsCrypto } from "@babillard/shared/mls";
 import { randomBytes } from "node:crypto";
@@ -15,7 +16,8 @@ import { createPerson, type Client } from "./api-client.ts";
 
 const base = process.argv[2] ?? "http://localhost:8787";
 const stamp = Date.now().toString(36);
-const topicId = "everyday-physics";
+// People in one city who like the same topic share a group, so use a topic not tried before on that Worker.
+const topicId = process.argv[3] ?? "everyday-physics";
 const cityId = "chicago-il-us";
 
 const make = (name: string) => createPerson(base, `${name.toLowerCase()}-${stamp}@example.test`, { displayName: name, cityId });
@@ -72,6 +74,15 @@ while (Date.now() < deadline && !finished) {
       const fromAlice = received.filter((message) => message.senderId === alice.id).map((message) => message.text.toLowerCase());
       if (fromAlice.some((text) => text.includes("ping"))) await say(bob, "pong from Bob");
       if (fromAlice.some((text) => text.includes("carol"))) await say(carol, "Carol again");
+      if (fromAlice.some((text) => text.includes("remove me"))) {
+        // Alice leaves from her other session, as if from another phone. The phone should close the chat and say why.
+        await alice.post(`/conversations/${chat}/leave`);
+        log({ event: "left", by: "alice" });
+        await say(bob, "Alice left");
+        const state = await bob.client.get<{ roster: { userId: string }[]; epoch: number }>(`/mls/conversations/${chat}`);
+        log({ event: "roster", phones: state.roster.length, aliceInRoster: state.roster.some((entry) => entry.userId === alice.id), epoch: state.epoch });
+        finished = true;
+      }
       if (fromAlice.some((text) => text.includes("leave"))) {
         await dave.client.post(`/conversations/${chat}/leave`);
         dave.active = false;

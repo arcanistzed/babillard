@@ -1,6 +1,6 @@
 import { webcrypto } from "node:crypto";
 import { describe, expect, it } from "vitest";
-import { MemoryMlsStore, MlsMessenger, MlsRemovedError, type MlsCrypto, type MlsTransport } from "../src/mlsClient";
+import { MemoryMlsStore, MlsMessenger, MlsRemovedError, isOutOfChat, type MlsCrypto, type MlsTransport } from "../src/mlsClient";
 import { MemoryMlsServer } from "../src/mlsMemoryServer";
 import { tsMlsCrypto } from "../src/mls/adapter";
 import { mlsCiphersuite } from "../src/mls/provider";
@@ -317,5 +317,80 @@ describe("the sync engine when it doesn't know what happened", () => {
     await alice.send(CHAT, "can you read this?");
     expect(await texts(bob)).toEqual(["can you read this?"]);
     expect(await alice.securityCode(CHAT)).toBe(await bob.securityCode(CHAT));
+  });
+});
+
+describe("the sync engine when someone is out of a chat", () => {
+  const OTHER = "other-chat";
+
+  /** Alice and Bob in two chats, both on MLS, each having read one message in each. */
+  async function twoChats(bobTransport?: (base: MlsTransport) => MlsTransport) {
+    const made = world(["alice", "bob"]);
+    made.server.setMembers(OTHER, ["alice", "bob"]);
+    const alice = made.phone("alice");
+    const bob = made.phone("bob", "bob-phone", bobTransport);
+    await alice.ensureIdentity();
+    await bob.ensureIdentity();
+    for (const chat of [CHAT, OTHER]) {
+      await alice.sync(chat);
+      await alice.send(chat, `hello in ${chat}`);
+      await bob.sync(chat);
+    }
+    return { ...made, alice, bob, bobStore: made.stores.get("bob-phone")! };
+  }
+
+  it("forgets a chat the person has left, and only that chat", async () => {
+    const { server, bob, bobStore } = await twoChats();
+    server.setMembers(CHAT, ["alice"]);
+    await expect(bob.sync(CHAT)).rejects.toSatisfy(isOutOfChat);
+
+    // Even given an empty list, as from a stale inbox, it checks each chat with the server first.
+    expect(await bob.forgetChatsLeft([])).toEqual([CHAT]);
+    expect(await bobStore.messages(CHAT)).toEqual([]);
+    expect(await bobStore.cursor(CHAT)).toBe(0);
+    expect(await bob.inGroup(CHAT)).toBe(false);
+    expect((await bobStore.messages(OTHER)).map((m) => m.text)).toEqual([`hello in ${OTHER}`]);
+    expect(await bob.inGroup(OTHER)).toBe(true);
+    expect(await bobStore.conversationIds()).toEqual([OTHER]);
+  });
+
+  it("joins again when its phone is removed from the group while the person is still in the chat", async () => {
+    const { server, alice, bob } = await twoChats();
+    server.setMembers(CHAT, ["alice"]);
+    await alice.send(CHAT, "just me");
+    server.setMembers(CHAT, ["alice", "bob"]);
+
+    // Bob's phone reads its own removal, drops its copy of the group, and joins again on the next sync.
+    await expect(bob.sync(CHAT)).rejects.toBeInstanceOf(MlsRemovedError);
+    expect(await bob.inGroup(CHAT)).toBe(false);
+    await bob.sync(CHAT);
+    expect(await bob.inGroup(CHAT)).toBe(true);
+    await alice.send(CHAT, "welcome back");
+    expect(await texts(bob)).toEqual(["welcome back"]);
+    expect(await bob.securityCode(CHAT)).toBe(await alice.securityCode(CHAT));
+  });
+
+  it("doesn't let a commit in flight for a chat the person has left hold up the others", async () => {
+    const control = { dropNextCommit: false };
+    const { server, phone, alice, bob, bobStore } = await twoChats((base) => ({
+      ...base,
+      submit: async (conversationId, body) => {
+        if (!control.dropNextCommit || body.groupInfo === undefined) return base.submit(conversationId, body);
+        control.dropNextCommit = false;
+        throw new Error("connection dropped");
+      },
+    }));
+    // Bob's phone adds Carol's, and the answer to that commit never comes back.
+    await phone("carol").ensureIdentity();
+    server.setMembers(CHAT, ["alice", "bob", "carol"]);
+    control.dropNextCommit = true;
+    await expect(bob.sync(CHAT)).rejects.toThrow("connection dropped");
+    expect(Object.keys(await bobStore.pendingCommits())).toEqual([CHAT]);
+
+    // Bob leaves that chat before his phone finds out what happened to the commit.
+    server.setMembers(CHAT, ["alice", "carol"]);
+    await bob.send(OTHER, "still here");
+    expect(await bobStore.pendingCommits()).toEqual({});
+    expect((await alice.sync(OTHER)).map((m) => m.text)).toEqual(["still here"]);
   });
 });

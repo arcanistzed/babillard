@@ -5,6 +5,7 @@ import { Alert, Pressable, ScrollView, StyleSheet, Switch, View } from "react-na
 import { api } from "@/api";
 import { useAuth } from "@/auth";
 import { inviteToTopic } from "@/invite";
+import { forgetMlsChat, markLeftHere } from "@/leaving";
 import { mlsMessenger } from "@/mls";
 import { fonts, useTheme } from "@/theme";
 import { Avatar, Button, T } from "@/ui";
@@ -59,7 +60,14 @@ export default function ChatInfo() {
         text: t("Leave group", "Quitter le groupe"),
         style: "destructive",
         onPress: async () => {
-          await api.post(`/conversations/${id}/leave`);
+          markLeftHere(id, true);
+          try {
+            await api.post(`/conversations/${id}/leave`);
+          } catch (error) {
+            markLeftHere(id, false);
+            throw error;
+          }
+          if (me) await forgetMlsChat(me.id, id).catch((error) => console.warn("Couldn't forget the MLS chat", error));
           await queryClient.invalidateQueries({ queryKey: ["inbox"] });
           router.replace("/inbox");
         },

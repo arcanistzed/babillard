@@ -109,9 +109,24 @@ function Row({ item, preview }: { item: InboxItem; preview: string | null }) {
   );
 }
 
+/**
+ * Forgets this phone's MLS copy of chats the person is no longer in, such as one closed while the app
+ * was shut. The engine checks each with the server first, so a stale list never deletes a live chat.
+ */
+function useForgetLeftChats(items: InboxItem[] | undefined) {
+  const { me } = useAuth();
+  useEffect(() => {
+    if (!me || !items) return;
+    const mls = mlsMessenger(me.id);
+    if (!mls) return;
+    void mls.then((messenger) => messenger.forgetChatsLeft(items.map((item) => item.id))).catch(() => undefined);
+  }, [items, me]);
+}
+
 export default function Inbox() {
   const inbox = useQuery({ queryKey: ["inbox"], queryFn: () => api.get<InboxItem[]>("/conversations") });
   const previews = usePreviews(inbox.data);
+  useForgetLeftChats(inbox.data);
 
   useFocusEffect(
     useCallback(() => {

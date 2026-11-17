@@ -10,6 +10,7 @@ import { useAuth } from "@/auth";
 import { MeetupCard } from "@/components/MeetupCard";
 import { messageTime, timeLeft } from "@/format";
 import { haptics } from "@/haptics";
+import { wasLeftHere } from "@/leaving";
 import { fonts, useTheme } from "@/theme";
 import { Chip, KeyboardScreen, T, useBottomPadding } from "@/ui";
 import { useChat, type LocalMessage } from "@/useChat";
@@ -28,9 +29,12 @@ export default function Chat() {
 
   const conversation = useQuery({ queryKey: ["conversation", id], queryFn: () => api.get<ConversationDetail>(`/conversations/${id}`) });
   const onRemoved = useCallback(() => {
+    // Say why the chat closed, unless the person just left it themselves. Never say who removed
+    // them: in an MLS chat, the commit comes from whichever phone happened to write next.
+    if (!wasLeftHere(id)) Alert.alert(t("You're no longer in this chat", "Vous ne faites plus partie de cette discussion"));
     if (router.canGoBack()) router.back();
     else router.replace("/inbox");
-  }, []);
+  }, [id]);
   const { messages, loaded, send, loadOlder } = useChat(id, me?.id, onRemoved);
 
   // Only messages that arrive while the chat is open slide in. History just appears.

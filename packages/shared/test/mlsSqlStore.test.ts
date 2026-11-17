@@ -121,6 +121,23 @@ describe("the phone's encrypted MLS store", () => {
     expect(await store.cursor("chat-1")).toBe(1);
   });
 
+  it("forgets a whole chat in one step, and nothing else", async () => {
+    const store = new SqlMlsStore(nodeDb(), random(32), random);
+    const pending = { epoch: 3, commit: random(20), state: random(30) };
+    await store.apply({
+      cursors: { "chat-1": 2, "chat-2": 5 },
+      messages: [message("1", "gone soon", 1), { ...message("4", "stays", 4), conversationId: "chat-2" }],
+      pendingCommits: { "chat-1": pending },
+    });
+    expect((await store.conversationIds()).sort()).toEqual(["chat-1", "chat-2"]);
+    await store.apply({ forgetChats: ["chat-1"] });
+    expect(await store.conversationIds()).toEqual(["chat-2"]);
+    expect(await store.messages("chat-1")).toEqual([]);
+    expect(await store.cursor("chat-1")).toBe(0);
+    expect(await store.pendingCommits()).toEqual({});
+    expect((await store.messages("chat-2")).map((m) => m.text)).toEqual(["stays"]);
+  });
+
   it("carries the engine through its recovery cases, as on the phone", async () => {
     const result = await runRecoveryDemo(tsMlsCrypto(mlsCiphersuite(random)), async () => new SqlMlsStore(nodeDb(), random(32), random));
     expect(recoveryPassed(result)).toBe(true);

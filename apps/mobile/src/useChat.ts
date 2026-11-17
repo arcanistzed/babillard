@@ -1,9 +1,10 @@
-import { MlsRemovedError, showsSender, type ChatMessage, type ConversationDetail, type MlsStoredMessage, type ServerSocketEvent } from "@babillard/shared";
+import { MlsRemovedError, isOutOfChat, showsSender, type ChatMessage, type ConversationDetail, type MlsStoredMessage, type ServerSocketEvent } from "@babillard/shared";
 import { useQueryClient } from "@tanstack/react-query";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { AppState } from "react-native";
 import { api, ApiError, openConversationSocket } from "./api";
 import { useBlockedIds } from "./blocked";
+import { forgetMlsChat } from "./leaving";
 import { ensureDeviceKey, readingKeys, readMessage, sealFor, type ReadableMessage } from "./e2ee";
 import { mlsMessenger } from "./mls";
 
@@ -65,6 +66,14 @@ export function useChat(conversationId: string, myId: string | undefined, onRemo
   useEffect(() => {
     onRemovedRef.current = onRemoved;
   }, [onRemoved]);
+  /** The person is out of this chat: forget this phone's MLS copy of it, then let the screen close. */
+  const removedRef = useRef(() => {});
+  useEffect(() => {
+    removedRef.current = () => {
+      if (myId) void forgetMlsChat(myId, conversationId).catch((error) => console.warn("Couldn't forget the MLS chat", error));
+      onRemovedRef.current();
+    };
+  }, [conversationId, myId]);
 
   // MLS, when this build has it on. Null otherwise, and then nothing below changes how v1 works.
   const mls = useMemo(() => (myId ? mlsMessenger(myId) : null), [myId]);
@@ -109,16 +118,24 @@ export function useChat(conversationId: string, myId: string | undefined, onRemo
   const syncMls = useCallback(async () => {
     if (!mls) return;
     const messenger = await mls;
-    try {
-      await messenger.sync(conversationId);
-    } catch (error) {
-      if (error instanceof MlsRemovedError) {
-        onRemovedRef.current();
-        return;
-      }
-      // Anything else leaves what's stored on screen. The next socket event or visit tries again.
-      console.warn("MLS sync failed", error);
+    let failure: unknown = await messenger.sync(conversationId).then(
+      () => null,
+      (error: unknown) => error,
+    );
+    // The log removed this phone, and the engine dropped its copy of the group. If the person is
+    // still in the chat, syncing again joins it again. If not, the server says so.
+    if (failure instanceof MlsRemovedError) {
+      failure = await messenger.sync(conversationId).then(
+        () => null,
+        (error: unknown) => error,
+      );
     }
+    if (isOutOfChat(failure)) {
+      removedRef.current();
+      return;
+    }
+    // Anything else leaves what's stored on screen. The next socket event or visit tries again.
+    if (failure) console.warn("MLS sync failed", failure);
     const stored = (await messenger.messages(conversationId)).map(fromMls);
     setMlsActive(await messenger.inGroup(conversationId));
     setMessages((current) => merge(current.filter((message) => !message.id.startsWith(MLS_PREFIX)), stored));
@@ -183,7 +200,7 @@ export function useChat(conversationId: string, myId: string | undefined, onRemo
         setConnected(false);
         if (closed || paused) return;
         if (event.code === REMOVED_CLOSE_CODE) {
-          onRemoved();
+          removedRef.current();
           return;
         }
         attempt += 1;
@@ -197,7 +214,7 @@ export function useChat(conversationId: string, myId: string | undefined, onRemo
       setLoaded(true);
       if (error instanceof ApiError && (error.status === 404 || error.status === 410)) {
         closed = true;
-        onRemoved();
+        removedRef.current();
       }
     });
     if (!paused) connect();
@@ -223,8 +240,6 @@ export function useChat(conversationId: string, myId: string | undefined, onRemo
       for (const timer of pendingTimers.values()) clearTimeout(timer);
       pendingTimers.clear();
     };
-    // onRemoved is stable for the life of the screen.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [conversationId, queryClient, read, refresh, markRead, syncMls]);
 
   const seal = useCallback(

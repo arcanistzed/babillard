@@ -61,7 +61,7 @@ export class MemoryMlsServer {
   transportFor(userId: string, deviceId: string): MlsTransport {
     const memberChat = (conversationId: string) => {
       const chat = this.chat(conversationId);
-      if (!chat.members.has(userId)) throw new Error("not a member");
+      if (!chat.members.has(userId)) throw new MlsHttpError(404, "conversation_not_found");
       return chat;
     };
     return {
@@ -139,6 +139,8 @@ export class MemoryMlsServer {
           chat.roster = decision.roster;
           chat.groupInfo = body.groupInfo ?? null;
           for (const added of decision.added) chat.welcomes.set(added.deviceId, { seq: entry.seq, welcome: body.welcome! });
+          // As the Worker does: a Welcome for a phone that has since been removed would only lead back to its removal.
+          for (const deviceId of chat.welcomes.keys()) if (!chat.roster.some((r) => r.deviceId === deviceId)) chat.welcomes.delete(deviceId);
         }
         return { ok: true, entry };
       },
