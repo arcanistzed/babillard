@@ -1,4 +1,4 @@
-import { isAnnouncementDue, requiredYesCount, yesStillNeeded, type ConversationKind } from "@babillard/shared";
+import { isAnnouncementDue, requiredYesCount, requiredYesToStayConfirmed, yesStillNeeded, type ConversationKind } from "@babillard/shared";
 import { and, eq, gt, inArray, sql } from "drizzle-orm";
 import { schema, type Db } from "../db";
 import { blockedWith } from "./blocks";
@@ -14,6 +14,14 @@ export async function memberIds(db: Db, conversationId: string): Promise<string[
     .from(schema.conversationMembers)
     .where(eq(schema.conversationMembers.conversationId, conversationId));
   return rows.map((row) => row.id);
+}
+
+/** Everyone in the chat, with when they joined. */
+async function roster(db: Db, conversationId: string): Promise<{ id: string; joinedAt: number }[]> {
+  return db
+    .select({ id: schema.conversationMembers.userId, joinedAt: schema.conversationMembers.joinedAt })
+    .from(schema.conversationMembers)
+    .where(eq(schema.conversationMembers.conversationId, conversationId));
 }
 
 /** Yeses from people still in the chat. Someone who left or deleted their account can't come. */
@@ -66,7 +74,8 @@ async function isClosedDirectChat(db: Db, conversationId: string, memberCount: n
 /**
  * Moves a meetup between proposed and confirmed to match its yes count, and tells the chat.
  * Each update re-counts inside its WHERE, so whichever of two simultaneous calls runs last sees every answer, and only one of them can win a transition.
- * A confirmed meetup only goes back to proposed before it starts.
+ * A confirmed meetup only goes back to proposed before it starts, and only when it falls below what the people there when it was
+ * proposed would need, so someone joining can't un-confirm it (see requiredYesToStayConfirmed).
  *
  * The state always changes straight away, but the chat hears about it at most once per cooldown. A change that has to wait
  * is announced by the next sweep after the cooldown, so someone flipping between yes and no can't flood the chat with messages and pushes.
@@ -74,10 +83,12 @@ async function isClosedDirectChat(db: Db, conversationId: string, memberCount: n
 export async function settleMeetup(env: Env, db: Db, meetup: MeetupRow, kind: ConversationKind, options: { now?: number; backout?: Backout; waitUntil?: (promise: Promise<unknown>) => void } = {}): Promise<MeetupRow> {
   const now = options.now ?? Date.now();
   const cooldown = meetupAnnounceCooldownMs(env);
-  const everyone = await memberIds(db, meetup.conversationId);
+  const members = await roster(db, meetup.conversationId);
+  const everyone = members.map((member) => member.id);
   if (kind === "direct" && (await isClosedDirectChat(db, meetup.conversationId, everyone.length))) return meetup;
 
   const required = requiredYesCount(kind, everyone.length);
+  const toStay = requiredYesToStayConfirmed(kind, members.filter((member) => member.joinedAt <= meetup.createdAt).length);
   const yes = memberYesCount(meetup.id, meetup.conversationId);
   await db
     .update(schema.meetups)
@@ -86,7 +97,7 @@ export async function settleMeetup(env: Env, db: Db, meetup: MeetupRow, kind: Co
   const unconfirmed = await db
     .update(schema.meetups)
     .set({ state: "proposed" })
-    .where(and(eq(schema.meetups.id, meetup.id), eq(schema.meetups.state, "confirmed"), gt(schema.meetups.startsAt, now), sql`${yes} < ${required}`))
+    .where(and(eq(schema.meetups.id, meetup.id), eq(schema.meetups.state, "confirmed"), gt(schema.meetups.startsAt, now), sql`${yes} < ${toStay}`))
     .returning({ id: schema.meetups.id });
   if (unconfirmed.length > 0) console.log(JSON.stringify({ event: "meetup_unconfirmed", meetupId: meetup.id, conversationKind: kind, backout: Boolean(options.backout) }));
 

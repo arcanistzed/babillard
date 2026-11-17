@@ -1087,6 +1087,29 @@ describe("meetups", () => {
     expect(pushes[0]!.userIds.sort()).toEqual([p0.id, p1.id].sort());
   });
 
+  it("keeps a meetup confirmed when someone joins the group, and still un-confirms it when someone backs out", async () => {
+    const topicId = "development-economics";
+    const { people, groupId } = await groupOf(3, topicId);
+    const [p0, p1, p2] = people as [Client, Client, Client];
+    await p2.post(`/conversations/${groupId}/leave`);
+    const meetup = await p0.post(`/meetups?conversationId=${groupId}`, proposal());
+    expect((await p1.post(`/meetups/${meetup.id}/respond`, { response: "yes" })).state).toBe("confirmed");
+    await afterCooldown();
+
+    // A newcomer joins the group of two. Confirming would now take three yeses, but the two who agreed are still going.
+    const newcomer = await person("london");
+    expect((await newcomer.post(`/deck/topics/${topicId}/swipe`, { direction: "right" })).groupConversationId).toBe(groupId);
+    expect((await p0.get(`/conversations/${groupId}`)).members).toHaveLength(3);
+    await sweep();
+    await sweep();
+    expect(await p0.get(`/meetups/${meetup.id}`)).toMatchObject({ state: "confirmed", yesCount: 2 });
+    expect((await meetupMessages(p0, groupId, meetup.id)).some((message: any) => message.body.includes("isn't confirmed anymore"))).toBe(false);
+
+    // One of the two backing out still takes it off.
+    expect((await p1.post(`/meetups/${meetup.id}/respond`, { response: "no" })).state).toBe("proposed");
+    expect((await meetupMessages(p0, groupId, meetup.id)).at(-1).body).toBe(`Person ${counter - 2} can't make it anymore. The meetup at Blue Door, Main St isn't confirmed anymore: 2 more yeses are needed.`);
+  });
+
   it("leaves a meetup alone once a block closes the one-on-one chat", async () => {
     const a = await person("new-york");
     const b = await person("new-york");

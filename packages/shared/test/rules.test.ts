@@ -21,6 +21,8 @@ import {
   rankTopics,
   requiredYesCount,
   isAnnouncementDue,
+  isConfirmationLost,
+  requiredYesToStayConfirmed,
   yesStillNeeded,
   scorePerson,
   suggestMeetupSlots,
@@ -240,6 +242,19 @@ describe("meetups", () => {
     expect(yesStillNeeded("group", 1, 5)).toBe(2);
     expect(yesStillNeeded("direct", 1, 2)).toBe(1);
     expect(yesStillNeeded("group", 4, 5)).toBe(0);
+  });
+
+  it("keeps a meetup confirmed when people join after it was proposed", () => {
+    // Two people agreed in a group of two. A third joins, so confirming would now take three, but staying on still takes two.
+    expect(requiredYesCount("group", 3)).toBe(3);
+    expect(requiredYesToStayConfirmed("group", 2)).toBe(2);
+    expect(isConfirmationLost("group", 2, 2)).toBe(false);
+    // One of the two backs out.
+    expect(isConfirmationLost("group", 1, 2)).toBe(true);
+    // A big group keeps needing three.
+    expect(isConfirmationLost("group", 2, 5)).toBe(true);
+    expect(isConfirmationLost("direct", 1, 2)).toBe(true);
+    expect(isConfirmationLost("direct", 2, 2)).toBe(false);
   });
 
   it("allows another announcement only after the cooldown", () => {

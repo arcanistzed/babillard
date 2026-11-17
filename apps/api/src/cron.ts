@@ -97,7 +97,10 @@ async function settleMeetups(env: Env, db: Db, now: number): Promise<number> {
   const required = sql<number>`(case when "conversations"."kind" = 'direct' then 2 else min(${GROUP_MEETUP_CONFIRM_YES}, max(${members}, 2)) end)`;
   // A one-on-one closed by a block or an ended match, or missing a member, has nobody left to tell.
   const open = sql`("conversations"."kind" = 'group' or (${members} >= 2 and not exists (select 1 from matches as closed_m where closed_m.conversation_id = "meetups"."conversation_id" and closed_m.state != 'active')))`;
-  const wrongState = sql`((${schema.meetups.state} = 'confirmed') = (${yes} < ${required}))`;
+  // requiredYesToStayConfirmed in SQL: the same, counting only people who were there when the meetup was proposed.
+  const membersAtProposal = sql<number>`(select count(*) from conversation_members as then_m where then_m.conversation_id = "meetups"."conversation_id" and then_m.joined_at <= "meetups"."created_at")`;
+  const toStay = sql<number>`(case when "conversations"."kind" = 'direct' then 2 else min(${GROUP_MEETUP_CONFIRM_YES}, max(${membersAtProposal}, 2)) end)`;
+  const wrongState = sql`((${schema.meetups.state} = 'confirmed' and ${yes} < ${toStay}) or (${schema.meetups.state} = 'proposed' and ${yes} >= ${required}))`;
   const unannounced = sql`(coalesce(${schema.meetups.announcedState}, 'proposed') != ${schema.meetups.state} and (${schema.meetups.announcedAt} is null or ${schema.meetups.announcedAt} <= ${now - meetupAnnounceCooldownMs(env)}))`;
   const candidates = await db
     .select({ meetup: schema.meetups, kind: schema.conversations.kind })
