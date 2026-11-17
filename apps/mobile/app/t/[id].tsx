@@ -125,7 +125,7 @@ export default function TopicLinkScreen() {
               {groupConversationId
                 ? t("You're in. Your group is open.", "Vous en êtes. Votre groupe est ouvert.")
                 : topic.pending
-                  ? t("You're in. It's waiting for review before it can form a group.", "Vous en êtes. Il attend d'être approuvé avant de pouvoir former un groupe.")
+                  ? t("You're in. Waiting for review before it can form a group.", "Vous en êtes. En attente d'approbation avant de pouvoir former un groupe.")
                   : t("You're in. Waiting for a group.", "Vous en êtes. En attente d'un groupe.")}
             </T>
             {groupConversationId ? (
