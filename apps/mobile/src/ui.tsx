@@ -169,7 +169,7 @@ export function Avatar({ name, url, size = 44, tint, topic }: { name: string; ur
 const styles = StyleSheet.create({
   button: { minHeight: 52, paddingHorizontal: 20, borderRadius: 14, borderWidth: 2, alignItems: "center", justifyContent: "center" },
   chip: { minHeight: 36, paddingHorizontal: 13, alignSelf: "flex-start", justifyContent: "center", borderRadius: 18, borderWidth: 1.5 },
-  chipRow: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
+  chipRow: { flexDirection: "row", flexWrap: "wrap", gap: 8, paddingVertical: 4, marginVertical: -4 },
   field: { gap: 6 },
   inputWithTrailing: { paddingRight: 52 },
   trailing: { position: "absolute", top: 0, bottom: 0, right: 4, width: 44, alignItems: "center", justifyContent: "center" },

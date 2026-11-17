@@ -133,5 +133,5 @@ export default function NewMeetup() {
 
 const styles = StyleSheet.create({
   section: { gap: 10 },
-  chipLine: { gap: 8 },
+  chipLine: { gap: 8, paddingVertical: 4 },
 });

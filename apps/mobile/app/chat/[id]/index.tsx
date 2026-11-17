@@ -213,7 +213,7 @@ const styles = StyleSheet.create({
   unreadable: { fontStyle: "italic" },
   time: { fontSize: 12, lineHeight: 16, marginTop: 2, marginHorizontal: 4 },
   composerArea: { borderTopWidth: StyleSheet.hairlineWidth, paddingTop: 8 },
-  openers: { gap: 8, paddingHorizontal: 12, paddingBottom: 8 },
+  openers: { gap: 8, paddingHorizontal: 12, paddingTop: 4, paddingBottom: 8 },
   composer: { flexDirection: "row", alignItems: "flex-end", gap: 8, paddingHorizontal: 10 },
   meetButton: { flexDirection: "row", alignItems: "center", gap: 5, minHeight: 44, paddingHorizontal: 11, borderRadius: 12 },
   input: { flex: 1, minHeight: 44, maxHeight: 120, borderWidth: 1, borderRadius: 12, paddingHorizontal: 12, paddingTop: 10, paddingBottom: 10, fontSize: 16 },
