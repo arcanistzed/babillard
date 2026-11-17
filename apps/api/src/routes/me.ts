@@ -96,7 +96,7 @@ me.post("/device-key", async (c) => {
   const user = c.get("user");
   const { publicKey } = await parseJson(c, deviceKeySchema);
   const db = getDb(c.env);
-  const [existing] = await db.select().from(schema.deviceKeys).where(eq(schema.deviceKeys.publicKey, publicKey));
+  const [existing] = await db.select({ userId: schema.deviceKeys.userId }).from(schema.deviceKeys).where(eq(schema.deviceKeys.publicKey, publicKey));
   if (existing && existing.userId !== user.id) throw fail(409, "key_in_use");
   const now = Date.now();
   await db

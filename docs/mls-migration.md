@@ -125,13 +125,24 @@ In D1, `device_keys` gains `mls_signature_key`, set once per phone, since changi
 
 Open sockets get `{ type: "mls", seq, epoch }` after each accepted entry. Everyone gets every entry, blockers included, because skipping entries would break their copy of the group.
 
-`apps/api/test/mls.e2e.ts` runs these through the real Worker, with ts-mls phones:
+`packages/shared/test/mlsOpenmls.test.ts` replays real OpenMLS messages, written by a Rust test, through the same rules. The server's roster matches OpenMLS's leaf by leaf through adds, a removal, a new member reusing the freed leaf, a key update, and a message.
+
+`apps/api/test/mls.e2e.ts` runs the routes through the real Worker, with ts-mls phones:
 
 - The routes are off without the flag.
-- A key package claimed for someone else's phone is refused, and a second signing key is refused.
+- A key package uploaded under the wrong phone is refused, a second signing key is refused, and packages can only be claimed for phones waiting to join.
 - A direct chat forms, both sides send and read, and a resend with the same `clientId` isn't stored twice.
 - A message from an old epoch is refused, and v1 is refused once the chat is on MLS.
 - In a four-person group, after someone leaves, messages wait until their phone is removed, kicking a current member is refused, and the leaver can no longer read the log.
+
+### Before turning it on
+
+The flag hides the routes, but not everything:
+
+- **Deploy order.** Migration `0010` must be applied before this Worker is deployed. Account deletion now also deletes key packages, and that fails without the table. Every `ChatRoom` also creates its empty MLS tables when it wakes, flag or not. That's harmless, but it means the branch changes production storage the moment it's deployed.
+- **Readiness.** Today the first accepted commit moves a chat to MLS, and v1 sends are refused from then on, even if some member has no MLS phone yet. That member would be locked out. The switch must wait until every member has a registered MLS phone, as "Moving existing chats over" says. Not built.
+- **Recovery.** If every phone in a group's roster is gone (the creator alone left, or everyone reinstalled), nobody can commit, and a fresh group is refused because the roster isn't empty. External commits would fix this. Until they're accepted, such a chat is stuck. Not built.
+- **Burned packages.** A commit the server refuses has already used the key packages it claimed. The last-resort package covers the gap, but phones should top up when `GET /mls/key-packages/:deviceId` runs low.
 
 ## How each feature works under MLS
 
@@ -307,7 +318,7 @@ One developer who knows the codebase. Done on the branch since the first estimat
 | Work | Estimate |
 |---|---|
 | Android build in EAS: install Rust there, or commit the built libraries | 2 to 3 days |
-| Server, still to do: accept external commits, rate-limit key package claims, export GroupInfo from the wrapper | 2 to 3 days |
+| Server, still to do: the readiness check before switching a chat, accepting external commits (also the recovery path), rate-limiting claims, exporting GroupInfo from the wrapper | 3 to 5 days |
 | Rust wrapper: external commits for joining, last-resort key packages, per-chat state | 3 to 5 days |
 | Phone: encrypted state in SQLite, local message store, sync loop, send and retry, joining, committing pending removals | 8 to 12 days |
 | Franking for reports | 2 days |
@@ -330,7 +341,7 @@ iOS isn't in this estimate. It would add a Swift module over the same Rust crate
 6. **Key package exhaustion.** If someone's packages run out, they can't be added until they come online. Keep one long-lived "last resort" package per phone, a common MLS practice, and accept that a join using it has weaker forward secrecy.
 7. **Group state at rest.** It holds every private key for the group. It needs the same care as the SecureStore keys, and it must never go into a backup.
 8. **Keeping up with OpenMLS.** Its fixes only help if we take them. Watch its security advisories and update the pins promptly, rerunning the Rust tests each time.
-9. **Draining key packages.** Any member can claim packages for other members' phones, so a hostile member could use up someone's single-use packages. The last-resort package keeps the phone addable. Claims still need a rate limit.
+9. **Draining key packages.** A member can claim packages for any phone waiting to join, and a commit the server then refuses still uses them up. A hostile member could drain a newcomer's packages that way. The last-resort package keeps the phone addable. Claims still need a rate limit.
 10. **The roster is the server's word.** It follows the commits the server accepted, and phones keep their own roster from the same commits. If they ever disagree, a phone should stop and show the security code, not trust either side.
 
 The D1 migration on the branch is `0010`. Main has moved on since the branch started, so check the number before merging.

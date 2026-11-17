@@ -229,3 +229,74 @@ fn messages_from_a_past_epoch_are_refused() {
 fn the_library_reports_its_version() {
     assert!(library_version().contains("openmls 0.9.2"));
 }
+
+fn hex(bytes: &[u8]) -> String {
+    bytes.iter().map(|b| format!("{b:02x}")).collect()
+}
+
+fn roster_json(phone: &Phone) -> String {
+    let entries: Vec<String> = group_status(phone.state.clone(), GROUP.to_vec())
+        .unwrap()
+        .roster
+        .into_iter()
+        .map(|e| format!(r#"{{"leafIndex":{},"userId":"{}","deviceId":"{}"}}"#, e.leaf_index, e.user_id, e.device_id))
+        .collect();
+    format!("[{}]", entries.join(","))
+}
+
+fn fixture_step(steps: &mut Vec<String>, sender: &str, epoch: u64, kind: &str, message: &[u8], welcome: Option<&[u8]>, roster: String) {
+    let welcome = welcome.map(|w| format!(r#","welcome":"{}""#, hex(w))).unwrap_or_default();
+    steps.push(format!(r#"{{"sender":"{sender}","epoch":{epoch},"kind":"{kind}","message":"{}"{welcome},"roster":{roster}}}"#, hex(message)));
+}
+
+/// Writes real OpenMLS messages for the TypeScript server tests, when BABILLARD_MLS_FIXTURE names a file.
+/// The steps cover leaf reuse: Carol leaves leaf 2 empty, and Dave should take it.
+#[test]
+fn server_fixture() {
+    let (mut alice, mut bob, mut carol, mut dave) = (phone("alice"), phone("bob"), phone("carol"), phone("dave"));
+    let trusted = trust(&[&alice, &bob, &carol, &dave]);
+    let mut steps: Vec<String> = Vec::new();
+
+    // The first commit adds Bob and Carol. OpenMLS forces an update path, which the server requires.
+    alice.state = create_group(alice.state.clone(), GROUP.to_vec()).unwrap();
+    let first = add_members(alice.state.clone(), GROUP.to_vec(), vec![bob.key_package.clone(), carol.key_package.clone()], trusted.clone()).unwrap();
+    alice.state = first.state;
+    for joiner in [&mut bob, &mut carol] {
+        joiner.state = join_from_welcome(joiner.state.clone(), first.welcome.clone().unwrap(), trusted.clone()).unwrap().state;
+    }
+    fixture_step(&mut steps, "alice", 0, "commit", &first.commit, first.welcome.as_deref(), roster_json(&alice));
+
+    let removal = remove_user(alice.state.clone(), GROUP.to_vec(), "carol".into()).unwrap();
+    alice.state = removal.state;
+    read(&mut bob, &removal.commit, &trusted).unwrap();
+    fixture_step(&mut steps, "alice", 1, "commit", &removal.commit, None, roster_json(&alice));
+
+    let add = add_members(alice.state.clone(), GROUP.to_vec(), vec![dave.key_package.clone()], trusted.clone()).unwrap();
+    alice.state = add.state;
+    read(&mut bob, &add.commit, &trusted).unwrap();
+    dave.state = join_from_welcome(dave.state.clone(), add.welcome.clone().unwrap(), trusted.clone()).unwrap().state;
+    fixture_step(&mut steps, "alice", 2, "commit", &add.commit, add.welcome.as_deref(), roster_json(&alice));
+
+    let update = update_keys(bob.state.clone(), GROUP.to_vec()).unwrap();
+    bob.state = update.state;
+    read(&mut alice, &update.commit, &trusted).unwrap();
+    read(&mut dave, &update.commit, &trusted).unwrap();
+    fixture_step(&mut steps, "bob", 3, "commit", &update.commit, None, roster_json(&bob));
+
+    let sent = encrypt(alice.state.clone(), GROUP.to_vec(), b"hello".to_vec(), Vec::new()).unwrap();
+    alice.state = sent.state;
+    match read(&mut dave, &sent.message, &trusted).unwrap() {
+        Received::Application { plaintext, .. } => assert_eq!(plaintext, b"hello"),
+        Received::Commit { .. } => panic!("expected a message"),
+    }
+    fixture_step(&mut steps, "alice", 4, "application", &sent.message, None, roster_json(&alice));
+
+    let Ok(path) = std::env::var("BABILLARD_MLS_FIXTURE") else { return };
+    let devices: Vec<String> = [&alice, &bob, &carol, &dave]
+        .iter()
+        .map(|p| format!(r#"{{"userId":"{}","deviceId":"{}-phone","signatureKey":"{}","keyPackage":"{}"}}"#, p.user, p.user, hex(&p.signature_key), hex(&p.key_package)))
+        .collect();
+    let group = String::from_utf8(GROUP.to_vec()).unwrap();
+    let json = format!(r#"{{"groupId":"{group}","devices":[{}],"steps":[{}]}}"#, devices.join(","), steps.join(","));
+    std::fs::write(path, json + "\n").unwrap();
+}

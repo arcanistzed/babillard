@@ -129,19 +129,22 @@ async function memberOfOpenChat(c: { env: Env }, userId: string, conversationId:
   return db;
 }
 
-/** Key packages for phones the caller wants to add. Only current members' registered phones qualify. */
+/**
+ * Key packages for phones the caller wants to add. Only members' registered phones that aren't in the
+ * group yet qualify, which limits how many of someone's packages another member can use up.
+ */
 mls.post("/conversations/:id/key-packages", async (c) => {
   const user = c.get("user");
   const id = c.req.param("id");
   const db = await memberOfOpenChat(c, user.id, id);
   const { deviceIds } = await parseJson(c, mlsClaimSchema);
   const state = await c.env.CHAT_ROOM.getByName(id).mlsState(id);
-  const owners = new Map(state.directory.map((device) => [device.deviceId, device.userId]));
+  const waiting = new Map(state.pendingAdds.map((device) => [device.deviceId, device.userId]));
   const keyPackages: { userId: string; deviceId: string; keyPackage: string }[] = [];
   const missing: string[] = [];
   for (const deviceId of new Set(deviceIds)) {
-    const userId = owners.get(deviceId);
-    if (!userId) throw fail(403, "not_a_member_device");
+    const userId = waiting.get(deviceId);
+    if (!userId) throw fail(403, "not_waiting_to_join");
     const keyPackage = await claim(db, deviceId);
     if (keyPackage) keyPackages.push({ userId, deviceId, keyPackage });
     else missing.push(deviceId);

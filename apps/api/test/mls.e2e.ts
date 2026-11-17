@@ -105,7 +105,7 @@ describe("MLS delivery service", () => {
   });
 
   it("checks key packages, orders a two-person chat, and moves it off v1", async () => {
-    const [a, b] = await Promise.all([person("new-york"), person("new-york")]);
+    const [a, b] = await Promise.all([person("chicago-il-us"), person("chicago-il-us")]);
     await a.post("/deck/topics/astrophysics-and-cosmology/swipe", { direction: "right" });
     await b.post("/deck/topics/astrophysics-and-cosmology/swipe", { direction: "right" });
     await a.post(`/people/${b.id}/swipe`, { direction: "right" });
@@ -123,9 +123,12 @@ describe("MLS delivery service", () => {
     expect(before.pendingAdds).toHaveLength(2);
 
     await startOnServer(alice, conversationId);
+    // Only phones waiting to join can have packages claimed for them. Alice's is already in the group.
+    expect(await status(b.post(`/mls/conversations/${conversationId}/key-packages`, { deviceIds: [a.device.publicKey] }))).toBe(403);
     await addAll(alice, conversationId, [bob]);
-    // Bob's only package is gone now.
-    expect((await a.post(`/mls/conversations/${conversationId}/key-packages`, { deviceIds: [b.device.publicKey] })).missing).toEqual([b.device.publicKey]);
+    // Claiming used up Bob's only package, and now he's in the group, so no one can claim for him.
+    expect(await b.get(`/mls/key-packages/${b.device.publicKey}`)).toEqual({ available: 0, lastResort: false });
+    expect(await status(a.post(`/mls/conversations/${conversationId}/key-packages`, { deviceIds: [b.device.publicKey] }))).toBe(403);
 
     const hello = await encryptText(alice.state!, "Hi Bob", cs);
     const sent = await submit(alice, conversationId, hello.message, { clientId: "first" });
@@ -151,7 +154,7 @@ describe("MLS delivery service", () => {
   });
 
   it("holds messages after someone leaves a group until their phone is removed", async () => {
-    const people = await Promise.all(Array.from({ length: 4 }, () => person("san-francisco")));
+    const people = await Promise.all(Array.from({ length: 4 }, () => person("seattle-wa-us")));
     let groupId: string | null = null;
     for (const client of people) groupId = (await client.post("/deck/topics/climate-physics/swipe", { direction: "right" })).groupConversationId ?? groupId;
     expect(groupId).toBeTruthy();
