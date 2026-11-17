@@ -3,6 +3,7 @@ import { HeaderHeightContext } from "expo-router/react-navigation";
 import { useContext, useEffect, useState, type ReactNode } from "react";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Image } from "expo-image";
+import { topicInitial } from "@babillard/shared";
 import Animated, { useAnimatedStyle, useSharedValue, withSequence, withSpring, withTiming } from "react-native-reanimated";
 import { haptics } from "./haptics";
 import { t } from "./i18n";
@@ -151,7 +152,8 @@ export function ErrorText({ children }: { children: ReactNode }) {
   );
 }
 
-export function Avatar({ name, url, size = 44, tint }: { name: string; url?: string | null; size?: number; tint?: { bg: string; fg: string } }) {
+/** `topic` is for a group named after its topic, whose letter skips a leading article like "La" or "The". */
+export function Avatar({ name, url, size = 44, tint, topic }: { name: string; url?: string | null; size?: number; tint?: { bg: string; fg: string }; topic?: boolean }) {
   const theme = useTheme();
   const colors = tint ?? { bg: theme.line, fg: theme.ink };
   if (url) {
@@ -159,7 +161,7 @@ export function Avatar({ name, url, size = 44, tint }: { name: string; url?: str
   }
   return (
     <View accessible accessibilityLabel={name} style={{ width: size, height: size, borderRadius: size / 2, backgroundColor: colors.bg, alignItems: "center", justifyContent: "center" }}>
-      <Text style={{ fontFamily: fonts.display, fontSize: size * 0.45, color: colors.fg }}>{name.trim().charAt(0).toUpperCase()}</Text>
+      <Text style={{ fontFamily: fonts.display, fontSize: size * 0.45, color: colors.fg }}>{topic ? topicInitial(name) : name.trim().charAt(0).toUpperCase()}</Text>
     </View>
   );
 }

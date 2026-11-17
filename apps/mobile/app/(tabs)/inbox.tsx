@@ -52,7 +52,7 @@ function Row({ item, preview }: { item: InboxItem; preview: string | null }) {
       onPress={() => router.push(`/chat/${item.id}`)}
       style={({ pressed }) => [styles.row, { borderBottomColor: theme.line, opacity: pressed ? 0.7 : 1 }]}
     >
-      <Avatar name={item.title} url={item.avatarUrl} size={52} tint={item.kind === "group" ? groupTint : undefined} />
+      <Avatar name={item.title} url={item.avatarUrl} size={52} tint={item.kind === "group" ? groupTint : undefined} topic={item.kind === "group"} />
       <View style={styles.rowBody}>
         <T variant="heading" numberOfLines={1}>
           {item.title}

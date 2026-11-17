@@ -28,6 +28,7 @@ import {
   yesStillNeeded,
   scorePerson,
   suggestMeetupSlots,
+  topicInitial,
   topicPhrase,
   scoreTopic,
   visibleLookingFor,
@@ -167,6 +168,27 @@ describe("match", () => {
   it("falls back when a topic has no openers", () => {
     expect(pickOpener([])).toMatch(/\?$/);
     expect(pickOpener(["a", "b"], () => 0.99)).toBe("b");
+  });
+
+  it("skips a leading article for a topic's initial", () => {
+    expect(topicInitial("La philosophie du sport")).toBe("P");
+    expect(topicInitial("L'histoire de la cartographie")).toBe("H");
+    expect(topicInitial("L’économie comportementale")).toBe("É");
+    expect(topicInitial("Les villes et le climat")).toBe("V");
+    expect(topicInitial("Une question de goût")).toBe("Q");
+    expect(topicInitial("The history of cartography")).toBe("H");
+    expect(topicInitial("An hour of poetry")).toBe("H");
+    expect(topicInitial("a reading group")).toBe("R");
+    expect(topicInitial("« Faut-il abolir les zoos? »")).toBe("F");
+  });
+
+  it("keeps the first letter when there's no article to skip", () => {
+    expect(topicInitial("Lecture et écriture")).toBe("L");
+    expect(topicInitial("Anthropology")).toBe("A");
+    expect(topicInitial("Desserts")).toBe("D");
+    expect(topicInitial("Le")).toBe("L");
+    expect(topicInitial("An")).toBe("A");
+    expect(topicInitial("Should zoos exist?")).toBe("S");
   });
 });
 

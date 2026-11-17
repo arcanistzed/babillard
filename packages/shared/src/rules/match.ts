@@ -29,6 +29,26 @@ export function topicPhrase(topicTitle: string, language: "en" | "fr" = "en"): s
   return language === "fr" ? `\u00ab ${topicTitle} \u00bb` : `\u201c${topicTitle}\u201d`;
 }
 
+/** An article followed by the word it belongs to: "The ", "A ", "An ", "Le ", "La ", "Les ", "L'", "Un ", "Une ", "Des ". */
+const LEADING_ARTICLE = /^(?:(?:the|an?|le|la|les|une?|des)\s+|l['’]\s*)/i;
+
+/** Letters change with case and digits don't, which covers accented letters without Unicode regex classes the app's engine may lack. */
+const isLetterOrDigit = (char: string | undefined) => char !== undefined && (char.toLowerCase() !== char.toUpperCase() || (char >= "0" && char <= "9"));
+
+/**
+ * The letter on a topic's avatar. Most French titles start with an article, so without skipping
+ * it nearly every group would show "L". A title that is only an article keeps its own letter.
+ */
+export function topicInitial(title: string): string {
+  const chars = [...title];
+  const first = chars.findIndex((char) => isLetterOrDigit(char));
+  if (first === -1) return title.trim().charAt(0);
+  const start = chars.slice(first).join("");
+  const article = LEADING_ARTICLE.exec(start);
+  const rest = article ? [...start.slice(article[0].length)] : [];
+  return (isLetterOrDigit(rest[0]) ? rest[0]! : chars[first]!).toLocaleUpperCase();
+}
+
 export function matchOpenerMessage(topicTitle: string, opener: string, language: "en" | "fr" = "en"): string {
   const stop = topicTitle.endsWith("?") ? "" : ".";
   const lead = language === "fr" ? "Vous voulez tous les deux explorer" : "You both want to dig into";
