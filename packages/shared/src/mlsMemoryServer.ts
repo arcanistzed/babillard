@@ -3,6 +3,7 @@ import { toBase64 } from "./e2ee";
 import type { MlsTransport } from "./mlsClient";
 import { decide, pendingAdds, pendingRemovals, type Directory, type RosterEntry } from "./mlsDelivery";
 import { readKeyPackage } from "./mlsWire";
+import { MlsHttpError } from "./mlsTransport";
 
 /**
  * The server's MLS behaviour in memory, with the same `decide` rules the
@@ -13,6 +14,8 @@ import { readKeyPackage } from "./mlsWire";
 
 interface Chat {
   members: Set<string>;
+  /** Device ID to user and key, for every phone ever in the group. */
+  admitted: Map<string, { userId: string; signatureKey: string }>;
   epoch: number;
   roster: RosterEntry[];
   log: MlsLogEntry[];
@@ -29,7 +32,7 @@ export class MemoryMlsServer {
   setMembers(conversationId: string, userIds: string[]): void {
     const chat = this.chats.get(conversationId);
     if (chat) chat.members = new Set(userIds);
-    else this.chats.set(conversationId, { members: new Set(userIds), epoch: 0, roster: [], log: [], welcomes: new Map(), groupInfo: null });
+    else this.chats.set(conversationId, { members: new Set(userIds), admitted: new Map(), epoch: 0, roster: [], log: [], welcomes: new Map(), groupInfo: null });
   }
 
   private chat(conversationId: string): Chat {
@@ -72,7 +75,7 @@ export class MemoryMlsServer {
         const chat = memberChat(conversationId);
         const waiting = new Set(pendingAdds(chat.roster, this.directory(chat)).map((device) => device.deviceId));
         return deviceIds.flatMap((id) => {
-          if (!waiting.has(id)) throw new Error("not waiting to join");
+          if (!waiting.has(id)) throw new MlsHttpError(403, "not_waiting_to_join");
           const keyPackage = this.packages.get(id)?.shift();
           return keyPackage ? [{ deviceId: id, keyPackage }] : [];
         });
@@ -88,6 +91,7 @@ export class MemoryMlsServer {
           pendingAdds: pendingAdds(chat.roster, directory),
           pendingRemovals: pendingRemovals(chat.roster, directory),
           directory: [...directory].flatMap(([member, devices]) => [...devices].map(([id, signatureKey]) => ({ userId: member, deviceId: id, signatureKey }))),
+          admitted: [...chat.admitted].map(([id, device]) => ({ deviceId: id, ...device })),
         };
       },
       submit: async (conversationId, body) => {
@@ -120,6 +124,11 @@ export class MemoryMlsServer {
         };
         chat.log.push(entry);
         if (decision.kind === "commit") {
+          const directory = this.directory(chat);
+          for (const entry of decision.roster) {
+            const signatureKey = directory.get(entry.userId)?.get(entry.deviceId);
+            if (signatureKey && !chat.admitted.has(entry.deviceId)) chat.admitted.set(entry.deviceId, { userId: entry.userId, signatureKey });
+          }
           chat.epoch = decision.nextEpoch;
           chat.roster = decision.roster;
           chat.groupInfo = body.groupInfo ?? null;

@@ -51,11 +51,11 @@ describe("the phone's encrypted MLS store", () => {
     expect(await store.loadDevice()).toBeNull();
     const state = random(500);
     await store.apply({
-      device: { userId: "alice", deviceId: "alice-phone", registered: true, state },
+      device: { userId: "alice", deviceId: "alice-phone", registered: true, signatureKey: new Uint8Array(32), state },
       cursors: { "chat-1": 7 },
       messages: [message("local-1", "still sending", null), message("5", "first", 5), message("7", "second", 7)],
     });
-    expect(await store.loadDevice()).toEqual({ userId: "alice", deviceId: "alice-phone", registered: true, state });
+    expect(await store.loadDevice()).toEqual({ userId: "alice", deviceId: "alice-phone", registered: true, signatureKey: new Uint8Array(32), state });
     expect(await store.cursor("chat-1")).toBe(7);
     expect(await store.cursor("chat-2")).toBe(0);
     const stored = await store.messages("chat-1");
@@ -75,7 +75,7 @@ describe("the phone's encrypted MLS store", () => {
     const db = nodeDb();
     const store = new SqlMlsStore(db, random(32), random);
     const state = new TextEncoder().encode("PRIVATE-KEY-MATERIAL");
-    await store.apply({ device: { userId: "alice", deviceId: "alice-phone", registered: true, state }, messages: [message("1", "meet at the library", 1)] });
+    await store.apply({ device: { userId: "alice", deviceId: "alice-phone", registered: true, signatureKey: new Uint8Array(32), state }, messages: [message("1", "meet at the library", 1)] });
     const raw = new TextDecoder("latin1").decode(Buffer.concat(db.raw.prepare("SELECT state FROM mls_device").all().map((row) => Buffer.from(row.state as Uint8Array))));
     expect(raw).not.toContain("PRIVATE-KEY-MATERIAL");
     const text = db.raw.prepare("SELECT text FROM mls_messages").all().map((row) => Buffer.from(row.text as Uint8Array).toString("latin1"));
@@ -85,7 +85,7 @@ describe("the phone's encrypted MLS store", () => {
   it("can't be read with another key, and notices rows moved between messages", async () => {
     const db = nodeDb();
     const store = new SqlMlsStore(db, random(32), random);
-    await store.apply({ device: { userId: "alice", deviceId: "alice-phone", registered: true, state: random(10) }, messages: [message("1", "one", 1), message("2", "two", 2)] });
+    await store.apply({ device: { userId: "alice", deviceId: "alice-phone", registered: true, signatureKey: new Uint8Array(32), state: random(10) }, messages: [message("1", "one", 1), message("2", "two", 2)] });
     await expect(new SqlMlsStore(db, random(32), random).loadDevice()).rejects.toThrow();
     db.raw.exec("UPDATE mls_messages SET text = (SELECT text FROM mls_messages WHERE id = '1') WHERE id = '2'");
     await expect(store.messages("chat-1")).rejects.toThrow();
@@ -95,7 +95,7 @@ describe("the phone's encrypted MLS store", () => {
     const db = nodeDb();
     const store = new SqlMlsStore(db, random(32), random);
     const before = random(10);
-    await store.apply({ device: { userId: "alice", deviceId: "alice-phone", registered: true, state: before }, cursors: { "chat-1": 1 } });
+    await store.apply({ device: { userId: "alice", deviceId: "alice-phone", registered: true, signatureKey: new Uint8Array(32), state: before }, cursors: { "chat-1": 1 } });
 
     // The database fails partway through the next change, after the state is written.
     let writes = 0;
@@ -113,7 +113,7 @@ describe("the phone's encrypted MLS store", () => {
         ),
     };
     const broken = new SqlMlsStore(failing, (store as unknown as { key: Uint8Array }).key, random);
-    await expect(broken.apply({ device: { userId: "alice", deviceId: "alice-phone", registered: true, state: random(10) }, cursors: { "chat-1": 2 } })).rejects.toThrow("disk full");
+    await expect(broken.apply({ device: { userId: "alice", deviceId: "alice-phone", registered: true, signatureKey: new Uint8Array(32), state: random(10) }, cursors: { "chat-1": 2 } })).rejects.toThrow("disk full");
     expect((await store.loadDevice())!.state).toEqual(before);
     expect(await store.cursor("chat-1")).toBe(1);
   });

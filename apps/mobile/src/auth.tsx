@@ -5,6 +5,7 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useState, t
 import { AppState } from "react-native";
 import { api, ApiError, setSessionToken, setUnauthorizedHandler } from "./api";
 import { deleteDeviceKey, ensureDeviceKey, forgetLoadedKey } from "./e2ee";
+import { deleteMlsData } from "./mls";
 import { registerForPush, unregisterPush } from "./push";
 
 const TOKEN_KEY = "babillard.session";
@@ -101,7 +102,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setMe,
       forgetSession,
       forgetDevice: async () => {
-        if (me) await deleteDeviceKey(me.id);
+        if (me) {
+          await deleteDeviceKey(me.id);
+          await deleteMlsData(me.id);
+        }
       },
       completeSignIn: async (token, nextMe) => {
         setSessionToken(token);

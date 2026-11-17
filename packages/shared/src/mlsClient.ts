@@ -1,6 +1,7 @@
 import { sha256 } from "@noble/hashes/sha2.js";
 import type { MlsGroupState, MlsLogEntry } from "./api";
 import { fromBase64, toBase64 } from "./e2ee";
+import { MlsHttpError } from "./mlsTransport";
 
 /**
  * The phone's side of MLS chat, independent of platform. It keeps a phone's
@@ -90,6 +91,8 @@ export interface MlsDeviceRecord {
   userId: string;
   deviceId: string;
   state: Uint8Array;
+  /** Kept so registration can be retried if the first attempt never reached the server. */
+  signatureKey: Uint8Array;
   registered: boolean;
 }
 
@@ -128,8 +131,18 @@ export function codeForRoster(members: { userId: string; deviceId: string; signa
   return groups.join(" ");
 }
 
-function trustedFrom(state: MlsGroupState): TrustedDevice[] {
+/** Phones that may be added now: current members' registered phones. */
+function trustedNow(state: MlsGroupState): TrustedDevice[] {
   return state.directory.map((device) => ({ userId: device.userId, deviceId: device.deviceId, signatureKey: fromBase64(device.signatureKey) }));
+}
+
+/** Phones that may appear in the group's history: anyone ever admitted, plus anyone admissible now. */
+function trustedEver(state: MlsGroupState): TrustedDevice[] {
+  const byDevice = new Map<string, TrustedDevice>();
+  for (const device of [...state.admitted, ...state.directory]) {
+    byDevice.set(device.deviceId, { userId: device.userId, deviceId: device.deviceId, signatureKey: fromBase64(device.signatureKey) });
+  }
+  return [...byDevice.values()];
 }
 
 export class MlsMessenger {
@@ -166,16 +179,15 @@ export class MlsMessenger {
     return this.serial(async () => {
       let device = await this.store.loadDevice();
       if (!device) {
+        // Saved before registering, so a failed registration can be retried with the same key.
         const identity = await this.crypto.createIdentity(this.me.userId, this.me.deviceId);
-        device = { ...this.me, state: identity.state, registered: false };
+        device = { ...this.me, state: identity.state, signatureKey: identity.signatureKey, registered: false };
         await this.store.apply({ device });
-        await this.transport.registerIdentity(this.me.deviceId, identity.signatureKey);
-        device = { ...device, registered: true };
-        await this.store.apply({ device });
-        // The identity's first key package, created with it.
-        await this.transport.uploadKeyPackages(this.me.deviceId, [identity.keyPackage]);
-      } else if (!device.registered) {
-        throw new MlsSyncError("Identity was created but never registered. Reset this phone's MLS identity.");
+      }
+      if (!device.registered) {
+        // Registering the same key again is harmless, so this is safe to repeat.
+        await this.transport.registerIdentity(this.me.deviceId, device.signatureKey);
+        await this.store.apply({ device: { ...device, registered: true } });
       }
       await this.topUp();
     });
@@ -267,7 +279,7 @@ export class MlsMessenger {
     const received: MlsStoredMessage[] = [];
     for (let attempt = 0; attempt < MAX_ATTEMPTS; attempt++) {
       const server = await this.transport.groupState(conversationId);
-      const trusted = trustedFrom(server);
+      const trusted = trustedEver(server);
       const state = (await this.device()).state;
       const local = await this.crypto.groupStatus(state, conversationId);
 
@@ -358,7 +370,7 @@ export class MlsMessenger {
   /** Removes phones that should be gone, then adds phones waiting to join. */
   private async doChores(conversationId: string): Promise<"done" | "retry"> {
     const server = await this.transport.groupState(conversationId);
-    const trusted = trustedFrom(server);
+    const trusted = trustedNow(server);
     if (server.pendingRemovals.length) {
       const state = (await this.device()).state;
       const output = await this.crypto.removeLeaves(state, conversationId, server.pendingRemovals.map((entry) => entry.leafIndex));
@@ -370,7 +382,14 @@ export class MlsMessenger {
     }
     const waiting = server.pendingAdds.filter((device) => device.deviceId !== this.me.deviceId).map((device) => device.deviceId);
     if (waiting.length) {
-      const packages = await this.transport.claimKeyPackages(conversationId, waiting);
+      let packages;
+      try {
+        packages = await this.transport.claimKeyPackages(conversationId, waiting);
+      } catch (error) {
+        // Another phone added them first, so they're no longer waiting. Look again.
+        if (error instanceof MlsHttpError && error.status === 403) return "retry";
+        throw error;
+      }
       if (packages.length) {
         const state = (await this.device()).state;
         const output = await this.crypto.addMembers(state, conversationId, packages.map((p) => p.keyPackage), trusted);

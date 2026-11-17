@@ -216,6 +216,12 @@ export interface MlsGroupState {
   pendingRemovals: { leafIndex: number; userId: string; deviceId: string }[];
   /** Every current member's MLS-capable phones. Credentials must match one of these. */
   directory: { userId: string; deviceId: string; signatureKey: string }[];
+  /**
+   * Every phone the server has ever admitted to this chat's group, with the key it was admitted with.
+   * Old commits, Welcomes and GroupInfo trees name phones that have since left, so phones check history
+   * against this list. New adds are checked against `directory`.
+   */
+  admitted: { userId: string; deviceId: string; signatureKey: string }[];
 }
 
 export interface ClientSocketEvent {

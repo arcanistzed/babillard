@@ -57,6 +57,7 @@ export class MlsLog {
       CREATE TABLE IF NOT EXISTS mls_roster (leaf_index INTEGER PRIMARY KEY, user_id TEXT NOT NULL, device_id TEXT NOT NULL UNIQUE);
       CREATE TABLE IF NOT EXISTS mls_welcomes (device_id TEXT PRIMARY KEY, seq INTEGER NOT NULL, welcome BLOB NOT NULL);
       CREATE TABLE IF NOT EXISTS mls_group_info (id INTEGER PRIMARY KEY CHECK (id = 1), epoch INTEGER NOT NULL, group_info BLOB NOT NULL);
+      CREATE TABLE IF NOT EXISTS mls_admitted (device_id TEXT PRIMARY KEY, user_id TEXT NOT NULL, signature_key TEXT NOT NULL);
     `);
   }
 
@@ -90,6 +91,10 @@ export class MlsLog {
       pendingAdds: pendingAdds(roster, directory),
       pendingRemovals: pendingRemovals(roster, directory),
       directory: [...directory].flatMap(([userId, devices]) => [...devices].map(([deviceId, signatureKey]) => ({ userId, deviceId, signatureKey }))),
+      admitted: this.storage.sql
+        .exec<{ device_id: string; user_id: string; signature_key: string }>("SELECT * FROM mls_admitted")
+        .toArray()
+        .map((row) => ({ userId: row.user_id, deviceId: row.device_id, signatureKey: row.signature_key })),
     };
   }
 
@@ -141,7 +146,12 @@ export class MlsLog {
         .one();
       if (decision.kind === "commit") {
         sql.exec("DELETE FROM mls_roster");
-        for (const entry of decision.roster) sql.exec("INSERT INTO mls_roster (leaf_index, user_id, device_id) VALUES (?, ?, ?)", entry.leafIndex, entry.userId, entry.deviceId);
+        for (const entry of decision.roster) {
+          sql.exec("INSERT INTO mls_roster (leaf_index, user_id, device_id) VALUES (?, ?, ?)", entry.leafIndex, entry.userId, entry.deviceId);
+          // Remembered for good: later phones will meet this one in the group's history.
+          const signatureKey = input.directory.get(entry.userId)?.get(entry.deviceId);
+          if (signatureKey) sql.exec("INSERT OR IGNORE INTO mls_admitted (device_id, user_id, signature_key) VALUES (?, ?, ?)", entry.deviceId, entry.userId, signatureKey);
+        }
         for (const entry of decision.added) {
           sql.exec("INSERT OR REPLACE INTO mls_welcomes (device_id, seq, welcome) VALUES (?, ?, ?)", entry.deviceId, row.seq, blob(welcome!));
         }

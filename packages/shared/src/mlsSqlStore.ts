@@ -30,6 +30,7 @@ const SCHEMA = `
     user_id TEXT NOT NULL,
     device_id TEXT NOT NULL,
     registered INTEGER NOT NULL,
+    signature_key BLOB NOT NULL,
     state BLOB NOT NULL
   );
   CREATE TABLE IF NOT EXISTS mls_cursors (conversation_id TEXT PRIMARY KEY, seq INTEGER NOT NULL);
@@ -56,6 +57,7 @@ interface DeviceRow {
   user_id: string;
   device_id: string;
   registered: number;
+  signature_key: Uint8Array;
   state: Uint8Array;
 }
 
@@ -106,7 +108,13 @@ export class SqlMlsStore implements MlsStore {
     await this.init();
     const [row] = await this.db.all<DeviceRow>("SELECT * FROM mls_device WHERE id = 1", []);
     if (!row) return null;
-    return { userId: row.user_id, deviceId: row.device_id, registered: row.registered === 1, state: this.open(new Uint8Array(row.state), `mls-state:${row.device_id}`) };
+    return {
+      userId: row.user_id,
+      deviceId: row.device_id,
+      registered: row.registered === 1,
+      signatureKey: new Uint8Array(row.signature_key),
+      state: this.open(new Uint8Array(row.state), `mls-state:${row.device_id}`),
+    };
   }
 
   async cursor(conversationId: string): Promise<number> {
@@ -140,10 +148,11 @@ export class SqlMlsStore implements MlsStore {
     const messages = (change.messages ?? []).map((m) => ({ m, text: this.seal(encoder.encode(m.text), `mls-text:${m.conversationId}:${m.id}`) }));
     await this.db.transaction(async (tx) => {
       if (device && state) {
-        await tx.run("INSERT OR REPLACE INTO mls_device (id, user_id, device_id, registered, state) VALUES (1, ?, ?, ?, ?)", [
+        await tx.run("INSERT OR REPLACE INTO mls_device (id, user_id, device_id, registered, signature_key, state) VALUES (1, ?, ?, ?, ?, ?)", [
           device.userId,
           device.deviceId,
           device.registered ? 1 : 0,
+          device.signatureKey,
           state,
         ]);
       }

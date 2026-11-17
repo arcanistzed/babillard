@@ -102,6 +102,7 @@ In the Durable Object's SQLite, apart from the `messages` table (`apps/api/src/d
 - `mls_roster` is the server's copy of who's at each leaf.
 - `mls_welcomes` holds a Welcome per new phone, with the `seq` to read the log from.
 - `mls_group_info` holds the GroupInfo every commit must carry, served only while it matches the current epoch.
+- `mls_admitted` remembers every phone ever placed in the group, with the signing key it was admitted with. Old commits, Welcomes and GroupInfo trees name phones that have since left. Phones check that history against this list, and check new adds against the current directory.
 - The epoch and the mode (`v1` until the first commit, then `mls`) are kept in the object's key-value storage.
 
 `MlsLog.submit` is synchronous: the epoch check, the roster update and the insert happen with no `await` between them, because a Durable Object can take other requests while it awaits D1. D1 reads happen before it, and the inbox, unread counts and pushes after.
@@ -157,6 +158,9 @@ Built on the branch, and not yet wired into the chat screens.
 - `send` syncs first, encrypts, saves the new state and the pending message before sending, then submits. On `stale_epoch` or `pending_removal` it catches up, does the chores, and encrypts again. A message that couldn't be sent over the network stays pending with its exact bytes, and `retryPending` resends those bytes.
 - Every operation goes through one queue, because the state is one blob.
 - It checks the server's label for who sent a message against MLS's authenticated sender, and refuses a mismatch.
+- It checks credentials in the group's history (commits it reads, the tree in a Welcome or GroupInfo) against every phone the server has ever admitted to the chat. Phones it adds must be in today's directory. Without the history list, a phone that was offline while someone joined and left could never catch up, and nor could a newcomer whose Welcome predates a departure.
+- If registering its signing key fails, the identity is already saved, so the next `ensureIdentity` retries with the same key.
+- If another phone has already added someone, the server refuses this phone's claim for them. The engine treats that like a lost race: it reads the log and looks again.
 
 It runs on three interfaces:
 - `MlsCrypto`: `nativeCrypto` on the phone, over the OpenMLS module. `tsMlsCrypto` in tests, over ts-mls. Its states are immutable snapshots, so old bytes stay valid, as the engine needs.
@@ -165,7 +169,7 @@ It runs on three interfaces:
 
 ### Storage
 
-`packages/shared/src/mlsSqlStore.ts` is the store, written against a four-method SQL interface. On the phone, `expo-sqlite` (added as a dependency) fills that interface. In tests, Node's built-in SQLite does. The MLS state and every message's text are sealed with XChaCha20-Poly1305 under a 32-byte key kept in SecureStore, and each value is bound to its row, so rows can't be swapped. Every change runs in one exclusive transaction. Deleting the account deletes the database and its key.
+`packages/shared/src/mlsSqlStore.ts` is the store, written against a four-method SQL interface. On the phone, `expo-sqlite` (added as a dependency) fills that interface. In tests, Node's built-in SQLite does. The MLS state and every message's text are sealed with XChaCha20-Poly1305 under a 32-byte key kept in SecureStore, and each value is bound to its row, so rows can't be swapped. Every change runs in one exclusive transaction. "Forget this phone" on account deletion now also deletes the database and its key. Android backup leaves the database alone: the backup rules the app ships with expo-secure-store include only shared preferences.
 
 ### How it's tested
 
@@ -176,6 +180,14 @@ It runs on three interfaces:
   - swapped rows detected
   - a write that fails halfway leaving nothing behind
 - An engine test runs three phones against the in-memory server: the group forms by itself, Carol leaves, and Bob's next message removes her phone first.
+- Failure tests against the in-memory server:
+  - A phone that was offline catches up past someone who joined and left.
+  - A newcomer joins from a Welcome issued before someone left.
+  - A new phone joins by itself while a departed phone is still in the group.
+  - Registration fails once, then succeeds.
+  - A send fails on the network and `retryPending` delivers it exactly once.
+  - Two phones do the same chore at once.
+  - A claim is refused because another phone got there first.
 - Two end-to-end tests run engines with encrypted SQLite stores against the real Worker:
   - A four-person group forms by itself, delivers messages, removes a departed member before the next message, agrees on the security code, and tops key packages back up.
   - A chat waits until both people can do MLS, then a member's new phone joins by itself and reads what follows.
@@ -186,6 +198,8 @@ It runs on three interfaces:
 - **The chat screens.** `useChat`, the inbox preview and the security code screen still use v1. They need to read from the store, call `sync` when a socket says `mls`, and show a mixed timeline during migration.
 - **A commit whose outcome is unknown.** If the network drops after a commit is sent, the engine doesn't know whether it landed. It should keep the new state on the side until the log shows the commit, or shows another one at that epoch. Today it keeps the old state, and if the commit did land, the phone falls out of step and must rejoin.
 - **Being removed.** The engine stops with an error when the log removes this phone. The chat screen needs to show that the person left or was removed.
+- **An entry that won't apply.** If `receive` fails on some log entry, the cursor stays there and every later sync fails at the same place. The plan: after a second failure on the same entry, the phone rejoins by itself with an external commit that removes its own old leaf. The server already allows that self-removal. The skipped messages stay unreadable on that phone. Not built.
+- **Real API, real phone.** `mlsMessenger()` in `apps/mobile/src/mls/index.ts` wires the engine to the app's API client, SecureStore and the user's database, but nothing calls it yet. On the device, the engine has only run against the in-memory server. Against the real Worker, it has only run in Node.
 - **Franking for reports, backup v2, and per-chat state** remain as designed above.
 
 ## Before turning it on
