@@ -130,7 +130,7 @@ The `/admin` pages sit behind Cloudflare Access.
 
 ## How people lean
 
-Once someone picks a stance on a question, its card shows how the city leans, as percentages. The totals stay hidden below 10 answers and when everyone agrees, because then they'd reveal each person's answer. Topic cards also show how many meetups were held, once there are 5. Stance never decides who meets whom.
+Once someone picks a stance on a question, its card shows how the city leans, as percentages. The totals stay hidden below 10 answers and when everyone agrees, because then they'd reveal each person's answer. A question's group sees its own totals, taken once when it forms, and only when every answer given has at least two people behind it and they don't all agree. People change or clear their answer, and leave a topic they're still waiting on, in Your topics. Topic cards also show how many meetups were held, once there are 5. Stance never decides who meets whom.
 
 ## After a meetup
 
