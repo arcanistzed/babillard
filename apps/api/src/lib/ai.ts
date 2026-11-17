@@ -4,8 +4,10 @@ import type { Field, WordingSuggestion } from "@babillard/shared";
 import { z } from "zod";
 
 /**
- * Drafting help from Claude, only for topic wording. Only the text of a suggested topic
- * is sent: never messages, names, or anything else about a person.
+ * Drafting help from Claude, only for suggested topics. Wording help sends the topic's text and
+ * kind. A moderator's draft also sends its fields and the name of the suggester's city and
+ * province, so it can say where the topic belongs. Never messages, names, or contact details.
+ * The privacy policy lists the same, so change both together.
  */
 
 const DEFAULT_MODEL = "claude-opus-5-5";
