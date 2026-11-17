@@ -15,7 +15,7 @@ export function Unreachable() {
     <SafeAreaView style={[StyleSheet.absoluteFill, { backgroundColor: theme.paper }]}>
       <View style={styles.body} accessibilityLiveRegion="polite">
         <T variant="title">{t("Can't reach Babillard", "Impossible de joindre Babillard")}</T>
-        <T muted>{t("You're still signed in. Check your connection.", "Vous êtes toujours connecté. Vérifiez votre connexion.")}</T>
+        <T muted>{t("You're still signed in. Check your connection.", "Votre session est toujours ouverte. Vérifiez votre connexion.")}</T>
         <Button
           label={t("Try again", "Réessayer")}
           busy={busy}

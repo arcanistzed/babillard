@@ -46,7 +46,7 @@ const LOOKING_FOR_LABELS_FR: Record<LookingFor, string> = {
   learning: "Apprendre",
   networking: "Réseautage",
   friends: "Amitié",
-  more_than_friends: "Ouvert aux rencontres amoureuses",
+  more_than_friends: "Ouverture aux rencontres amoureuses",
   research: "Collaboration de recherche",
   reading_group: "Club de lecture",
   debate: "Débat",
@@ -57,7 +57,7 @@ const ROLE_LABELS_FR: Record<Role, string> = {
   college: "Cégep ou collège",
   undergrad: "Université",
   grad: "Cycles supérieurs",
-  researcher: "Recherche",
+  researcher: "Milieu de la recherche",
   working: "En emploi",
   other: "Autre chose",
 };

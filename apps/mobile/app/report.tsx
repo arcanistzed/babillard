@@ -76,7 +76,7 @@ export default function Report() {
   return (
     <FormScreen>
         <T variant="title">{t(`What's wrong with ${params.name}?`, `Quel est le problème avec ${params.name}?`)}</T>
-        <T muted>{t(`${params.name} won't be told.`, `${params.name} n'en sera pas informé.`)}{params.conversationId ? t(" Your phone will share the nearby messages with a moderator.", " Votre téléphone transmettra les messages voisins à un modérateur.") : ""}</T>
+        <T muted>{t(`${params.name} won't be told.`, `${params.name} n'en saura rien.`)}{params.conversationId ? t(" Your phone will share the nearby messages with a moderator.", " Votre téléphone transmettra les messages concernés à l'équipe de modération.") : ""}</T>
         <ChipRow accessibilityRole="radiogroup">
           {REPORT_REASONS.map((value) => (
             <Chip key={value} role="radio" label={REASON_LABELS[value]} selected={reason === value} onPress={() => setReason(value)} />
@@ -103,7 +103,7 @@ export default function Report() {
             })
           }
         />
-        <Button label={t(`Just block ${params.name}`, `Seulement bloquer ${params.name}`)} kind="danger" disabled={busy !== null} busy={busy === "block"} onPress={() => run("block", async () => ({ blocked: true, sharedGroups: await block() }))} />
+        <Button label={t(`Just block ${params.name}`, `Bloquer ${params.name} sans signaler`)} kind="danger" disabled={busy !== null} busy={busy === "block"} onPress={() => run("block", async () => ({ blocked: true, sharedGroups: await block() }))} />
     </FormScreen>
   );
 }
@@ -145,18 +145,18 @@ function Done({ name, reported, blocked, sharedGroups }: { name: string; reporte
       <T variant="title" accessibilityRole="header">
         {reported ? t("Report sent", "Signalement envoyé") : t(`You blocked ${name}`, `Vous avez bloqué ${name}`)}
       </T>
-      {reported ? <T>{t(`Thanks for telling us. A moderator will look at it, and ${name} won't be told who reported them.`, `Merci de nous avoir prévenus. Un modérateur va l'examiner, et ${name} ne saura pas qui l'a signalé.`)}</T> : null}
+      {reported ? <T>{t(`Thanks for telling us. A moderator will look at it, and ${name} won't be told who reported them.`, `Merci de votre signalement. L'équipe de modération va l'examiner, et ${name} ne saura pas qui l'a fait.`)}</T> : null}
       {blocked ? (
         <T>
           {t(
             `${reported ? `You also blocked ${name}. ` : ""}You won't see each other's cards, new messages or profiles, and you won't be put in a new group together.`,
-            `${reported ? `Vous avez aussi bloqué ${name}. ` : ""}Vous ne verrez plus vos cartes, vos nouveaux messages ni vos profils respectifs, et vous ne serez pas placés ensemble dans un nouveau groupe.`,
+            `${reported ? `Vous avez aussi bloqué ${name}. ` : ""}Vous ne verrez plus vos cartes, vos nouveaux messages ni vos profils respectifs, et aucun nouveau groupe ne vous réunira.`,
           )}
         </T>
       ) : null}
       {sharedGroups.length ? (
         <View style={styles.groups}>
-          <T variant="heading">{t("Groups you're both still in", "Groupes où vous êtes encore tous les deux")}</T>
+          <T variant="heading">{t("Groups you're both still in", "Groupes que vous avez encore en commun")}</T>
           <T muted>
             {t(
               `${name} can still see the meetup plans made in these groups, including the time and place. Leave a group to keep its plans away from them.`,

@@ -9,7 +9,7 @@ import { fonts, useTheme } from "@/theme";
 import { Avatar, Button, T } from "@/ui";
 import { t } from "@/i18n";
 
-const STANCE_LABELS: Record<Stance, string> = { for: t("For", "Pour"), against: t("Against", "Contre"), unsure: t("Not sure", "Incertain") };
+const STANCE_LABELS: Record<Stance, string> = { for: t("For", "Pour"), against: t("Against", "Contre"), unsure: t("Not sure", "Sans avis") };
 
 function StanceSpread({ spread }: { spread: Record<Stance, number> }) {
   const theme = useTheme();
@@ -81,7 +81,7 @@ export default function ChatInfo() {
       ) : null}
 
       <View style={styles.section}>
-        <T variant="heading">{detail.kind === "group" ? t(`${detail.members.length} people`, `${detail.members.length} personnes`) : t("In this chat", "Dans cette conversation")}</T>
+        <T variant="heading">{detail.kind === "group" ? t(`${detail.members.length} people`, `${detail.members.length} personnes`) : t("In this chat", "Dans cette discussion")}</T>
         {detail.members.map((member) => {
           const isMe = member.id === me?.id;
           // A blocked person's profile can't be opened, so their row goes straight to reporting them.
@@ -100,7 +100,7 @@ export default function ChatInfo() {
               <Avatar name={member.displayName} url={member.avatarUrl} />
               <View style={styles.memberText}>
                 <T variant="bodyBold">{isMe ? t(`${member.displayName} (you)`, `${member.displayName} (vous)`) : member.displayName}</T>
-                {member.blockedByMe ? <T variant="small" muted>{t("Blocked. Tap to report.", "Bloqué. Touchez pour signaler.")}</T> : null}
+                {member.blockedByMe ? <T variant="small" muted>{t("Blocked. Tap to report.", "Personne bloquée. Touchez pour la signaler.")}</T> : null}
               </View>
             </Pressable>
           );
@@ -113,7 +113,7 @@ export default function ChatInfo() {
           {securityCode(detail.members.flatMap((member) => member.deviceKeys))}
         </T>
         <T variant="small" muted>
-          {t("Compare this code when you meet. If it matches, only the people in this chat can read the messages.", "Comparez ce code quand vous vous rencontrez. S'il est identique, seules les personnes de cette conversation peuvent lire les messages.")}
+          {t("Compare this code when you meet. If it matches, only the people in this chat can read the messages.", "Comparez ce code quand vous vous rencontrez. S'il est identique, seules les personnes de cette discussion peuvent lire les messages.")}
         </T>
       </View>
 

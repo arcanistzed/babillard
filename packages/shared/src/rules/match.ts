@@ -51,7 +51,7 @@ export function topicInitial(title: string): string {
 
 export function matchOpenerMessage(topicTitle: string, opener: string, language: "en" | "fr" = "en"): string {
   const stop = topicTitle.endsWith("?") ? "" : ".";
-  const lead = language === "fr" ? "Vous voulez tous les deux explorer" : "You both want to dig into";
+  const lead = language === "fr" ? "Vous partagez l'envie d'explorer" : "You both want to dig into";
   return `${lead} ${topicPhrase(topicTitle, language)}${stop} ${opener}`;
 }
 

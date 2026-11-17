@@ -46,7 +46,7 @@ function PersonFlyer({ person }: { person: PersonCard }) {
       {person.bio ? <T numberOfLines={4}>{person.bio}</T> : null}
 
       <View style={styles.section}>
-        <T variant="heading">{t("You both picked", "Vous avez tous deux choisi")}</T>
+        <T variant="heading">{t("You both picked", "Vos sujets en commun")}</T>
         {person.sharedTopics.slice(0, 3).map((topic) => (
           <T key={topic.id} variant="bodyBold">
             {topic.title}
@@ -56,7 +56,7 @@ function PersonFlyer({ person }: { person: PersonCard }) {
       </View>
 
       <View style={styles.section}>
-        <T variant="heading">{t("Looking for", "Recherche")}</T>
+        <T variant="heading">{t("Looking for", "À la recherche de")}</T>
         <ChipRow>
           {person.lookingFor.map((item) => (
             <Chip key={item} label={lookingForLabel(item)} />
@@ -65,7 +65,7 @@ function PersonFlyer({ person }: { person: PersonCard }) {
       </View>
 
       <T variant="small" muted numberOfLines={2}>
-        {t("Into", "Intérêts :")} {person.fields.map((field) => fieldLabel(field)).join(", ")}
+        {t("Into", "Intérêts:")} {person.fields.map((field) => fieldLabel(field)).join(", ")}
       </T>
     </View>
   );
@@ -143,7 +143,7 @@ export default function People() {
   return (
     <SafeAreaView edges={["top"]} style={styles.screen}>
       <View style={styles.header}>
-        {swipeFailed ? <ErrorText>{t("That didn't save. Check your connection.", "Ce choix n'a pas été enregistré. Vérifiez votre connexion.")}</ErrorText> : <T variant="title" numberOfLines={2}>{t("People who picked your topics", "Ils ont choisi vos sujets")}</T>}
+        {swipeFailed ? <ErrorText>{t("That didn't save. Check your connection.", "Ce choix n'a pas été enregistré. Vérifiez votre connexion.")}</ErrorText> : <T variant="title" numberOfLines={2}>{t("People who picked your topics", "Personnes qui ont choisi vos sujets")}</T>}
       </View>
 
       <View style={styles.deck}>
@@ -182,7 +182,7 @@ export default function People() {
             onSwipe={onSwipe}
             rightLabel={TALK_LABEL}
             leftLabel={PASS_LABEL}
-            describeCard={(person) => `${nameWithAge(person.displayName, person.age)}. ${t("You both picked", "Vous avez tous deux choisi")} ${person.sharedTopics.map((topic) => topic.title).join(", ")}.`}
+            describeCard={(person) => `${nameWithAge(person.displayName, person.age)}. ${t("You both picked", "Sujets en commun:")} ${person.sharedTopics.map((topic) => topic.title).join(", ")}.`}
             renderCard={(person) => <PersonFlyer person={person} />}
           />
         )}

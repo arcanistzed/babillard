@@ -171,7 +171,7 @@ async function createMatch(env: Env, db: Db, a: string, b: string, topicId: stri
   await sendPush(env, [userA, userB], {
     title: "It's a match",
     body: `You both picked ${topicPhrase(title)}`,
-    fr: { title: "C'est un jumelage", body: `Vous avez tous les deux choisi ${topicPhrase(titleFr, "fr")}` },
+    fr: { title: "C'est un jumelage", body: `Vous avez un sujet en commun: ${topicPhrase(titleFr, "fr")}` },
     data: { screen: "chat", id: conversationId },
   });
   return conversationId;

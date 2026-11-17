@@ -68,7 +68,7 @@ export default function Profile() {
         <Pressable
           accessibilityRole="button"
           // A label replaces what's inside, so it carries the name and details shown next to the photo.
-          accessibilityLabel={[nameWithAge(profile.displayName, me.age), roleLabel(profile.role), place, me.verifiedInstitution ? `${t("Verified with", "Vérifié avec")} ${me.institutionDomain}` : ""].filter(Boolean).join(". ")}
+          accessibilityLabel={[nameWithAge(profile.displayName, me.age), roleLabel(profile.role), place, me.verifiedInstitution ? `${t("Verified with", "Courriel scolaire vérifié:")} ${me.institutionDomain}` : ""].filter(Boolean).join(". ")}
           accessibilityHint={t("Changes your photo", "Change votre photo")}
           onPress={changePhoto}
           style={styles.identity}
@@ -80,7 +80,7 @@ export default function Profile() {
             {place ? <T muted>{place}</T> : null}
             {me.verifiedInstitution ? (
               <T variant="small" style={{ color: theme.good, fontFamily: fonts.bodyBold }}>
-                {t("Verified with", "Vérifié avec")} {me.institutionDomain}
+                {t("Verified with", "Courriel scolaire vérifié:")} {me.institutionDomain}
               </T>
             ) : null}
           </View>
@@ -88,7 +88,7 @@ export default function Profile() {
         {profile.bio ? <T>{profile.bio}</T> : null}
 
         <View style={styles.section}>
-          <T variant="heading">{t("Looking for", "Recherche")}</T>
+          <T variant="heading">{t("Looking for", "À la recherche de")}</T>
           <ChipRow>{profile.lookingFor.map((item) => <Chip key={item} label={lookingForLabel(item)} />)}</ChipRow>
         </View>
 

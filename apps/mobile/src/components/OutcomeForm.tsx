@@ -54,7 +54,7 @@ export function OutcomeForm({ meetup }: { meetup: MeetupSummary }) {
         {t("Your answers are private. Others see only percentages for the topic.", "Vos réponses sont privées. Les autres ne voient que des pourcentages pour le sujet.")}
       </T>
       <Question
-        label={t("Did anyone change their mind?", "Quelqu'un a-t-il changé d'avis?")}
+        label={t("Did anyone change their mind?", "Est-ce que quelqu'un a changé d'avis?")}
         value={mindChanged}
         onChange={setMindChanged}
         options={[
@@ -64,12 +64,12 @@ export function OutcomeForm({ meetup }: { meetup: MeetupSummary }) {
         ]}
       />
       <Question
-        label={t("Where did you end up?", "Où en êtes-vous arrivés?")}
+        label={t("Where did you end up?", "À quoi la discussion a-t-elle abouti?")}
         value={endedUp}
         onChange={setEndedUp}
         options={[
           ["agreed", t("Mostly agreed", "Surtout d'accord")],
-          ["split", t("Split", "Partagés")],
+          ["split", t("Split", "Avis partagés")],
           ["disagreed", t("Mostly disagreed", "Surtout en désaccord")],
         ]}
       />
@@ -93,7 +93,7 @@ export function OutcomeForm({ meetup }: { meetup: MeetupSummary }) {
       <T variant="small" muted>
         {t(
           "This isn't encrypted. If a moderator approves it, it appears on the topic's public page without your name. Leave out anything that identifies someone.",
-          "Cette phrase n'est pas chiffrée. Si un modérateur l'approuve, elle paraît sur la page publique du sujet, sans votre nom. N'y mettez rien qui identifie quelqu'un.",
+          "Cette phrase n'est pas chiffrée. Si l'équipe de modération l'approuve, elle paraît sur la page publique du sujet, sans votre nom. N'y mettez rien qui identifie quelqu'un.",
         )}
       </T>
       <Button

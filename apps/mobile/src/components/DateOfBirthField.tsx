@@ -118,7 +118,7 @@ export function DateOfBirthField({ onChange }: { onChange: (dob: string) => void
         </T>
       ) : iso ? (
         <T variant="small" muted>
-          {t(`${MONTHS_EN[Number(month) - 1]} ${Number(day)}, ${year}`, `${Number(day)} ${MONTHS_FR[Number(month) - 1]} ${year}`)}
+          {t(`${MONTHS_EN[Number(month) - 1]} ${Number(day)}, ${year}`, `${Number(day) === 1 ? "1er" : Number(day)} ${MONTHS_FR[Number(month) - 1]} ${year}`)}
         </T>
       ) : null}
     </View>

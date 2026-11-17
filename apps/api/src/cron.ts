@@ -175,7 +175,7 @@ async function checkInMeetups(env: Env, db: Db, now: number): Promise<number> {
     await sendPush(env, (await responders(db, meetup, ["yes"])).filter((id) => !answered.has(id)), {
       title: "Did you meet?",
       body: "Tell us how it went.",
-      fr: { title: "Vous êtes-vous rencontrés?", body: "Dites-nous comment ça s'est passé." },
+      fr: { title: "La rencontre a-t-elle eu lieu?", body: "Dites-nous comment ça s'est passé." },
       data: { screen: "meetup", id: meetup.id },
     });
     handled += 1;

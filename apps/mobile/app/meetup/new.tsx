@@ -115,9 +115,9 @@ export default function NewMeetup() {
         </View>
         {isGroup ? (
           <View style={styles.section}>
-            <T variant="heading">{t("Guests", "Invités")}</T>
+            <T variant="heading">{t("Guests", "Personnes invitées")}</T>
             <ChipRow accessibilityRole="radiogroup">
-              <Chip role="radio" label={t("Welcome", "Bienvenus")} selected={guestsWelcome} onPress={() => setGuestsWelcome(true)} />
+              <Chip role="radio" label={t("Welcome", "Bienvenues")} selected={guestsWelcome} onPress={() => setGuestsWelcome(true)} />
               <Chip role="radio" label={t("Group only", "Groupe seulement")} selected={!guestsWelcome} onPress={() => setGuestsWelcome(false)} />
             </ChipRow>
           </View>

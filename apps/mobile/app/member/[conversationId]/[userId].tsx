@@ -43,7 +43,7 @@ export default function Member() {
       </View>
       {person.bio ? <T>{person.bio}</T> : null}
       <View style={styles.section}>
-        <T variant="heading">{t("Looking for", "Recherche")}</T>
+        <T variant="heading">{t("Looking for", "À la recherche de")}</T>
         <ChipRow>{person.lookingFor.map((item) => <Chip key={item} label={lookingForLabel(item)} />)}</ChipRow>
       </View>
       <View style={styles.section}>

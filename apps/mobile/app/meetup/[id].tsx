@@ -48,7 +48,7 @@ export default function MeetupScreen() {
     const result = await Share.share({
       message: t(
         `Come to a Babillard meetup with us, ${when} at ${place}. Guests are welcome: ${meetup!.shareUrl}`,
-        `Venez à une rencontre Babillard avec nous, ${when}, ${place}. Les invités sont les bienvenus: ${meetup!.shareUrl}`,
+        `Venez à une rencontre Babillard avec nous, ${when}, ${place}. Les personnes invitées sont les bienvenues: ${meetup!.shareUrl}`,
       ),
     });
     if (result.action !== Share.dismissedAction) invited.mutate();
@@ -76,7 +76,7 @@ export default function MeetupScreen() {
 
       {meetup.checkinOpen ? (
         <View style={styles.checkin}>
-          <T variant="title">{t("Did you meet?", "Vous êtes-vous rencontrés?")}</T>
+          <T variant="title">{t("Did you meet?", "La rencontre a-t-elle eu lieu?")}</T>
           {meetup.myDidMeet === null ? (
             <View style={styles.row}>
               <Button label={t("Yes, we met", "Oui")} onPress={() => didMeet.mutate(true)} style={styles.flex} busy={didMeet.isPending} />

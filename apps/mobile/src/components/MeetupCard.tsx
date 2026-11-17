@@ -82,7 +82,7 @@ export function MeetupCard({ id }: { id: string }) {
         </T>
         {asking ? (
           <T variant="small" style={{ fontFamily: fonts.bodyBold, color: theme.accent }}>
-            {t("Did you meet? Tap to tell us.", "Vous êtes-vous rencontrés? Touchez pour nous le dire.")}
+            {t("Did you meet? Tap to tell us.", "La rencontre a-t-elle eu lieu? Touchez pour nous le dire.")}
           </T>
         ) : null}
       </Pressable>
@@ -108,7 +108,7 @@ export function CheckinPrompt({ meetupId, startsAt, title }: { meetupId: string;
   });
   return (
     <View style={[styles.card, styles.prompt, { backgroundColor: theme.surface, borderColor: theme.accent }]}>
-      <T variant="heading">{t("Did you meet?", "Vous êtes-vous rencontrés?")}</T>
+      <T variant="heading">{t("Did you meet?", "La rencontre a-t-elle eu lieu?")}</T>
       <T muted>{`${title}, ${describeWhen(startsAt)}`}</T>
       <View style={styles.row}>
         <Button label={t("Yes, we met", "Oui")} onPress={() => answer.mutate(true)} style={styles.flex} busy={answer.isPending && answer.variables} disabled={answer.isPending && !answer.variables} />

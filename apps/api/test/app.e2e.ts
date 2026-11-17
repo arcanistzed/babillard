@@ -1506,7 +1506,7 @@ describe("meetups", () => {
     await sleep(Math.max(0, meetup.endsAt - Date.now()) + 700);
     expect(await a.get(`/meetups/${meetup.id}`)).toMatchObject({ state: "confirmed", checkinOpen: true, myDidMeet: null });
     expect(await inboxOf(a)).toMatchObject({ checkin: { meetupId: meetup.id, startsAt: meetup.startsAt }, lastMessagePreview: "Did you meet?" });
-    expect((await inboxOf(a, "fr")).lastMessagePreview).toBe("Vous êtes-vous rencontrés?");
+    expect((await inboxOf(a, "fr")).lastMessagePreview).toBe("La rencontre a-t-elle eu lieu?");
 
     // Answering in the app clears the question, and the push later only goes to whoever hasn't answered.
     expect((await a.post(`/meetups/${meetup.id}/did-meet`, { didMeet: true })).myDidMeet).toBe(true);
@@ -2397,9 +2397,9 @@ describe("crash reports and public pages", () => {
 
     const [opener] = await french.get(`/conversations/${conversationId}/messages`);
     expect(opener.body).toMatch(/^You both want to dig into Behavioural economics\. /);
-    expect(opener.bodyFr).toMatch(/^Vous voulez tous les deux explorer Économie comportementale\. /);
+    expect(opener.bodyFr).toMatch(/^Vous partagez l'envie d'explorer Économie comportementale\. /);
     const inbox = await frenchGet("/conversations");
-    expect(inbox.find((row: any) => row.id === conversationId).lastMessagePreview).toMatch(/^Vous voulez/);
+    expect(inbox.find((row: any) => row.id === conversationId).lastMessagePreview).toMatch(/^Vous partagez/);
     expect((await other.get("/conversations")).find((row: any) => row.id === conversationId).lastMessagePreview).toMatch(/^You both/);
 
     const invite = await (await fetch(`${BASE}/invite`, { headers: { "accept-language": "fr" } })).text();

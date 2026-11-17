@@ -78,7 +78,7 @@ export default function Chat() {
       );
     }
     const mine = item.senderId === me?.id;
-    const name = item.senderId ? (names.get(item.senderId) ?? t("Former member", "Ancien membre")) : "";
+    const name = item.senderId ? (names.get(item.senderId) ?? t("Former member", "Ex-membre")) : "";
     // The list is newest first. A time goes under the last message of each run from one person.
     const next = reversed[index - 1];
     const endsRun = !next || next.senderId !== item.senderId || next.kind !== "text" || next.createdAt - item.createdAt > SAME_RUN_MS;
@@ -131,7 +131,7 @@ export default function Chat() {
         options={{
           title: detail?.title ?? "",
           headerRight: () => (
-            <Pressable accessibilityRole="button" accessibilityLabel={t("About this chat", "À propos de cette conversation")} hitSlop={10} onPress={() => router.push(`/chat/${id}/info`)}>
+            <Pressable accessibilityRole="button" accessibilityLabel={t("About this chat", "À propos de cette discussion")} hitSlop={10} onPress={() => router.push(`/chat/${id}/info`)}>
               <Ionicons name="information-circle-outline" size={26} color={theme.ink} />
             </Pressable>
           ),

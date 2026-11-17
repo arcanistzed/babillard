@@ -116,19 +116,19 @@ export default function Inbox() {
         refreshControl={<RefreshControl refreshing={inbox.isRefetching} onRefresh={() => void inbox.refetch()} />}
         ListHeaderComponent={
           <>
-            <T variant="title" style={styles.title}>{t("Chats", "Conversations")}</T>
+            <T variant="title" style={styles.title}>{t("Chats", "Discussions")}</T>
             {checkin?.checkin ? <CheckinPrompt key={checkin.checkin.meetupId} meetupId={checkin.checkin.meetupId} startsAt={checkin.checkin.startsAt} title={checkin.title} /> : null}
           </>
         }
         ListEmptyComponent={
           inbox.isPending ? undefined : inbox.isError ? (
             <View style={styles.empty}>
-              <ErrorText>{t("Couldn't load your chats. Check your connection.", "Impossible de charger vos conversations. Vérifiez votre connexion.")}</ErrorText>
+              <ErrorText>{t("Couldn't load your chats. Check your connection.", "Impossible de charger vos discussions. Vérifiez votre connexion.")}</ErrorText>
               <Button label={t("Try again", "Réessayer")} kind="secondary" onPress={() => inbox.refetch()} />
             </View>
           ) : (
             <View style={styles.empty}>
-              <T variant="heading">{t("No chats yet", "Aucune conversation pour l'instant")}</T>
+              <T variant="heading">{t("No chats yet", "Aucune discussion pour l'instant")}</T>
               <Button label={t("Pick topics", "Choisir des sujets")} onPress={() => router.navigate("/deck")} />
               <Button label={t("Invite a friend", "Inviter quelqu'un")} kind="secondary" onPress={inviteToApp} />
             </View>

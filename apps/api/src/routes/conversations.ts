@@ -110,7 +110,7 @@ conversations.get("/", async (c) => {
     const checkin = past && isCheckinPromptDue({ ...past, myResponse: past.myResponse ?? null, myDidMeet: past.myDidMeet ?? null }, now, offsets) ? { meetupId: past.id, startsAt: past.startsAt } : null;
     // An app message from before the meetup ended, such as "It's on!", is out of date once it's over.
     const stale = past !== undefined && conversation.lastMessageEnvelope === null && conversation.lastMessagePreview !== null && (conversation.lastMessageAt ?? 0) < past.endsAt;
-    const passed = checkin ? { en: "Did you meet?", fr: "Vous êtes-vous rencontrés?" } : { en: "The meetup has passed.", fr: "La rencontre est passée." };
+    const passed = checkin ? { en: "Did you meet?", fr: "La rencontre a-t-elle eu lieu?" } : { en: "The meetup has passed.", fr: "La rencontre est passée." };
     return {
       id: conversation.id,
       kind: conversation.kind,

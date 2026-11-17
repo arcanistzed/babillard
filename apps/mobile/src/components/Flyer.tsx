@@ -4,7 +4,7 @@ import Animated, { Extrapolation, FadeIn, interpolate, useAnimatedStyle, type Sh
 import { fonts, flyerInk } from "@/theme";
 import { fieldLabel, listOf, t } from "@/i18n";
 
-const STANCE_LABELS: Record<Stance, string> = { for: t("For", "Pour"), against: t("Against", "Contre"), unsure: t("Not sure", "Incertain") };
+const STANCE_LABELS: Record<Stance, string> = { for: t("For", "Pour"), against: t("Against", "Contre"), unsure: t("Not sure", "Sans avis") };
 
 function nearbyLine(count: number): string | null {
   if (count === 0) return null;
@@ -36,7 +36,7 @@ function TearOffTabs({ nearby, bg, pull }: { nearby: number; bg: string; pull?: 
 
 /** Only appears after someone picks a stance, so seeing the totals can't sway the answer. */
 function CityLean({ lean, fg }: { lean: Lean; fg: string }) {
-  const summary = t(`In your city: ${lean.for}% for, ${lean.against}% against, ${lean.unsure}% not sure`, `Dans votre ville: ${lean.for} % pour, ${lean.against} % contre, ${lean.unsure} % incertain`);
+  const summary = t(`In your city: ${lean.for}% for, ${lean.against}% against, ${lean.unsure}% not sure`, `Dans votre ville: ${lean.for} % pour, ${lean.against} % contre, ${lean.unsure} % sans avis`);
   return (
     <Animated.View entering={FadeIn.duration(200)} style={styles.lean} accessible accessibilityLabel={summary}>
       <View style={styles.leanBar}>
@@ -58,7 +58,7 @@ export function Flyer({ topic, stance, onStance, isTop = true, pull }: { topic: 
   const outcomes = topic.outcomes
     ? t(
         `After meetups: ${topic.outcomes.mindChanged}% saw a mind change, ${topic.outcomes.meetAgain}% would meet again`,
-        `Après les rencontres: ${topic.outcomes.mindChanged} % ont vu un avis changer, ${topic.outcomes.meetAgain} % se reverraient`,
+        `Après les rencontres: ${topic.outcomes.mindChanged} % ont vu quelqu'un changer d'avis, ${topic.outcomes.meetAgain} % se reverraient`,
       )
     : null;
   const titleSize = topic.title.length > 48 ? 32 : topic.title.length > 26 ? 38 : 46;
