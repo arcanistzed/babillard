@@ -1,6 +1,6 @@
 import { webcrypto } from "node:crypto";
 import { describe, expect, it } from "vitest";
-import { MemoryMlsStore, MlsMessenger, type MlsTransport } from "../src/mlsClient";
+import { MemoryMlsStore, MlsMessenger, MlsRemovedError, type MlsTransport } from "../src/mlsClient";
 import { MemoryMlsServer } from "../src/mlsMemoryServer";
 import { tsMlsCrypto } from "../src/mls/adapter";
 import { mlsCiphersuite } from "../src/mls/provider";
@@ -159,5 +159,39 @@ describe("the sync engine when the network fails", () => {
     expect(staleViews).toEqual([]);
     await alice.send(CHAT, "hi Carol");
     expect(await texts(bob)).toEqual(["hi Carol"]);
+  });
+});
+
+describe("what the chat screens ask the engine", () => {
+  it("says whether this phone is in the group, and gives the latest message", async () => {
+    const { phone } = world(["alice", "bob"]);
+    const [alice, bob] = [phone("alice"), phone("bob")];
+    await alice.ensureIdentity();
+    await bob.ensureIdentity();
+    expect(await alice.inGroup(CHAT)).toBe(false);
+    await alice.sync(CHAT);
+    await bob.sync(CHAT);
+    expect(await alice.inGroup(CHAT)).toBe(true);
+    expect(await bob.lastMessage(CHAT)).toBeNull();
+    await alice.send(CHAT, "first");
+    await alice.send(CHAT, "second");
+    await bob.sync(CHAT);
+    expect((await bob.lastMessage(CHAT))?.text).toBe("second");
+    expect((await alice.messages(CHAT)).map((m) => [m.text, m.status])).toEqual([
+      ["first", "sent"],
+      ["second", "sent"],
+    ]);
+  });
+
+  it("tells a retired phone it was removed", async () => {
+    const { server, phone } = world(["alice", "bob"]);
+    const [alice, bob] = [phone("alice"), phone("bob")];
+    await alice.ensureIdentity();
+    await bob.ensureIdentity();
+    await alice.sync(CHAT);
+    await bob.sync(CHAT);
+    server.retireDevice("bob-phone");
+    await alice.send(CHAT, "bye, old phone");
+    await expect(bob.sync(CHAT)).rejects.toBeInstanceOf(MlsRemovedError);
   });
 });

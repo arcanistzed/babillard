@@ -35,6 +35,12 @@ export class MemoryMlsServer {
     else this.chats.set(conversationId, { members: new Set(userIds), admitted: new Map(), epoch: 0, roster: [], log: [], welcomes: new Map(), groupInfo: null });
   }
 
+  /** As when someone signs in on a sixth phone: the oldest is retired and must leave its groups. */
+  retireDevice(deviceId: string): void {
+    this.devices.delete(deviceId);
+    this.packages.delete(deviceId);
+  }
+
   private chat(conversationId: string): Chat {
     const chat = this.chats.get(conversationId);
     if (!chat) throw new Error("No such chat");

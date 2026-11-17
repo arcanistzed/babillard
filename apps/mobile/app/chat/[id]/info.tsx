@@ -5,6 +5,7 @@ import { Alert, Pressable, ScrollView, StyleSheet, Switch, View } from "react-na
 import { api } from "@/api";
 import { useAuth } from "@/auth";
 import { inviteToTopic } from "@/invite";
+import { mlsMessenger } from "@/mls";
 import { fonts, useTheme } from "@/theme";
 import { Avatar, Button, T } from "@/ui";
 import { t } from "@/i18n";
@@ -37,6 +38,16 @@ export default function ChatInfo() {
   const mute = useMutation({
     mutationFn: (muted: boolean) => api.post(`/conversations/${id}/mute`, { muted }),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["conversation", id] }),
+  });
+  // Once this phone is in the chat's MLS group, the code comes from its own copy of the group.
+  const mlsCode = useQuery({
+    queryKey: ["mls-code", id, me?.id],
+    queryFn: async () => {
+      const mls = me ? mlsMessenger(me.id) : null;
+      if (!mls) return null;
+      const messenger = await mls;
+      return (await messenger.inGroup(id)) ? messenger.securityCode(id) : null;
+    },
   });
   const detail = conversation.data;
   if (!detail) return null;
@@ -83,7 +94,7 @@ export default function ChatInfo() {
       <View style={styles.section}>
         <T variant="heading">{t("Security code", "Code de sécurité")}</T>
         <T style={styles.code} selectable>
-          {securityCode(detail.members.flatMap((member) => member.deviceKeys))}
+          {mlsCode.data ?? securityCode(detail.members.flatMap((member) => member.deviceKeys))}
         </T>
         <T variant="small" muted>
           {t("Compare this code when you meet. If it matches, only the people in this chat can read the messages.", "Comparez ce code quand vous vous rencontrez. S'il est identique, seules les personnes de cette conversation peuvent lire les messages.")}

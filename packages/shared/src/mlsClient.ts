@@ -114,6 +114,9 @@ export interface MlsStore {
 
 export class MlsSyncError extends Error {}
 
+/** The log removed this phone from the chat. The person left, was removed, or the phone was retired. */
+export class MlsRemovedError extends MlsSyncError {}
+
 const encoder = new TextEncoder();
 const decoder = new TextDecoder();
 const KEY_PACKAGE_TARGET = 10;
@@ -346,7 +349,7 @@ export class MlsMessenger {
         const result = await this.crypto.receive(state, conversationId, fromBase64(entry.message), trusted);
         if (result.kind === "commit") {
           await this.saveState(result.state, { cursors: { [conversationId]: cursor } });
-          if (result.removedMe) throw new MlsSyncError("This phone was removed from the chat");
+          if (result.removedMe) throw new MlsRemovedError("This phone was removed from the chat");
           continue;
         }
         // MLS authenticates the sender. The server's label must agree with it.
@@ -401,6 +404,23 @@ export class MlsMessenger {
       }
     }
     return "done";
+  }
+
+  /** Whether this phone is in the chat's MLS group. If so, it sends with MLS, and the server refuses v1. */
+  async inGroup(conversationId: string): Promise<boolean> {
+    const device = await this.store.loadDevice();
+    return device !== null && (await this.crypto.groupStatus(device.state, conversationId)) !== null;
+  }
+
+  /** Everything stored for a chat: received, sent, and still sending. */
+  messages(conversationId: string): Promise<MlsStoredMessage[]> {
+    return this.store.messages(conversationId);
+  }
+
+  /** The newest stored message, for the inbox preview. */
+  async lastMessage(conversationId: string): Promise<MlsStoredMessage | null> {
+    const sent = (await this.store.messages(conversationId)).filter((message) => message.seq !== null);
+    return sent.at(-1) ?? null;
   }
 
   /** The chat's security code, from this phone's own copy of the group. */

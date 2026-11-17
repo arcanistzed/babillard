@@ -143,7 +143,7 @@ Open sockets get `{ type: "mls", seq, epoch }` after each accepted entry. Everyo
 
 ## The phone's side
 
-Built on the branch, and not yet wired into the chat screens.
+Built on the branch, and wired into the chat screens behind the prototype flag.
 
 ### The sync engine
 
@@ -193,13 +193,35 @@ It runs on three interfaces:
   - A chat waits until both people can do MLS, then a member's new phone joins by itself and reads what follows.
 - The dev screen's "Run sync engine demo" runs the three-phone demo on the device, on OpenMLS and real `expo-sqlite` databases. It passed on the x86_64 emulator in a debug build, in 3.6 s. Most of that was 1.3 s for three phones to make and upload 30 key packages, and each later sync or send took 180 to 390 ms.
 
+### In the app
+
+When the flag is on and the native library loaded, `mlsMessenger(userId)` in `apps/mobile/src/mls/index.ts` opens the user's encrypted database and runs `ensureIdentity`. Then:
+
+- `useChat` syncs the engine when the chat opens and whenever the socket says `mls`. It puts the stored MLS messages in the same timeline as v1 history and system messages, ordered by server time, since the two logs number entries separately. Once this phone is in the chat's group it sends through the engine. Until then it sends v1, which the server accepts only while the chat is still on v1. If the log removes this phone, the chat closes as it does when someone is removed.
+- The inbox shows an MLS chat's latest message from the phone's own store. The server keeps no preview for those.
+- The chat info screen shows the security code from the phone's own MLS group once it's in one, and the v1 code before that.
+
+With the flag off, `mlsMessenger` returns null and the screens behave exactly as before. The one shared change is that the timeline is now sorted by server time instead of v1's sequence number. Both come from the same Durable Object's clock, so for a v1-only chat the order is the same.
+
+To try it on a device:
+1. Run a local Worker with `DEV_MODE=true` and `MLS_ENABLED=true`.
+2. Run `tsx scripts/mls-peer.ts http://localhost:8787` from `apps/api`. It creates Alice and Bob with a direct chat, prints a link that signs the phone in as Alice, and plays Bob on the engine (with ts-mls).
+3. Open the printed links on the phone.
+
+Tried this way on the emulator:
+- The phone's first sync created the group.
+- Bob joined from his Welcome and said hello. It arrived through the socket's `mls` event.
+- The phone sent "ping", Bob answered "pong", and both showed in the chat.
+- The phone's security code matched Bob's, and the inbox previewed "pong from Bob".
+
 ### Not done on the phone
 
-- **The chat screens.** `useChat`, the inbox preview and the security code screen still use v1. They need to read from the store, call `sync` when a socket says `mls`, and show a mixed timeline during migration.
 - **A commit whose outcome is unknown.** If the network drops after a commit is sent, the engine doesn't know whether it landed. It should keep the new state on the side until the log shows the commit, or shows another one at that epoch. Today it keeps the old state, and if the commit did land, the phone falls out of step and must rejoin.
 - **Being removed.** The engine stops with an error when the log removes this phone. The chat screen needs to show that the person left or was removed.
 - **An entry that won't apply.** If `receive` fails on some log entry, the cursor stays there and every later sync fails at the same place. The plan: after a second failure on the same entry, the phone rejoins by itself with an external commit that removes its own old leaf. The server already allows that self-removal. The skipped messages stay unreadable on that phone. Not built.
-- **Real API, real phone.** `mlsMessenger()` in `apps/mobile/src/mls/index.ts` wires the engine to the app's API client, SecureStore and the user's database, but nothing calls it yet. On the device, the engine has only run against the in-memory server. Against the real Worker, it has only run in Node.
+- **Typing and sending states.** A message sent with MLS shows as pending until the engine returns, with no echo over the socket. That's fine on a quick connection and untested on a slow one.
+- **Blocking.** v1 hides a blocked person's messages on the server. MLS delivers everything, as designed above, but the phone doesn't hide a blocked person's MLS messages yet.
+- **Only a direct chat has been tried on the device.** Groups, leaving, and new phones are covered by the engine tests, not by the app on a phone.
 - **Franking for reports, backup v2, and per-chat state** remain as designed above.
 
 ## Before turning it on
@@ -381,21 +403,21 @@ The ordering rule `admit` and the security-code function `codeForRoster` are wor
 
 ## What's left, and roughly how long
 
-One developer who knows the codebase. Done on the branch since the first estimate: the server's header reader, the key package service, the delivery service, the readiness check, external commits with GroupInfo export, and the phone's sync engine with its encrypted SQLite store.
+One developer who knows the codebase. Done on the branch since the first estimate: the server's header reader, the key package service, the delivery service, the readiness check, external commits with GroupInfo export, the phone's sync engine with its encrypted SQLite store, and the chat screens on MLS behind the flag.
 
 | Work | Estimate |
 |---|---|
 | Android build in EAS: install Rust there, or commit the built libraries | 2 to 3 days |
 | Server, still to do: rate-limiting key package claims, and a way for people to retire a lost phone | 1 to 2 days |
 | Rust wrapper: last-resort key packages and per-chat state | 2 to 4 days |
-| Phone: wire the sync engine into the chat screen, inbox and security code; commits with an unknown outcome; showing a removal | 5 to 8 days |
+| Phone: commits with an unknown outcome, rejoining after an entry that won't apply, hiding blocked people's messages, and trying groups on devices | 3 to 5 days |
 | Franking for reports | 2 days |
 | Roster security code on the chat info screen | 1 day |
 | Backup v2 and history store | 5 to 7 days |
 | Migration: dormant release, per-chat switch, version gate, mixed timeline | 3 to 5 days |
 | Removing ts-mls and its adapter from the app once the native path covers everything | 1 day |
 | End-to-end tests with two devices, and on a real phone | 4 to 5 days |
-| **Total** | **about 5 to 7 weeks** |
+| **Total** | **about 5 to 6 weeks** |
 
 iOS isn't in this estimate. It would add a Swift module over the same Rust crate.
 

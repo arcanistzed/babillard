@@ -1,9 +1,10 @@
-import type { ChatMessage, ConversationDetail, ServerSocketEvent } from "@babillard/shared";
+import { MlsRemovedError, type ChatMessage, type ConversationDetail, type MlsStoredMessage, type ServerSocketEvent } from "@babillard/shared";
 import { useQueryClient } from "@tanstack/react-query";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { AppState } from "react-native";
 import { api, ApiError, openConversationSocket } from "./api";
 import { ensureDeviceKey, readingKeys, readMessage, sealFor, type ReadableMessage } from "./e2ee";
+import { mlsMessenger } from "./mls";
 
 export interface LocalMessage extends ReadableMessage {
   pending?: boolean;
@@ -24,7 +25,25 @@ function merge(existing: LocalMessage[], incoming: LocalMessage[]): LocalMessage
     byId.set(message.id, message);
   }
   for (const message of incoming) byId.set(message.id, message);
-  return [...byId.values()].sort((a, b) => (a.pending ? 1 : 0) - (b.pending ? 1 : 0) || a.seq - b.seq);
+  // By server time: v1 and MLS messages come from two logs whose seq numbers aren't comparable.
+  return [...byId.values()].sort((a, b) => (a.pending ? 1 : 0) - (b.pending ? 1 : 0) || a.createdAt - b.createdAt || a.seq - b.seq);
+}
+
+const MLS_PREFIX = "mls-";
+
+/** A message from the MLS store, shaped like the rest of the timeline. */
+function fromMls(message: MlsStoredMessage): LocalMessage {
+  return {
+    seq: message.seq ?? Number.MAX_SAFE_INTEGER,
+    id: `${MLS_PREFIX}${message.id}`,
+    senderId: message.senderId,
+    body: message.text,
+    kind: "text",
+    meetupId: null,
+    createdAt: message.createdAt,
+    ...(message.status === "sent" ? {} : { pending: true }),
+    ...(message.status === "failed" ? { failed: true } : {}),
+  };
 }
 
 function newClientId(): string {
@@ -41,6 +60,15 @@ export function useChat(conversationId: string, myId: string | undefined, onRemo
   const timers = useRef(new Map<string, ReturnType<typeof setTimeout>>());
   const unsent = useRef(new Map<string, string>());
   const sendOverHttpRef = useRef<((body: string, clientId: string) => Promise<void>) | null>(null);
+  const onRemovedRef = useRef(onRemoved);
+  useEffect(() => {
+    onRemovedRef.current = onRemoved;
+  }, [onRemoved]);
+
+  // MLS, when this build has it on. Null otherwise, and then nothing below changes how v1 works.
+  const mls = useMemo(() => (myId ? mlsMessenger(myId) : null), [myId]);
+  /** True once this phone is in the chat's MLS group. From then on it sends with MLS. */
+  const [mlsActive, setMlsActive] = useState(false);
 
   const members = useCallback(
     async (fresh = false) => {
@@ -75,12 +103,32 @@ export function useChat(conversationId: string, myId: string | undefined, onRemo
       .catch(() => undefined);
   }, [conversationId, queryClient]);
 
+  /** Brings the chat's MLS group up to date and puts what the store holds into the timeline. */
+  const syncMls = useCallback(async () => {
+    if (!mls) return;
+    const messenger = await mls;
+    try {
+      await messenger.sync(conversationId);
+    } catch (error) {
+      if (error instanceof MlsRemovedError) {
+        onRemovedRef.current();
+        return;
+      }
+      // Anything else leaves what's stored on screen. The next socket event or visit tries again.
+      console.warn("MLS sync failed", error);
+    }
+    const stored = (await messenger.messages(conversationId)).map(fromMls);
+    setMlsActive(await messenger.inGroup(conversationId));
+    setMessages((current) => merge(current.filter((message) => !message.id.startsWith(MLS_PREFIX)), stored));
+  }, [conversationId, mls]);
+
   const refresh = useCallback(async () => {
     const history = await read(await api.get<ChatMessage[]>(`/conversations/${conversationId}/messages`));
     setMessages((current) => merge(current, history));
+    await syncMls().catch(() => undefined);
     setLoaded(true);
     markRead();
-  }, [conversationId, markRead, read]);
+  }, [conversationId, markRead, read, syncMls]);
 
   useEffect(() => {
     let closed = false;
@@ -111,6 +159,10 @@ export function useChat(conversationId: string, myId: string | undefined, onRemo
           void read([data.message]).then((opened) => setMessages((current) => merge(current, opened)));
           markRead();
           if (data.message.kind === "meetup") void queryClient.invalidateQueries({ queryKey: ["conversation", conversationId] });
+        } else if (data.type === "mls") {
+          void syncMls()
+            .then(markRead)
+            .catch(() => undefined);
         } else if (data.type === "meetup") {
           void queryClient.invalidateQueries({ queryKey: ["meetup", data.meetup.id] });
           void queryClient.invalidateQueries({ queryKey: ["conversation", conversationId] });
@@ -171,7 +223,7 @@ export function useChat(conversationId: string, myId: string | undefined, onRemo
     };
     // onRemoved is stable for the life of the screen.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [conversationId, queryClient, read, refresh, markRead]);
+  }, [conversationId, queryClient, read, refresh, markRead, syncMls]);
 
   const seal = useCallback(
     async (body: string, senderId: string, fresh = false) => {
@@ -212,6 +264,19 @@ export function useChat(conversationId: string, myId: string | undefined, onRemo
       const clientId = reuseClientId ?? newClientId();
       const optimistic: LocalMessage = { seq: Number.MAX_SAFE_INTEGER, id: `local-${clientId}`, senderId, body, kind: "text", meetupId: null, createdAt: Date.now(), clientId, pending: true };
       setMessages((current) => [...current.filter((message) => message.clientId !== clientId), optimistic]);
+
+      if (mls && mlsActive) {
+        // The engine syncs, encrypts, saves, and sends. Its store then holds the sent copy.
+        void mls
+          .then((messenger) => messenger.send(conversationId, body))
+          .then(async () => {
+            setMessages((current) => current.filter((message) => message.clientId !== clientId));
+            await syncMls();
+          })
+          .catch(() => setMessages((current) => current.map((message) => (message.clientId === clientId ? { ...message, failed: true } : message))));
+        return;
+      }
+
       unsent.current.set(clientId, body);
 
       const ws = socket.current;
@@ -226,7 +291,7 @@ export function useChat(conversationId: string, myId: string | undefined, onRemo
         void sendOverHttp(body, clientId);
       }
     },
-    [seal, sendOverHttp],
+    [conversationId, mls, mlsActive, seal, sendOverHttp, syncMls],
   );
 
   const loadOlder = useCallback(async () => {
@@ -237,5 +302,5 @@ export function useChat(conversationId: string, myId: string | undefined, onRemo
     setMessages((current) => merge(current, older));
   }, [conversationId, hasMore, messages, read]);
 
-  return { messages, loaded, connected, send, loadOlder };
+  return { messages, loaded, connected, send, loadOlder, mlsActive };
 }

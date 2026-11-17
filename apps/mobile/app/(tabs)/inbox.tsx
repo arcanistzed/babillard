@@ -7,6 +7,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { api } from "@/api";
 import { useAuth } from "@/auth";
 import { readingKeys, readMessage } from "@/e2ee";
+import { mlsMessenger } from "@/mls";
 import { describeWhen, timeLeft } from "@/format";
 import { inviteToApp } from "@/invite";
 import { flyerInk, fonts, useTheme } from "@/theme";
@@ -20,11 +21,19 @@ function usePreviews(items: InboxItem[] | undefined): Record<string, string> {
   useEffect(() => {
     if (!me || !items) return;
     let active = true;
+    const mls = mlsMessenger(me.id);
     void readingKeys(me.id)
-      .then((keys) => {
+      .then(async (keys) => {
         const next: Record<string, string> = {};
         for (const item of items) {
-          if (!item.lastMessageEnvelope || !item.lastMessageSenderId) continue;
+          if (!item.lastMessageSenderId) continue;
+          if (!item.lastMessageEnvelope) {
+            // An MLS message: the server keeps no copy to preview, so the phone shows what it stored.
+            if (!mls || item.lastMessagePreview) continue;
+            const last = await (await mls).lastMessage(item.id).catch(() => null);
+            next[item.id] = last && last.createdAt >= (item.lastMessageAt ?? 0) ? last.text : t("New message", "Nouveau message");
+            continue;
+          }
           const message = { envelope: item.lastMessageEnvelope, senderId: item.lastMessageSenderId, seq: 0, id: item.id, body: "", kind: "text" as const, meetupId: null, createdAt: 0 };
           const opened = readMessage(message, item.id, keys);
           next[item.id] = opened.unreadable ? t("New message", "Nouveau message") : opened.body;
