@@ -87,6 +87,7 @@ export function friendlyError(error: unknown): string {
     conversation_closed: t("This conversation has ended.", "Cette conversation est terminée."),
     starts_in_the_past: t("That time has already passed. Pick another.", "Cette heure est déjà passée. Choisissez-en une autre."),
     upload_failed: t("That photo didn't upload. Try a different one.", "Cette photo n'a pas pu être envoyée. Essayez-en une autre."),
+    in_a_group: t("You're in a group on this topic. Leave the group from its chat first.", "Vous êtes dans un groupe sur ce sujet. Quittez d'abord le groupe depuis sa conversation."),
   };
   return messages[error.code] ?? t("Something went wrong. Try again.", "Un problème est survenu. Réessayez.");
 }

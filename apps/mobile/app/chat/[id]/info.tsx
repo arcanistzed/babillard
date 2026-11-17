@@ -19,7 +19,7 @@ function StanceSpread({ spread }: { spread: Record<Stance, number> }) {
   const stances = Object.keys(STANCE_LABELS) as Stance[];
   return (
     <View style={styles.section}>
-      <T variant="heading">{t("Where this group leans", "Les positions du groupe")}</T>
+      <T variant="heading">{t("Where the group leaned when it formed", "Les positions du groupe à sa formation")}</T>
       <View style={styles.bar} accessibilityElementsHidden importantForAccessibility="no-hide-descendants">
         {stances.map((stance) => (spread[stance] > 0 ? <View key={stance} style={{ flex: spread[stance], backgroundColor: shades[stance] }} /> : null))}
       </View>
@@ -42,7 +42,13 @@ export default function ChatInfo() {
   if (!detail) return null;
 
   function confirmLeave() {
-    Alert.alert(t("Leave this group?", "Quitter ce groupe?"), t("You won't be able to come back to it.", "Vous ne pourrez pas y revenir."), [
+    Alert.alert(
+      t("Leave this group?", "Quitter ce groupe?"),
+      t(
+        "You won't be able to come back to it. You'll go back on the waiting list for a new group on this topic. To stop waiting, leave the topic in Your topics.",
+        "Vous ne pourrez pas y revenir. Vous retournerez sur la liste d'attente pour un nouveau groupe sur ce sujet. Pour ne plus attendre, quittez le sujet dans Vos sujets.",
+      ),
+      [
       { text: t("Stay", "Rester"), style: "cancel" },
       {
         text: t("Leave group", "Quitter le groupe"),
