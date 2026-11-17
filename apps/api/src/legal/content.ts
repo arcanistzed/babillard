@@ -40,7 +40,7 @@ If you tap the location icon, the app asks your phone for your rough location on
 
 People in your city who share a topic with you can see your first name, age, photo, line about yourself, role, campus, fields, what you're looking for, and the topics you share. If your school email verified you, they see that too, but not the address.
 
-Your date of birth and email address are never shown to other people. They see your age, not the date. Your stance on a question is never shown as yours. A group only sees the total number of people with each stance. People in your city can see percentages for a question once at least 10 people have answered and they don't all agree.
+Your date of birth and email address are never shown to other people. They see your age, not the date. Your stance on a question is never shown as yours, and you can change or clear it in Your topics. A group sees how many of the people it formed with gave each stance, and only when every stance given was given by at least two people and they don't all agree. People in your city can see percentages for a question once at least 10 people have answered and they don't all agree.
 
 People in a chat with you can see your messages and profile. Anyone with a meetup's share link can see its topic, time, and place, but not who's going. Your answers about how a meetup went only appear as percentages for its topic, once enough people have answered. If a moderator approves a takeaway line you wrote, it appears on the topic's public page without your name. That page also shows how many people have picked the topic, once at least 5 have, but not who. If you report someone, we don't tell them it was you.
 
@@ -83,7 +83,7 @@ These companies may process information outside Canada, including in the United 
 
 ## Deleting your account
 
-Go to You, then Delete account. That removes your email address, date of birth, profile, photo, swipes, messages, meetup answers, invites and takeaways, the blocks you made, and notification tokens. A record with an ID and no name, profile or contact details stays behind so that other people's conversations keep working. If someone blocked you, that record also keeps their block and the email code described above, so the block keeps protecting them. Our host's backups can hold deleted data for up to 30 days, and we can't reach screenshots or anything else people saved.
+Go to You, then Delete account. That removes your email address, date of birth, profile, photo, swipes, your place on waiting lists for groups, messages, meetup answers, invites and takeaways, the blocks you made, and notification tokens. A record with an ID and no name, profile or contact details stays behind so that other people's conversations keep working. If someone blocked you, that record also keeps their block and the email code described above, so the block keeps protecting them. Our host's backups can hold deleted data for up to 30 days, and we can't reach screenshots or anything else people saved.
 
 Reports made about you stay for the period above, so that deleting an account can't erase a safety record.
 
@@ -231,7 +231,7 @@ Si vous touchez l'icône d'emplacement, l'application demande une seule fois vot
 
 Les personnes de votre ville qui partagent un sujet avec vous peuvent voir votre prénom, votre âge, votre photo, votre phrase de présentation, votre rôle, votre campus, vos domaines, ce que vous recherchez et les sujets en commun. Si votre courriel scolaire vous a vérifié, elles le voient aussi, mais pas l'adresse.
 
-Votre date de naissance et votre adresse courriel ne sont jamais montrées aux autres. Ils voient votre âge, pas la date. Votre position sur une question n'est jamais présentée comme la vôtre. Un groupe voit seulement le nombre total de personnes par position. Les gens de votre ville peuvent voir des pourcentages pour une question lorsqu'au moins 10 personnes ont répondu et qu'elles ne sont pas toutes du même avis.
+Votre date de naissance et votre adresse courriel ne sont jamais montrées aux autres. Ils voient votre âge, pas la date. Votre position sur une question n'est jamais présentée comme la vôtre, et vous pouvez la changer ou l'effacer dans Vos sujets. Un groupe voit combien des personnes avec qui il s'est formé ont donné chaque position, et seulement si chaque position donnée l'a été par au moins deux personnes et qu'elles ne sont pas toutes du même avis. Les gens de votre ville peuvent voir des pourcentages pour une question lorsqu'au moins 10 personnes ont répondu et qu'elles ne sont pas toutes du même avis.
 
 Les personnes d'une conversation peuvent voir vos messages et votre profil. Toute personne qui a le lien de partage d'une rencontre peut en voir le sujet, l'heure et le lieu, mais pas qui y va. Vos réponses sur le déroulement d'une rencontre ne paraissent qu'en pourcentages pour son sujet, une fois qu'assez de gens ont répondu. Si un modérateur approuve une phrase à retenir que vous avez écrite, elle paraît sur la page publique du sujet, sans votre nom. Cette page indique aussi combien de personnes ont choisi le sujet, à partir de 5, mais pas qui. Si vous signalez quelqu'un, nous ne lui disons pas que c'est vous.
 
@@ -274,7 +274,7 @@ Ces entreprises peuvent traiter des renseignements à l'extérieur du Canada, y 
 
 ## Supprimer votre compte
 
-Allez à Vous, puis Supprimer le compte. Cela retire votre adresse courriel, votre date de naissance, votre profil, votre photo, vos glissements, vos messages, vos réponses, invitations et phrases à retenir liées aux rencontres, les blocages que vous avez faits et vos jetons de notification. Un dossier avec un identifiant, sans nom, profil ni coordonnées, subsiste pour que les conversations des autres continuent de fonctionner. Si quelqu'un vous a bloqué, ce dossier garde aussi son blocage et le code tiré de votre courriel décrit plus haut, pour que le blocage continue de le protéger. Les sauvegardes de notre hébergeur peuvent contenir des données supprimées jusqu'à 30 jours, et nous n'avons pas accès aux captures d'écran ni à ce que d'autres ont enregistré.
+Allez à Vous, puis Supprimer le compte. Cela retire votre adresse courriel, votre date de naissance, votre profil, votre photo, vos glissements, votre place sur les listes d'attente des groupes, vos messages, vos réponses, invitations et phrases à retenir liées aux rencontres, les blocages que vous avez faits et vos jetons de notification. Un dossier avec un identifiant, sans nom, profil ni coordonnées, subsiste pour que les conversations des autres continuent de fonctionner. Si quelqu'un vous a bloqué, ce dossier garde aussi son blocage et le code tiré de votre courriel décrit plus haut, pour que le blocage continue de le protéger. Les sauvegardes de notre hébergeur peuvent contenir des données supprimées jusqu'à 30 jours, et nous n'avons pas accès aux captures d'écran ni à ce que d'autres ont enregistré.
 
 Les signalements vous concernant sont conservés pendant la période indiquée ci-dessus, afin que la suppression d'un compte n'efface pas un dossier de sécurité.
 
