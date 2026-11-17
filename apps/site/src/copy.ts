@@ -71,9 +71,9 @@ export const copy = {
     ],
     rulesTitle: "A few things we decided",
     rules: [
-      { h: "Groups form around topics, not opinions", p: "Answering a question is optional, and nobody sees your answer as yours. It counts toward your city's split, which shows after you answer once enough people have, and toward your group's totals. If a new group would all give the same answer, the app swaps in someone waiting who answered differently.", ink: "#FFC21A" },
+      { h: "Groups form around topics, not opinions", p: "Answering a question is optional, and your answer is never shown as yours. It counts toward your group's totals, and toward your city's split, which shows after you answer once at least 10 people have and they don't all agree. If everyone who answered in a new group gave the same answer, the app swaps in someone waiting who answered differently, when there is one.", ink: "#FFC21A" },
       { h: "Chats are end-to-end encrypted", p: "Only the phones in a chat can read its messages. If you report someone from a chat, your phone sends the messages around the report to the moderators, up to 11 of them, and you don't pick which.", ink: "#2ED3A5" },
-      { h: "No feed, no followers", p: "A match that goes quiet for a week closes on its own, so your chats stay with people you might actually meet.", ink: "#FF5FAE" },
+      { h: "No feed, no followers", p: "A one-on-one match where nobody writes within a week closes on its own, so your chats stay with people you might actually meet.", ink: "#FF5FAE" },
       { h: "English and French", p: "The app follows your phone's language, and so do the topics.", ink: "#39C3E8" },
     ],
     end: {
@@ -149,9 +149,9 @@ export const copy = {
     ],
     rulesTitle: "Quelques choix que nous avons faits",
     rules: [
-      { h: "Les groupes se forment autour des sujets, pas des opinions", p: "Répondre à une question est facultatif, et personne ne voit votre réponse comme la vôtre. Elle compte dans la répartition de votre ville, qui s'affiche après votre réponse quand assez de gens ont répondu, et dans les totaux de votre groupe. Si tout un nouveau groupe donnait la même réponse, l'application y fait entrer une personne en attente qui a répondu autrement.", ink: "#FFC21A" },
+      { h: "Les groupes se forment autour des sujets, pas des opinions", p: "Répondre à une question est facultatif, et votre réponse n'est jamais présentée comme la vôtre. Elle compte dans les totaux de votre groupe, et dans la répartition de votre ville, qui s'affiche après votre réponse quand au moins 10 personnes ont répondu sans être toutes d'accord. Si tous ceux qui ont répondu dans un nouveau groupe ont donné la même réponse, l'application y fait entrer une personne en attente qui a répondu autrement, s'il y en a une.", ink: "#FFC21A" },
       { h: "Les discussions sont chiffrées de bout en bout", p: "Seuls les téléphones d'une discussion peuvent en lire les messages. Si vous signalez quelqu'un depuis une discussion, votre téléphone transmet à l'équipe de modération les messages autour du signalement, jusqu'à 11, et vous ne choisissez pas lesquels.", ink: "#2ED3A5" },
-      { h: "Pas de fil, pas d'abonnés", p: "Un jumelage qui reste silencieux pendant une semaine se ferme de lui-même, alors vos discussions restent avec des gens que vous pourriez vraiment rencontrer.", ink: "#FF5FAE" },
+      { h: "Pas de fil, pas d'abonnés", p: "Un jumelage où personne n'écrit dans la semaine se ferme de lui-même, alors vos discussions restent avec des gens que vous pourriez vraiment rencontrer.", ink: "#FF5FAE" },
       { h: "En français et en anglais", p: "L'application suit la langue de votre téléphone, et les sujets aussi.", ink: "#39C3E8" },
     ],
     end: {

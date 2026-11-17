@@ -96,6 +96,7 @@ a { color: inherit; }
 .pinned { position: absolute; width: clamp(140px, 13.5vw, 210px); aspect-ratio: 3 / 4.1; transform: translate3d(0, var(--lift, 0px), 0) rotate(var(--r)); will-change: transform; }
 .pinned .sheet { padding-top: 13cqw; }
 .pinned .ftitle { font-size: 11cqw; hyphens: auto; }
+.pinned .long .ftitle { font-size: 9cqw; }
 .pinned::before { content: ""; position: absolute; z-index: 2; top: 8px; left: 50%; width: 14px; height: 14px; margin-left: -7px; border-radius: 50%; background: var(--accent); box-shadow: 0 2px 0 rgba(21, 23, 61, .35); }
 .p0 { --r: -6deg; left: 2%; top: 4%; }
 .p1 { --r: 4deg; left: 34%; top: 0; z-index: 1; }

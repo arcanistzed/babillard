@@ -16,7 +16,8 @@ function tabs(taken: number, tearing = -1): string {
 }
 
 function flyer(f: { fields: string; title: string; blurb?: string; bg: string; fg: string; question?: boolean }, extra = "", taken = 0): string {
-  return `<div class="flyer${f.question ? " question" : ""}" style="--bg:${f.bg};--fg:${f.fg}">
+  // Like the app, long titles print smaller so they fit the sheet.
+  return `<div class="flyer${f.question ? " question" : ""}${f.title.length > 48 ? " long" : ""}" style="--bg:${f.bg};--fg:${f.fg}">
   <div class="sheet"><p class="fields">${esc(f.fields)}</p><p class="ftitle">${esc(f.title)}</p>${f.blurb ? `<p class="blurb">${esc(f.blurb)}</p>` : ""}${extra}</div>
   ${tabs(taken)}
 </div>`;
