@@ -1237,6 +1237,11 @@ describe("safety", () => {
     article = (await adminPage("/admin/reports")).split("<article>").find((part) => part.includes("Evidence Target"))!;
     expect(article).toContain("what the target said");
     await adminPost(`/admin/reports/${await openReportId("Evidence Target")}`, { action: "resolved" });
+
+    // Blocking back doesn't undo the first block: the blocked person can't use `reporting` to read the blocker.
+    await a.say(groupId!, "what the blocker said");
+    await b.post(`/safety/blocks/${a.id}`);
+    expect((await b.read(groupId!, `?around=&reporting=${a.id}`)).some((m: any) => m.senderId === a.id)).toBe(false);
   });
 
   it("lists no shared groups when the two people share none", async () => {

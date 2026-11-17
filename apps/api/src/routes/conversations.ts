@@ -4,7 +4,7 @@ import { and, desc, eq, gt, inArray, or, sql } from "drizzle-orm";
 import { Hono } from "hono";
 import { z } from "zod";
 import { getDb, schema, type Db } from "../db";
-import { blockedWith, blockedWithAmong } from "../lib/blocks";
+import { blockedWith, blockedWithAmong, blocksBetween } from "../lib/blocks";
 import { avatarUrl } from "../lib/config";
 import { fail, parseJson } from "../lib/http";
 import { requireAuth, requireOnboarded } from "../middleware";
@@ -167,11 +167,14 @@ conversations.get("/:id/messages", async (c) => {
   const stub = c.env.CHAT_ROOM.getByName(id);
   const around = c.req.query("around");
   // A block in either direction hides each person's messages from the other. The report screen
-  // asks for one person's messages back with `reporting`, but only from someone the reader blocked,
-  // so a report about them carries what they said rather than only what bystanders said.
+  // asks for one person's messages back with `reporting`, so a report about them carries what they
+  // said rather than only what bystanders said. That only applies when the reader's own block is
+  // the one hiding them: if the other person blocked the reader, blocking them back must not undo it.
   const reporting = around !== undefined ? c.req.query("reporting") : undefined;
-  const iBlocked = reporting ? (await db.select({ id: schema.blocks.blockedId }).from(schema.blocks).where(and(eq(schema.blocks.blockerId, user.id), eq(schema.blocks.blockedId, reporting)))).length > 0 : false;
-  const hidden = [...(await blockedWith(db, user.id))].filter((id) => !(iBlocked && id === reporting));
+  const between = reporting ? await blocksBetween(db, [user.id, reporting]) : [];
+  const iBlocked = between.some(([blocker, blocked]) => blocker === user.id && blocked === reporting);
+  const theyBlocked = between.some(([blocker, blocked]) => blocker === reporting && blocked === user.id);
+  const hidden = [...(await blockedWith(db, user.id))].filter((id) => !(iBlocked && !theyBlocked && id === reporting));
   const history: ChatMessage[] = around !== undefined ? await stub.around(around || null, undefined, hidden) : await stub.history(before, undefined, hidden);
   return c.json(history);
 });
