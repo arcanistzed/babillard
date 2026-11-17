@@ -8,7 +8,12 @@ const version = "0.3.5";
 const apiHost = new URL(process.env.EXPO_PUBLIC_API_URL ?? "https://babillard.app").hostname;
 const isRealHost = !["localhost", "10.0.2.2", "127.0.0.1"].includes(apiHost);
 
-const projectId = "90b977e9-6bcd-4b3b-9059-d63e4b4d5bc1";
+/** An Android App Link on the API domain, checked against its assetlinks.json. */
+function appLink(path: { path: string } | { pathPrefix: string }) {
+  return { action: "VIEW", autoVerify: true, data: [{ scheme: "https", host: apiHost, ...path }], category: ["BROWSABLE", "DEFAULT"] };
+}
+
+const projectId ="90b977e9-6bcd-4b3b-9059-d63e4b4d5bc1";
 
 const config: ExpoConfig = {
   name: "Babillard",
@@ -37,16 +42,10 @@ const config: ExpoConfig = {
     softwareKeyboardLayoutMode: "resize",
     googleServicesFile: "./google-services.json",
     adaptiveIcon: { foregroundImage: "./assets/adaptive-icon.png", monochromeImage: "./assets/monochrome-icon.png", backgroundColor: "#FF5FAE" },
+    // Sign-in links, topic links and invites open the app when it's installed, and the web page when it isn't.
     ...(isRealHost
       ? {
-          intentFilters: [
-            {
-              action: "VIEW",
-              autoVerify: true,
-              data: [{ scheme: "https", host: apiHost, pathPrefix: "/auth/link" }],
-              category: ["BROWSABLE", "DEFAULT"],
-            },
-          ],
+          intentFilters: [appLink({ pathPrefix: "/auth/link" }), appLink({ pathPrefix: "/t/" }), appLink({ path: "/invite" })],
         }
       : {}),
   },
