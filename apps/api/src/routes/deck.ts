@@ -1,8 +1,8 @@
-import { DECK_PAGE_SIZE, FIELD_GROUPS, NEWCOMER_SWIPES, wordingRequestSchema, leanSummary, MEETUPS_HELD_MIN_SHOWN, outcomeSummary, rankTopics, type MyTopic, type MyTopics, type OutcomeCounts, topicStanceSchema, topicSwipeSchema, topicSubmissionSchema, type TopicCard, type TopicSwipeResult } from "@babillard/shared";
+import { DECK_PAGE_SIZE, FIELD_GROUPS, NEWCOMER_SWIPES, wordingRequestSchema, leanSummary, MEETUPS_HELD_MIN_SHOWN, outcomeSummary, rankTopics, type MyTopic, type MyTopics, type OutcomeCounts, topicStanceSchema, topicSwipeSchema, topicSubmissionSchema, type TopicCard, type TopicLink, type TopicSwipeResult } from "@babillard/shared";
 import { suggestWording } from "../lib/ai";
 import { cohortName } from "../lib/cohorts";
-import { localizeTopic, requestLanguage } from "../lib/language";
-import { and, desc, eq, gt, inArray, isNotNull, isNull, or, sql } from "drizzle-orm";
+import { localizeTopic, requestLanguage, type Language } from "../lib/language";
+import { and, desc, eq, gt, inArray, isNotNull, isNull, ne, or, sql } from "drizzle-orm";
 import { Hono } from "hono";
 import { getDb, schema, type Db } from "../db";
 import { fail, parseJson } from "../lib/http";
@@ -36,6 +36,78 @@ export async function joinCohort(
 /** The place values a topic can carry and still reach someone in this city: the city, its province or state, and its country. */
 export function placesFor(cityId: string, home: { region: string; countryCode: string } | undefined): string[] {
   return home ? [cityId, `${home.countryCode}:${home.region}`, home.countryCode] : [cityId];
+}
+
+type Topic = typeof schema.topics.$inferSelect;
+
+/** City answer totals, meetups held and meetup outcomes for the topics on some cards. */
+async function topicStats(db: Db, cityId: string, ids: string[]) {
+  const swipes = schema.topicSwipes;
+  const [stanceRows, heldRows, outcomeRows] = ids.length
+    ? await Promise.all([
+        db
+          .select({ topicId: swipes.topicId, stance: swipes.stance, count: sql<number>`count(*)` })
+          .from(swipes)
+          .innerJoin(schema.users, eq(schema.users.id, swipes.userId))
+          .where(and(inArray(swipes.topicId, ids), eq(swipes.direction, "right"), isNotNull(swipes.stance), eq(schema.users.cityId, cityId), eq(schema.users.status, "active")))
+          .groupBy(swipes.topicId, swipes.stance),
+        db
+          .select({ topicId: schema.conversations.topicId, count: sql<number>`count(DISTINCT ${schema.meetups.id})` })
+          .from(schema.meetups)
+          .innerJoin(schema.conversations, eq(schema.conversations.id, schema.meetups.conversationId))
+          .innerJoin(schema.meetupResponses, eq(schema.meetupResponses.meetupId, schema.meetups.id))
+          .where(and(inArray(schema.conversations.topicId, ids), eq(schema.meetupResponses.didMeet, true)))
+          .groupBy(schema.conversations.topicId),
+        db
+          .select({
+            topicId: schema.conversations.topicId,
+            mindChanged: schema.meetupOutcomes.mindChanged,
+            endedUp: schema.meetupOutcomes.endedUp,
+            meetAgain: schema.meetupOutcomes.meetAgain,
+            count: sql<number>`count(*)`,
+          })
+          .from(schema.meetupOutcomes)
+          .innerJoin(schema.meetups, eq(schema.meetups.id, schema.meetupOutcomes.meetupId))
+          .innerJoin(schema.conversations, eq(schema.conversations.id, schema.meetups.conversationId))
+          .innerJoin(
+            schema.meetupResponses,
+            and(eq(schema.meetupResponses.meetupId, schema.meetupOutcomes.meetupId), eq(schema.meetupResponses.userId, schema.meetupOutcomes.userId)),
+          )
+          // Someone who later says the meetup didn't happen no longer counts.
+          .where(and(inArray(schema.conversations.topicId, ids), eq(schema.meetupResponses.didMeet, true)))
+          .groupBy(schema.conversations.topicId, schema.meetupOutcomes.mindChanged, schema.meetupOutcomes.endedUp, schema.meetupOutcomes.meetAgain),
+      ])
+    : [[], [], []];
+  const stanceCounts = (topicId: string) => Object.fromEntries(stanceRows.filter((row) => row.topicId === topicId).map((row) => [row.stance, row.count]));
+  const held = new Map(heldRows.map((row) => [row.topicId, row.count]));
+  const outcomeCounts = new Map<string, OutcomeCounts>();
+  for (const row of outcomeRows) {
+    if (!row.topicId) continue;
+    const counts = outcomeCounts.get(row.topicId) ?? { mindChanged: {}, endedUp: {}, meetAgain: {} };
+    counts.mindChanged[row.mindChanged] = (counts.mindChanged[row.mindChanged] ?? 0) + row.count;
+    counts.endedUp[row.endedUp] = (counts.endedUp[row.endedUp] ?? 0) + row.count;
+    counts.meetAgain[row.meetAgain] = (counts.meetAgain[row.meetAgain] ?? 0) + row.count;
+    outcomeCounts.set(row.topicId, counts);
+  }
+  return { stanceCounts, held, outcomeCounts };
+}
+
+function topicCard(topic: Topic, nearbyCount: number, stats: Awaited<ReturnType<typeof topicStats>>, language: Language): TopicCard {
+  const { title, blurb } = localizeTopic(topic, language);
+  const held = stats.held.get(topic.id) ?? 0;
+  const outcomes = stats.outcomeCounts.get(topic.id);
+  return {
+    id: topic.id,
+    kind: topic.kind,
+    title,
+    blurb,
+    fieldTags: topic.fieldTags,
+    nearbyCount,
+    pending: topic.status === "pending",
+    lean: topic.kind === "question" ? leanSummary(stats.stanceCounts(topic.id)) : null,
+    meetupsHeld: held >= MEETUPS_HELD_MIN_SHOWN ? held : null,
+    outcomes: outcomes ? outcomeSummary(outcomes) : null,
+  };
 }
 
 const deck = new Hono<AppEnv>();
@@ -83,67 +155,9 @@ deck.get("/topics", async (c) => {
       { userFields: profile[0]?.fields ?? [], limit: Math.max(DECK_PAGE_SIZE - ownPending.length, 0), newcomer: (swiped[0]?.count ?? 0) < NEWCOMER_SWIPES },
     ),
   ];
-  const ids = ranked.map((topic) => topic.id);
-  const [stanceRows, heldRows, outcomeRows] = ids.length
-    ? await Promise.all([
-        db
-          .select({ topicId: swipes.topicId, stance: swipes.stance, count: sql<number>`count(*)` })
-          .from(swipes)
-          .innerJoin(schema.users, eq(schema.users.id, swipes.userId))
-          .where(and(inArray(swipes.topicId, ids), eq(swipes.direction, "right"), isNotNull(swipes.stance), eq(schema.users.cityId, user.cityId!), eq(schema.users.status, "active")))
-          .groupBy(swipes.topicId, swipes.stance),
-        db
-          .select({ topicId: schema.conversations.topicId, count: sql<number>`count(DISTINCT ${schema.meetups.id})` })
-          .from(schema.meetups)
-          .innerJoin(schema.conversations, eq(schema.conversations.id, schema.meetups.conversationId))
-          .innerJoin(schema.meetupResponses, eq(schema.meetupResponses.meetupId, schema.meetups.id))
-          .where(and(inArray(schema.conversations.topicId, ids), eq(schema.meetupResponses.didMeet, true)))
-          .groupBy(schema.conversations.topicId),
-        db
-          .select({
-            topicId: schema.conversations.topicId,
-            mindChanged: schema.meetupOutcomes.mindChanged,
-            endedUp: schema.meetupOutcomes.endedUp,
-            meetAgain: schema.meetupOutcomes.meetAgain,
-            count: sql<number>`count(*)`,
-          })
-          .from(schema.meetupOutcomes)
-          .innerJoin(schema.meetups, eq(schema.meetups.id, schema.meetupOutcomes.meetupId))
-          .innerJoin(schema.conversations, eq(schema.conversations.id, schema.meetups.conversationId))
-          .innerJoin(
-            schema.meetupResponses,
-            and(eq(schema.meetupResponses.meetupId, schema.meetupOutcomes.meetupId), eq(schema.meetupResponses.userId, schema.meetupOutcomes.userId)),
-          )
-          // Someone who later says the meetup didn't happen no longer counts.
-          .where(and(inArray(schema.conversations.topicId, ids), eq(schema.meetupResponses.didMeet, true)))
-          .groupBy(schema.conversations.topicId, schema.meetupOutcomes.mindChanged, schema.meetupOutcomes.endedUp, schema.meetupOutcomes.meetAgain),
-      ])
-    : [[], [], []];
-  const stanceCounts = (topicId: string) => Object.fromEntries(stanceRows.filter((row) => row.topicId === topicId).map((row) => [row.stance, row.count]));
-  const held = new Map(heldRows.map((row) => [row.topicId, row.count]));
-  const outcomeCounts = new Map<string, OutcomeCounts>();
-  for (const row of outcomeRows) {
-    if (!row.topicId) continue;
-    const counts = outcomeCounts.get(row.topicId) ?? { mindChanged: {}, endedUp: {}, meetAgain: {} };
-    counts.mindChanged[row.mindChanged] = (counts.mindChanged[row.mindChanged] ?? 0) + row.count;
-    counts.endedUp[row.endedUp] = (counts.endedUp[row.endedUp] ?? 0) + row.count;
-    counts.meetAgain[row.meetAgain] = (counts.meetAgain[row.meetAgain] ?? 0) + row.count;
-    outcomeCounts.set(row.topicId, counts);
-  }
-
   const language = requestLanguage(c);
-  const cards: TopicCard[] = ranked.map((topic) => ({
-    id: topic.id,
-    kind: topic.kind,
-    title: localizeTopic(topic, language).title,
-    blurb: localizeTopic(topic, language).blurb,
-    fieldTags: topic.fieldTags,
-    nearbyCount: topic.cohortSize,
-    pending: topic.status === "pending",
-    lean: topic.kind === "question" ? leanSummary(stanceCounts(topic.id)) : null,
-    meetupsHeld: (held.get(topic.id) ?? 0) >= MEETUPS_HELD_MIN_SHOWN ? held.get(topic.id)! : null,
-    outcomes: outcomeCounts.has(topic.id) ? outcomeSummary(outcomeCounts.get(topic.id)!) : null,
-  }));
+  const stats = await topicStats(db, user.cityId!, ranked.map((topic) => topic.id));
+  const cards: TopicCard[] = ranked.map((topic) => topicCard(topic, topic.cohortSize, stats, language));
   return c.json(cards);
 });
 
@@ -189,6 +203,32 @@ async function myGroupFor(db: Db, userId: string, topicId: string): Promise<stri
     .limit(1);
   return row?.id ?? null;
 }
+
+/** One topic, for a shared link, with whether this person joined it or passed on it. */
+deck.get("/topics/:id", async (c) => {
+  const user = c.get("user");
+  const db = getDb(c.env);
+  const topic = await requireVisibleTopic(db, user, c.req.param("id"));
+  const swipes = schema.topicSwipes;
+  const [[nearby], swipe, group, stats] = await Promise.all([
+    // Like the deck, it counts the other people nearby who are in, not this person.
+    db
+      .select({ count: sql<number>`count(*)` })
+      .from(swipes)
+      .innerJoin(schema.users, eq(schema.users.id, swipes.userId))
+      .where(and(eq(swipes.topicId, topic.id), eq(swipes.direction, "right"), ne(swipes.userId, user.id), eq(schema.users.cityId, user.cityId!), eq(schema.users.status, "active"))),
+    mySwipe(db, user.id, topic.id),
+    myGroupFor(db, user.id, topic.id),
+    topicStats(db, user.cityId!, [topic.id]),
+  ]);
+  const joined = swipe?.direction === "right";
+  return c.json({
+    topic: topicCard(topic, nearby?.count ?? 0, stats, requestLanguage(c)),
+    mine: swipe ? (joined ? "joined" : "passed") : null,
+    stance: joined && topic.kind === "question" ? swipe.stance : null,
+    groupConversationId: joined ? group : null,
+  } satisfies TopicLink);
+});
 
 deck.post("/topics/:id/swipe", async (c) => {
   const user = c.get("user");
