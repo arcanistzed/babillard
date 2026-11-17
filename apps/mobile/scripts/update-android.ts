@@ -19,9 +19,18 @@ function run(command: string, args: string[], capture = false, env: NodeJS.Proce
   return execFileSync(command, args, { cwd: mobileDir, encoding: "utf8", env, stdio: capture ? ["ignore", "pipe", "inherit"] : "inherit" }) ?? "";
 }
 
-/** The fingerprint of the native code in this checkout, which installs must match to take an update. */
+/**
+ * The fingerprint of the native code in this checkout, which installs must match to take an update.
+ * app.config.ts adds the sign-in link settings only for the real API host, so it's computed with the
+ * same address the release build uses, not whatever a local .env says.
+ */
 export function runtimeVersion(dir: string): string {
-  const output = execFileSync("npx", ["expo-updates", "runtimeversion:resolve", "--platform", "android"], { cwd: dir, encoding: "utf8", stdio: ["ignore", "pipe", "ignore"] });
+  const output = execFileSync("npx", ["expo-updates", "runtimeversion:resolve", "--platform", "android"], {
+    cwd: dir,
+    encoding: "utf8",
+    env: { ...process.env, EXPO_PUBLIC_API_URL: API_URL },
+    stdio: ["ignore", "pipe", "ignore"],
+  });
   const json = output.split("\n").find((line) => line.startsWith("{"));
   if (!json) fail("Couldn't work out the app's runtime version.");
   return (JSON.parse(json) as { runtimeVersion: string }).runtimeVersion;
