@@ -6,24 +6,25 @@ export function cohortName(topicId: string, cityId: string): string {
   return `${topicId}:${cityId}`;
 }
 
-// The same cap as carrying topics to a new city. Any cohort past it is cleaned the next time someone joins it.
-const MAX_COHORTS_FORGOTTEN = 100;
+// Each cohort is one call to a Durable Object, and a request on the Free plan gets 50 subrequests in all.
+// Any cohort past this cap removes the person on its own daily check.
+const MAX_COHORTS_FORGOTTEN = 25;
 
 /**
- * Takes a person out of every cohort that can be found for them: the topics they joined in their current city,
- * and the topics and cities of their groups. Call it before their swipes and memberships are deleted.
- * A cohort that fails, or one in a city they moved away from, removes them the next time anyone joins it.
+ * The cohorts that hold a person: the topics they joined in their current city, and the topics and cities of
+ * their groups. Read it before their swipes and memberships are deleted, then pass it to forgetInCohorts.
  */
-export async function forgetInCohorts(env: Env, userId: string): Promise<void> {
+export async function cohortsHolding(env: Env, userId: string): Promise<string[]> {
   try {
-    await forgetFoundCohorts(env, userId);
+    return await findCohorts(env, userId);
   } catch (error) {
     // Deleting the account must still go ahead. The cohorts' own check catches whatever this missed.
-    console.error(JSON.stringify({ event: "cohorts_forget_failed", error: String(error) }));
+    console.error(JSON.stringify({ event: "cohorts_lookup_failed", error: String(error) }));
+    return [];
   }
 }
 
-async function forgetFoundCohorts(env: Env, userId: string): Promise<void> {
+async function findCohorts(env: Env, userId: string): Promise<string[]> {
   const db = getDb(env);
   const [[account], joined, groups] = await Promise.all([
     db.select({ cityId: schema.users.cityId }).from(schema.users).where(eq(schema.users.id, userId)),
@@ -43,11 +44,15 @@ async function forgetFoundCohorts(env: Env, userId: string): Promise<void> {
   const names = new Set<string>();
   for (const group of groups) names.add(cohortName(group.topicId!, group.localityId!));
   if (account?.cityId) for (const row of joined) names.add(cohortName(row.topicId, account.cityId));
+  return [...names].slice(0, MAX_COHORTS_FORGOTTEN);
+}
 
-  const results = await Promise.allSettled([...names].slice(0, MAX_COHORTS_FORGOTTEN).map((name) => env.COHORT.getByName(name).forget(userId)));
+/** Takes a person out of the cohorts cohortsHolding found. Call it after the account is deleted, so a failure here never stops that. */
+export async function forgetInCohorts(env: Env, userId: string, names: string[]): Promise<void> {
+  const results = await Promise.allSettled(names.map((name) => env.COHORT.getByName(name).forget(userId)));
   const removed = results.reduce((total, result) => total + (result.status === "fulfilled" ? result.value : 0), 0);
   const failed = results.filter((result) => result.status === "rejected").length;
-  console.log(JSON.stringify({ event: "cohorts_forgot", cohorts: names.size, removed, failed }));
+  console.log(JSON.stringify({ event: "cohorts_forgot", cohorts: names.length, removed, failed }));
 }
 
 /** Puts someone who left a group back on its topic's waiting list, kept out of the group they left. */

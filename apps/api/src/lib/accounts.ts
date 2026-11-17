@@ -1,7 +1,7 @@
 import { and, eq, inArray, isNull, or, sql } from "drizzle-orm";
 import { getDb, schema } from "../db";
 import { blockedEmailTombstone, deletedEmail, releaseUnblockedTombstones } from "./blocks";
-import { forgetInCohorts } from "./cohorts";
+import { cohortsHolding, forgetInCohorts } from "./cohorts";
 import { settleUpcomingMeetups } from "./meetupState";
 
 /**
@@ -27,8 +27,8 @@ export async function deleteAccount(env: Env, id: string): Promise<void> {
   await Promise.all(memberships.map((row) => env.CHAT_ROOM.getByName(row.id).eraseUser(id, profile?.name ?? null)));
   if (profile?.key) await env.AVATARS.delete(profile.key);
 
-  // Before the batch below deletes the swipes and memberships that say which cohorts hold this person.
-  await forgetInCohorts(env, id);
+  // Read before the batch below deletes the swipes and memberships that say which cohorts hold this person.
+  const cohorts = await cohortsHolding(env, id);
 
   const conversationIds = memberships.map((row) => row.id);
   const namePrefix = profile ? `${profile.name} ` : null;
@@ -62,4 +62,5 @@ export async function deleteAccount(env: Env, id: string): Promise<void> {
   // Their yeses are gone, so meetups that needed them go back to proposed now rather than at the next sweep.
   // One-on-one chats are closed above and are left alone.
   for (const conversationId of conversationIds) await settleUpcomingMeetups(env, db, conversationId);
+  await forgetInCohorts(env, id, cohorts);
 }
