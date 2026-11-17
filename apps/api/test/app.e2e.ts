@@ -1282,6 +1282,33 @@ describe("meetups", () => {
     expect((await a.post(`/meetups/${meetup.id}/did-meet`, { didMeet: true })).myDidMeet).toBe(true);
   });
 
+  it("asks in the Chats tab whether people met before the push, and stops showing a passed meetup as on", async () => {
+    const a = await person("new-york");
+    const b = await person("new-york");
+    const conversationId = await match(a, b, "law-and-technology");
+    const now = Date.now();
+    const meetup = await a.post(`/meetups?conversationId=${conversationId}`, proposal({ startsAt: now + 2000, endsAt: now + 3000 }));
+    expect((await b.post(`/meetups/${meetup.id}/respond`, { response: "yes" })).state).toBe("confirmed");
+    const inboxOf = async (client: Client, language = "en") =>
+      ((await (await fetch(`${BASE}/conversations`, { headers: { authorization: `Bearer ${client.token}`, "accept-language": language } })).json()) as any[]).find((item) => item.id === conversationId);
+    expect(await inboxOf(a)).toMatchObject({ checkin: null, lastMessagePreview: "It's on! Meetup confirmed at Blue Door, Main St." });
+
+    // Shortly after it ends (half a second on the test server, two hours for real), before any sweep has sent the push.
+    await sleep(Math.max(0, meetup.endsAt - Date.now()) + 700);
+    expect(await a.get(`/meetups/${meetup.id}`)).toMatchObject({ state: "confirmed", checkinOpen: true, myDidMeet: null });
+    expect(await inboxOf(a)).toMatchObject({ checkin: { meetupId: meetup.id, startsAt: meetup.startsAt }, lastMessagePreview: "Did you meet?" });
+    expect((await inboxOf(a, "fr")).lastMessagePreview).toBe("Vous êtes-vous rencontrés?");
+
+    // Answering in the app clears the question, and the push later only goes to whoever hasn't answered.
+    expect((await a.post(`/meetups/${meetup.id}/did-meet`, { didMeet: true })).myDidMeet).toBe(true);
+    expect(await inboxOf(a)).toMatchObject({ checkin: null, lastMessagePreview: "The meetup has passed." });
+    expect((await inboxOf(a, "fr")).lastMessagePreview).toBe("La rencontre est passée.");
+    await sweep();
+    const pushes = await waitFor(async () => pushLog().filter((push) => push.title === "Did you meet?" && push.data.id === meetup.id), (rows) => rows.length > 0, "check-in push");
+    expect(pushes[0]!.userIds).toEqual([b.id]);
+    expect((await inboxOf(b)).checkin).toMatchObject({ meetupId: meetup.id });
+  });
+
   it("lets group members invite a guest, tells the chat once, and welcomes guests on the share page", async () => {
     const people = await Promise.all(Array.from({ length: 3 }, () => person("london")));
     let groupId: string | null = null;

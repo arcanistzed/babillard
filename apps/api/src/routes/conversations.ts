@@ -1,11 +1,11 @@
-import { ageOn, sendMessageSchema, visibleLookingFor, type ChatMessage, type ConversationDetail, type InboxItem, type Stance } from "@babillard/shared";
+import { ageOn, isCheckinPromptDue, sendMessageSchema, visibleLookingFor, type ChatMessage, type ConversationDetail, type InboxItem, type Stance } from "@babillard/shared";
 import { localizeTopic, requestLanguage } from "../lib/language";
-import { and, desc, eq, gt, inArray, or, sql } from "drizzle-orm";
+import { and, desc, eq, gt, inArray, lte, or, sql } from "drizzle-orm";
 import { Hono } from "hono";
 import { z } from "zod";
 import { getDb, schema, type Db } from "../db";
 import { blockedWith, blockedWithAmong, blocksBetween } from "../lib/blocks";
-import { avatarUrl } from "../lib/config";
+import { avatarUrl, jobOffsets } from "../lib/config";
 import { fail, parseJson } from "../lib/http";
 import { settleUpcomingMeetups } from "../lib/meetupState";
 import { requireAuth, requireOnboarded } from "../middleware";
@@ -50,7 +50,7 @@ conversations.get("/", async (c) => {
 
   const ids = rows.map((row) => row.conversation.id);
   const now = Date.now();
-  const [everyone, meetups, myBlocks] = await Promise.all([
+  const [everyone, meetups, myBlocks, ended] = await Promise.all([
     db
       .select({ conversationId: members.conversationId, userId: members.userId, name: schema.profiles.displayName, avatarKey: schema.profiles.avatarKey })
       .from(members)
@@ -70,9 +70,33 @@ conversations.get("/", async (c) => {
       )
       .groupBy(schema.meetups.conversationId),
     blockedWith(db, user.id),
+    // Each chat's most recent meetup that went ahead and has ended, with this person's answers.
+    db
+      .select({
+        id: schema.meetups.id,
+        conversationId: schema.meetups.conversationId,
+        startsAt: schema.meetups.startsAt,
+        endsAt: schema.meetups.endsAt,
+        state: schema.meetups.state,
+        checkinSentAt: schema.meetups.checkinSentAt,
+        myResponse: schema.meetupResponses.response,
+        myDidMeet: schema.meetupResponses.didMeet,
+      })
+      .from(schema.meetups)
+      .leftJoin(schema.meetupResponses, and(eq(schema.meetupResponses.meetupId, schema.meetups.id), eq(schema.meetupResponses.userId, user.id)))
+      .where(
+        and(
+          inArray(schema.meetups.conversationId, ids),
+          inArray(schema.meetups.state, ["confirmed", "done"]),
+          lte(schema.meetups.endsAt, now),
+          sql`${schema.meetups.endsAt} = (select max(last_m.ends_at) from meetups as last_m where last_m.conversation_id = "meetups"."conversation_id" and last_m.state in ('confirmed', 'done') and last_m.ends_at <= ${now})`,
+        ),
+      ),
   ]);
   const blockedIds = myBlocks;
   const nextMeetup = new Map(meetups.map((row) => [row.conversationId, row.startsAt]));
+  const lastEnded = new Map(ended.map((row) => [row.conversationId, row]));
+  const offsets = jobOffsets(c.env);
 
   const language = requestLanguage(c);
   const items: InboxItem[] = rows.map(({ conversation, membership, match, topicTitle: englishTitle, topicFr }) => {
@@ -81,6 +105,11 @@ conversations.get("/", async (c) => {
     const other = roster.find((entry) => entry.userId !== user.id);
     const isDirect = conversation.kind === "direct";
     const hidePreview = conversation.lastMessageSenderId !== null && blockedIds.has(conversation.lastMessageSenderId);
+    const past = lastEnded.get(conversation.id);
+    const checkin = past && isCheckinPromptDue({ ...past, myResponse: past.myResponse ?? null, myDidMeet: past.myDidMeet ?? null }, now, offsets) ? { meetupId: past.id, startsAt: past.startsAt } : null;
+    // An app message from before the meetup ended, such as "It's on!", is out of date once it's over.
+    const stale = past !== undefined && conversation.lastMessageEnvelope === null && conversation.lastMessagePreview !== null && (conversation.lastMessageAt ?? 0) < past.endsAt;
+    const passed = checkin ? { en: "Did you meet?", fr: "Vous êtes-vous rencontrés?" } : { en: "The meetup has passed.", fr: "La rencontre est passée." };
     return {
       id: conversation.id,
       kind: conversation.kind,
@@ -88,7 +117,13 @@ conversations.get("/", async (c) => {
       topicTitle,
       avatarUrl: isDirect ? avatarUrl(c.env, other?.avatarKey) : null,
       memberCount: roster.length,
-      lastMessagePreview: hidePreview ? null : language === "fr" ? (conversation.lastMessagePreviewFr ?? conversation.lastMessagePreview) : conversation.lastMessagePreview,
+      lastMessagePreview: hidePreview
+        ? null
+        : stale
+          ? passed[language === "fr" ? "fr" : "en"]
+          : language === "fr"
+            ? (conversation.lastMessagePreviewFr ?? conversation.lastMessagePreview)
+            : conversation.lastMessagePreview,
       lastMessageEnvelope: hidePreview ? null : conversation.lastMessageEnvelope,
       lastMessageSenderId: hidePreview ? null : conversation.lastMessageSenderId,
       lastMessageAt: conversation.lastMessageAt,
@@ -96,6 +131,7 @@ conversations.get("/", async (c) => {
       // The countdown only matters while nobody has written anything.
       expiresAt: match && conversation.lastUserMessageAt === null ? match.expiresAt : null,
       nextMeetupAt: nextMeetup.get(conversation.id) ?? null,
+      checkin,
     };
   });
   return c.json(items);

@@ -21,6 +21,8 @@ import {
   rankTopics,
   requiredYesCount,
   isAnnouncementDue,
+  isCheckinOpen,
+  isCheckinPromptDue,
   isConfirmationLost,
   requiredYesToStayConfirmed,
   yesStillNeeded,
@@ -255,6 +257,26 @@ describe("meetups", () => {
     expect(isConfirmationLost("group", 2, 5)).toBe(true);
     expect(isConfirmationLost("direct", 1, 2)).toBe(true);
     expect(isConfirmationLost("direct", 2, 2)).toBe(false);
+  });
+
+  it("opens the check-in in the app two hours after a confirmed meetup ends, before the push", () => {
+    const meetup = { endsAt: 10 * HOUR, state: "confirmed" as const, checkinSentAt: null };
+    expect(isCheckinOpen(meetup, 11 * HOUR, OFFSETS)).toBe(false);
+    expect(isCheckinOpen(meetup, 12 * HOUR, OFFSETS)).toBe(true);
+    expect(isCheckinOpen({ ...meetup, state: "proposed" }, 12 * HOUR, OFFSETS)).toBe(false);
+    expect(isCheckinOpen({ ...meetup, state: "cancelled" }, 12 * HOUR, OFFSETS)).toBe(false);
+    expect(isCheckinOpen({ ...meetup, state: "done", checkinSentAt: 34 * HOUR }, 34 * HOUR, OFFSETS)).toBe(true);
+    // A shorter check-in delay, as in testing, opens it no later than the push.
+    expect(isCheckinOpen(meetup, 10 * HOUR + 500, { meetupCheckinDelayMs: 500 })).toBe(true);
+  });
+
+  it("asks in the Chats tab only people who said yes and haven't answered, for a week", () => {
+    const meetup = { endsAt: 10 * HOUR, state: "confirmed" as const, checkinSentAt: null, myResponse: "yes" as const, myDidMeet: null };
+    expect(isCheckinPromptDue(meetup, 12 * HOUR, OFFSETS)).toBe(true);
+    expect(isCheckinPromptDue({ ...meetup, myResponse: "maybe" }, 12 * HOUR, OFFSETS)).toBe(false);
+    expect(isCheckinPromptDue({ ...meetup, myDidMeet: false }, 12 * HOUR, OFFSETS)).toBe(false);
+    expect(isCheckinPromptDue(meetup, 10 * HOUR + 7 * DAY, OFFSETS)).toBe(true);
+    expect(isCheckinPromptDue(meetup, 10 * HOUR + 7 * DAY + 1, OFFSETS)).toBe(false);
   });
 
   it("allows another announcement only after the cooldown", () => {

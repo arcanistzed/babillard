@@ -118,6 +118,8 @@ export interface InboxItem {
   unreadCount: number;
   expiresAt: number | null;
   nextMeetupAt: number | null;
+  /** A meetup here that this person said they'd go to, ended a little while ago, and hasn't said whether it happened. Older servers leave it out. */
+  checkin?: { meetupId: string; startsAt: number } | null;
 }
 
 export interface ConversationMember {

@@ -165,7 +165,11 @@ async function checkInMeetups(env: Env, db: Db, now: number): Promise<number> {
       .where(and(eq(schema.meetups.id, meetup.id), eq(schema.meetups.state, "confirmed"), isNull(schema.meetups.checkinSentAt)))
       .returning({ id: schema.meetups.id });
     if (claimed.length === 0) continue;
-    await sendPush(env, await responders(db, meetup, ["yes"]), {
+    // The app has been asking since shortly after the meetup ended, so people who already answered there aren't asked again.
+    const answered = new Set(
+      (await db.select({ userId: schema.meetupResponses.userId }).from(schema.meetupResponses).where(and(eq(schema.meetupResponses.meetupId, meetup.id), isNotNull(schema.meetupResponses.didMeet)))).map((row) => row.userId),
+    );
+    await sendPush(env, (await responders(db, meetup, ["yes"])).filter((id) => !answered.has(id)), {
       title: "Did you meet?",
       body: "Tell us how it went.",
       fr: { title: "Vous êtes-vous rencontrés?", body: "Dites-nous comment ça s'est passé." },

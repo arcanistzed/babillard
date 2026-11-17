@@ -1,9 +1,10 @@
-import { didMeetSchema, meetupOutcomeSchema, meetupProposalSchema, meetupRepeatSchema, meetupResponseSchema, requiredYesCount, type ConversationKind, type MeetupSummary } from "@babillard/shared";
+import { didMeetSchema, isCheckinOpen, meetupOutcomeSchema, meetupProposalSchema, meetupRepeatSchema, meetupResponseSchema, requiredYesCount, type ConversationKind, type MeetupSummary } from "@babillard/shared";
 import { requestLanguage, venueNames } from "../lib/language";
 import { and, desc, eq, inArray } from "drizzle-orm";
 import { Hono } from "hono";
 import { getDb, schema, type Db } from "../db";
 import { withoutBlocksWith } from "../lib/blocks";
+import { jobOffsets } from "../lib/config";
 import { fail, parseJson } from "../lib/http";
 import { memberIds, settleMeetup, type Backout } from "../lib/meetupState";
 import { sendPush } from "../lib/push";
@@ -58,7 +59,7 @@ function toSummary(env: Env, row: MeetupRow, responses: (typeof schema.meetupRes
     myDidMeet: mine?.didMeet ?? null,
     myOutcome: outcome ? { mindChanged: outcome.mindChanged, endedUp: outcome.endedUp, meetAgain: outcome.meetAgain, takeaway: outcome.takeaway ?? "" } : null,
     shareUrl: `${env.PUBLIC_ORIGIN}/m/${row.shareToken}`,
-    checkinOpen: row.checkinSentAt !== null,
+    checkinOpen: isCheckinOpen(row, Date.now(), jobOffsets(env)),
     repeat: row.repeat,
     inviteOpen: inviteOpen(row, kind),
   };
@@ -207,7 +208,7 @@ meetups.post("/:id/did-meet", async (c) => {
   const { didMeet } = await parseJson(c, didMeetSchema);
   const db = getDb(c.env);
   const { meetup, conversation } = await loadMeetup(db, c.req.param("id"), user.id);
-  if (meetup.checkinSentAt === null) throw fail(409, "checkin_not_open");
+  if (!isCheckinOpen(meetup, Date.now(), jobOffsets(c.env))) throw fail(409, "checkin_not_open");
 
   const updated = await db
     .update(schema.meetupResponses)

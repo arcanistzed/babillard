@@ -1,4 +1,4 @@
-import { GROUP_MEETUP_CONFIRM_YES } from "../constants";
+import { GROUP_MEETUP_CONFIRM_YES, type JobOffsets } from "../constants";
 
 export type ConversationKind = "direct" | "group";
 
@@ -39,3 +39,33 @@ export function isAnnouncementDue(lastAnnouncedAt: number | null, now: number, c
   return lastAnnouncedAt === null || now - lastAnnouncedAt >= cooldownMs;
 }
 
+/** How long after a meetup ends the app starts asking whether people met. The push comes later, after the check-in delay. */
+export const MEETUP_CHECKIN_PROMPT_MS = 2 * 60 * 60 * 1000;
+
+/** The Chats tab stops asking about a meetup this long after it ended. The meetup's own screen still takes an answer. */
+export const MEETUP_CHECKIN_PROMPT_WINDOW_MS = 7 * 24 * 60 * 60 * 1000;
+
+export interface MeetupCheckinTiming {
+  endsAt: number;
+  state: "proposed" | "confirmed" | "cancelled" | "done";
+  checkinSentAt: number | null;
+}
+
+/**
+ * Whether people can say if they met. It opens in the app a couple of hours after a confirmed meetup ends,
+ * and never later than the "Did you meet?" push, which marks the meetup done.
+ */
+export function isCheckinOpen(meetup: MeetupCheckinTiming, now: number, offsets: Pick<JobOffsets, "meetupCheckinDelayMs">): boolean {
+  if (meetup.checkinSentAt !== null) return true;
+  if (meetup.state !== "confirmed" && meetup.state !== "done") return false;
+  return now >= meetup.endsAt + Math.min(MEETUP_CHECKIN_PROMPT_MS, offsets.meetupCheckinDelayMs);
+}
+
+/** Whether the Chats tab should ask this person about a meetup: they said yes, haven't answered, and it ended recently. */
+export function isCheckinPromptDue(
+  meetup: MeetupCheckinTiming & { myResponse: "yes" | "no" | "maybe" | null; myDidMeet: boolean | null },
+  now: number,
+  offsets: Pick<JobOffsets, "meetupCheckinDelayMs">,
+): boolean {
+  return meetup.myResponse === "yes" && meetup.myDidMeet === null && isCheckinOpen(meetup, now, offsets) && now - meetup.endsAt <= MEETUP_CHECKIN_PROMPT_WINDOW_MS;
+}
