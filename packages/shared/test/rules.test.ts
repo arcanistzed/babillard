@@ -37,6 +37,7 @@ import {
   FIELD_GROUPS,
   FIELDS,
   leanSummary,
+  groupStanceSpread,
   outcomeSummary,
   meetupDays,
   meetupSlotAt,
@@ -613,6 +614,53 @@ describe("how a city leans", () => {
   it("gives whole percentages, never counts", () => {
     expect(leanSummary({ for: 6, against: 3, unsure: 1 })).toEqual({ for: 60, against: 30, unsure: 10 });
     expect(leanSummary({ for: 2, against: 9 })).toEqual({ for: 18, against: 82, unsure: 0 });
+  });
+});
+
+describe("a group's stance totals", () => {
+  it("hides a side with one person on it", () => {
+    expect(groupStanceSpread(["for", "for", "for", "against", null])).toBeNull();
+    expect(groupStanceSpread(["for", "for", "against", "against", "unsure"])).toBeNull();
+  });
+
+  it("hides totals when everyone who answered agrees", () => {
+    expect(groupStanceSpread(["for", "for", "for", "for"])).toBeNull();
+    expect(groupStanceSpread(["against", "against", null, null])).toBeNull();
+  });
+
+  it("hides totals when nobody answered", () => {
+    expect(groupStanceSpread([null, null, null])).toBeNull();
+  });
+
+  it("shows counts when every side has at least two people", () => {
+    expect(groupStanceSpread(["for", "for", "against", "against", null])).toEqual({ for: 2, against: 2, unsure: 0 });
+    expect(groupStanceSpread(["for", "against", "unsure", "for", "unsure", "against"])).toEqual({ for: 2, against: 2, unsure: 2 });
+  });
+
+  it("never lets a member work out anyone else's answer from the totals and their own", () => {
+    const answers = ["for", "against", "unsure", null] as const;
+    const groups = (size: number): (typeof answers)[number][][] =>
+      size === 0 ? [[]] : groups(size - 1).flatMap((rest) => answers.filter((answer) => rest.length === 0 || answers.indexOf(answer) >= answers.indexOf(rest[0]!)).map((answer) => [answer, ...rest]));
+    let shown = 0;
+    for (let size = 3; size <= 8; size += 1) {
+      for (const group of groups(size)) {
+        const spread = groupStanceSpread(group);
+        if (!spread) continue;
+        shown += 1;
+        const unanswered = group.filter((answer) => answer === null).length;
+        for (const own of new Set(group)) {
+          // What this member knows about everyone else: how many gave each answer, and how many gave none.
+          const others = { ...spread, none: unanswered };
+          others[own ?? "none"] -= 1;
+          const kinds = Object.values(others).filter((count) => count > 0);
+          // Only when everyone else gave the same answer would each of them be known.
+          expect(kinds.length, JSON.stringify(group)).toBeGreaterThan(1);
+          // Nobody else is alone with their answer.
+          for (const stance of ["for", "against", "unsure"] as const) expect(spread[stance] === 0 || spread[stance] >= 2).toBe(true);
+        }
+      }
+    }
+    expect(shown).toBeGreaterThan(0);
   });
 });
 

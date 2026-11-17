@@ -56,6 +56,24 @@ export function leanSummary(counts: Partial<Record<Stance, number>>): Lean | nul
   return { for: Math.round((yes / total) * 100), against: Math.round((no / total) * 100), unsure: Math.round((unsure / total) * 100) };
 }
 
+/**
+ * The stance totals a group is shown, from the answers of the people it formed with, or null to show nothing.
+ *
+ * Shown only when at least two answers differ and every answer given is shared by at least two people. A member
+ * who subtracts their own answer then still sees at least one other person on their side and on another side,
+ * so no one else's answer can be pinned down, and nobody is the only one with an answer.
+ *
+ * The totals are worked out once, when the group forms with everyone arriving together, and never change.
+ * Totals that changed as people joined, left or changed their answer would give that person's answer away.
+ */
+export function groupStanceSpread(stances: (Stance | null)[]): Lean | null {
+  const counts: Lean = { for: 0, against: 0, unsure: 0 };
+  for (const stance of stances) if (stance) counts[stance] += 1;
+  const given = Object.values(counts).filter((count) => count > 0);
+  if (given.length < 2 || given.some((count) => count < 2)) return null;
+  return counts;
+}
+
 export interface OutcomeCounts {
   mindChanged: Partial<Record<MindChanged, number>>;
   endedUp: Partial<Record<EndedUp, number>>;
