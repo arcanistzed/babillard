@@ -99,13 +99,13 @@ export default function Profile() {
         </View>
         <View style={styles.legal}>
           {LEGAL_LINKS.map(([label, page]) => (
-            <Pressable key={page} accessibilityRole="link" hitSlop={8} onPress={() => openLegalPage(page)}>
+            <Pressable key={page} accessibilityRole="link" onPress={() => openLegalPage(page)} style={styles.link}>
               <T variant="small" muted>
                 {label}
               </T>
             </Pressable>
           ))}
-          <Pressable accessibilityRole="link" hitSlop={8} onPress={openSourceCode}>
+          <Pressable accessibilityRole="link" onPress={openSourceCode} style={styles.link}>
             <T variant="small" muted>
               {t("Source code", "Code source")}
             </T>
@@ -133,6 +133,8 @@ const styles = StyleSheet.create({
   identityText: { flex: 1, gap: 1 },
   section: { gap: 8 },
   actions: { gap: 10 },
-  legal: { flexDirection: "row", flexWrap: "wrap", justifyContent: "center", gap: 18, paddingVertical: 6 },
+  // Each link is a full 44dp touch target. Its own height makes the space between wrapped rows.
+  legal: { flexDirection: "row", flexWrap: "wrap", justifyContent: "center", columnGap: 18 },
+  link: { minHeight: 44, justifyContent: "center" },
   version: { textAlign: "center" },
 });

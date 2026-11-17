@@ -22,7 +22,7 @@ function PersonFlyer({ person }: { person: PersonCard }) {
       <Pressable
         accessibilityRole="button"
         accessibilityLabel={t(`Report or block ${person.displayName}`, `Signaler ou bloquer ${person.displayName}`)}
-        hitSlop={8}
+        hitSlop={{ left: 8, right: 8 }}
         style={styles.report}
         onPress={() => router.push({ pathname: "/report", params: { targetUserId: person.id, name: person.displayName } })}
       >
@@ -219,7 +219,8 @@ const styles = StyleSheet.create({
   center: { flex: 1, justifyContent: "center", gap: 12 },
   controls: { paddingHorizontal: 16, paddingVertical: 12 },
   card: { flex: 1, borderWidth: 2, borderRadius: 6, padding: 20, gap: 14, overflow: "hidden" },
-  report: { alignSelf: "flex-end", minHeight: 24 },
+  // A full 44dp target, pulled into the card's padding so the card's layout doesn't move.
+  report: { alignSelf: "flex-end", minHeight: 44, justifyContent: "center", marginVertical: -10 },
   identity: { flexDirection: "row", alignItems: "center", gap: 14 },
   identityText: { flex: 1, gap: 2 },
   name: { fontFamily: fonts.display, fontSize: 32, lineHeight: 36 },
