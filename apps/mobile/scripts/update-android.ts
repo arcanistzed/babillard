@@ -51,6 +51,6 @@ if (import.meta.main) {
   console.log(`Publishing to installs of ${latest.tagName} (runtime ${runtime.slice(0, 12)}).`);
   // Set here, so the local .env with the development server can never end up in an update.
   const env = { ...process.env, EXPO_PUBLIC_API_URL: API_URL };
-  run("npx", ["eas-cli", "update", "--channel", "preview", "--platform", "android", "--message", message, "--non-interactive"], false, env);
+  run("npx", ["eas-cli", "update", "--channel", "preview", "--environment", "preview", "--platform", "android", "--message", message, "--non-interactive"], false, env);
   console.log("Published. Installs switch to it on their next launch after downloading it.");
 }
