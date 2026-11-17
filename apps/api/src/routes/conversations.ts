@@ -7,6 +7,7 @@ import { getDb, schema, type Db } from "../db";
 import { blockedWith, blockedWithAmong, blocksBetween } from "../lib/blocks";
 import { avatarUrl } from "../lib/config";
 import { fail, parseJson } from "../lib/http";
+import { settleUpcomingMeetups } from "../lib/meetupState";
 import { requireAuth, requireOnboarded } from "../middleware";
 import type { AppEnv } from "../types";
 import { meetupSummaries } from "./meetups";
@@ -227,6 +228,8 @@ conversations.post("/:id/leave", async (c) => {
   await stub.kick(user.id);
   const [profile] = await db.select({ name: schema.profiles.displayName }).from(schema.profiles).where(eq(schema.profiles.userId, user.id));
   await stub.postSystem(id, `${profile?.name ?? "Someone"} left the group.`, { fr: `${profile?.name ?? "Quelqu'un"} a quitté le groupe.` });
+  // Their yes stops counting now, so a meetup that needed it goes back to proposed without waiting for the sweep.
+  await settleUpcomingMeetups(c.env, db, id, { waitUntil: (promise) => c.executionCtx.waitUntil(promise) });
   return c.json({ ok: true });
 });
 

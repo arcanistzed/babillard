@@ -1,6 +1,7 @@
 import { and, eq, inArray, isNull, or, sql } from "drizzle-orm";
 import { getDb, schema } from "../db";
 import { blockedEmailTombstone, deletedEmail, releaseUnblockedTombstones } from "./blocks";
+import { settleUpcomingMeetups } from "./meetupState";
 
 /**
  * Removes everything personal about someone. An empty row stays so that other people's conversations keep working.
@@ -54,4 +55,7 @@ export async function deleteAccount(env: Env, id: string): Promise<void> {
   ]);
   // Accounts this person blocked may have been deleted too, and may now be blocked by nobody.
   await releaseUnblockedTombstones(db, theirBlocks.map((row) => row.id));
+  // Their yeses are gone, so meetups that needed them go back to proposed now rather than at the next sweep.
+  // One-on-one chats are closed above and are left alone.
+  for (const conversationId of conversationIds) await settleUpcomingMeetups(env, db, conversationId);
 }

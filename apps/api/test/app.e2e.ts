@@ -999,7 +999,24 @@ describe("meetups", () => {
     expect(await meetupMessages(a, conversationId, meetup.id)).toHaveLength(messages.length);
   });
 
-  it("un-confirms on the next sweep when someone who said yes leaves the group", async () => {
+  it("un-confirms straight away when someone who said yes leaves the group, and tells the others", async () => {
+    const { people, groupId } = await groupOfFour("economic-history");
+    const [p0, p1, p2] = people;
+    const meetup = await p0.post(`/meetups?conversationId=${groupId}`, proposal());
+    await p1.post(`/meetups/${meetup.id}/respond`, { response: "yes" });
+    expect((await p2.post(`/meetups/${meetup.id}/respond`, { response: "yes" })).state).toBe("confirmed");
+    await afterCooldown();
+
+    // No sweep: leaving settles the meetup and tells the chat in the same request.
+    await p2.post(`/conversations/${groupId}/leave`);
+    expect(await p0.get(`/meetups/${meetup.id}`)).toMatchObject({ state: "proposed", yesCount: 2, requiredYes: 3 });
+    const messages = await meetupMessages(p0, groupId, meetup.id);
+    expect(messages.at(-1).body).toBe("The meetup at Blue Door, Main St isn't confirmed anymore: 1 more yes is needed.");
+    const pushes = await waitFor(async () => pushesFor(meetup.id, "Your meetup isn't confirmed anymore"), (rows) => rows.length > 0, "push after leaving");
+    expect(pushes[0]!.userIds.sort()).toEqual([p0.id, p1.id].sort());
+  });
+
+  it("un-confirms when someone who said yes leaves inside the cooldown, and the sweep announces it after", async () => {
     const { people, groupId } = await groupOfFour("medieval-history");
     const [p0, p1, p2] = people;
     const meetup = await p0.post(`/meetups?conversationId=${groupId}`, proposal());
@@ -1007,14 +1024,30 @@ describe("meetups", () => {
     expect((await p2.post(`/meetups/${meetup.id}/respond`, { response: "yes" })).state).toBe("confirmed");
 
     await p2.post(`/conversations/${groupId}/leave`);
-    // The leaver's yes stops counting straight away.
-    expect(await p0.get(`/meetups/${meetup.id}`)).toMatchObject({ yesCount: 2, requiredYes: 3 });
+    // The state changes straight away, but "It's on!" was just announced, so the chat hears about it after the cooldown.
+    expect(await p0.get(`/meetups/${meetup.id}`)).toMatchObject({ state: "proposed", yesCount: 2, requiredYes: 3 });
+    const offMessages = async () => (await meetupMessages(p0, groupId, meetup.id)).filter((message: any) => message.body.includes("isn't confirmed anymore"));
+    expect(await offMessages()).toHaveLength(0);
     await afterCooldown();
     await sweep();
-    await waitFor(() => p0.get(`/meetups/${meetup.id}`), (row: any) => row.state === "proposed", "un-confirmed after leaving");
-    const messages = await meetupMessages(p0, groupId, meetup.id);
-    expect(messages.at(-1).body).toBe("The meetup at Blue Door, Main St isn't confirmed anymore: 1 more yes is needed.");
+    await waitFor(offMessages, (rows) => rows.length === 1, "announcement after the cooldown");
+    expect((await offMessages())[0].body).toBe("The meetup at Blue Door, Main St isn't confirmed anymore: 1 more yes is needed.");
     const pushes = await waitFor(async () => pushesFor(meetup.id, "Your meetup isn't confirmed anymore"), (rows) => rows.length > 0, "push after leaving");
+    expect(pushes[0]!.userIds.sort()).toEqual([p0.id, p1.id].sort());
+  });
+
+  it("un-confirms straight away when someone who said yes deletes their account", async () => {
+    const { people, groupId } = await groupOfFour("comparative-politics");
+    const [p0, p1, p2] = people;
+    const meetup = await p0.post(`/meetups?conversationId=${groupId}`, proposal());
+    await p1.post(`/meetups/${meetup.id}/respond`, { response: "yes" });
+    expect((await p2.post(`/meetups/${meetup.id}/respond`, { response: "yes" })).state).toBe("confirmed");
+    await afterCooldown();
+
+    await p2.delete("/me");
+    expect(await p0.get(`/meetups/${meetup.id}`)).toMatchObject({ state: "proposed", yesCount: 2, requiredYes: 3 });
+    expect((await meetupMessages(p0, groupId, meetup.id)).at(-1).body).toBe("The meetup at Blue Door, Main St isn't confirmed anymore: 1 more yes is needed.");
+    const pushes = await waitFor(async () => pushesFor(meetup.id, "Your meetup isn't confirmed anymore"), (rows) => rows.length > 0, "push after deleting");
     expect(pushes[0]!.userIds.sort()).toEqual([p0.id, p1.id].sort());
   });
 
@@ -1071,7 +1104,7 @@ describe("meetups", () => {
     expect(change[0]!.userIds.sort()).toEqual([p0.id, p2.id].sort());
   });
 
-  it("confirms on the next sweep when the group shrinks to the people who said yes", async () => {
+  it("confirms straight away when the group shrinks to the people who said yes", async () => {
     const { people, groupId } = await groupOf(3, "philosophy-of-mind");
     const [p0, p1, p2] = people as [Client, Client, Client];
     const meetup = await p0.post(`/meetups?conversationId=${groupId}`, proposal());
@@ -1079,11 +1112,9 @@ describe("meetups", () => {
     await p2.post(`/meetups/${meetup.id}/respond`, { response: "no" });
 
     await p2.post(`/conversations/${groupId}/leave`);
-    expect(await p0.get(`/meetups/${meetup.id}`)).toMatchObject({ state: "proposed", yesCount: 2, requiredYes: 2 });
-    await sweep();
-    await waitFor(() => p0.get(`/meetups/${meetup.id}`), (row: any) => row.state === "confirmed", "confirmed by the sweep");
+    expect(await p0.get(`/meetups/${meetup.id}`)).toMatchObject({ state: "confirmed", yesCount: 2, requiredYes: 2 });
     expect((await meetupMessages(p0, groupId, meetup.id)).at(-1).body).toBe("It's on! Meetup confirmed at Blue Door, Main St.");
-    const pushes = await waitFor(async () => pushesFor(meetup.id, "Your meetup is on"), (rows) => rows.length > 0, "sweep confirmation push");
+    const pushes = await waitFor(async () => pushesFor(meetup.id, "Your meetup is on"), (rows) => rows.length > 0, "confirmation push after leaving");
     expect(pushes[0]!.userIds.sort()).toEqual([p0.id, p1.id].sort());
   });
 

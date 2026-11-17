@@ -86,8 +86,8 @@ async function responders(db: Db, meetup: { id: string; conversationId: string }
 const SETTLE_BATCH = 25;
 
 /**
- * Leaving a group or deleting an account changes the yes count without anyone answering, so nothing in a request settles the meetup.
- * This catches those within one sweep, and announces any change that had to wait out the cooldown.
+ * Leaving a group and deleting an account settle meetups straight away. This is the backstop for when that failed,
+ * and announces any change that had to wait out the cooldown.
  * Only meetups that need something are loaded, so ones that are fine never fill the batch.
  */
 async function settleMeetups(env: Env, db: Db, now: number): Promise<number> {

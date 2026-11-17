@@ -160,6 +160,27 @@ export async function settleMeetup(env: Env, db: Db, meetup: MeetupRow, kind: Co
   return current;
 }
 
+/**
+ * Settles a chat's upcoming meetups straight away. Leaving a group or deleting an account changes the yes count without anyone answering.
+ * Announcements still wait out the cooldown, and the sweep stays as the backstop, so a failure here is logged rather than thrown.
+ */
+export async function settleUpcomingMeetups(env: Env, db: Db, conversationId: string, options: { now?: number; waitUntil?: (promise: Promise<unknown>) => void } = {}): Promise<void> {
+  const now = options.now ?? Date.now();
+  try {
+    const upcoming = await db
+      .select({ meetup: schema.meetups, kind: schema.conversations.kind })
+      .from(schema.meetups)
+      .innerJoin(schema.conversations, eq(schema.conversations.id, schema.meetups.conversationId))
+      .where(and(eq(schema.meetups.conversationId, conversationId), inArray(schema.meetups.state, ["proposed", "confirmed"]), gt(schema.meetups.startsAt, now)));
+    for (const { meetup, kind } of upcoming) {
+      const settled = await settleMeetup(env, db, meetup, kind, { now, waitUntil: options.waitUntil });
+      if (settled.state !== meetup.state) await env.CHAT_ROOM.getByName(conversationId).notifyMeetupChanged(meetup.id);
+    }
+  } catch (error) {
+    console.error(JSON.stringify({ event: "meetup_settle_error", conversationId, error: String(error) }));
+  }
+}
+
 function changedText(backout: Backout) {
   return backout.response === "no"
     ? { en: `${backout.name.en} can't make it anymore.`, fr: `${backout.name.fr} ne peut plus venir.` }
