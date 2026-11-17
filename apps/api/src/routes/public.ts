@@ -124,7 +124,7 @@ function outcomesSection(outcomes: TopicOutcomes | null, takeaways: { text: stri
     ${outcomes
       ? html`<ul>
           <li>${fr ? `${outcomes.mindChanged} % ont vu quelqu'un changer d'avis` : `${outcomes.mindChanged}% saw someone change their mind`}</li>
-          <li>${fr ? `${outcomes.agreed} % surtout d'accord, ${outcomes.split} % partagés, ${outcomes.disagreed} % surtout en désaccord` : `${outcomes.agreed}% mostly agreed, ${outcomes.split}% split, ${outcomes.disagreed}% mostly disagreed`}</li>
+          <li>${fr ? `${outcomes.agreed} % surtout d'accord, ${outcomes.split} % avis partagés, ${outcomes.disagreed} % surtout en désaccord` : `${outcomes.agreed}% mostly agreed, ${outcomes.split}% split, ${outcomes.disagreed}% mostly disagreed`}</li>
           <li>${fr ? `${outcomes.meetAgain} % se reverraient pour en parler` : `${outcomes.meetAgain}% would meet again on this`}</li>
         </ul>
         <p class="muted">${fr ? `D'après ${outcomes.answers} réponses.` : `From ${outcomes.answers} answers.`}</p>`
