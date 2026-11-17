@@ -171,6 +171,9 @@ export const meetups = sqliteTable(
     repeat: text("repeat").$type<MeetupRepeat>().notNull().default("none"),
     /** Set once the next date in a repeating series has been proposed, so it's proposed only once. */
     nextMeetupId: text("next_meetup_id"),
+    /** The state the chat was last told about, and when. Null until the meetup is first confirmed. Limits how often answers can set off announcements. */
+    announcedState: text("announced_state", { enum: ["proposed", "confirmed"] }),
+    announcedAt: integer("announced_at"),
     createdAt: integer("created_at").notNull(),
   },
   (t) => [index("meetups_conversation_idx").on(t.conversationId), index("meetups_sweep_idx").on(t.state, t.startsAt), index("meetups_series_idx").on(t.repeat, t.endsAt)],

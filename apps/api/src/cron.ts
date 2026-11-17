@@ -1,10 +1,11 @@
-import { GROUP_MEETUP_CONFIRM_YES, MEETUP_REPEAT_MS, isCheckinDue, isMatchExpired, isNudgeDue, isProposalStale, isReminderDue, pickBilingualOpener, settledMeetupState } from "@babillard/shared";
+import { GROUP_MEETUP_CONFIRM_YES, MEETUP_REPEAT_MS, isCheckinDue, isMatchExpired, isNudgeDue, isProposalStale, isReminderDue, pickBilingualOpener } from "@babillard/shared";
 import { deleteAccount } from "./lib/accounts";
 import { sendEmail } from "./lib/email";
 import { settleMeetup } from "./lib/meetupState";
 import { and, eq, gt, inArray, isNotNull, isNull, lt, lte, sql } from "drizzle-orm";
 import { getDb, schema, type Db } from "./db";
-import { jobOffsets } from "./lib/config";
+import { jobOffsets, meetupAnnounceCooldownMs } from "./lib/config";
+import { venueNames } from "./lib/language";
 import { sendPush } from "./lib/push";
 import { newId, randomToken } from "./lib/tokens";
 
@@ -80,38 +81,37 @@ async function responders(db: Db, meetup: { id: string; conversationId: string }
   return rows.map((row) => row.userId);
 }
 
+// Settling one meetup takes about a dozen database, chat and push calls. Keeping the batch small keeps a sweep well inside
+// the Worker's subrequest limit, even right after a deploy that has a backlog to settle. Anything left waits five minutes.
+const SETTLE_BATCH = 25;
+
 /**
- * Leaving a group or deleting an account removes someone's yes without anyone answering, so nothing in a request settles the meetup.
- * This catches those within one sweep. Only meetups that need to change are touched.
+ * Leaving a group or deleting an account changes the yes count without anyone answering, so nothing in a request settles the meetup.
+ * This catches those within one sweep, and announces any change that had to wait out the cooldown.
+ * Only meetups that need something are loaded, so ones that are fine never fill the batch.
  */
 async function settleMeetups(env: Env, db: Db, now: number): Promise<number> {
   const yes = sql<number>`(select count(*) from meetup_responses as yes_r inner join conversation_members as yes_m on yes_m.user_id = yes_r.user_id and yes_m.conversation_id = "meetups"."conversation_id" where yes_r.meetup_id = "meetups"."id" and yes_r.response = 'yes')`;
   const members = sql<number>`(select count(*) from conversation_members as all_m where all_m.conversation_id = "meetups"."conversation_id")`;
   // requiredYesCount in SQL: two in a direct chat, otherwise three or everyone left if fewer.
   const required = sql<number>`(case when "conversations"."kind" = 'direct' then 2 else min(${GROUP_MEETUP_CONFIRM_YES}, max(${members}, 2)) end)`;
+  // A one-on-one closed by a block or an ended match, or missing a member, has nobody left to tell.
+  const open = sql`("conversations"."kind" = 'group' or (${members} >= 2 and not exists (select 1 from matches as closed_m where closed_m.conversation_id = "meetups"."conversation_id" and closed_m.state != 'active')))`;
+  const wrongState = sql`((${schema.meetups.state} = 'confirmed') = (${yes} < ${required}))`;
+  const unannounced = sql`(coalesce(${schema.meetups.announcedState}, 'proposed') != ${schema.meetups.state} and (${schema.meetups.announcedAt} is null or ${schema.meetups.announcedAt} <= ${now - meetupAnnounceCooldownMs(env)}))`;
   const candidates = await db
-    .select({ meetup: schema.meetups, kind: schema.conversations.kind, yes, members })
+    .select({ meetup: schema.meetups, kind: schema.conversations.kind })
     .from(schema.meetups)
     .innerJoin(schema.conversations, eq(schema.conversations.id, schema.meetups.conversationId))
-    .where(
-      and(
-        inArray(schema.meetups.state, ["proposed", "confirmed"]),
-        gt(schema.meetups.startsAt, now),
-        // Only meetups whose state is wrong, so ones that are fine never fill the batch. settledMeetupState below has the final say.
-        sql`(${schema.meetups.state} = 'confirmed') = (${yes} < ${required})`,
-      ),
-    )
+    .where(and(inArray(schema.meetups.state, ["proposed", "confirmed"]), gt(schema.meetups.startsAt, now), open, sql`(${wrongState} or ${unannounced})`))
     .orderBy(schema.meetups.startsAt)
-    .limit(SWEEP_BATCH);
+    .limit(SETTLE_BATCH);
 
   let handled = 0;
-  for (const { meetup, kind, yes: yesCount, members: memberCount } of candidates) {
-    if (settledMeetupState(meetup, kind, yesCount, memberCount, now) === meetup.state) continue;
+  for (const { meetup, kind } of candidates) {
     const settled = await settleMeetup(env, db, meetup, kind, { now });
-    if (settled.state !== meetup.state) {
-      await env.CHAT_ROOM.getByName(meetup.conversationId).notifyMeetupChanged(meetup.id);
-      handled += 1;
-    }
+    if (settled.state !== meetup.state) await env.CHAT_ROOM.getByName(meetup.conversationId).notifyMeetupChanged(meetup.id);
+    handled += 1;
   }
   return handled;
 }
@@ -172,16 +172,45 @@ async function checkInMeetups(env: Env, db: Db, now: number): Promise<number> {
   return handled;
 }
 
-async function cancelStaleProposals(_env: Env, db: Db, now: number): Promise<number> {
+// Each lapsed meetup that had been on is announced, so this batch is smaller than the others.
+const STALE_BATCH = 50;
+
+/**
+ * Cancels proposals still unconfirmed at their start time. One that had been confirmed and then lost its yeses
+ * may still be in people's plans, so whoever is still at yes or maybe hears that it's off.
+ */
+async function cancelStaleProposals(env: Env, db: Db, now: number): Promise<number> {
   const candidates = await db
     .select()
     .from(schema.meetups)
     .where(and(eq(schema.meetups.state, "proposed"), lte(schema.meetups.startsAt, now)))
-    .limit(SWEEP_BATCH);
+    .limit(STALE_BATCH);
   const stale = candidates.filter((meetup) => isProposalStale(meetup, now));
   if (stale.length === 0) return 0;
-  await db.update(schema.meetups).set({ state: "cancelled" }).where(inArray(schema.meetups.id, stale.map((meetup) => meetup.id)));
-  return stale.length;
+  const cancelled = await db
+    .update(schema.meetups)
+    .set({ state: "cancelled" })
+    .where(and(inArray(schema.meetups.id, stale.map((meetup) => meetup.id)), eq(schema.meetups.state, "proposed")))
+    .returning({ id: schema.meetups.id });
+  const lapsed = new Set(cancelled.map((row) => row.id));
+  // announcedState is set only once a meetup has been confirmed, so a proposal that never was stays quiet.
+  for (const meetup of stale.filter((row) => lapsed.has(row.id) && row.announcedState !== null)) {
+    const where = venueNames(meetup);
+    const body = {
+      en: `The meetup at ${where.en} is off: it didn't have enough yeses when it was due to start.`,
+      fr: `La rencontre est annulée (${where.fr}): il n'y avait pas assez de oui à l'heure prévue.`,
+    };
+    const stub = env.CHAT_ROOM.getByName(meetup.conversationId);
+    await stub.postSystem(meetup.conversationId, body.en, { fr: body.fr, kind: "meetup", meetupId: meetup.id });
+    await stub.notifyMeetupChanged(meetup.id);
+    await sendPush(env, await responders(db, meetup, ["yes", "maybe"]), {
+      title: "Your meetup is off",
+      body: body.en,
+      fr: { title: "Votre rencontre est annulée", body: body.fr },
+      data: { screen: "meetup", id: meetup.id },
+    });
+  }
+  return cancelled.length;
 }
 
 /**

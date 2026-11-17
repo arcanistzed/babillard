@@ -17,15 +17,10 @@ export function yesStillNeeded(kind: ConversationKind, yesCount: number, memberC
   return Math.max(0, requiredYesCount(kind, memberCount) - yesCount);
 }
 
-export type MeetupState = "proposed" | "confirmed" | "cancelled" | "done";
+/** How long after one announcement about a meetup before an answer can set off another, so flipping yes and no can't flood the chat. */
+export const MEETUP_ANNOUNCE_COOLDOWN_MS = 10 * 60 * 1000;
 
-/**
- * Where a meetup's state belongs given its yes count. Enough yeses confirm a proposal.
- * A confirmed meetup that loses them goes back to proposed, but only before it starts: after that it stays as it was so the did-you-meet check-in still happens.
- */
-export function settledMeetupState(meetup: { state: MeetupState; startsAt: number }, kind: ConversationKind, yesCount: number, memberCount: number, now: number): MeetupState {
-  const enough = isMeetupConfirmed(kind, yesCount, memberCount);
-  if (meetup.state === "proposed" && enough) return "confirmed";
-  if (meetup.state === "confirmed" && !enough && now < meetup.startsAt) return "proposed";
-  return meetup.state;
+/** Whether enough time has passed since the last announcement. Never announced counts as long enough. */
+export function isAnnouncementDue(lastAnnouncedAt: number | null, now: number, cooldownMs: number): boolean {
+  return lastAnnouncedAt === null || now - lastAnnouncedAt >= cooldownMs;
 }

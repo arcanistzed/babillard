@@ -85,6 +85,13 @@
       "when": 1794854882841,
       "tag": "0011_steep_wildside",
       "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "6",
+      "when": 1794867918991,
+      "tag": "0012_third_living_mummy",
+      "breakpoints": true
     }
   ]
 }

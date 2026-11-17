@@ -118,6 +118,8 @@ meetups.post("/", async (c) => {
     guestsWelcome: conversation.kind === "group" && input.guestsWelcome,
     repeat: input.repeat,
     nextMeetupId: null,
+    announcedState: null,
+    announcedAt: null,
     createdAt: now,
   };
   await db.batch([
@@ -157,15 +159,26 @@ meetups.post("/:id/respond", async (c) => {
   if (meetup.state === "cancelled" || meetup.state === "done") throw fail(409, "meetup_closed");
 
   const now = Date.now();
-  // Changing away from yes claims the row, so a retried or double-tapped "can't make it" is announced once.
+  const [previous] = await db
+    .select({ response: schema.meetupResponses.response, respondedAt: schema.meetupResponses.respondedAt })
+    .from(schema.meetupResponses)
+    .where(and(eq(schema.meetupResponses.meetupId, meetup.id), eq(schema.meetupResponses.userId, user.id)));
+  // Changing away from yes claims that yes, so a retried or double-tapped "can't make it" is announced once.
   const backedOut =
-    response === "yes"
-      ? []
-      : await db
+    response !== "yes" && previous?.response === "yes"
+      ? await db
           .update(schema.meetupResponses)
           .set({ response, respondedAt: now })
-          .where(and(eq(schema.meetupResponses.meetupId, meetup.id), eq(schema.meetupResponses.userId, user.id), eq(schema.meetupResponses.response, "yes")))
-          .returning({ userId: schema.meetupResponses.userId });
+          .where(
+            and(
+              eq(schema.meetupResponses.meetupId, meetup.id),
+              eq(schema.meetupResponses.userId, user.id),
+              eq(schema.meetupResponses.response, "yes"),
+              eq(schema.meetupResponses.respondedAt, previous.respondedAt),
+            ),
+          )
+          .returning({ userId: schema.meetupResponses.userId })
+      : [];
   if (backedOut.length === 0) {
     await db
       .insert(schema.meetupResponses)
@@ -174,9 +187,9 @@ meetups.post("/:id/respond", async (c) => {
   }
 
   let backout: Backout | undefined;
-  if (backedOut.length > 0 && response !== "yes") {
+  if (backedOut.length > 0 && response !== "yes" && previous) {
     const [profile] = await db.select({ name: schema.profiles.displayName }).from(schema.profiles).where(eq(schema.profiles.userId, user.id));
-    backout = { userId: user.id, name: { en: profile?.name ?? "Someone", fr: profile?.name ?? "Quelqu'un" }, response };
+    backout = { userId: user.id, name: { en: profile?.name ?? "Someone", fr: profile?.name ?? "Quelqu'un" }, response, yesAt: previous.respondedAt };
   }
   await settleMeetup(c.env, db, meetup, conversation.kind, { now, backout, waitUntil: (promise) => c.executionCtx.waitUntil(promise) });
   const stub = c.env.CHAT_ROOM.getByName(meetup.conversationId);

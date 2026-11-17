@@ -20,7 +20,7 @@ import {
   rankPeople,
   rankTopics,
   requiredYesCount,
-  settledMeetupState,
+  isAnnouncementDue,
   yesStillNeeded,
   scorePerson,
   suggestMeetupSlots,
@@ -242,21 +242,10 @@ describe("meetups", () => {
     expect(yesStillNeeded("group", 4, 5)).toBe(0);
   });
 
-  it("confirms with enough yeses and goes back to proposed when they drop before the start", () => {
-    const now = 1_000_000;
-    const upcoming = { startsAt: now + 1000 };
-    expect(settledMeetupState({ ...upcoming, state: "proposed" }, "group", 3, 5, now)).toBe("confirmed");
-    expect(settledMeetupState({ ...upcoming, state: "proposed" }, "group", 2, 5, now)).toBe("proposed");
-    expect(settledMeetupState({ ...upcoming, state: "confirmed" }, "group", 2, 5, now)).toBe("proposed");
-    expect(settledMeetupState({ ...upcoming, state: "confirmed" }, "direct", 1, 2, now)).toBe("proposed");
-    expect(settledMeetupState({ ...upcoming, state: "confirmed" }, "group", 3, 5, now)).toBe("confirmed");
-  });
-
-  it("leaves a meetup alone once it has started or closed", () => {
-    const now = 1_000_000;
-    expect(settledMeetupState({ startsAt: now, state: "confirmed" }, "group", 1, 5, now)).toBe("confirmed");
-    expect(settledMeetupState({ startsAt: now + 1000, state: "cancelled" }, "group", 5, 5, now)).toBe("cancelled");
-    expect(settledMeetupState({ startsAt: now - 1000, state: "done" }, "group", 0, 5, now)).toBe("done");
+  it("allows another announcement only after the cooldown", () => {
+    expect(isAnnouncementDue(null, 1000, 600)).toBe(true);
+    expect(isAnnouncementDue(1000, 1599, 600)).toBe(false);
+    expect(isAnnouncementDue(1000, 1600, 600)).toBe(true);
   });
 });
 

@@ -1,6 +1,7 @@
-import { requiredYesCount, yesStillNeeded, type ConversationKind } from "@babillard/shared";
+import { isAnnouncementDue, requiredYesCount, yesStillNeeded, type ConversationKind } from "@babillard/shared";
 import { and, eq, gt, inArray, sql } from "drizzle-orm";
 import { schema, type Db } from "../db";
+import { meetupAnnounceCooldownMs } from "./config";
 import { venueNames } from "./language";
 import { sendPush } from "./push";
 
@@ -39,87 +40,111 @@ export interface Backout {
   userId: string;
   name: { en: string; fr: string };
   response: "no" | "maybe";
+  /** When they had said yes. */
+  yesAt: number;
+}
+
+/** A one-on-one chat that a block or an ended match closed, or that lost a member. Nobody there can meet anymore, so its meetups are left alone. */
+async function isClosedDirectChat(db: Db, conversationId: string, memberCount: number): Promise<boolean> {
+  if (memberCount < 2) return true;
+  const [match] = await db.select({ state: schema.matches.state }).from(schema.matches).where(eq(schema.matches.conversationId, conversationId));
+  return match !== undefined && match.state !== "active";
 }
 
 /**
  * Moves a meetup between proposed and confirmed to match its yes count, and tells the chat.
  * Each update re-counts inside its WHERE, so whichever of two simultaneous calls runs last sees every answer, and only one of them can win a transition.
  * A confirmed meetup only goes back to proposed before it starts.
+ *
+ * The state always changes straight away, but the chat hears about it at most once per cooldown. A change that has to wait
+ * is announced by the next sweep after the cooldown, so someone flipping between yes and no can't flood the chat with messages and pushes.
  */
 export async function settleMeetup(env: Env, db: Db, meetup: MeetupRow, kind: ConversationKind, options: { now?: number; backout?: Backout; waitUntil?: (promise: Promise<unknown>) => void } = {}): Promise<MeetupRow> {
   const now = options.now ?? Date.now();
-  const defer = options.waitUntil ?? (() => undefined);
+  const cooldown = meetupAnnounceCooldownMs(env);
   const everyone = await memberIds(db, meetup.conversationId);
+  if (kind === "direct" && (await isClosedDirectChat(db, meetup.conversationId, everyone.length))) return meetup;
+
   const required = requiredYesCount(kind, everyone.length);
   const yes = memberYesCount(meetup.id, meetup.conversationId);
-  const stub = env.CHAT_ROOM.getByName(meetup.conversationId);
-  const where = venueNames(meetup);
-  const pushes: Promise<unknown>[] = [];
-
-  const confirmed = await db
+  await db
     .update(schema.meetups)
     .set({ state: "confirmed" })
-    .where(and(eq(schema.meetups.id, meetup.id), eq(schema.meetups.state, "proposed"), sql`${yes} >= ${required}`))
-    .returning({ id: schema.meetups.id });
+    .where(and(eq(schema.meetups.id, meetup.id), eq(schema.meetups.state, "proposed"), sql`${yes} >= ${required}`));
   const unconfirmed = await db
     .update(schema.meetups)
     .set({ state: "proposed" })
     .where(and(eq(schema.meetups.id, meetup.id), eq(schema.meetups.state, "confirmed"), gt(schema.meetups.startsAt, now), sql`${yes} < ${required}`))
     .returning({ id: schema.meetups.id });
+  if (unconfirmed.length > 0) console.log(JSON.stringify({ event: "meetup_unconfirmed", meetupId: meetup.id, conversationKind: kind, backout: Boolean(options.backout) }));
 
   const [fresh] = await db.select({ meetup: schema.meetups, yes }).from(schema.meetups).where(eq(schema.meetups.id, meetup.id));
   const current = fresh?.meetup ?? meetup;
-  const stillNeeded = yesStillNeeded(kind, fresh?.yes ?? 0, everyone.length);
+  const state = current.state;
+  if (state !== "proposed" && state !== "confirmed") return current;
 
-  if (confirmed.length > 0) {
-    await stub.postSystem(meetup.conversationId, `It's on! Meetup confirmed at ${where.en}.`, { fr: `C'est confirmé! Rencontre: ${where.fr}.`, kind: "meetup", meetupId: meetup.id });
-    console.log(JSON.stringify({ event: "meetup_confirmed", meetupId: meetup.id, conversationKind: kind }));
-    pushes.push(sendPush(env, everyone, { title: "Your meetup is on", body: where.en, fr: { title: "Votre rencontre est confirmée", body: where.fr }, data: { screen: "meetup", id: meetup.id } }));
-  }
-  if (unconfirmed.length > 0) console.log(JSON.stringify({ event: "meetup_unconfirmed", meetupId: meetup.id, conversationKind: kind, backout: Boolean(options.backout) }));
-
+  // What the chat believes. Before the first confirmation it has only heard the proposal.
+  const told = current.announcedState ?? "proposed";
+  const where = venueNames(meetup);
+  const stub = env.CHAT_ROOM.getByName(meetup.conversationId);
+  const pushes: Promise<unknown>[] = [];
   const { backout } = options;
-  const wasOn = meetup.state === "confirmed" || unconfirmed.length > 0;
-  if (backout && wasOn && confirmed.length === 0) {
-    const on = current.state === "confirmed";
-    const more = moreYeses(stillNeeded);
-    const changed =
-      backout.response === "no"
-        ? { en: `${backout.name.en} can't make it anymore.`, fr: `${backout.name.fr} ne peut plus venir.` }
-        : { en: `${backout.name.en} changed their answer to maybe.`, fr: `${backout.name.fr} a changé sa réponse pour peut-être.` };
-    // Once it has started a meetup stays confirmed, so "still on" could be false. Just say who changed.
+
+  if (state !== told && current.startsAt > now) {
+    // Claims the announcement, so two requests or a request and the sweep can't both send it, and nothing is sent inside the cooldown.
+    const claimed = await db
+      .update(schema.meetups)
+      .set({ announcedState: state, announcedAt: now })
+      .where(
+        and(
+          eq(schema.meetups.id, meetup.id),
+          eq(schema.meetups.state, state),
+          sql`coalesce(${schema.meetups.announcedState}, 'proposed') = ${told}`,
+          sql`(${schema.meetups.announcedAt} is null or ${schema.meetups.announcedAt} <= ${now - cooldown})`,
+        ),
+      )
+      .returning({ id: schema.meetups.id });
+    if (claimed.length > 0 && state === "confirmed") {
+      await stub.postSystem(meetup.conversationId, `It's on! Meetup confirmed at ${where.en}.`, { fr: `C'est confirmé! Rencontre: ${where.fr}.`, kind: "meetup", meetupId: meetup.id });
+      console.log(JSON.stringify({ event: "meetup_confirmed", meetupId: meetup.id, conversationKind: kind }));
+      // Someone who said they can't come doesn't need to hear it's on.
+      const declined = new Set(await answered(db, meetup.id, "no"));
+      pushes.push(
+        sendPush(env, everyone.filter((id) => !declined.has(id)), { title: "Your meetup is on", body: where.en, fr: { title: "Votre rencontre est confirmée", body: where.fr }, data: { screen: "meetup", id: meetup.id } }),
+      );
+    } else if (claimed.length > 0) {
+      const more = moreYeses(yesStillNeeded(kind, fresh?.yes ?? 0, everyone.length));
+      const off = { en: `The meetup at ${where.en} isn't confirmed anymore: ${more.en}.`, fr: `La rencontre n'est plus confirmée (${where.fr}): ${more.fr}.` };
+      const body = backout ? { en: `${changedText(backout).en} ${off.en}`, fr: `${changedText(backout).fr} ${off.fr}` } : off;
+      await stub.postSystem(meetup.conversationId, body.en, { fr: body.fr, kind: "meetup", meetupId: meetup.id });
+      const recipients = (await attendees(db, meetup.id, meetup.conversationId)).filter((id) => id !== backout?.userId);
+      pushes.push(sendPush(env, recipients, { title: "Your meetup isn't confirmed anymore", body: body.en, fr: { title: "Votre rencontre n'est plus confirmée", body: body.fr }, data: { screen: "meetup", id: meetup.id } }));
+    }
+  } else if (backout && state === "confirmed" && isAnnouncementDue(backout.yesAt, now, cooldown)) {
+    // Still on, or already started. A yes taken back within the cooldown was never announced, so taking it back isn't either.
     const started = current.startsAt <= now;
-    const status = started
-      ? null
-      : on
-        ? { en: `The meetup at ${where.en} is still on.`, fr: `La rencontre est toujours confirmée: ${where.fr}.` }
-        : { en: `The meetup at ${where.en} isn't confirmed anymore: ${more.en}.`, fr: `La rencontre n'est plus confirmée (${where.fr}): ${more.fr}.` };
-    const body = status ? { en: `${changed.en} ${status.en}`, fr: `${changed.fr} ${status.fr}` } : changed;
+    const changed = changedText(backout);
+    const body = started ? changed : { en: `${changed.en} The meetup at ${where.en} is still on.`, fr: `${changed.fr} La rencontre est toujours confirmée: ${where.fr}.` };
     await stub.postSystem(meetup.conversationId, body.en, { fr: body.fr, kind: "meetup", meetupId: meetup.id });
-    const told = (await attendees(db, meetup.id, meetup.conversationId)).filter((id) => id !== backout.userId);
-    pushes.push(
-      sendPush(env, told, {
-        title: on || started ? "A change to your meetup" : "Your meetup isn't confirmed anymore",
-        body: body.en,
-        fr: { title: on || started ? "Changement pour votre rencontre" : "Votre rencontre n'est plus confirmée", body: body.fr },
-        data: { screen: "meetup", id: meetup.id },
-      }),
-    );
-  } else if (unconfirmed.length > 0) {
-    // Nobody changed their answer: someone left, or the group grew and now needs more yeses.
-    const more = moreYeses(stillNeeded);
-    const body = { en: `The meetup at ${where.en} isn't confirmed anymore: ${more.en}.`, fr: `La rencontre n'est plus confirmée (${where.fr}): ${more.fr}.` };
-    await stub.postSystem(meetup.conversationId, body.en, { fr: body.fr, kind: "meetup", meetupId: meetup.id });
-    pushes.push(
-      sendPush(env, await attendees(db, meetup.id, meetup.conversationId), {
-        title: "Your meetup isn't confirmed anymore",
-        body: body.en,
-        fr: { title: "Votre rencontre n'est plus confirmée", body: body.fr },
-        data: { screen: "meetup", id: meetup.id },
-      }),
-    );
+    const recipients = (await attendees(db, meetup.id, meetup.conversationId)).filter((id) => id !== backout.userId);
+    pushes.push(sendPush(env, recipients, { title: "A change to your meetup", body: body.en, fr: { title: "Changement pour votre rencontre", body: body.fr }, data: { screen: "meetup", id: meetup.id } }));
   }
-  for (const push of pushes) defer(push);
-  if (!options.waitUntil) await Promise.all(pushes);
+
+  if (options.waitUntil) for (const push of pushes) options.waitUntil(push);
+  else await Promise.all(pushes);
   return current;
+}
+
+function changedText(backout: Backout) {
+  return backout.response === "no"
+    ? { en: `${backout.name.en} can't make it anymore.`, fr: `${backout.name.fr} ne peut plus venir.` }
+    : { en: `${backout.name.en} changed their answer to maybe.`, fr: `${backout.name.fr} a changé sa réponse pour peut-être.` };
+}
+
+async function answered(db: Db, meetupId: string, response: "yes" | "no" | "maybe"): Promise<string[]> {
+  const rows = await db
+    .select({ userId: schema.meetupResponses.userId })
+    .from(schema.meetupResponses)
+    .where(and(eq(schema.meetupResponses.meetupId, meetupId), eq(schema.meetupResponses.response, response)));
+  return rows.map((row) => row.userId);
 }

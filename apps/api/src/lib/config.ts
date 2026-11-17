@@ -1,4 +1,4 @@
-import { DEFAULT_JOB_OFFSETS, type JobOffsets } from "@babillard/shared";
+import { DEFAULT_JOB_OFFSETS, MEETUP_ANNOUNCE_COOLDOWN_MS, type JobOffsets } from "@babillard/shared";
 
 function override(value: string | undefined, fallback: number): number {
   const parsed = Number(value);
@@ -12,6 +12,10 @@ export function jobOffsets(env: Env): JobOffsets {
     meetupReminderLeadMs: override(env.MEETUP_REMINDER_LEAD_MS, DEFAULT_JOB_OFFSETS.meetupReminderLeadMs),
     meetupCheckinDelayMs: override(env.MEETUP_CHECKIN_DELAY_MS, DEFAULT_JOB_OFFSETS.meetupCheckinDelayMs),
   };
+}
+
+export function meetupAnnounceCooldownMs(env: Env): number {
+  return override(env.MEETUP_ANNOUNCE_COOLDOWN_MS, MEETUP_ANNOUNCE_COOLDOWN_MS);
 }
 
 export function isDevMode(env: Env): boolean {

@@ -906,14 +906,22 @@ describe("meetups", () => {
     expect((await people[3]!.post(`/meetups/${meetup.id}/respond`, { response: "yes" })).state).toBe("confirmed");
   });
 
-  async function groupOfFour(topicId: string): Promise<{ people: [Client, Client, Client, Client]; groupId: string }> {
-    const people = await Promise.all(Array.from({ length: 4 }, () => person("london")));
+  async function groupOf(size: number, topicId: string): Promise<{ people: Client[]; groupId: string }> {
+    const people = await Promise.all(Array.from({ length: size }, () => person("london")));
     let groupId: string | null = null;
     for (const client of people) groupId = (await client.post(`/deck/topics/${topicId}/swipe`, { direction: "right" })).groupConversationId ?? groupId;
-    expect((await people[0]!.get(`/conversations/${groupId}`)).members).toHaveLength(4);
-    const [p0, p1, p2, p3] = people as Client[];
-    return { people: [p0!, p1!, p2!, p3!], groupId: groupId! };
+    expect((await people[0]!.get(`/conversations/${groupId}`)).members).toHaveLength(size);
+    return { people, groupId: groupId! };
   }
+
+  async function groupOfFour(topicId: string): Promise<{ people: [Client, Client, Client, Client]; groupId: string }> {
+    const { people, groupId } = await groupOf(4, topicId);
+    const [p0, p1, p2, p3] = people;
+    return { people: [p0!, p1!, p2!, p3!], groupId };
+  }
+
+  // The e2e server waits four seconds between announcements about one meetup instead of ten minutes.
+  const afterCooldown = () => sleep(4100);
 
   const meetupMessages = async (client: Client, conversationId: string, meetupId: string) =>
     (await client.get(`/conversations/${conversationId}/messages`)).filter((message: any) => message.kind === "meetup" && message.meetupId === meetupId);
@@ -927,6 +935,7 @@ describe("meetups", () => {
     await p1.post(`/meetups/${meetup.id}/respond`, { response: "yes" });
     expect((await p2.post(`/meetups/${meetup.id}/respond`, { response: "yes" })).state).toBe("confirmed");
     await p3.post(`/meetups/${meetup.id}/respond`, { response: "yes" });
+    await afterCooldown();
 
     // One of four backs out: still on, and everyone else hears about it.
     const stillOn = await p3.post(`/meetups/${meetup.id}/respond`, { response: "no" });
@@ -959,6 +968,7 @@ describe("meetups", () => {
     expect(await meetupMessages(p0, groupId, meetup.id)).toHaveLength(before);
 
     // Yeses come back and it confirms again.
+    await afterCooldown();
     await p1.post(`/meetups/${meetup.id}/respond`, { response: "yes" });
     expect((await p2.post(`/meetups/${meetup.id}/respond`, { response: "yes" })).state).toBe("confirmed");
     messages = await meetupMessages(p0, groupId, meetup.id);
@@ -973,6 +983,7 @@ describe("meetups", () => {
     const conversationId = await match(a, b, "ancient-philosophy");
     const meetup = await a.post(`/meetups?conversationId=${conversationId}`, proposal());
     expect((await b.post(`/meetups/${meetup.id}/respond`, { response: "yes" })).state).toBe("confirmed");
+    await afterCooldown();
     expect((await b.post(`/meetups/${meetup.id}/respond`, { response: "no" })).state).toBe("proposed");
 
     const seen = await a.get(`/meetups/${meetup.id}`);
@@ -998,12 +1009,100 @@ describe("meetups", () => {
     await p2.post(`/conversations/${groupId}/leave`);
     // The leaver's yes stops counting straight away.
     expect(await p0.get(`/meetups/${meetup.id}`)).toMatchObject({ yesCount: 2, requiredYes: 3 });
+    await afterCooldown();
     await sweep();
     await waitFor(() => p0.get(`/meetups/${meetup.id}`), (row: any) => row.state === "proposed", "un-confirmed after leaving");
     const messages = await meetupMessages(p0, groupId, meetup.id);
     expect(messages.at(-1).body).toBe("The meetup at Blue Door, Main St isn't confirmed anymore: 1 more yes is needed.");
     const pushes = await waitFor(async () => pushesFor(meetup.id, "Your meetup isn't confirmed anymore"), (rows) => rows.length > 0, "push after leaving");
     expect(pushes[0]!.userIds.sort()).toEqual([p0.id, p1.id].sort());
+  });
+
+  it("announces a meetup once while someone flips between yes and no, then catches up after the cooldown", async () => {
+    const a = await person("new-york");
+    const b = await person("new-york");
+    const conversationId = await match(a, b, "philosophy-of-science");
+    const meetup = await a.post(`/meetups?conversationId=${conversationId}`, proposal());
+    await b.post(`/meetups/${meetup.id}/respond`, { response: "yes" });
+    await afterCooldown();
+
+    for (const response of ["no", "yes", "no", "yes"] as const) await b.post(`/meetups/${meetup.id}/respond`, { response });
+    // The state follows every answer, but the chat and phones heard only the first change.
+    expect((await a.get(`/meetups/${meetup.id}`)).state).toBe("confirmed");
+    const onMessages = async () => (await meetupMessages(a, conversationId, meetup.id)).filter((message: any) => message.body.startsWith("It's on!"));
+    const offMessages = async () => (await meetupMessages(a, conversationId, meetup.id)).filter((message: any) => message.body.includes("isn't confirmed anymore"));
+    expect(await onMessages()).toHaveLength(1);
+    expect(await offMessages()).toHaveLength(1);
+    expect(pushesFor(meetup.id, "Your meetup is on")).toHaveLength(1);
+
+    // Once the cooldown passes, the sweep tells everyone it's back on.
+    await afterCooldown();
+    await sweep();
+    await waitFor(onMessages, (rows) => rows.length === 2, "catch-up announcement");
+    await waitFor(async () => pushesFor(meetup.id, "Your meetup is on"), (rows) => rows.length === 2, "catch-up push");
+    expect(await offMessages()).toHaveLength(1);
+  });
+
+  it("doesn't tell someone who said no that the meetup is on", async () => {
+    const { people, groupId } = await groupOfFour("ethics-and-moral-philosophy");
+    const [p0, p1, p2, p3] = people;
+    const meetup = await p0.post(`/meetups?conversationId=${groupId}`, proposal());
+    await p1.post(`/meetups/${meetup.id}/respond`, { response: "no" });
+    await p2.post(`/meetups/${meetup.id}/respond`, { response: "yes" });
+    expect((await p3.post(`/meetups/${meetup.id}/respond`, { response: "yes" })).state).toBe("confirmed");
+    const pushes = await waitFor(async () => pushesFor(meetup.id, "Your meetup is on"), (rows) => rows.length > 0, "confirmation push");
+    expect(pushes[0]!.userIds.sort()).toEqual([p0.id, p2.id, p3.id].sort());
+  });
+
+  it("confirms on the next sweep when the group shrinks to the people who said yes", async () => {
+    const { people, groupId } = await groupOf(3, "philosophy-of-mind");
+    const [p0, p1, p2] = people as [Client, Client, Client];
+    const meetup = await p0.post(`/meetups?conversationId=${groupId}`, proposal());
+    expect((await p1.post(`/meetups/${meetup.id}/respond`, { response: "yes" })).state).toBe("proposed");
+    await p2.post(`/meetups/${meetup.id}/respond`, { response: "no" });
+
+    await p2.post(`/conversations/${groupId}/leave`);
+    expect(await p0.get(`/meetups/${meetup.id}`)).toMatchObject({ state: "proposed", yesCount: 2, requiredYes: 2 });
+    await sweep();
+    await waitFor(() => p0.get(`/meetups/${meetup.id}`), (row: any) => row.state === "confirmed", "confirmed by the sweep");
+    expect((await meetupMessages(p0, groupId, meetup.id)).at(-1).body).toBe("It's on! Meetup confirmed at Blue Door, Main St.");
+    const pushes = await waitFor(async () => pushesFor(meetup.id, "Your meetup is on"), (rows) => rows.length > 0, "sweep confirmation push");
+    expect(pushes[0]!.userIds.sort()).toEqual([p0.id, p1.id].sort());
+  });
+
+  it("leaves a meetup alone once a block closes the one-on-one chat", async () => {
+    const a = await person("new-york");
+    const b = await person("new-york");
+    const conversationId = await match(a, b, "political-philosophy");
+    const meetup = await a.post(`/meetups?conversationId=${conversationId}`, proposal());
+    expect((await b.post(`/meetups/${meetup.id}/respond`, { response: "yes" })).state).toBe("confirmed");
+    await afterCooldown();
+
+    await a.post(`/safety/blocks/${b.id}`);
+    await sweep();
+    await sweep();
+    expect((await b.get(`/meetups/${meetup.id}`)).state).toBe("confirmed");
+    expect(pushesFor(meetup.id, "Your meetup isn't confirmed anymore")).toHaveLength(0);
+  });
+
+  it("tells the people still going when a meetup that had been on lapses at its start time", async () => {
+    const a = await person("new-york");
+    const b = await person("new-york");
+    const conversationId = await match(a, b, "non-western-philosophy");
+    const now = Date.now();
+    const meetup = await a.post(`/meetups?conversationId=${conversationId}`, proposal({ startsAt: now + 12_000, endsAt: now + 13_000 }));
+    expect((await b.post(`/meetups/${meetup.id}/respond`, { response: "yes" })).state).toBe("confirmed");
+    await afterCooldown();
+    expect((await b.post(`/meetups/${meetup.id}/respond`, { response: "maybe" })).state).toBe("proposed");
+
+    await sleep(Math.max(0, meetup.startsAt - Date.now()) + 200);
+    await sweep();
+    await waitFor(() => a.get(`/meetups/${meetup.id}`), (row: any) => row.state === "cancelled", "lapsed meetup");
+    const last = (await meetupMessages(a, conversationId, meetup.id)).at(-1);
+    expect(last.body).toBe("The meetup at Blue Door, Main St is off: it didn't have enough yeses when it was due to start.");
+    expect(last.bodyFr).toBe("La rencontre est annulée (Blue Door, Main St): il n'y avait pas assez de oui à l'heure prévue.");
+    const pushes = await waitFor(async () => pushesFor(meetup.id, "Your meetup is off"), (rows) => rows.length > 0, "lapse push");
+    expect(pushes[0]!.userIds.sort()).toEqual([a.id, b.id].sort());
   });
 
   it("keeps non-members out and rejects bad proposals", async () => {
@@ -1145,6 +1244,8 @@ describe("meetups", () => {
     await sleep(400);
     await sweep();
     await waitFor(() => a.get(`/meetups/${meetup.id}`), (row: any) => row.state === "cancelled", "stale proposal");
+    // It was never on, so there's nothing to call off.
+    expect(pushesFor(meetup.id, "Your meetup is off")).toHaveLength(0);
   });
 });
 
