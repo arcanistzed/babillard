@@ -40,6 +40,9 @@ function toEntry(row: LogRow): MlsLogEntry {
 
 export type SubmitResult = { ok: true; entry: MlsLogEntry; duplicate: boolean } | { ok: false; error: string; epoch: number };
 
+export const CLAIMS_PER_WINDOW = 3;
+export const CLAIM_WINDOW_MS = 10 * 60 * 1000;
+
 export class MlsLog {
   constructor(private readonly storage: DurableObjectStorage) {
     storage.sql.exec(`
@@ -58,7 +61,28 @@ export class MlsLog {
       CREATE TABLE IF NOT EXISTS mls_welcomes (device_id TEXT PRIMARY KEY, seq INTEGER NOT NULL, welcome BLOB NOT NULL);
       CREATE TABLE IF NOT EXISTS mls_group_info (id INTEGER PRIMARY KEY CHECK (id = 1), epoch INTEGER NOT NULL, group_info BLOB NOT NULL);
       CREATE TABLE IF NOT EXISTS mls_admitted (device_id TEXT PRIMARY KEY, user_id TEXT NOT NULL, signature_key TEXT NOT NULL);
+      CREATE TABLE IF NOT EXISTS mls_claims (device_id TEXT NOT NULL, claimed_at INTEGER NOT NULL);
+      CREATE INDEX IF NOT EXISTS mls_claims_device_idx ON mls_claims (device_id, claimed_at);
     `);
+  }
+
+  /**
+   * Which of these phones may have a fresh single-use key package claimed for this chat now, and
+   * records those claims. Each phone gets `CLAIMS_PER_WINDOW` in any `CLAIM_WINDOW_MS`, which covers
+   * a lost race or two. Past that, a claim gets the phone's reusable last-resort package or nothing,
+   * so a member who keeps claiming without adding anyone can't use up a newcomer's packages.
+   */
+  allowClaims(deviceIds: string[], now: number): string[] {
+    const sql = this.storage.sql;
+    sql.exec("DELETE FROM mls_claims WHERE claimed_at <= ?", now - CLAIM_WINDOW_MS);
+    const allowed: string[] = [];
+    for (const deviceId of new Set(deviceIds)) {
+      const [row] = sql.exec<{ n: number }>("SELECT count(*) AS n FROM mls_claims WHERE device_id = ?", deviceId).toArray();
+      if ((row?.n ?? 0) >= CLAIMS_PER_WINDOW) continue;
+      sql.exec("INSERT INTO mls_claims (device_id, claimed_at) VALUES (?, ?)", deviceId, now);
+      allowed.push(deviceId);
+    }
+    return allowed;
   }
 
   get epoch(): number {

@@ -4,7 +4,7 @@
 // ts-mls clients in Node: the wire format is standard MLS, so the server can't
 // tell them from the app's OpenMLS module.
 import { fromBase64, toBase64, type MlsGroupState, type MlsLogEntry } from "@babillard/shared";
-import { addDevices, clientConfig, createDevice, encodeKeyPackage, encryptText, joinExternally, joinFromWelcome, receive, removeUser, startGroup, type MlsDevice } from "@babillard/shared/mls";
+import { addDevices, anotherKeyPackage, clientConfig, createDevice, encodeKeyPackage, encryptText, joinExternally, joinFromWelcome, receive, removeUser, startGroup, type MlsDevice } from "@babillard/shared/mls";
 import { mlsCiphersuite } from "@babillard/shared/mls";
 import { randomBytes } from "node:crypto";
 import type { ClientState } from "ts-mls";
@@ -218,6 +218,30 @@ describe("MLS delivery service", () => {
     expect((await inboxRow(blocker)).unreadCount).toBe(0);
     // The entry still reaches the blocker's phone, which needs it to stay in step. The app hides it there.
     expect(await catchUp(blocker, id)).toEqual(["hello all"]);
+  });
+
+  it("lets one chat take only a few of a phone's key packages before it's added", async () => {
+    const { a, b, conversationId } = await directChat("space-exploration");
+    const [alice, bob] = await Promise.all([phone(a), phone(b)]);
+    const bobDevice = bob.client.device.publicKey;
+    const more = await Promise.all(Array.from({ length: 4 }, () => anotherKeyPackage(bob.device, cs)));
+    await b.post("/mls/key-packages", { deviceId: bobDevice, keyPackages: more.map((device) => toBase64(encodeKeyPackage(device))) });
+    const available = async () => ((await b.get(`/mls/key-packages/${bobDevice}`)) as { available: number }).available;
+    expect(await available()).toBe(5);
+    await startOnServer(alice, conversationId);
+
+    // Alice keeps claiming Bob's packages without adding him. The first few cover lost races.
+    const claimBob = () => a.post(`/mls/conversations/${conversationId}/key-packages`, { deviceIds: [bobDevice] }) as Promise<{ keyPackages: { keyPackage: string }[]; missing: string[] }>;
+    const fresh = [await claimBob(), await claimBob(), await claimBob()];
+    expect(new Set(fresh.map((claimed) => claimed.keyPackages[0]!.keyPackage)).size).toBe(3);
+    expect(await claimBob()).toEqual({ keyPackages: [], missing: [bobDevice] });
+    expect(await available()).toBe(2);
+
+    // With a last-resort package uploaded, later claims get that one, which isn't used up.
+    const lastResort = toBase64(encodeKeyPackage(await anotherKeyPackage(bob.device, cs)));
+    await b.post("/mls/key-packages", { deviceId: bobDevice, keyPackages: [], lastResort });
+    expect((await claimBob()).keyPackages.map((claimed) => claimed.keyPackage)).toEqual([lastResort]);
+    expect(await available()).toBe(2);
   });
 
   it("waits to move a chat to MLS until everyone has a phone that can follow", async () => {

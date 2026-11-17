@@ -101,9 +101,12 @@ mls.get("/key-packages/:deviceId", async (c) => {
   return c.json({ available: rows.find((row) => !row.lastResort)?.n ?? 0, lastResort: rows.some((row) => row.lastResort) });
 });
 
-/** Takes one key package for a phone. Single-use ones are deleted. The last-resort one is shared and stays. */
-async function claim(db: Db, deviceId: string): Promise<string | null> {
-  for (let attempt = 0; attempt < 3; attempt++) {
+/**
+ * Takes one key package for a phone. Single-use ones are deleted. The last-resort one is shared and
+ * stays. With `fresh` false, only the last-resort one is offered.
+ */
+async function claim(db: Db, deviceId: string, fresh: boolean): Promise<string | null> {
+  for (let attempt = 0; fresh && attempt < 3; attempt++) {
     const [candidate] = await db
       .select({ id: schema.mlsKeyPackages.id })
       .from(schema.mlsKeyPackages)
@@ -131,21 +134,27 @@ async function memberOfOpenChat(c: { env: Env }, userId: string, conversationId:
 
 /**
  * Key packages for phones the caller wants to add. Only members' registered phones that aren't in the
- * group yet qualify, which limits how many of someone's packages another member can use up.
+ * group yet qualify, and each chat takes only a few fresh packages per phone in a while, so another
+ * member can't use up someone's packages. Past that, the phone's last-resort package, or nothing.
  */
 mls.post("/conversations/:id/key-packages", async (c) => {
   const user = c.get("user");
   const id = c.req.param("id");
+  const { success } = await c.env.MLS_CLAIM_LIMIT.limit({ key: user.id });
+  if (!success) throw fail(429, "too_many_attempts");
   const db = await memberOfOpenChat(c, user.id, id);
   const { deviceIds } = await parseJson(c, mlsClaimSchema);
-  const state = await c.env.CHAT_ROOM.getByName(id).mlsState(id);
+  const room = c.env.CHAT_ROOM.getByName(id);
+  const state = await room.mlsState(id);
   const waiting = new Map(state.pendingAdds.map((device) => [device.deviceId, device.userId]));
+  const wanted = [...new Set(deviceIds)];
+  if (wanted.some((deviceId) => !waiting.has(deviceId))) throw fail(403, "not_waiting_to_join");
+  const fresh = new Set(await room.mlsAllowClaims(wanted));
   const keyPackages: { userId: string; deviceId: string; keyPackage: string }[] = [];
   const missing: string[] = [];
-  for (const deviceId of new Set(deviceIds)) {
-    const userId = waiting.get(deviceId);
-    if (!userId) throw fail(403, "not_waiting_to_join");
-    const keyPackage = await claim(db, deviceId);
+  for (const deviceId of wanted) {
+    const userId = waiting.get(deviceId)!;
+    const keyPackage = await claim(db, deviceId, fresh.has(deviceId));
     if (keyPackage) keyPackages.push({ userId, deviceId, keyPackage });
     else missing.push(deviceId);
   }

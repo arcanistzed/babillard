@@ -8,6 +8,7 @@ interface __BaseEnv_Env {
 	SIGN_IN_VERIFY_LIMIT: RateLimit;
 	CLIENT_ERROR_LIMIT: RateLimit;
 	AI_LIMIT: RateLimit;
+	MLS_CLAIM_LIMIT: RateLimit;
 	ANTHROPIC_MODEL: string;
 	ANTHROPIC_BASE_URL: string;
 	ANDROID_LATEST_VERSION: string;

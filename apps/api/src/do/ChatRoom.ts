@@ -286,6 +286,11 @@ export class ChatRoom extends DurableObject<Env> {
     return this.mls.welcome(deviceId);
   }
 
+  /** Which phones may have a fresh key package claimed for them now. See `MlsLog.allowClaims`. */
+  mlsAllowClaims(deviceIds: string[]): string[] {
+    return this.mls.allowClaims(deviceIds, Date.now());
+  }
+
   mlsGroupInfo(): { epoch: number; groupInfo: string } | null {
     return this.mls.groupInfo();
   }

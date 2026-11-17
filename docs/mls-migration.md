@@ -120,7 +120,7 @@ In D1, `device_keys` gains `mls_signature_key`, set once per phone, since changi
 | `POST /mls/identity` | Registers a phone's signing key, once |
 | `POST /mls/key-packages` | Uploads key packages and an optional last-resort one |
 | `GET /mls/key-packages/:deviceId` | How many are left |
-| `POST /mls/conversations/:id/key-packages` | Claims packages for members' phones, to add them |
+| `POST /mls/conversations/:id/key-packages` | Claims packages for members' phones, to add them. Limited per chat and phone, and per person (below) |
 | `GET /mls/conversations/:id` | Epoch, mode, roster, pending adds and removals, and the device directory phones check credentials against |
 | `POST /mls/conversations/:id/messages` | Submits a commit, with Welcome and GroupInfo, or a message. Refusals the phone can fix come back as 409 |
 | `GET /mls/conversations/:id/messages?since=` | The log after a sequence number |
@@ -135,6 +135,7 @@ Open sockets get `{ type: "mls", seq, epoch }` after each accepted entry. Everyo
 
 - The routes are off without the flag.
 - A key package uploaded under the wrong phone is refused, a second signing key is refused, and packages can only be claimed for phones waiting to join.
+- One chat takes at most 3 fresh packages for a phone in 10 minutes. After that, claims get the phone's last-resort package, which isn't used up, and none once that's gone.
 - A direct chat forms, both sides send and read, and a resend with the same `clientId` isn't stored twice.
 - A message from an old epoch is refused, and v1 is refused once the chat is on MLS.
 - In a four-person group, after someone leaves, messages wait until their phone is removed, kicking a current member is refused, and the leaver can no longer read the log.
@@ -451,19 +452,19 @@ The ordering rule `admit` and the security-code function `codeForRoster` are wor
 
 ## What's left, and roughly how long
 
-One developer who knows the codebase. Done on the branch since the first estimate: the server's header reader, the key package service, the delivery service, the readiness check, external commits with GroupInfo export, the phone's sync engine with its encrypted SQLite store, the chat screens on MLS behind the flag, recovery from lost answers and stuck entries, hiding blocked people's MLS messages, a person's second phone, the roster security code on the chat info screen, and deleting a chat's MLS copy once the person is out of it.
+One developer who knows the codebase. Done on the branch since the first estimate: the server's header reader, the key package service, the delivery service, the readiness check, external commits with GroupInfo export, the phone's sync engine with its encrypted SQLite store, the chat screens on MLS behind the flag, recovery from lost answers and stuck entries, hiding blocked people's MLS messages, a person's second phone, the roster security code on the chat info screen, deleting a chat's MLS copy once the person is out of it, and limits on key package claims.
 
 | Work | Estimate |
 |---|---|
 | Android build in EAS: install Rust there, or commit the built libraries | 2 to 3 days |
-| Server, still to do: rate-limiting key package claims, and a way for people to retire a lost phone | 1 to 2 days |
+| Server, still to do: a way for people to retire a lost phone | 1 day |
 | Rust wrapper: last-resort key packages and per-chat state | 2 to 4 days |
 | Franking for reports | 2 days |
 | Backup v2 and history store | 5 to 7 days |
 | Migration: dormant release, per-chat switch, version gate, mixed timeline | 3 to 5 days |
 | Removing ts-mls and its adapter from the app once the native path covers everything | 1 day |
 | End-to-end tests with two devices, and on a real phone | 4 to 5 days |
-| **Total** | **20 to 29 working days, about 4 to 6 weeks** |
+| **Total** | **20 to 28 working days, about 4 to 6 weeks** |
 
 iOS isn't in this estimate. It would add a Swift module over the same Rust crate.
 
@@ -477,7 +478,10 @@ iOS isn't in this estimate. It would add a Swift module over the same Rust crate
 6. **Key package exhaustion.** If someone's packages run out, they can't be added until they come online. Keep one long-lived "last resort" package per phone, a common MLS practice, and accept that a join using it has weaker forward secrecy.
 7. **Group state at rest.** It holds every private key for the group. It needs the same care as the SecureStore keys, and it must never go into a backup.
 8. **Keeping up with OpenMLS.** Its fixes only help if we take them. Watch its security advisories and update the pins promptly, rerunning the Rust tests each time.
-9. **Draining key packages.** A member can claim packages for any phone waiting to join, and a commit the server then refuses still uses them up. A hostile member could drain a newcomer's packages that way. The last-resort package keeps the phone addable. Claims still need a rate limit.
+9. **Draining key packages.** A member can claim packages for any phone waiting to join, and a commit the server then refuses still uses them up. A hostile member could drain a newcomer's packages that way. The last-resort package keeps the phone addable. Claims are now limited in two ways:
+   - **Per chat and phone, the real limit.** The ChatRoom records claims. One chat gets at most 3 fresh single-use packages for a phone in any 10 minutes, which covers a lost race or two. Past that, a claim gets the phone's last-resort package, which isn't used up, or nothing. The engine already treats nothing as "add them later". So a hostile member can use up at most 3 packages per 10 minutes, per chat they share with someone joining.
+   - **Per person, a coarse limit.** A Workers rate limit (`MLS_CLAIM_LIMIT`, 30 a minute) answers 429 to anyone claiming across many chats at once.
+   - **What's still open.** Phones don't upload a last-resort package yet (it's in the Rust wrapper row above). Until they do, a phone whose fresh packages are spoken for waits up to 10 minutes to be added.
 10. **The roster is the server's word.** It follows the commits the server accepted, and phones keep their own roster from the same commits. If they ever disagree, a phone should stop and show the security code, not trust either side.
 
 The D1 migration on the branch is `0010`. Main has moved on since the branch started, so check the number before merging.
