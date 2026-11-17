@@ -269,7 +269,12 @@ describe("MLS delivery service", () => {
     // Bob's app can't do MLS yet, so starting the group would lock him out.
     await expect(startOnServer(alice, conversationId)).rejects.toMatchObject({ status: 409, body: { error: "not_ready" } });
     expect((await a.get(`/mls/conversations/${conversationId}`)).mode).toBe("v1");
-    await phone(b);
+    // Bob's phone registers its signing key a moment before its key packages are up. Alice
+    // couldn't add it yet, so the group waits rather than starting without him.
+    const bobsDevice = await createDevice(b.id, b.device.publicKey, cs);
+    await b.post("/mls/identity", { deviceId: b.device.publicKey, signatureKey: toBase64(bobsDevice.keyPackage.leafNode.signaturePublicKey) });
+    await expect(startOnServer(alice, conversationId)).rejects.toMatchObject({ status: 409, body: { error: "not_ready" } });
+    await b.post("/mls/key-packages", { deviceId: b.device.publicKey, keyPackages: [toBase64(encodeKeyPackage(bobsDevice))] });
     await startOnServer(alice, conversationId);
     expect((await a.get(`/mls/conversations/${conversationId}`)).mode).toBe("mls");
   });

@@ -89,6 +89,15 @@ describe("the server's MLS delivery rules", () => {
     expect(decide(commitBy(alice, start, { epoch: 0, roster: [], directory, memberIds: ["alice", "bob", "carol", "dana"] }))).toMatchObject({ ok: false, error: "not_ready" });
   });
 
+  it("won't start the group until every other member has a phone with a key package", async () => {
+    const { cs, alice, config, directory } = await setUp();
+    const start = await addDevices(await startGroup(ROOM, alice, cs, config), [], cs);
+    const commit = commitBy(alice, start, { epoch: 0, roster: [], directory });
+    // Carol's phone has registered its signing key, but its key packages aren't up yet. Alice needs none.
+    expect(decide({ ...commit, withKeyPackages: new Set(["bob"]) })).toMatchObject({ ok: false, error: "not_ready" });
+    expect(decide({ ...commit, withKeyPackages: new Set(["bob", "carol"]) })).toMatchObject({ ok: true, kind: "commit" });
+  });
+
   it("while paused, starts no group but lets one that exists carry on", async () => {
     const setup = await setUp();
     const { cs, alice, bob, config, directory } = setup;

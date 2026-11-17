@@ -246,6 +246,20 @@ export class ChatRoom extends DurableObject<Env> {
     return directory;
   }
 
+  /** Members with a current MLS phone that has a key package waiting, fresh or last-resort. */
+  private async mlsMembersWithKeyPackages(conversationId: string): Promise<Set<string>> {
+    const rows = await getDb(this.env)
+      .selectDistinct({ userId: schema.conversationMembers.userId })
+      .from(schema.conversationMembers)
+      .innerJoin(
+        schema.deviceKeys,
+        and(eq(schema.deviceKeys.userId, schema.conversationMembers.userId), isNull(schema.deviceKeys.retiredAt), isNotNull(schema.deviceKeys.mlsSignatureKey)),
+      )
+      .innerJoin(schema.mlsKeyPackages, eq(schema.mlsKeyPackages.deviceId, schema.deviceKeys.publicKey))
+      .where(eq(schema.conversationMembers.conversationId, conversationId));
+    return new Set(rows.map((row) => row.userId));
+  }
+
   async mlsState(conversationId: string): Promise<MlsGroupState> {
     return this.mls.state(await this.mlsDirectory(conversationId));
   }
@@ -265,9 +279,19 @@ export class ChatRoom extends DurableObject<Env> {
       throw error;
     }
     const directory = await this.mlsDirectory(conversationId);
+    // Only the group's first commit checks for key packages, so only then is it worth the query.
+    const withKeyPackages = this.mls.roster().length === 0 ? await this.mlsMembersWithKeyPackages(conversationId) : undefined;
     // No await from here to the insert: the epoch check and the write happen together.
     const memberIds = audience.members.filter((member) => member.status === "active").map((member) => member.userId);
-    const result = this.mls.submit({ conversationId, directory, memberIds, newGroups, sender: { userId: senderId, deviceId: input.deviceId }, ...input });
+    const result = this.mls.submit({
+      conversationId,
+      directory,
+      memberIds,
+      newGroups,
+      ...(withKeyPackages ? { withKeyPackages } : {}),
+      sender: { userId: senderId, deviceId: input.deviceId },
+      ...input,
+    });
     if (!result.ok) return result;
     if (result.duplicate) return { ok: true, entry: result.entry };
 

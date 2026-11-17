@@ -43,7 +43,7 @@ let registered = false;
 while (Date.now() < deadline) {
   try {
     if (!registered) {
-      const { body: me } = await call("GET", "/me");
+      const me = (await call("GET", "/me")).body as { mls?: boolean } | null;
       if (!me?.mls) {
         await new Promise((resolve) => setTimeout(resolve, 2000));
         continue;

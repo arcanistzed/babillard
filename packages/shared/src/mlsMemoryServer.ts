@@ -49,6 +49,14 @@ export class MemoryMlsServer {
     return chat;
   }
 
+  private withKeyPackages(chat: Chat): Set<string> {
+    const users = new Set<string>();
+    for (const [deviceId, device] of this.devices) {
+      if (chat.members.has(device.userId) && this.packages.get(deviceId)?.length) users.add(device.userId);
+    }
+    return users;
+  }
+
   private directory(chat: Chat): Directory {
     const directory: Directory = new Map();
     for (const [deviceId, device] of this.devices) {
@@ -115,6 +123,7 @@ export class MemoryMlsServer {
           directory: this.directory(chat),
           memberIds: [...chat.members],
           newGroups: this.newGroups,
+          withKeyPackages: this.withKeyPackages(chat),
           sender: { userId, deviceId: body.deviceId },
           message: body.message,
           ...(body.welcome ? { welcome: body.welcome } : {}),

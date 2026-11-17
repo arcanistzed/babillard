@@ -63,6 +63,11 @@ export interface Submission {
   memberIds: string[];
   /** False while MLS is paused: chats already on MLS carry on, and no other chat moves to it. */
   newGroups?: boolean;
+  /**
+   * Members with a current phone that has a key package waiting, so the group's creator can add
+   * them at once. Checked only for the group's first commit. Left out, nobody is checked.
+   */
+  withKeyPackages?: Set<string>;
   sender: { userId: string; deviceId: string };
   message: Uint8Array;
   welcome?: Uint8Array;
@@ -175,6 +180,11 @@ export function decide(input: Submission): Decision {
     if (epoch !== 0 || leafIndex !== 0 || !summary.pathLeaf) return refuse("wrong_sender");
     // A chat moves to MLS only once everyone in it can follow. After this, v1 is refused.
     if (input.memberIds.some((memberId) => !directory.get(memberId)?.size)) return refuse("not_ready");
+    // A phone registers its signing key a moment before its key packages are up. A creator who
+    // started then couldn't add it, and would send its first messages to a group without it. The
+    // phone would then join by itself, after those messages, and never read them.
+    const stocked = input.withKeyPackages;
+    if (stocked && input.memberIds.some((memberId) => memberId !== sender.userId && !stocked.has(memberId))) return refuse("not_ready");
     // Paused looks the same to a phone as a member who can't follow yet: it waits, and the chat stays on v1.
     if (input.newGroups === false) return refuse("not_ready");
     next = [{ leafIndex: 0, ...sender }];

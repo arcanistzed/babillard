@@ -127,6 +127,7 @@ export class MlsLog {
     directory: Directory;
     memberIds: string[];
     newGroups: boolean;
+    withKeyPackages?: Set<string>;
     sender: { userId: string; deviceId: string };
     message: string;
     welcome?: string;
@@ -149,6 +150,7 @@ export class MlsLog {
       directory: input.directory,
       memberIds: input.memberIds,
       newGroups: input.newGroups,
+      ...(input.withKeyPackages ? { withKeyPackages: input.withKeyPackages } : {}),
       sender: input.sender,
       message,
       ...(welcome ? { welcome } : {}),

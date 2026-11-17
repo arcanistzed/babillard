@@ -396,6 +396,32 @@ describe("the sync engine when someone is out of a chat", () => {
   });
 });
 
+describe("the sync engine when a chat moves to MLS", () => {
+  it("waits for the other phone's key packages, so the first message after the move reaches it", async () => {
+    const { phone } = world(["alice", "bob"]);
+    let uploads = false;
+    const bob = phone("bob");
+    const alice = phone("alice", "alice-phone", (base) => ({
+      ...base,
+      uploadKeyPackages: async (...args) => {
+        if (!uploads) throw new Error("not up yet");
+        return base.uploadKeyPackages(...args);
+      },
+    }));
+    await bob.ensureIdentity();
+    // Alice's phone has registered its signing key, but its key packages aren't up yet.
+    await expect(alice.ensureIdentity()).rejects.toThrow("not up yet");
+    await expect(bob.sync(CHAT)).resolves.toEqual([]);
+    expect(await bob.inGroup(CHAT)).toBe(false);
+
+    uploads = true;
+    await alice.ensureIdentity();
+    await bob.sync(CHAT);
+    await bob.send(CHAT, "hello");
+    expect(await texts(alice)).toEqual(["hello"]);
+  });
+});
+
 describe("the sync engine while MLS is paused", () => {
   it("keeps a chat already on MLS going, adds new phones, and leaves other chats on v1", async () => {
     const { server, phone } = world(["alice", "bob"]);
