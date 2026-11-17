@@ -88,6 +88,10 @@ export default function Chat() {
         <Pressable
           onLongPress={() => onLongPress(item)}
           onPress={item.failed && me ? () => send(item.body, me.id, item.clientId) : undefined}
+          accessibilityRole={item.failed ? "button" : undefined}
+          // Screen reader users reach reporting through the actions menu rather than a long press.
+          accessibilityActions={!mine && item.senderId ? [{ name: "report", label: t("Report this message", "Signaler ce message") }] : undefined}
+          onAccessibilityAction={() => onLongPress(item)}
           accessibilityLabel={`${mine ? t("You", "Vous"): name}: ${item.unreadable ? UNREADABLE: item.body}. ${item.failed ? NOT_SENT: messageTime(item.createdAt)}`}
           style={[styles.bubbleRow, mine ? styles.bubbleRowMine : null]}
         >
@@ -187,7 +191,7 @@ export default function Chat() {
             maxLength={4000}
             style={[styles.input, { color: theme.ink, backgroundColor: theme.surface, borderColor: theme.line, fontFamily: fonts.body }]}
           />
-          <Pressable accessibilityRole="button" accessibilityLabel={t("Send", "Envoyer")} disabled={!draft.trim()} onPress={() => submit()} hitSlop={6} style={[styles.send, { opacity: draft.trim() ? 1 : 0.35 }]}>
+          <Pressable accessibilityRole="button" accessibilityLabel={t("Send", "Envoyer")} accessibilityState={{ disabled: !draft.trim() }} disabled={!draft.trim()} onPress={() => submit()} hitSlop={6} style={[styles.send, { opacity: draft.trim() ? 1 : 0.35 }]}>
             <Ionicons name="send" size={24} color={theme.ink} />
           </Pressable>
         </View>

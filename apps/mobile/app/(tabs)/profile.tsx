@@ -65,7 +65,14 @@ export default function Profile() {
   return (
     <SafeAreaView edges={["top"]} style={styles.screen}>
       <ScrollView contentContainerStyle={styles.body}>
-        <Pressable accessibilityRole="button" accessibilityLabel={t("Change your photo", "Changer votre photo")} onPress={changePhoto} style={styles.identity}>
+        <Pressable
+          accessibilityRole="button"
+          // A label replaces what's inside, so it carries the name and details shown next to the photo.
+          accessibilityLabel={[nameWithAge(profile.displayName, me.age), roleLabel(profile.role), place, me.verifiedInstitution ? `${t("Verified with", "Vérifié avec")} ${me.institutionDomain}` : ""].filter(Boolean).join(". ")}
+          accessibilityHint={t("Changes your photo", "Change votre photo")}
+          onPress={changePhoto}
+          style={styles.identity}
+        >
           <Avatar name={profile.displayName} url={profile.avatarUrl} size={96} />
           <View style={styles.identityText}>
             <T variant="title">{nameWithAge(profile.displayName, me.age)}</T>

@@ -20,7 +20,7 @@ export async function pickAndResizePhoto(): Promise<string | null> {
 
 export function PhotoPicker({ name, uri, onPress }: { name: string; uri: string | null; onPress: () => void }) {
   return (
-    <Pressable accessibilityRole="button" accessibilityLabel={t("Choose a photo", "Choisir une photo")} onPress={onPress} style={styles.row}>
+    <Pressable accessibilityRole="button" accessibilityLabel={uri ? t("Change photo", "Changer la photo") : t("Choose a photo", "Choisir une photo")} onPress={onPress} style={styles.row}>
       <Avatar name={name || "?"} url={uri} size={88} />
       <T variant="bodyBold">{uri ? t("Change photo", "Changer la photo") : t("Choose a photo", "Choisir une photo")}</T>
     </Pressable>

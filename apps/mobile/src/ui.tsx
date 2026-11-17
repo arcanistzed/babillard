@@ -5,6 +5,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Image } from "expo-image";
 import Animated, { useAnimatedStyle, useSharedValue, withSequence, withSpring, withTiming } from "react-native-reanimated";
 import { haptics } from "./haptics";
+import { t } from "./i18n";
 import { fonts, useTheme } from "./theme";
 
 const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
@@ -154,7 +155,7 @@ export function Avatar({ name, url, size = 44, tint }: { name: string; url?: str
   const theme = useTheme();
   const colors = tint ?? { bg: theme.line, fg: theme.ink };
   if (url) {
-    return <Image source={url} accessibilityLabel={`Photo of ${name}`} style={{ width: size, height: size, borderRadius: size / 2, backgroundColor: colors.bg }} />;
+    return <Image source={url} accessibilityLabel={t(`Photo of ${name}`, `Photo de ${name}`)} style={{ width: size, height: size, borderRadius: size / 2, backgroundColor: colors.bg }} />;
   }
   return (
     <View accessible accessibilityLabel={name} style={{ width: size, height: size, borderRadius: size / 2, backgroundColor: colors.bg, alignItems: "center", justifyContent: "center" }}>
