@@ -1,4 +1,4 @@
-import type { InboxItem } from "@babillard/shared";
+import { showsSender, type InboxItem } from "@babillard/shared";
 import { useQuery } from "@tanstack/react-query";
 import { router, useFocusEffect } from "expo-router";
 import { useCallback, useEffect, useState } from "react";
@@ -6,6 +6,7 @@ import { FlatList, Pressable, RefreshControl, StyleSheet, View } from "react-nat
 import { SafeAreaView } from "react-native-safe-area-context";
 import { api } from "@/api";
 import { useAuth } from "@/auth";
+import { useBlockedIds } from "@/blocked";
 import { readingKeys, readMessage } from "@/e2ee";
 import { mlsMessenger } from "@/mls";
 import { describeWhen, timeLeft } from "@/format";
@@ -17,6 +18,7 @@ import { t } from "@/i18n";
 /** The server only has ciphertext for the latest message, so the phone works out the preview itself. */
 function usePreviews(items: InboxItem[] | undefined): Record<string, string> {
   const { me } = useAuth();
+  const blocked = useBlockedIds(me?.id);
   const [previews, setPreviews] = useState<Record<string, string>>({});
   useEffect(() => {
     if (!me || !items) return;
@@ -27,10 +29,15 @@ function usePreviews(items: InboxItem[] | undefined): Record<string, string> {
         const next: Record<string, string> = {};
         for (const item of items) {
           if (!item.lastMessageSenderId) continue;
+          // Like the server does for v1: no preview when the latest message is from someone blocked.
+          if (blocked?.has(item.lastMessageSenderId)) continue;
           if (!item.lastMessageEnvelope) {
+            // Until this phone has learned its block list, an MLS preview shows only the user's own messages.
+            if (!showsSender(item.lastMessageSenderId, me.id, blocked)) continue;
             // An MLS message: the server keeps no copy to preview, so the phone shows what it stored.
             if (!mls || item.lastMessagePreview) continue;
             const last = await (await mls).lastMessage(item.id).catch(() => null);
+            if (last && !showsSender(last.senderId, me.id, blocked)) continue;
             next[item.id] = last && last.createdAt >= (item.lastMessageAt ?? 0) ? last.text : t("New message", "Nouveau message");
             continue;
           }
@@ -44,7 +51,7 @@ function usePreviews(items: InboxItem[] | undefined): Record<string, string> {
     return () => {
       active = false;
     };
-  }, [items, me]);
+  }, [blocked, items, me]);
   return previews;
 }
 

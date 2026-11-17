@@ -229,7 +229,7 @@ Tried this way on the emulator:
 
 - **Being removed.** The engine stops with an error when the log removes this phone. The chat screen needs to show that the person left or was removed.
 - **Typing and sending states.** A message sent with MLS shows as pending until the engine returns, with no echo over the socket. That's fine on a quick connection and untested on a slow one.
-- **Blocking.** v1 hides a blocked person's messages on the server. MLS delivers everything, as designed above, but the phone doesn't hide a blocked person's MLS messages yet.
+- **Blocking has only run in tests.** The rule and the server's unread count are tested, and the phone code typechecks. Nobody has yet blocked someone in a group on a device and watched their messages disappear.
 - **Only a direct chat has been tried on the device.** Groups, leaving, and new phones are covered by the engine tests, not by the app on a phone.
 - **Franking for reports, backup v2, and per-chat state** remain as designed above.
 
@@ -284,7 +284,15 @@ So a departed member's keys stop opening anything new from the first message aft
 
 An alternative is to make the Durable Object an MLS external sender with its own signing key, allowed to propose removals. It removes the dependence on a member sending, but it puts a signing key on the server, and phones still have to commit the proposal. Not worth it for now.
 
-Blocking doesn't change membership in groups, the same as today. Today the server leaves the blocked person's messages out of the blocker's history. Under MLS that's risky. Each sender's messages form a chain, and OpenMLS will skip ahead at most 1,000 steps in one chain by default. If the server hid 1,001 messages and the person was later unblocked, their next message wouldn't open. So the server should deliver everything, and the blocker's phone should process the blocked person's messages and throw the text away. Commits always have to be delivered anyway, because skipping one breaks the blocker's copy of the group.
+Blocking doesn't change membership in groups, the same as today. Today the server leaves the blocked person's messages out of the blocker's history. Under MLS that's risky. Each sender's messages form a chain, and OpenMLS will skip ahead at most 1,000 steps in one chain by default. If the server hid 1,001 messages and the person was later unblocked, their next message wouldn't open. So the server delivers everything, and the blocker's phone reads the blocked person's messages and hides them on screen. Commits always have to be delivered anyway, because skipping one breaks the blocker's copy of the group.
+
+How it's built:
+
+- **The rule.** `showsSender` in `packages/shared/src/rules/blocking.ts` decides who a phone shows messages from. Its tests are in `blocking.test.ts`.
+- **Hidden on screen, not deleted.** The phone keeps the text in its encrypted store and hides it when showing the chat. Unblocking brings the messages back, which matches v1, where the server filters history each time it's read. The cost is that the blocker's phone holds the blocked person's words, encrypted at rest like everything else in the store.
+- **The block list on the phone.** `useBlockedIds` reads `GET /safety/blocks` through the same query the Blocked screen uses. Blocking from the report screen and unblocking both refresh it. The last list is saved on the phone in expo-sqlite's key-value store, so hiding still works offline, and "forget this phone" deletes it. Until the phone has learned the list once, MLS chats show only the user's own messages.
+- **The inbox.** A preview is left out when the latest message is from someone blocked, as the server does for v1. That covers both the server's last sender and the phone's last stored message.
+- **The server's part.** MLS entries from a blocked person don't raise the blocker's unread count and don't push to them. Both go through the same code as v1. An end-to-end test checks the unread count.
 
 ### Several phones per person
 
@@ -412,14 +420,14 @@ The ordering rule `admit` and the security-code function `codeForRoster` are wor
 
 ## What's left, and roughly how long
 
-One developer who knows the codebase. Done on the branch since the first estimate: the server's header reader, the key package service, the delivery service, the readiness check, external commits with GroupInfo export, the phone's sync engine with its encrypted SQLite store, the chat screens on MLS behind the flag, and recovery from lost answers and stuck entries.
+One developer who knows the codebase. Done on the branch since the first estimate: the server's header reader, the key package service, the delivery service, the readiness check, external commits with GroupInfo export, the phone's sync engine with its encrypted SQLite store, the chat screens on MLS behind the flag, recovery from lost answers and stuck entries, and hiding blocked people's MLS messages.
 
 | Work | Estimate |
 |---|---|
 | Android build in EAS: install Rust there, or commit the built libraries | 2 to 3 days |
 | Server, still to do: rate-limiting key package claims, and a way for people to retire a lost phone | 1 to 2 days |
 | Rust wrapper: last-resort key packages and per-chat state | 2 to 4 days |
-| Phone: hiding blocked people's MLS messages, and trying groups, leaving and new phones on devices | 2 to 3 days |
+| Phone: trying groups, blocking, leaving and new phones on devices | 2 days |
 | Franking for reports | 2 days |
 | Roster security code on the chat info screen | 1 day |
 | Backup v2 and history store | 5 to 7 days |

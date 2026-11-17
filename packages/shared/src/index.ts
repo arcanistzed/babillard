@@ -11,6 +11,7 @@ export * from "./rules/jobs";
 export * from "./rules/identity";
 export * from "./rules/slots";
 export * from "./rules/cities";
+export * from "./rules/blocking";
 export * from "./version";
 export * from "./mlsWire";
 export * from "./mlsDelivery";

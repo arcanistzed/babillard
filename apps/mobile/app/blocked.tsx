@@ -1,6 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { FlatList, StyleSheet, View } from "react-native";
 import { api } from "@/api";
+import { blockedQuery } from "@/blocked";
 import { useTheme } from "@/theme";
 import { Button, T } from "@/ui";
 import { t } from "@/i18n";
@@ -8,7 +9,7 @@ import { t } from "@/i18n";
 export default function Blocked() {
   const theme = useTheme();
   const queryClient = useQueryClient();
-  const blocked = useQuery({ queryKey: ["blocked"], queryFn: () => api.get<{ id: string; displayName: string }[]>("/safety/blocks") });
+  const blocked = useQuery(blockedQuery);
   const unblock = useMutation({
     mutationFn: (id: string) => api.delete(`/safety/blocks/${id}`),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["blocked"] }),

@@ -31,7 +31,11 @@ export default function Report() {
 
   async function block() {
     await api.post(`/safety/blocks/${params.targetUserId}`);
-    await Promise.all([queryClient.invalidateQueries({ queryKey: ["people"] }), queryClient.invalidateQueries({ queryKey: ["inbox"] })]);
+    await Promise.all([
+      queryClient.invalidateQueries({ queryKey: ["people"] }),
+      queryClient.invalidateQueries({ queryKey: ["inbox"] }),
+      queryClient.invalidateQueries({ queryKey: ["blocked"] }),
+    ]);
   }
 
   /** The server can't read messages, so this phone reveals the keys for the reported one and its neighbours. */

@@ -1,8 +1,9 @@
-import { MlsRemovedError, type ChatMessage, type ConversationDetail, type MlsStoredMessage, type ServerSocketEvent } from "@babillard/shared";
+import { MlsRemovedError, showsSender, type ChatMessage, type ConversationDetail, type MlsStoredMessage, type ServerSocketEvent } from "@babillard/shared";
 import { useQueryClient } from "@tanstack/react-query";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { AppState } from "react-native";
 import { api, ApiError, openConversationSocket } from "./api";
+import { useBlockedIds } from "./blocked";
 import { ensureDeviceKey, readingKeys, readMessage, sealFor, type ReadableMessage } from "./e2ee";
 import { mlsMessenger } from "./mls";
 
@@ -69,6 +70,7 @@ export function useChat(conversationId: string, myId: string | undefined, onRemo
   const mls = useMemo(() => (myId ? mlsMessenger(myId) : null), [myId]);
   /** True once this phone is in the chat's MLS group. From then on it sends with MLS. */
   const [mlsActive, setMlsActive] = useState(false);
+  const blocked = useBlockedIds(myId);
 
   const members = useCallback(
     async (fresh = false) => {
@@ -302,5 +304,17 @@ export function useChat(conversationId: string, myId: string | undefined, onRemo
     setMessages((current) => merge(current, older));
   }, [conversationId, hasMore, messages, read]);
 
-  return { messages, loaded, connected, send, loadOlder, mlsActive };
+  // The server can't drop a blocked person's MLS messages, so they're hidden here, when shown.
+  // Everything stays in the store, so unblocking brings them back, as it does for v1.
+  const shown = useMemo(
+    () =>
+      myId
+        ? messages.filter((message) =>
+            message.id.startsWith(MLS_PREFIX) ? showsSender(message.senderId, myId, blocked) : message.senderId === null || !blocked?.has(message.senderId),
+          )
+        : messages,
+    [blocked, messages, myId],
+  );
+
+  return { messages: shown, loaded, connected, send, loadOlder, mlsActive };
 }

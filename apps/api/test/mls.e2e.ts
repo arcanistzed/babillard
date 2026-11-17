@@ -196,6 +196,30 @@ describe("MLS delivery service", () => {
     // The leaver can't read the log any more.
     expect(await status(leaver.client.get(`/mls/conversations/${id}/messages?since=0`))).toBe(404);
   });
+  it("sends a blocked person's MLS messages to the blocker's phone without counting them as unread", async () => {
+    const people = await Promise.all(Array.from({ length: 4 }, () => person("seattle-wa-us")));
+    let groupId: string | null = null;
+    for (const client of people) groupId = (await client.post("/deck/topics/everyday-physics/swipe", { direction: "right" })).groupConversationId ?? groupId;
+    expect(groupId).toBeTruthy();
+    const id = groupId!;
+    const phones = await Promise.all(people.map(phone));
+    const [first, blocker, other, sender] = phones as [Phone, Phone, Phone, Phone];
+    await startOnServer(first, id);
+    await addAll(first, id, phones.slice(1));
+
+    await blocker.client.post(`/safety/blocks/${sender.client.id}`);
+    for (const p of [blocker, other]) await p.client.post(`/conversations/${id}/read`);
+    const sent = await encryptText(sender.state!, "hello all", cs);
+    await submit(sender, id, sent.message);
+    sender.state = sent.state;
+
+    const inboxRow = async (p: Phone) => ((await p.client.get("/conversations")) as { id: string; unreadCount: number }[]).find((row) => row.id === id)!;
+    expect((await inboxRow(other)).unreadCount).toBe(1);
+    expect((await inboxRow(blocker)).unreadCount).toBe(0);
+    // The entry still reaches the blocker's phone, which needs it to stay in step. The app hides it there.
+    expect(await catchUp(blocker, id)).toEqual(["hello all"]);
+  });
+
   it("waits to move a chat to MLS until everyone has a phone that can follow", async () => {
     const { a, b, conversationId } = await directChat("philosophy-of-science");
     const alice = await phone(a);

@@ -4,6 +4,7 @@ import * as SecureStore from "expo-secure-store";
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
 import { AppState } from "react-native";
 import { api, ApiError, setSessionToken, setUnauthorizedHandler } from "./api";
+import { forgetBlockedIds } from "./blocked";
 import { deleteDeviceKey, ensureDeviceKey, forgetLoadedKey } from "./e2ee";
 import { deleteMlsData } from "./mls";
 import { registerForPush, unregisterPush } from "./push";
@@ -105,6 +106,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         if (me) {
           await deleteDeviceKey(me.id);
           await deleteMlsData(me.id);
+          forgetBlockedIds(me.id);
         }
       },
       completeSignIn: async (token, nextMe) => {
