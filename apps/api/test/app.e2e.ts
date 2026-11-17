@@ -1406,6 +1406,33 @@ describe("silent matches", () => {
     expect(await status(a.get(`/conversations/${conversationId}`))).toBe(410);
   });
 
+  it("lets two people whose match expired find each other again, and match only if both say yes again", async () => {
+    const a = await person("new-york");
+    const b = await person("new-york");
+    const conversationId = await match(a, b, "constitutional-law");
+    const ids = async (client: Client) => (await client.get("/people")).map((card: any) => card.id);
+    expect(await ids(a)).not.toContain(b.id);
+
+    await sleep(4300);
+    await sweep();
+    await waitFor(() => a.get("/conversations"), (rows: any[]) => !rows.some((row) => row.id === conversationId), "expiry");
+    await sweep();
+    expect(await ids(a)).toContain(b.id);
+    expect(await ids(b)).toContain(a.id);
+
+    // The old yes doesn't count: one swipe isn't a match.
+    expect((await a.post(`/people/${b.id}/swipe`, { direction: "right" })).matched).toBe(false);
+    expect(await status(a.get(`/conversations/${conversationId}`))).toBe(410);
+    const again = await b.post(`/people/${a.id}/swipe`, { direction: "right" });
+    expect(again).toEqual({ matched: true, conversationId });
+
+    const detail = await a.get(`/conversations/${conversationId}`);
+    expect(detail.expiresAt).toBeGreaterThan(Date.now());
+    expect((await b.get("/conversations")).map((row: any) => row.id)).toContain(conversationId);
+    await a.say(conversationId, "hello again");
+    await waitFor(async () => pushLog().filter((push) => push.title === "It's a match" && push.data.id === conversationId), (rows) => rows.length === 2, "second match push");
+  });
+
   it("leaves a match alone once someone has written", async () => {
     const a = await person("new-york");
     const b = await person("new-york");

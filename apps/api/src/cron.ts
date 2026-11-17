@@ -1,6 +1,7 @@
 import { GROUP_MEETUP_CONFIRM_YES, MEETUP_REPEAT_MS, isCheckinDue, isMatchExpired, isNudgeDue, isProposalStale, isReminderDue, pickBilingualOpener } from "@babillard/shared";
 import { deleteAccount } from "./lib/accounts";
 import { sendEmail } from "./lib/email";
+import { releaseExpiredPairs } from "./lib/matches";
 import { settleMeetup, withoutBlocksWithAny } from "./lib/meetupState";
 import { and, eq, gt, inArray, isNotNull, isNull, lt, lte, sql } from "drizzle-orm";
 import { getDb, schema, type Db } from "./db";
@@ -61,6 +62,8 @@ async function nudgeMatches(env: Env, db: Db, now: number): Promise<number> {
 }
 
 async function expireMatches(_env: Env, db: Db, now: number): Promise<number> {
+  // Matches that expired on an earlier sweep stop keeping the pair apart in People.
+  await releaseExpiredPairs(db);
   const due = (await silentActiveMatches(db)).filter(({ match, lastUserMessageAt }) => isMatchExpired({ ...match, lastUserMessageAt }, now));
   if (due.length === 0) return 0;
   const expired = await db

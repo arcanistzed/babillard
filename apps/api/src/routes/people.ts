@@ -151,7 +151,17 @@ async function createMatch(env: Env, db: Db, a: string, b: string, topicId: stri
       .values([userA, userB].map((userId) => ({ conversationId, userId, joinedAt: now })))
       .onConflictDoNothing(),
   ]);
-  if (inserted.length === 0) return conversationId;
+  if (inserted.length === 0) {
+    // Two people whose match expired in silence can match again. The same chat opens again with a fresh countdown.
+    // A match closed by a block or a deleted account stays closed.
+    const revived = await db
+      .update(schema.matches)
+      .set({ state: "active", topicId, createdAt: now, expiresAt: matchExpiresAt(now, jobOffsets(env)), nudgedAt: null })
+      .where(and(eq(schema.matches.userA, userA), eq(schema.matches.userB, userB), eq(schema.matches.state, "expired")))
+      .returning({ id: schema.matches.id });
+    if (revived.length === 0) return conversationId;
+    await db.update(schema.conversations).set({ topicId }).where(eq(schema.conversations.id, conversationId));
+  }
 
   const [topic] = topicId ? await db.select().from(schema.topics).where(eq(schema.topics.id, topicId)) : [];
   const title = topic?.title ?? "the same ideas";
