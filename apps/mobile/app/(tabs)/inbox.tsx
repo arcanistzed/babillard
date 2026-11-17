@@ -48,7 +48,7 @@ function Row({ item, preview }: { item: InboxItem; preview: string | null }) {
   return (
     <Pressable
       accessibilityRole="button"
-      accessibilityLabel={`${item.title}. ${preview ?? ""}${unread ? t(`. ${item.unreadCount} unread`, `. ${item.unreadCount} non lus`) : ""}`}
+      accessibilityLabel={`${item.title}. ${preview ?? ""}${unread ? t(`. ${item.unreadCount} unread`, `. ${item.unreadCount} ${item.unreadCount === 1 ? "message non lu" : "messages non lus"}`) : ""}`}
       onPress={() => router.push(`/chat/${item.id}`)}
       style={({ pressed }) => [styles.row, { borderBottomColor: theme.line, opacity: pressed ? 0.7 : 1 }]}
     >
