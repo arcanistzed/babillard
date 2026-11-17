@@ -19,7 +19,8 @@ const STYLE = `
 @font-face { font-family: "Bricolage"; src: url("/site/fonts/bricolage-600.woff2") format("woff2"); font-weight: 600; font-display: swap; }
 @font-face { font-family: "Atkinson"; src: url("/site/fonts/atkinson-400.woff2") format("woff2"); font-weight: 400; font-display: swap; }
 @font-face { font-family: "Atkinson"; src: url("/site/fonts/atkinson-700.woff2") format("woff2"); font-weight: 700; font-display: swap; }
-:root { --paper: #EEF0F8; --surface: #FFFFFF; --ink: #15173D; --muted: #55597A; --line: #D5D8E8; --accent: #C7146F; --gutter: clamp(16px, 4vw, 40px); }
+:root { color-scheme: light dark; --paper: #EEF0F8; --surface: #FFFFFF; --ink: #15173D; --muted: #55597A; --line: #D5D8E8; --accent: #C7146F; --accent-hover: #A80F5C; --on-accent: #FFFFFF; --panel: #15173D; --on-panel: #EEF0F8; --gutter: clamp(16px, 4vw, 40px); }
+@media (prefers-color-scheme: dark) { :root { --paper: #13142E; --surface: #1E2045; --ink: #EEF0FA; --muted: #A9ADCB; --line: #34376B; --accent: #FF6AAE; --accent-hover: #FF8FC2; --on-accent: #15173D; --panel: #0B0C22; --on-panel: #EEF0FA; } }
 *, *::before, *::after { box-sizing: border-box; }
 html { -webkit-text-size-adjust: 100%; }
 body { margin: 0; background: var(--paper); color: var(--ink); font: 400 1.0625rem/1.65 "Atkinson", system-ui, sans-serif; display: flex; flex-direction: column; min-height: 100vh; }
@@ -46,11 +47,11 @@ strong { font-weight: 700; }
 .tabs { display: flex; flex-wrap: wrap; gap: 8px; margin: 0 0 28px; padding: 0; list-style: none; }
 .tabs a { display: inline-flex; align-items: center; min-height: 40px; padding: 0 16px; border: 2px solid var(--ink); border-radius: 999px; font-weight: 700; font-size: 0.95rem; text-decoration: none; }
 .tabs a[aria-current="page"] { background: var(--ink); color: var(--paper); }
-.button { display: inline-flex; align-items: center; min-height: 50px; padding: 0 22px; border-radius: 10px; background: var(--accent); color: #fff; font-weight: 700; text-decoration: none; }
-.button:hover { background: #A80F5C; }
+.button { display: inline-flex; align-items: center; min-height: 50px; padding: 0 22px; border-radius: 10px; background: var(--accent); color: var(--on-accent); font-weight: 700; text-decoration: none; }
+.button:hover { background: var(--accent-hover); }
 blockquote { margin: 0 0 14px; padding: 14px 18px; background: var(--surface); border-left: 4px solid var(--accent); border-radius: 0 10px 10px 0; }
 .card { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 20px 22px; margin: 0 0 20px; }
-.foot { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 12px 24px; padding: 24px var(--gutter) 32px; background: var(--ink); color: var(--paper); font-size: 0.95rem; }
+.foot { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 12px 24px; padding: 24px var(--gutter) 32px; background: var(--panel); color: var(--on-panel); font-size: 0.95rem; }
 .foot ul { display: flex; flex-wrap: wrap; gap: 6px 22px; list-style: none; margin: 0; padding: 0; }
 .foot li { margin: 0; }
 .foot li::marker { content: none; }
@@ -79,6 +80,7 @@ export function page(title: string, body: unknown, language: Language = "en", op
       <head>
         <meta charset="utf-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <meta name="color-scheme" content="light dark" />
         ${options.hidden ? html`<meta name="robots" content="noindex" />` : ""}
         <title>${title} · Babillard</title>
         <link rel="icon" href="/site/icon.png" />
