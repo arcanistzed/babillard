@@ -273,8 +273,12 @@ Tried on the emulator with `apps/api/scripts/mls-group-peers.ts` (its new "remov
     - A lost answer showed one bubble, marked sent, and Bob read the message once.
     - A request cut before the Worker showed faded, then went out once when the app came back.
     - Offline before encrypting still shows "Not sent. Tap to retry", and the tap sent the message once.
-  - **Left:** `retryPending` marks a copy failed on any refusal, 429 and 5xx included. Tapping that copy sends a fresh one and leaves the failed one on screen.
+  - **Left, for whoever owns the engine:**
+    - `retryPending` marks a copy failed on any refusal: 429, 5xx, or a stale epoch, which in a group means any commit between the cut and the resend. Before this fix the app never left a failed copy. Now one shows "Not sent. Tap to retry". Each tap sends a fresh copy and leaves the failed one on screen. `useChat` has no way to drop it.
+    - A resent copy can land after the same phone's later messages. Receivers then open an older generation after a newer one. The native module uses OpenMLS's default sender ratchet, which tolerates 5 generations out of order (ts-mls keeps 10). Past that, a receiver fails the entry twice and rejoins. Not tried, and no test covers it.
   - **A stuck entry** also ran through the chat screens. The proxy corrupted one of Bob's entries, and the phone failed on it twice. The phone then rejoined by itself, and ping and pong went both ways. Bob's messages from that entry up to the rejoin never showed on the phone, as the design expects.
+    - The corruption broke the entry's base64, so it failed in decoding, inside the same `try` as decryption, before OpenMLS saw it.
+    - Security codes weren't compared after the rejoin.
   - Nothing has run on a real ARM phone.
 - **Franked reports** were tried on the emulator on 2026-11-18. A long-press on Bob's message, then Report with "Also block Bob" left on, put Bob's line in the local admin queue, marked as reported, under "checked against the stored messages". Its random word was never typed on the phone, so the text came from the franked evidence. The 10 messages around it showed too. Since the person blocked Bob themselves, the chat then closed with "You're no longer in this chat", which reads oddly.
 - **Backup v2 and per-chat state** remain as designed above.
