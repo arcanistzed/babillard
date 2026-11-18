@@ -468,3 +468,157 @@ fn last_resort_fixture() {
     );
     std::fs::write(path, json + "\n").unwrap();
 }
+
+/// How the single state blob grows with the number of chats, and what one message costs. Run with
+///   cargo test --release measure_state -- --ignored --nocapture
+/// Each chat has three phones. The measured phone holds 10 unused key packages and a last-resort
+/// one, as the engine keeps, and every chat has moved on a few epochs.
+#[test]
+#[ignore]
+fn measure_state() {
+    use std::time::Instant;
+    for chats in [1usize, 10, 50] {
+        let mut me = phone("me");
+        let mut spare = Vec::new();
+        for _ in 0..10 {
+            let created = create_key_package(me.state.clone()).unwrap();
+            me.state = created.state;
+            spare.push(created.key_package);
+        }
+        me.state = create_last_resort_key_package(me.state.clone()).unwrap().state;
+        let mut owners = Vec::new();
+        for chat in 0..chats {
+            let group = format!("chat-{chat}").into_bytes();
+            let (mut alice, mut bob) = (phone("alice"), phone("bob"));
+            let package = create_key_package(me.state.clone()).unwrap();
+            me.state = package.state;
+            let trusted = trust(&[&alice, &bob, &me]);
+            alice.state = create_group(alice.state.clone(), group.clone()).unwrap();
+            let added = add_members(alice.state.clone(), group.clone(), vec![package.key_package, bob.key_package.clone()], trusted.clone()).unwrap();
+            alice.state = added.state;
+            me.state = join_from_welcome(me.state.clone(), added.welcome.clone().unwrap(), trusted.clone()).unwrap().state;
+            bob.state = join_from_welcome(bob.state.clone(), added.welcome.unwrap(), trusted.clone()).unwrap().state;
+            // A few epochs, and a few messages each way.
+            for committer in 0..3 {
+                let update = match committer {
+                    0 => update_keys(me.state.clone(), group.clone()).unwrap(),
+                    1 => update_keys(bob.state.clone(), group.clone()).unwrap(),
+                    _ => update_keys(alice.state.clone(), group.clone()).unwrap(),
+                };
+                for (index, phone) in [&mut me, &mut bob, &mut alice].into_iter().enumerate() {
+                    if index == committer {
+                        phone.state = update.state.clone();
+                    } else {
+                        phone.state = match receive(phone.state.clone(), group.clone(), update.commit.clone(), trusted.clone()).unwrap() {
+                            Received::Commit { state, .. } | Received::Application { state, .. } => state,
+                        };
+                    }
+                }
+            }
+            for _ in 0..5 {
+                let sent = encrypt(me.state.clone(), group.clone(), b"see you at the library".to_vec(), vec![0; 32]).unwrap();
+                me.state = sent.state;
+                let sent = encrypt(alice.state.clone(), group.clone(), b"see you there".to_vec(), vec![0; 32]).unwrap();
+                alice.state = sent.state;
+                me.state = match receive(me.state.clone(), group.clone(), sent.message, trusted.clone()).unwrap() {
+                    Received::Application { state, .. } | Received::Commit { state, .. } => state,
+                };
+            }
+            owners.push((alice, trusted));
+        }
+
+        // One message in the first chat, received many times over from fresh copies of the same state.
+        let (alice, trusted) = &mut owners[0];
+        let mut incoming = Vec::new();
+        for _ in 0..30 {
+            let sent = encrypt(alice.state.clone(), b"chat-0".to_vec(), b"are you coming?".to_vec(), vec![0; 32]).unwrap();
+            alice.state = sent.state;
+            incoming.push(sent.message);
+        }
+        let median = |mut samples: Vec<f64>| {
+            samples.sort_by(|a, b| a.partial_cmp(b).unwrap());
+            samples[samples.len() / 2]
+        };
+        let mut receive_ms = Vec::new();
+        let mut state = me.state.clone();
+        for message in incoming {
+            let start = Instant::now();
+            let received = receive(state.clone(), b"chat-0".to_vec(), message, trusted.clone()).unwrap();
+            receive_ms.push(start.elapsed().as_secs_f64() * 1000.0);
+            state = match received {
+                Received::Application { state, .. } | Received::Commit { state, .. } => state,
+            };
+        }
+        let mut load_save_ms = Vec::new();
+        let mut encrypt_ms = Vec::new();
+        for _ in 0..30 {
+            let start = Instant::now();
+            let device = Device::load(&state).unwrap();
+            let _ = device.save().unwrap();
+            load_save_ms.push(start.elapsed().as_secs_f64() * 1000.0);
+            let start = Instant::now();
+            let _ = encrypt(state.clone(), b"chat-0".to_vec(), b"on my way".to_vec(), vec![0; 32]).unwrap();
+            encrypt_ms.push(start.elapsed().as_secs_f64() * 1000.0);
+        }
+        let entries = Device::load(&state).unwrap().provider.storage.values.read().unwrap().len();
+        println!(
+            "chats={chats:>2} state={:>7} bytes entries={entries:>5} receive={:.3} ms encrypt={:.3} ms load+save={:.3} ms",
+            state.len(),
+            median(receive_ms),
+            median(encrypt_ms),
+            median(load_save_ms)
+        );
+        drop(spare);
+    }
+}
+
+/// Whether one chat's share of the state stays flat as epochs and messages pile up. Run with
+///   cargo test --release measure_long_chat -- --ignored --nocapture
+#[test]
+#[ignore]
+fn measure_long_chat() {
+    let (mut alice, mut bob, mut me) = (phone("alice"), phone("bob"), phone("me"));
+    let trusted = trust(&[&alice, &bob, &me]);
+    form(&mut alice, &mut [&mut bob, &mut me], &trusted);
+    let apply = |phone: &mut Phone, message: &[u8]| {
+        phone.state = match receive(phone.state.clone(), GROUP.to_vec(), message.to_vec(), trusted.clone()).unwrap() {
+            Received::Application { state, .. } | Received::Commit { state, .. } => state,
+        };
+    };
+    for round in 1..=100 {
+        let update = update_keys(alice.state.clone(), GROUP.to_vec()).unwrap();
+        alice.state = update.state;
+        apply(&mut bob, &update.commit);
+        apply(&mut me, &update.commit);
+        for _ in 0..3 {
+            let hello = send(&mut bob, "a message of ordinary length, about this long");
+            apply(&mut me, &hello);
+            apply(&mut alice, &hello);
+        }
+        if [1, 10, 50, 100].contains(&round) {
+            println!("epochs={round:>3} messages={:>3} state={} bytes", round * 3, me.state.len());
+        }
+    }
+}
+
+/// One chat's share of the state, by group size (Babillard's groups go up to 8 people). Run with
+///   cargo test --release measure_group_sizes -- --ignored --nocapture
+#[test]
+#[ignore]
+fn measure_group_sizes() {
+    const NAMES: [&str; 7] = ["p1", "p2", "p3", "p4", "p5", "p6", "p7"];
+    for size in [3usize, 5, 8] {
+        let mut me = phone("me");
+        let alone = me.state.len();
+        let mut owner = phone("owner");
+        let mut others: Vec<Phone> = NAMES[..size - 2].iter().map(|name| phone(name)).collect();
+        let mut all: Vec<&Phone> = others.iter().collect();
+        all.push(&owner);
+        all.push(&me);
+        let trusted = trust(&all);
+        let mut joiners: Vec<&mut Phone> = others.iter_mut().collect();
+        joiners.push(&mut me);
+        form(&mut owner, &mut joiners, &trusted);
+        println!("members={size} chat's share of the state={} bytes", me.state.len() - alone);
+    }
+}
