@@ -353,13 +353,65 @@ OpenMLS by default tolerates 5 messages out of order within one sender and skips
 
 Today the backup file holds device keys, and old messages open again because the server still has the envelopes. Under MLS the server's ciphertext can't be opened later by anyone. The keys are gone, by design. So "back up my keys" no longer means anything for MLS messages. Restoring MLS group state from a backup would also be wrong, since it would reuse keys.
 
-The replacement keeps today's experience: a small file and a passphrase, with history coming back on a new phone.
+The replacement keeps today's experience: a small file and a passphrase, with history coming back on a new phone. The plan below is not built yet.
 
-- Each person gets a random **history key**. The backup file, version 2, holds the v1 device keys as now, plus the history key. Same scrypt and XChaCha20-Poly1305.
-- After a phone decrypts a message, it encrypts the text under the history key and uploads it to an `mls_history` store that only that person can read.
-- A new phone restores the file, downloads that store, and joins its chats fresh by external commit.
+**The idea.** Each person who turns backup on gets a random 32-byte **history key**. Their phones encrypt each MLS message they read or send under it and upload the result to a store only that person can read. A new phone restores the file, downloads the store, and fills in what was said before it joined.
 
-That store is deliberately **not** forward secret. Anyone with the history key and the server's copy can read that person's archive. It's the same property today's backup has, but now it's opt-in. People who never set up a backup get full forward secrecy. The key backup screen should say so plainly.
+That store is deliberately **not** forward secret: anyone with the history key and the server's copy can read that person's archive. It's the same property today's backup has, but now it's opt-in. People who never set up a backup get full forward secrecy, and the backup screen should say so plainly.
+
+#### The file
+
+- Version 2 holds the v1 device keys as now, plus the history key, with the same scrypt and XChaCha20-Poly1305. The plaintext becomes `{ deviceKeys, historyKey }`.
+- `openKeyBackup` reads both versions. A v1 file restores device keys only.
+- An app from before v2 reads a v2 file as a wrong passphrase. It's only a confusing message, since such an app can't use the history anyway, but the release notes should mention it.
+
+#### One key per person
+
+The history key belongs to the person, not the phone, so their phones must agree on it.
+- The server keeps a **key id** per person: SHA-256 of the history key. It reveals nothing about the key, and every upload names it.
+- **Turning backup on** on a phone with no history key: if the server has no key id, the phone makes a key, registers its id, and saves the file. If the server already has one, another phone made it. The screen then asks the person to restore that file here, or to start over, which deletes the old history.
+- **A second phone** gets the key by restoring the same file, as the screen already says for v1. Until it has the key, it uploads nothing, and the phone that has it covers only the chats it syncs. Sharing the key between a person's live phones automatically, for example through an MLS group of just their own phones, is possible later. It isn't needed for a first version.
+- **A new passphrase** writes a new file with the same key. The old file still opens the history, so the screen should say that deleting the old file is the person's job.
+- **Turning backup off** deletes the person's history on the server and the key id, and forgets the key on this phone. Turning it on again starts a new key and a new history.
+
+#### Uploading
+
+- **What each entry holds:** sender, sender's phone, text, server time, `seq`, the franking key, and `unverified`. Keeping the franking key lets a restored message still be reported, since the server keeps the MLS log.
+- **How it's sealed:** XChaCha20-Poly1305 under the history key, with the user id, conversation id and `seq` as associated data. The server can't move an entry to another chat or position.
+- **When:** the engine adds an entry to an outbox table in the phone's MLS database, in the same transaction that stores the message: each received message, and each sent one once it has its `seq`. A flush after each sync uploads the outbox in batches. So nothing is lost to a crash or to being offline.
+- **Back-fill:** turning backup on queues everything the phone already holds.
+- **Duplicates:** several of a person's phones upload the same message. The server keeps the first copy, keyed by person, chat and `seq`, and ignores the rest.
+
+#### The server
+
+- **A D1 table** `mls_history`: user id, conversation id, `seq`, key id, ciphertext, created time, with primary key (user, conversation, seq). D1 rather than each ChatRoom, so a restore can page through all of a person's chats in one place. A user column holds the key id.
+- **Routes:**
+  - `PUT /mls/history/key`, to set or clear the key id. Clearing it deletes the history.
+  - `POST /mls/history`, at most 100 entries, each at most 16 KB.
+  - `GET /mls/history?conversation=&after=`, paged.
+- **Checks:** the caller must be a current member of the chat, the `seq` must be an application entry in its log, and the key id must be the caller's current one. Uploads take a rate limit, like key package claims.
+- **What it learns:** nothing new. It already knows who's in each chat and every entry's `seq`, time and size. A history entry also tells it that the person turned backup on.
+- **Deleting:** when someone is out of a chat, the server deletes their history for it, matching the phone deleting its own copy (decided 2026-11-17). Account deletion deletes all of it.
+
+#### Restoring on a new phone
+
+1. Restore the file. This saves the v1 device keys as today, and the history key in SecureStore.
+2. For each chat in the inbox, download that chat's history and write each entry into the MLS store as a sent message with `id = seq`. That's the id a live message gets, so whichever arrives second does nothing.
+3. The phone joins each chat as it does today: from a Welcome, or by itself from the GroupInfo. Its cursor starts where it joined. History covers everything before, and the log covers everything after.
+
+A restore can come before or after joining; both orders end the same. A message the history doesn't have, because no phone with the key read it, stays missing, as now.
+
+#### Tests
+
+- Shared: the v2 file round trip, and a v1 file opening in the v2 code. Engine tests on the memory server: a phone with the key uploads what it reads and sends, a crash between storing and flushing still uploads, a new phone restores and shows history and live messages in order, two phones uploading the same message leave one entry, and a key mismatch is refused.
+- End to end: the routes' membership, key id, size and deletion rules through the Worker.
+- Emulator: back up on one phone, then sign in as the same person on a second emulator instance and restore. The earlier messages should appear above the new ones.
+
+#### Questions for you
+
+1. **Opt-in or on by default?** The plan keeps it opt-in, as the v1 backup is. On by default would need the key kept somewhere besides a file the person saves, which changes the design.
+2. **Delete a chat's history when the person leaves it?** The plan says yes, to match what the phone does.
+3. **The franking key in history?** The plan says yes, so restored messages can still be reported. Leaving it out would make the stored copy smaller and reveal less if the history key leaked, but restored messages couldn't be reported.
 
 ### Reports to moderators
 
@@ -492,7 +544,7 @@ One developer who knows the codebase. Done on the branch since the first estimat
 | Android build in EAS: install Rust there, or commit the built libraries | 2 to 3 days |
 | Server, still to do: a way for people to retire a lost phone | 1 day |
 | Rust wrapper: last-resort key packages and per-chat state | 2 to 4 days |
-| Backup v2 and history store | 5 to 7 days |
+| Backup v2 and history store: the file, the key id, the D1 store and routes, the engine's outbox and restore, the screen, and tests (planned under "Key backup") | 5 to 7 days |
 | Migration: the release itself, and watching the switch in production | 1 to 2 days |
 | End-to-end tests with two devices, and on a real phone | 4 to 5 days |
 | **Total** | **15 to 22 working days, about 3 to 4 weeks** |
