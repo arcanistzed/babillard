@@ -47,17 +47,40 @@ const encoder = new TextEncoder();
 const decoder = new TextDecoder();
 const BASE64URL = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_";
 
-/** Hand-written because Hermes has no Buffer, and its btoa handles only some inputs. */
-export function toBase64(bytes: Uint8Array): string {
+const BASE64URL_CODES = Uint8Array.from(BASE64URL, (char) => char.charCodeAt(0));
+const BASE64URL_VALUES = new Int8Array(128).fill(-1);
+for (let i = 0; i < 64; i++) BASE64URL_VALUES[BASE64URL.charCodeAt(i)] = i;
+
+/** Characters from their codes, a chunk at a time: one string concatenation per character is slow on Hermes. */
+function fromCharCodes(codes: Uint8Array): string {
   let out = "";
-  for (let i = 0; i < bytes.length; i += 3) {
-    const [a, b, c] = [bytes[i]!, bytes[i + 1], bytes[i + 2]];
-    out += BASE64URL[a >> 2]!;
-    out += BASE64URL[((a & 3) << 4) | ((b ?? 0) >> 4)]!;
-    if (b !== undefined) out += BASE64URL[((b & 15) << 2) | ((c ?? 0) >> 6)]!;
-    if (c !== undefined) out += BASE64URL[c & 63]!;
-  }
+  for (let i = 0; i < codes.length; i += 0x2000) out += String.fromCharCode.apply(null, codes.subarray(i, i + 0x2000) as unknown as number[]);
   return out;
+}
+
+/**
+ * Unpadded base64url. Hand-written because Hermes has no Buffer, and its btoa handles only some
+ * inputs. Table-driven, because the MLS state crosses to the native module as base64 on every call.
+ */
+export function toBase64(bytes: Uint8Array): string {
+  const out = new Uint8Array(Math.ceil((bytes.length * 4) / 3));
+  let o = 0;
+  let i = 0;
+  for (; i + 2 < bytes.length; i += 3) {
+    const n = (bytes[i]! << 16) | (bytes[i + 1]! << 8) | bytes[i + 2]!;
+    out[o++] = BASE64URL_CODES[n >> 18]!;
+    out[o++] = BASE64URL_CODES[(n >> 12) & 63]!;
+    out[o++] = BASE64URL_CODES[(n >> 6) & 63]!;
+    out[o++] = BASE64URL_CODES[n & 63]!;
+  }
+  if (i < bytes.length) {
+    const a = bytes[i]!;
+    const b = i + 1 < bytes.length ? bytes[i + 1]! : undefined;
+    out[o++] = BASE64URL_CODES[a >> 2]!;
+    out[o++] = BASE64URL_CODES[((a & 3) << 4) | ((b ?? 0) >> 4)]!;
+    if (b !== undefined) out[o++] = BASE64URL_CODES[(b & 15) << 2]!;
+  }
+  return fromCharCodes(out);
 }
 
 export function fromBase64(text: string): Uint8Array {
@@ -65,8 +88,9 @@ export function fromBase64(text: string): Uint8Array {
   let buffer = 0;
   let bits = 0;
   let index = 0;
-  for (const char of text) {
-    const value = BASE64URL.indexOf(char);
+  for (let i = 0; i < text.length; i++) {
+    const code = text.charCodeAt(i);
+    const value = code < 128 ? BASE64URL_VALUES[code]! : -1;
     if (value < 0) throw new Error("Invalid base64");
     buffer = (buffer << 6) | value;
     bits += 6;
