@@ -1,5 +1,5 @@
 import { webcrypto } from "node:crypto";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { decodeFrankedPayload } from "../src/franking";
 import { MemoryMlsStore, MlsMessenger, MlsRemovedError, isOutOfChat, type MlsCrypto, type MlsTransport } from "../src/mlsClient";
 import { MemoryMlsServer } from "../src/mlsMemoryServer";
@@ -419,6 +419,47 @@ describe("the sync engine when a chat moves to MLS", () => {
     await bob.sync(CHAT);
     await bob.send(CHAT, "hello");
     expect(await texts(alice)).toEqual(["hello"]);
+  });
+});
+
+describe("the sync engine's key packages", () => {
+  it("refills them while the app stays open, at most every ten minutes, and a failed refill doesn't stop the sync", async () => {
+    vi.useFakeTimers({ toFake: ["Date"] });
+    try {
+      const { server, phone } = world(["alice", "bob"]);
+      let uploads = true;
+      const alice = phone("alice", "alice-phone", (base) => ({
+        ...base,
+        uploadKeyPackages: async (...args) => {
+          if (!uploads) throw new Error("offline");
+          return base.uploadKeyPackages(...args);
+        },
+      }));
+      const count = () => server.transportFor("alice", "alice-phone").keyPackageCount("alice-phone");
+      await alice.ensureIdentity();
+      expect(await count()).toBe(10);
+
+      // Bob's phone claims every one of them, as adding Alice to chats would.
+      const bob = server.transportFor("bob", "bob-phone");
+      for (let i = 0; i < 10; i++) await bob.claimKeyPackages(CHAT, ["alice-phone"]);
+      expect(await count()).toBe(0);
+
+      // Soon after launch the phone doesn't check again.
+      await alice.sync(CHAT);
+      expect(await count()).toBe(0);
+
+      // Later, a refill that fails leaves the sync working, and the next check refills.
+      vi.setSystemTime(Date.now() + 11 * 60 * 1000);
+      uploads = false;
+      await expect(alice.sync(CHAT)).resolves.toEqual([]);
+      expect(await count()).toBe(0);
+      uploads = true;
+      vi.setSystemTime(Date.now() + 11 * 60 * 1000);
+      await alice.sync(CHAT);
+      expect(await count()).toBe(10);
+    } finally {
+      vi.useRealTimers();
+    }
   });
 });
 

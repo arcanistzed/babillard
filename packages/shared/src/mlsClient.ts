@@ -158,6 +158,11 @@ export function isOutOfChat(error: unknown): boolean {
 const encoder = new TextEncoder();
 const decoder = new TextDecoder();
 const KEY_PACKAGE_TARGET = 10;
+/**
+ * How often a sync checks this phone's key packages. Others use them up adding this phone to
+ * chats, and a phone with none can't be added, nor let a chat move to MLS.
+ */
+const TOP_UP_EVERY_MS = 10 * 60 * 1000;
 const MAX_ATTEMPTS = 4;
 
 /** The code people compare in person, from any MLS library's roster. `signatureKey` is base64url. */
@@ -188,6 +193,8 @@ function trustedEver(state: MlsGroupState): TrustedDevice[] {
 
 export class MlsMessenger {
   private queue: Promise<unknown> = Promise.resolve();
+  /** When this phone last checked its key packages. Zero, so the first sync checks. */
+  private lastTopUp = 0;
 
   constructor(
     private readonly crypto: MlsCrypto,
@@ -245,7 +252,20 @@ export class MlsMessenger {
     });
   }
 
+  /** Tops up now and then, so a phone left open doesn't run out. A failure waits for the next try. */
+  private async maybeTopUp(): Promise<void> {
+    if (Date.now() - this.lastTopUp < TOP_UP_EVERY_MS) return;
+    const device = await this.store.loadDevice();
+    if (!device?.registered) return;
+    try {
+      await this.topUp();
+    } catch {
+      // Offline, or the server said no. Syncing matters more, and the next check tries again.
+    }
+  }
+
   private async topUp(): Promise<void> {
+    this.lastTopUp = Date.now();
     const available = await this.transport.keyPackageCount(this.me.deviceId);
     if (available >= KEY_PACKAGE_TARGET) return;
     let state = (await this.device()).state;
@@ -262,7 +282,10 @@ export class MlsMessenger {
 
   /** Brings a chat up to date and returns the messages it received. */
   sync(conversationId: string): Promise<MlsStoredMessage[]> {
-    return this.serial(() => this.syncLocked(conversationId));
+    return this.serial(async () => {
+      await this.maybeTopUp();
+      return this.syncLocked(conversationId);
+    });
   }
 
   /** Sends text, after syncing and doing any chores the server needs first. */
