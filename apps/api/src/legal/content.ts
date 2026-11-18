@@ -12,7 +12,7 @@ export const LEGAL_PATHS: Record<LegalPage, Record<Language, string>> = {
 
 const privacyEn = `# Privacy policy
 
-Last updated: November 17, 2026
+Last updated: November 18, 2026
 
 Babillard helps people find others nearby who want to talk about the same topics, then meet in person. In this policy, "we" means the operator of Babillard, named in our Terms of use. We're based in Canada. Our privacy officer is responsible for how we handle your information. Questions and requests go to privacy@babillard.app.
 
@@ -20,7 +20,7 @@ Babillard helps people find others nearby who want to talk about the same topics
 
 **What you give us.** Your email address, first name, date of birth, role, fields of interest, what you're looking for, city, and campus. A photo and a line about yourself are optional.
 
-**What you do in the app.** The topics and people you swipe on, your stance on question topics if you pick one, your messages (encrypted, so we can't read them), the meetups you propose and answer, whether you invited someone to one, whether you say a meetup happened, your answers to the questions that follow, any takeaway line you write, the topics you suggest, and the people you report or block.
+**What you do in the app.** The topics and people you swipe on, your stance on question topics if you pick one, your messages (encrypted, so we can't read them), the meetups you propose and answer, whether you invited someone to one, whether you say a meetup happened, your answers to the short questions after it, any takeaway line you write, the topics you suggest, and the people you report or block.
 
 **Device details.** A push notification token if you allow notifications, and your phone's public encryption key. Your IP address reaches our host with every request, and we use it to slow down abuse of sign-in. Our host keeps request logs, including IP addresses, for up to a week.
 
@@ -32,7 +32,7 @@ Babillard helps people find others nearby who want to talk about the same topics
 
 ## Your consent
 
-You agree to this policy by ticking the box when you sign up. Some of what you tell us is sensitive: your date of birth, your stance on questions, and whether you're open to dating. We require your date of birth because the app is only for adults, and other people see the age it gives. You can withdraw your consent at any time by deleting your account, but you can't use the app without one.
+You agree to this policy by ticking the box when you sign up. Some of what you tell us is sensitive: your date of birth, your stance on questions, and whether you're open to dating. We require your date of birth because the app is only for adults. You can withdraw your consent at any time by deleting your account, since the app can't work without this information.
 
 ## Your location
 
@@ -40,11 +40,11 @@ If you tap the location icon, the app asks your phone for your rough location on
 
 ## What other people see
 
-People in your city who share a topic with you can see your first name, age, photo, line about yourself, role, campus, fields, what you're looking for, and the topics you share. If your school email verified you, they see that too, but not the address.
+People in your city who share a topic with you can see your first name, age, photo, line about yourself, role, campus, fields, what you're looking for, and the topics you share. If you verified a school email, they see that you did, but not the address.
 
-Your date of birth and email address are never shown to other people. They see your age, not the date. Your stance on a question is never shown as yours, and you can change or clear it in Your topics. A group sees how many of the people it formed with gave each stance, and only when every stance given was given by at least two people and they don't all agree. People in your city can see percentages for a question once at least 10 people have answered and they don't all agree.
+Other people never see your date of birth or email address, only your age. Your stance on a question is never shown as yours, and you can change or clear it in Your topics. Group members can see how many of the group's first members gave each stance, but only when they don't all agree and no stance was given by just one person, so nobody's answer can be singled out. People in your city can see percentages for a question once at least 10 people have answered and they don't all agree.
 
-People in a chat with you can see your messages and profile. Anyone with a meetup's share link can see its topic, time, and place, but not who's going. Your answers about how a meetup went only appear as percentages for its topic, once enough people have answered. If a moderator approves a takeaway line you wrote, it appears on the topic's public page without your name. That page also shows how many people have picked the topic, once at least 5 have, but not who. If you report someone, we don't tell them it was you.
+People in a chat with you can see your messages and profile. Anyone with a meetup's share link can see its topic, time, and place, but not who's going. Your answers about how a meetup went only appear as percentages for its topic, once at least 5 people have answered. If a moderator approves a takeaway line you wrote, it appears on the topic's public page without your name. That page also shows how many people have picked the topic, once at least 5 have, but not who. If you report someone, we don't tell them it was you.
 
 ## How we use it
 
@@ -56,11 +56,19 @@ The app ranks topics and people automatically, using your fields, the topics you
 
 ## Your messages
 
-Messages are end-to-end encrypted. Only the phones of the people in a chat can read them, and we can't, so we couldn't hand them over even if asked. If you report someone from a chat, your phone automatically shares the reported message and up to five on each side of it with us, or the latest ten if you reported from their profile in that chat, so a moderator can review them. You don't choose which. If none of them is from the person you reported, it shares none. We keep that text with the report. We can see who you chat with and when. Meetup times and places, and notes the app itself adds to a chat, aren't encrypted, because we use them to send reminders and share links. Takeaway lines aren't encrypted either, because a moderator reads each one before it can be shown. If you sign in on a new phone or reinstall the app, it can't read older messages unless you restore a backup. A backup is a file you choose to save, protected by a passphrase we never see. Each chat's About screen has a security code you can compare in person, to check that nobody else was added.
+Messages are end-to-end encrypted. Only the phones of the people in a chat can read them, and we can't, so we couldn't hand them over even if asked. We can see who you chat with and when.
+
+Meetup times and places, and notes the app itself adds to a chat, aren't encrypted, because we use them to send reminders and share links. Takeaway lines aren't encrypted either, because a moderator reads each one before it can be shown.
+
+If you report someone from a chat, your phone automatically shares the reported message and up to five on each side of it with us, or the latest ten if you reported from their profile in that chat, so a moderator can review them. You don't choose which. If none of them is from the person you reported, it shares none. We keep that text with the report.
+
+If you sign in on a new phone or reinstall the app, it can't read older messages unless you restore a backup. A backup is a file you choose to save, protected by a passphrase we never see.
+
+Each chat's About screen has a security code you can compare in person, to check that nobody else was added.
 
 ## Emails and notifications
 
-We email you only to sign you in, and about safety or your account. Push notifications tell you about matches, messages, new groups, and meetups. You can mute a chat in the app, or turn notifications off in your phone's settings. We don't send marketing. If that ever changes, we'll ask you first, and you'll be able to unsubscribe from every message.
+We email you only to sign you in, and about safety or your account. Push notifications tell you about matches, messages, new groups, and meetups. You can mute a chat in the app, or turn notifications off in your phone's settings. We don't send marketing.
 
 ## Who we share it with
 
@@ -81,18 +89,18 @@ These companies may process information outside Canada, including in the United 
 - The iPhone waitlist: until we've sent the email saying the iPhone app is ready, and two years at most. Write to info@babillard.app to be removed sooner.
 - Reports, including any messages shared with them, and moderation history: two years after the case closes.
 - A banned person's email address: for as long as the ban lasts, so they can't sign up again.
-- If you delete your account after someone blocked you: their block, and a code made from your email address with a secret key. The code isn't your address, but whoever holds the key, which includes us, can check whether a given address made it. If you sign up again with that address, the blocks move to your new account and the code is dropped, so a fresh start can't be used to reach someone who blocked you. The code is also dropped once no block on you remains, because each person unblocked you or deleted their own account. A banned person can't do either, so a block they made lasts as long as their ban, and the code with it.
+- If someone blocked you and you delete your account: their block, and a code made from your email address. The code isn't your address, but we can check whether a given address matches it. If you sign up again with that address, the blocks move to your new account and the code is dropped, so deleting and rejoining can't be used to reach someone who blocked you. The code is also dropped once no block on you remains.
 - Everything else: until you delete your account, or after two years without using the app. We email you 30 days before deleting an inactive account.
 
 ## Deleting your account
 
-Go to You, then Delete account. That removes your email address, date of birth, profile, photo, swipes, your place on waiting lists for groups, messages, meetup answers, invites and takeaways, the blocks you made, and notification tokens. A record with an ID and no name, profile or contact details stays behind so that other people's conversations keep working. If someone blocked you, that record also keeps their block and the email code described above, so the block keeps protecting them. Our host's backups can hold deleted data for up to 30 days, and we can't reach screenshots or anything else people saved.
+Go to You, then Delete account. That removes your email address, date of birth, profile, photo, swipes, your place on waiting lists for groups, messages, meetup answers, invites and takeaways, the blocks you made, and notification tokens. A record with an ID and no name, profile or contact details stays behind so that other people's conversations keep working. If someone blocked you, that record also keeps their block and the email code described above. Our host's backups can hold deleted data for up to 30 days, and we can't reach screenshots or anything else people saved.
 
 Reports made about you stay for the period above, so that deleting an account can't erase a safety record.
 
 ## Your rights
 
-You can ask for a copy of your information, ask us to correct or delete it, and ask how the app's ranking affected what you saw. You can withdraw consent at any time by deleting your account. You can change most of it yourself under Edit profile. Write to privacy@babillard.app for anything else, and we'll answer within 30 days.
+You can change most of your information yourself under Edit profile. You can also ask for a copy of it, ask us to correct or delete it, and ask how the app's ranking affected what you saw. Write to privacy@babillard.app, and we'll answer within 30 days.
 
 ## Age
 
@@ -100,7 +108,7 @@ Babillard is for people 18 and over. If we learn that someone is younger, we'll 
 
 ## Security
 
-We encrypt traffic between the app and our servers and store only a hash of sign-in codes and session tokens. No system is perfectly secure. If a breach creates a real risk of harm to you, we'll tell you and the authorities.
+We encrypt traffic between the app and our servers and store sign-in codes and session tokens only in a form that can't be turned back into them. No system is perfectly secure. If a breach creates a real risk of harm to you, we'll tell you and the authorities.
 
 ## Changes
 
@@ -108,7 +116,7 @@ If we change this policy in a way that matters, we'll tell you in the app or by 
 
 const termsEn = `# Terms of use
 
-Last updated: November 7, 2026
+Last updated: November 18, 2026
 
 These terms are an agreement between you and Daniel Thorp, who runs Babillard. By ticking the box when you sign up, you accept them and our Privacy policy. If you don't agree, don't use the app.
 
@@ -140,7 +148,7 @@ What you post stays yours. You give us a non-exclusive, worldwide, royalty-free 
 
 ## Moderation
 
-You can report anyone from their profile or by long-pressing a message. We aim to act on reports within 24 hours, and first on anything involving a minor or intimate images shared without consent. Our Safety page explains how. Moderators may warn you, remove content, or ban you, and they can do this without notice when safety is at stake. If you think we got it wrong, write to privacy@babillard.app and a person will look at it again. You can leave at any time by deleting your account.
+You can report anyone from their profile or by long-pressing a message. We aim to act on reports within 24 hours, and first on anything involving a minor or intimate images shared without consent. Our Safety standards page has more. Moderators may warn you, remove content, or ban you, and they can do this without notice when safety is at stake. If you think we got it wrong, write to privacy@babillard.app and a person will look at it again. You can leave at any time by deleting your account.
 
 ## The service
 
@@ -160,7 +168,7 @@ These terms are governed by the laws of the Province of Ontario and the federal 
 
 ## Changes
 
-If we change these terms in a way that matters, we'll tell you at least 30 days before they take effect, unless a safety or legal reason means it can't wait. If you don't accept a change, you can delete your account. Continuing to use the app after that means you accept them.
+If we change these terms in a way that matters, we'll tell you at least 30 days before they take effect, unless a safety or legal reason means it can't wait. If you don't accept a change, you can delete your account. If you keep using the app after a change takes effect, you accept it.
 
 ## Apple and Google
 
@@ -176,7 +184,7 @@ City data comes from GeoNames (geonames.org), licensed under Creative Commons At
 
 const safetyEn = `# Safety standards
 
-Last updated: November 7, 2026
+Last updated: November 18, 2026
 
 Babillard is for adults who want to meet in person to talk about ideas. This page explains how we keep people safe, especially children, who aren't allowed on the app.
 
@@ -186,11 +194,11 @@ You must be 18 to use Babillard, and we ask for a date of birth at sign-up. We h
 
 ## Harmful content
 
-We don't allow harassment, threats, hate, sexual content, intimate images shared without consent, or encouragement of self-harm or violence. People can only post a profile, suggest topics, and send messages. Moderators review suggested topics before anyone else sees them.
+We don't allow harassment, threats, hate, sexual content, intimate images shared without consent, or encouragement of self-harm or violence. People can only post a profile, suggest topics, send messages, and write a takeaway line after a meetup. Moderators review suggested topics and takeaway lines before anyone else sees them.
 
 ## Reporting and blocking
 
-Anyone can report a person from their profile or by long-pressing a message, and can block anyone. We don't tell the person who reported them. We aim to act on reports within 24 hours, and first on anything involving a minor, intimate images, or someone's safety. A person reviews every report. If we act against you and you think we got it wrong, write to us and a person will look at it again.
+Anyone can report a person from their profile or by long-pressing a message, and can block anyone. We never tell someone who reported them. We aim to act on reports within 24 hours, and first on anything involving a minor, intimate images, or someone's safety. A person reviews every report. If we act against you and you think we got it wrong, write to privacy@babillard.app and a person will look at it again.
 
 ## Private messages
 
@@ -206,7 +214,7 @@ Safety concerns, including anything involving a child: safety@babillard.app. Hel
 
 const privacyFr = `# Politique de confidentialité
 
-Dernière mise à jour: 17 novembre 2026
+Dernière mise à jour: 18 novembre 2026
 
 Babillard aide les gens à trouver des personnes près de chez eux qui veulent parler des mêmes sujets, puis à se rencontrer en personne. Dans cette politique, « nous » désigne l'exploitant de Babillard, nommé dans nos Conditions d'utilisation. Nous sommes établis au Canada. Notre responsable de la protection des renseignements personnels répond de la façon dont nous traitons vos renseignements. Adressez vos questions et demandes à privacy@babillard.app.
 
@@ -214,7 +222,7 @@ Babillard aide les gens à trouver des personnes près de chez eux qui veulent p
 
 **Ce que vous nous donnez.** Votre adresse courriel, votre prénom, votre date de naissance, votre rôle, vos domaines d'intérêt, ce que vous recherchez, votre ville et votre campus. Une photo et une phrase à votre sujet sont facultatives.
 
-**Ce que vous faites dans l'application.** Les sujets et les personnes que vous faites glisser, votre position sur les sujets de type question si vous en choisissez une, vos messages (chiffrés, donc illisibles pour nous), les rencontres que vous proposez et vos réponses, le fait que vous ayez invité quelqu'un à une rencontre, le fait qu'une rencontre a eu lieu si vous l'indiquez, vos réponses aux questions qui suivent, la phrase à retenir que vous écrivez s'il y a lieu, les sujets que vous suggérez, ainsi que les personnes que vous signalez ou bloquez.
+**Ce que vous faites dans l'application.** Les sujets et les personnes que vous faites glisser, votre position sur les sujets de type question si vous en choisissez une, vos messages (chiffrés, donc illisibles pour nous), les rencontres que vous proposez et vos réponses, le fait que vous ayez invité quelqu'un à une rencontre, le fait qu'une rencontre a eu lieu si vous l'indiquez, vos réponses aux courtes questions qui la suivent, la phrase à retenir que vous écrivez s'il y a lieu, les sujets que vous suggérez, ainsi que les personnes que vous signalez ou bloquez.
 
 **Renseignements sur l'appareil.** Un jeton de notification si vous autorisez les notifications, et la clé publique de chiffrement de votre téléphone. Votre adresse IP parvient à notre hébergeur à chaque requête, et nous l'utilisons pour limiter les abus à la connexion. Notre hébergeur conserve les journaux de requêtes, y compris les adresses IP, jusqu'à une semaine.
 
@@ -226,7 +234,7 @@ Babillard aide les gens à trouver des personnes près de chez eux qui veulent p
 
 ## Votre consentement
 
-Vous acceptez cette politique en cochant la case à l'inscription. Certains renseignements que vous nous donnez sont sensibles: votre date de naissance, votre position sur les questions, et le fait que vous êtes ouvert ou ouverte aux rencontres amoureuses. Nous exigeons votre date de naissance parce que l'application est réservée aux adultes, et les autres voient l'âge qui en découle. Vous pouvez retirer votre consentement à tout moment en supprimant votre compte, mais vous ne pouvez pas utiliser l'application sans compte.
+Vous acceptez cette politique en cochant la case à l'inscription. Certains renseignements que vous nous donnez sont sensibles: votre date de naissance, votre position sur les questions, et le fait que vous êtes ouvert ou ouverte aux rencontres amoureuses. Nous exigeons votre date de naissance parce que l'application est réservée aux adultes. Vous pouvez retirer votre consentement à tout moment en supprimant votre compte, puisque l'application ne peut pas fonctionner sans ces renseignements.
 
 ## Votre emplacement
 
@@ -234,11 +242,11 @@ Si vous touchez l'icône d'emplacement, l'application demande une seule fois vot
 
 ## Ce que les autres voient
 
-Les personnes de votre ville qui partagent un sujet avec vous peuvent voir votre prénom, votre âge, votre photo, votre phrase de présentation, votre rôle, votre campus, vos domaines, ce que vous recherchez et les sujets en commun. Si votre courriel scolaire vous a vérifié, elles le voient aussi, mais pas l'adresse.
+Les personnes de votre ville qui partagent un sujet avec vous peuvent voir votre prénom, votre âge, votre photo, votre phrase de présentation, votre rôle, votre campus, vos domaines, ce que vous recherchez et les sujets en commun. Si vous avez vérifié un courriel scolaire, elles le voient, mais pas l'adresse.
 
-Votre date de naissance et votre adresse courriel ne sont jamais montrées aux autres. Ils voient votre âge, pas la date. Votre position sur une question n'est jamais présentée comme la vôtre, et vous pouvez la changer ou l'effacer dans Vos sujets. Un groupe voit combien des personnes avec qui il s'est formé ont donné chaque position, et seulement si chaque position donnée l'a été par au moins deux personnes et qu'elles ne sont pas toutes du même avis. Les gens de votre ville peuvent voir des pourcentages pour une question lorsqu'au moins 10 personnes ont répondu et qu'elles ne sont pas toutes du même avis.
+Les autres ne voient jamais votre date de naissance ni votre adresse courriel, seulement votre âge. Votre position sur une question n'est jamais présentée comme la vôtre, et vous pouvez la changer ou l'effacer dans Vos sujets. Les membres d'un groupe peuvent voir combien de ses membres de départ ont donné chaque position, mais seulement s'ils ne sont pas tous du même avis et qu'aucune position n'a été donnée par une seule personne, pour qu'aucune réponse ne puisse être attribuée à quelqu'un. Les gens de votre ville peuvent voir des pourcentages pour une question lorsqu'au moins 10 personnes ont répondu et qu'elles ne sont pas toutes du même avis.
 
-Les personnes d'une conversation peuvent voir vos messages et votre profil. Toute personne qui a le lien de partage d'une rencontre peut en voir le sujet, l'heure et le lieu, mais pas qui y va. Vos réponses sur le déroulement d'une rencontre ne paraissent qu'en pourcentages pour son sujet, une fois qu'assez de gens ont répondu. Si l'équipe de modération approuve une phrase à retenir que vous avez écrite, elle paraît sur la page publique du sujet, sans votre nom. Cette page indique aussi combien de personnes ont choisi le sujet, à partir de 5, mais pas qui. Si vous signalez quelqu'un, nous ne lui disons pas que c'est vous.
+Les personnes d'une conversation peuvent voir vos messages et votre profil. Toute personne qui a le lien de partage d'une rencontre peut en voir le sujet, l'heure et le lieu, mais pas qui y va. Vos réponses sur le déroulement d'une rencontre ne paraissent qu'en pourcentages pour son sujet, une fois qu'au moins 5 personnes ont répondu. Si l'équipe de modération approuve une phrase à retenir que vous avez écrite, elle paraît sur la page publique du sujet, sans votre nom. Cette page indique aussi combien de personnes ont choisi le sujet, à partir de 5, mais pas qui. Si vous signalez quelqu'un, nous ne lui disons pas que c'est vous.
 
 ## Comment nous les utilisons
 
@@ -250,11 +258,19 @@ L'application classe automatiquement les sujets et les personnes selon vos domai
 
 ## Vos messages
 
-Les messages sont chiffrés de bout en bout. Seuls les téléphones des personnes d'une conversation peuvent les lire. Nous ne le pouvons pas, et nous ne pourrions donc pas les remettre même si on nous le demandait. Si vous signalez quelqu'un depuis une conversation, votre téléphone nous transmet automatiquement le message signalé et jusqu'à cinq messages de chaque côté, ou les dix derniers si vous avez signalé depuis son profil dans cette conversation, pour que l'équipe de modération les examine. Vous ne choisissez pas lesquels. Si aucun ne vient de la personne signalée, il n'en transmet aucun. Nous conservons ce texte avec le signalement. Nous pouvons voir avec qui vous discutez et quand. Les heures et lieux des rencontres, ainsi que les notes ajoutées par l'application, ne sont pas chiffrés, parce que nous les utilisons pour les rappels et les liens de partage. Les phrases à retenir ne le sont pas non plus, parce que l'équipe de modération lit chacune avant qu'elle puisse être affichée. Si vous vous connectez sur un nouveau téléphone ou réinstallez l'application, elle ne pourra pas lire les anciens messages, sauf si vous restaurez une sauvegarde. Une sauvegarde est un fichier que vous choisissez d'enregistrer, protégé par une phrase secrète que nous ne voyons jamais. L'écran À propos de chaque conversation affiche un code de sécurité à comparer en personne, pour vérifier que personne d'autre n'a été ajouté.
+Les messages sont chiffrés de bout en bout. Seuls les téléphones des personnes d'une conversation peuvent les lire. Nous ne le pouvons pas, et nous ne pourrions donc pas les remettre même si on nous le demandait. Nous pouvons voir avec qui vous discutez et quand.
+
+Les heures et lieux des rencontres, ainsi que les notes ajoutées par l'application, ne sont pas chiffrés, parce que nous les utilisons pour les rappels et les liens de partage. Les phrases à retenir ne le sont pas non plus, parce que l'équipe de modération lit chacune avant qu'elle puisse être affichée.
+
+Si vous signalez quelqu'un depuis une conversation, votre téléphone nous transmet automatiquement le message signalé et jusqu'à cinq messages de chaque côté, ou les dix derniers si vous avez signalé depuis son profil dans cette conversation, pour que l'équipe de modération les examine. Vous ne choisissez pas lesquels. Si aucun ne vient de la personne signalée, il n'en transmet aucun. Nous conservons ce texte avec le signalement.
+
+Si vous vous connectez sur un nouveau téléphone ou réinstallez l'application, elle ne pourra pas lire les anciens messages, sauf si vous restaurez une sauvegarde. Une sauvegarde est un fichier que vous choisissez d'enregistrer, protégé par une phrase secrète que nous ne voyons jamais.
+
+L'écran À propos de chaque conversation affiche un code de sécurité à comparer en personne, pour vérifier que personne d'autre n'a été ajouté.
 
 ## Courriels et notifications
 
-Nous vous écrivons seulement pour vous connecter, et au sujet de la sécurité ou de votre compte. Les notifications vous informent des jumelages, des messages, des nouveaux groupes et des rencontres. Vous pouvez mettre une conversation en sourdine dans l'application, ou désactiver les notifications dans les réglages du téléphone. Nous n'envoyons pas de marketing. Si cela change, nous vous le demanderons d'abord, et vous pourrez vous désabonner de chaque message.
+Nous vous écrivons seulement pour vous connecter, et au sujet de la sécurité ou de votre compte. Les notifications vous informent des jumelages, des messages, des nouveaux groupes et des rencontres. Vous pouvez mettre une conversation en sourdine dans l'application, ou désactiver les notifications dans les réglages du téléphone. Nous n'envoyons pas de marketing.
 
 ## Avec qui nous les partageons
 
@@ -275,18 +291,18 @@ Ces entreprises peuvent traiter des renseignements à l'extérieur du Canada, y 
 - Liste d'attente iPhone: jusqu'à l'envoi du courriel annonçant l'application iPhone, et deux ans au plus. Écrivez à info@babillard.app pour retirer votre adresse plus tôt.
 - Signalements, y compris les messages transmis, et historique de modération: deux ans après la fermeture du dossier.
 - Adresse courriel d'une personne bannie: tant que dure le bannissement, pour l'empêcher de se réinscrire.
-- Si vous supprimez votre compte après que quelqu'un vous a bloqué: son blocage, et un code tiré de votre adresse courriel avec une clé secrète. Ce code n'est pas votre adresse, mais quiconque détient la clé, nous y compris, peut vérifier si une adresse donnée l'a produit. Si vous vous réinscrivez avec cette adresse, les blocages passent à votre nouveau compte et le code est supprimé, pour qu'un nouveau départ ne permette pas de joindre quelqu'un qui vous a bloqué. Le code est aussi supprimé dès qu'il ne reste plus aucun blocage contre vous, parce que chaque personne vous a débloqué ou a supprimé son propre compte. Une personne bannie ne peut faire ni l'un ni l'autre, donc un blocage qu'elle a fait dure tant que son bannissement, et le code avec lui.
+- Si quelqu'un vous a bloqué et que vous supprimez votre compte: son blocage, et un code tiré de votre adresse courriel. Ce code n'est pas votre adresse, mais nous pouvons vérifier si une adresse donnée y correspond. Si vous vous réinscrivez avec cette adresse, les blocages passent à votre nouveau compte et le code est supprimé, pour que supprimer son compte et se réinscrire ne permette pas de joindre quelqu'un qui vous a bloqué. Le code est aussi supprimé dès qu'il ne reste plus aucun blocage contre vous.
 - Tout le reste: jusqu'à la suppression de votre compte, ou après deux ans sans utiliser l'application. Nous vous écrivons 30 jours avant de supprimer un compte inactif.
 
 ## Supprimer votre compte
 
-Allez à Vous, puis Supprimer le compte. Cela retire votre adresse courriel, votre date de naissance, votre profil, votre photo, vos glissements, votre place sur les listes d'attente des groupes, vos messages, vos réponses, invitations et phrases à retenir liées aux rencontres, les blocages que vous avez faits et vos jetons de notification. Un dossier avec un identifiant, sans nom, profil ni coordonnées, subsiste pour que les conversations des autres continuent de fonctionner. Si quelqu'un vous a bloqué, ce dossier garde aussi son blocage et le code tiré de votre courriel décrit plus haut, pour que le blocage continue de le protéger. Les sauvegardes de notre hébergeur peuvent contenir des données supprimées jusqu'à 30 jours, et nous n'avons pas accès aux captures d'écran ni à ce que d'autres ont enregistré.
+Allez à Vous, puis Supprimer le compte. Cela retire votre adresse courriel, votre date de naissance, votre profil, votre photo, vos glissements, votre place sur les listes d'attente des groupes, vos messages, vos réponses, invitations et phrases à retenir liées aux rencontres, les blocages que vous avez faits et vos jetons de notification. Un dossier avec un identifiant, sans nom, profil ni coordonnées, subsiste pour que les conversations des autres continuent de fonctionner. Si quelqu'un vous a bloqué, ce dossier garde aussi son blocage et le code tiré de votre courriel décrit plus haut. Les sauvegardes de notre hébergeur peuvent contenir des données supprimées jusqu'à 30 jours, et nous n'avons pas accès aux captures d'écran ni à ce que d'autres ont enregistré.
 
 Les signalements vous concernant sont conservés pendant la période indiquée ci-dessus, afin que la suppression d'un compte n'efface pas un dossier de sécurité.
 
 ## Vos droits
 
-Vous pouvez demander une copie de vos renseignements, demander de les corriger ou de les supprimer, et demander comment le classement de l'application a influencé ce que vous avez vu. Vous pouvez retirer votre consentement à tout moment en supprimant votre compte. Vous pouvez modifier la plupart de ces renseignements vous-même dans Modifier le profil. Pour le reste, écrivez à privacy@babillard.app. Nous répondrons dans un délai de 30 jours.
+Vous pouvez modifier la plupart de vos renseignements vous-même dans Modifier le profil. Vous pouvez aussi en demander une copie, demander de les corriger ou de les supprimer, et demander comment le classement de l'application a influencé ce que vous avez vu. Écrivez à privacy@babillard.app. Nous répondrons dans un délai de 30 jours.
 
 ## Âge
 
@@ -294,7 +310,7 @@ Babillard est réservé aux personnes de 18 ans et plus. Si nous apprenons qu'un
 
 ## Sécurité
 
-Nous chiffrons les échanges entre l'application et nos serveurs, et nous ne conservons qu'une empreinte des codes de connexion et des jetons de session. Aucun système n'est parfaitement sûr. Si une atteinte crée un risque réel de préjudice pour vous, nous vous en informerons, ainsi que les autorités.
+Nous chiffrons les échanges entre l'application et nos serveurs, et nous ne conservons les codes de connexion et les jetons de session que sous une forme qui ne permet pas de les retrouver. Aucun système n'est parfaitement sûr. Si une atteinte crée un risque réel de préjudice pour vous, nous vous en informerons, ainsi que les autorités.
 
 ## Changements
 
@@ -302,7 +318,7 @@ Si nous modifions cette politique de façon importante, nous vous en informerons
 
 const termsFr = `# Conditions d'utilisation
 
-Dernière mise à jour: 7 novembre 2026
+Dernière mise à jour: 18 novembre 2026
 
 Ces conditions constituent une entente entre vous et Daniel Thorp, qui exploite Babillard. En cochant la case à l'inscription, vous les acceptez, ainsi que notre Politique de confidentialité. Si vous n'êtes pas d'accord, n'utilisez pas l'application.
 
@@ -334,7 +350,7 @@ Ce que vous publiez vous appartient. Vous nous accordez une licence non exclusiv
 
 ## Modération
 
-Vous pouvez signaler quelqu'un depuis son profil ou en appuyant longuement sur un message. Nous visons à donner suite aux signalements dans les 24 heures, en priorité pour ce qui concerne une personne mineure ou des images intimes partagées sans consentement. Notre page Sécurité explique comment. Les modérateurs peuvent vous avertir, retirer du contenu ou vous bannir, et ils peuvent le faire sans préavis lorsque la sécurité est en jeu. Si vous pensez que nous avons fait erreur, écrivez à privacy@babillard.app et une personne réexaminera la décision. Vous pouvez partir à tout moment en supprimant votre compte.
+Vous pouvez signaler quelqu'un depuis son profil ou en appuyant longuement sur un message. Nous visons à donner suite aux signalements dans les 24 heures, en priorité pour ce qui concerne une personne mineure ou des images intimes partagées sans consentement. Notre page Normes de sécurité en dit plus. L'équipe de modération peut vous avertir, retirer du contenu ou vous bannir, et elle peut le faire sans préavis lorsque la sécurité est en jeu. Si vous pensez que nous avons fait erreur, écrivez à privacy@babillard.app et une personne réexaminera la décision. Vous pouvez partir à tout moment en supprimant votre compte.
 
 ## Le service
 
@@ -354,7 +370,7 @@ Ces conditions sont régies par les lois de la province de l'Ontario et les lois
 
 ## Changements
 
-Si nous modifions ces conditions de façon importante, nous vous en informerons au moins 30 jours avant leur entrée en vigueur, sauf si une raison de sécurité ou une raison juridique ne permet pas d'attendre. Si vous n'acceptez pas un changement, vous pouvez supprimer votre compte. Continuer d'utiliser l'application ensuite signifie que vous l'acceptez.
+Si nous modifions ces conditions de façon importante, nous vous en informerons au moins 30 jours avant leur entrée en vigueur, sauf si une raison de sécurité ou une raison juridique ne permet pas d'attendre. Si vous n'acceptez pas un changement, vous pouvez supprimer votre compte. Si vous continuez d'utiliser l'application après l'entrée en vigueur d'un changement, vous l'acceptez.
 
 ## Apple et Google
 
@@ -370,7 +386,7 @@ Les données sur les villes proviennent de GeoNames (geonames.org), sous licence
 
 const safetyFr = `# Normes de sécurité
 
-Dernière mise à jour: 7 novembre 2026
+Dernière mise à jour: 18 novembre 2026
 
 Babillard s'adresse aux adultes qui veulent se rencontrer en personne pour parler d'idées. Cette page explique comment nous assurons la sécurité des gens, en particulier des enfants, qui ne sont pas admis sur l'application.
 
@@ -380,15 +396,15 @@ Il faut avoir 18 ans pour utiliser Babillard, et nous demandons une date de nais
 
 ## Contenu préjudiciable
 
-Nous n'acceptons pas le harcèlement, les menaces, la haine, le contenu sexuel, les images intimes partagées sans consentement, ni l'incitation à l'automutilation ou à la violence. Les gens peuvent seulement publier un profil, suggérer des sujets et envoyer des messages. Les modérateurs examinent les sujets suggérés avant que d'autres les voient.
+Nous n'acceptons pas le harcèlement, les menaces, la haine, le contenu sexuel, les images intimes partagées sans consentement, ni l'incitation à l'automutilation ou à la violence. Les gens peuvent seulement publier un profil, suggérer des sujets, envoyer des messages et écrire une phrase à retenir après une rencontre. L'équipe de modération examine les sujets suggérés et les phrases à retenir avant que d'autres les voient.
 
 ## Signaler et bloquer
 
-Chacun peut signaler une personne depuis son profil ou en appuyant longuement sur un message, et peut bloquer qui il veut. Nous ne disons pas à la personne qui l'a signalée. Nous visons à donner suite aux signalements dans les 24 heures, en priorité pour ce qui concerne une personne mineure, des images intimes ou la sécurité de quelqu'un. Une personne examine chaque signalement. Si nous prenons une mesure contre vous et que vous pensez que nous avons fait erreur, écrivez-nous et une personne réexaminera la décision.
+Chacun peut signaler une personne depuis son profil ou en appuyant longuement sur un message, et peut bloquer qui il veut. Nous ne disons jamais à une personne qui l'a signalée. Nous visons à donner suite aux signalements dans les 24 heures, en priorité pour ce qui concerne une personne mineure, des images intimes ou la sécurité de quelqu'un. Une personne examine chaque signalement. Si nous prenons une mesure contre vous et que vous pensez que nous avons fait erreur, écrivez à privacy@babillard.app et une personne réexaminera la décision.
 
 ## Messages privés
 
-Les messages sont chiffrés de bout en bout: nous ne pouvons ni les lire ni les analyser. Lorsqu'une personne signale une conversation, son téléphone nous transmet le message signalé et ceux qui l'entourent, et c'est ce que les modérateurs examinent.
+Les messages sont chiffrés de bout en bout: nous ne pouvons ni les lire ni les analyser. Lorsqu'une personne signale une conversation, son téléphone nous transmet le message signalé et ceux qui l'entourent, et c'est ce que l'équipe de modération examine.
 
 ## Se rencontrer en sécurité
 
