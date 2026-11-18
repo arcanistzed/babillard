@@ -1,4 +1,4 @@
-import { HISTORY_KEY_LENGTH, MlsMessenger, SqlMlsStore, fromBase64, httpMlsTransport, toBase64, type HttpCall, type SqlDb } from "@babillard/shared";
+import { HISTORY_KEY_LENGTH, MlsMessenger, SqlMlsStore, fromBase64, holdsMlsGroup, httpMlsTransport, toBase64, type HttpCall, type SqlDb } from "@babillard/shared";
 import * as Crypto from "expo-crypto";
 import * as SecureStore from "expo-secure-store";
 import * as SQLite from "expo-sqlite";
@@ -70,11 +70,14 @@ const call: HttpCall = async (method, path, body) => {
 };
 
 let current: { userId: string; messenger: Promise<MlsMessenger> } | null = null;
+/** The open messenger's store, so the downgrade guard can ask it without a second connection. */
+let currentStore: { userId: string; store: SqlMlsStore } | null = null;
 
 async function open(userId: string): Promise<MlsMessenger> {
   const device = await ensureDeviceKey(userId);
   const db = await SQLite.openDatabaseAsync(databaseName(userId));
   const store = new SqlMlsStore(expoSqlDb(db), await storeKey(userId), random);
+  currentStore = { userId, store };
   const messenger = new MlsMessenger(nativeCrypto, httpMlsTransport(call), store, { userId, deviceId: device.publicKey });
   await messenger.ensureIdentity();
   const historyKey = await storedHistoryKey(userId);
@@ -106,9 +109,37 @@ export function mlsMessenger(me: MlsUser | null | undefined): Promise<MlsMesseng
   return current.messenger;
 }
 
+/**
+ * The downgrade guard's question, asked whatever `/me` says: does this phone hold an MLS group for
+ * this chat, or a commit that may have moved it? If so, the chat must never get v1 from here.
+ *
+ * It creates nothing and asks the server nothing. The database key is made the first time MLS opens,
+ * so with no key there's no database and no group, and it stops there without opening anything.
+ * With a key, it opens the database just to read it, never through `open()`, which registers.
+ * A key whose database won't open counts as holding a group: the guard fails closed.
+ */
+export async function holdsMlsGroupHere(userId: string, conversationId: string): Promise<boolean> {
+  if (!isAvailable) return false;
+  if (currentStore?.userId === userId) return holdsMlsGroup(currentStore.store, nativeCrypto, conversationId).catch(() => true);
+  try {
+    const key = await SecureStore.getItemAsync(keyName(userId));
+    if (!key) return false;
+    const db = await SQLite.openDatabaseAsync(databaseName(userId));
+    try {
+      return await holdsMlsGroup(new SqlMlsStore(expoSqlDb(db), fromBase64(key), random), nativeCrypto, conversationId);
+    } finally {
+      await db.closeAsync().catch(() => undefined);
+    }
+  } catch (error) {
+    console.warn("Couldn't check this phone's MLS groups, so v1 stays off for this chat", error);
+    return true;
+  }
+}
+
 /** Deleting the account removes the database and its key, which makes anything left in it unreadable. */
 export async function deleteMlsData(userId: string): Promise<void> {
   current = null;
+  currentStore = null;
   await SecureStore.deleteItemAsync(keyName(userId));
   await SecureStore.deleteItemAsync(historyKeyName(userId));
   await SQLite.deleteDatabaseAsync(databaseName(userId)).catch(() => undefined);

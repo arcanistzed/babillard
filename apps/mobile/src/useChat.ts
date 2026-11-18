@@ -1,4 +1,4 @@
-import { MlsRemovedError, isOutOfChat, showsSender, type ChatMessage, type ConversationDetail, type MlsStoredMessage, type ServerSocketEvent } from "@babillard/shared";
+import { MlsDowngradeError, MlsRemovedError, isOutOfChat, sendPath, showsSender, type ChatMessage, type ConversationDetail, type MlsStoredMessage, type ServerSocketEvent } from "@babillard/shared";
 import { useQueryClient } from "@tanstack/react-query";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { AppState } from "react-native";
@@ -6,7 +6,7 @@ import { api, ApiError, openConversationSocket } from "./api";
 import { useBlockedIds } from "./blocked";
 import { forgetMlsChat } from "./leaving";
 import { ensureDeviceKey, readingKeys, readMessage, sealFor, type ReadableMessage } from "./e2ee";
-import { mlsMessenger, type MlsUser } from "./mls";
+import { holdsMlsGroupHere, mlsMessenger, type MlsUser } from "./mls";
 
 export interface LocalMessage extends ReadableMessage {
   pending?: boolean;
@@ -84,7 +84,25 @@ export function useChat(conversationId: string, me: MlsUser | null | undefined, 
   const mls = useMemo(() => (myId ? mlsMessenger({ id: myId, mls: mlsOn }) : null), [myId, mlsOn]);
   /** True once this phone is in the chat's MLS group. From then on it sends with MLS. */
   const [mlsActive, setMlsActive] = useState(false);
+  /**
+   * The downgrade guard tripped: this phone holds the chat's MLS group, but MLS is off here, so the
+   * chat can't send. v1 would be readable by the group but has no forward secrecy.
+   */
+  const [heldWhileOff, setHeldWhileOff] = useState(false);
+  const mlsOnlyButOff = !mls && heldWhileOff;
   const blocked = useBlockedIds(myId);
+
+  // With MLS off, say at once if this chat can't send from here, rather than after a message fails.
+  useEffect(() => {
+    if (!myId || mls) return;
+    let stale = false;
+    void holdsMlsGroupHere(myId, conversationId).then((held) => {
+      if (!stale) setHeldWhileOff(held);
+    });
+    return () => {
+      stale = true;
+    };
+  }, [conversationId, mls, myId]);
 
   const members = useCallback(
     async (fresh = false) => {
@@ -247,13 +265,23 @@ export function useChat(conversationId: string, me: MlsUser | null | undefined, 
     };
   }, [conversationId, queryClient, read, refresh, markRead, syncMls]);
 
+  /**
+   * Every v1 send goes through here: the socket, the HTTP fallback, and retries. So this is where the
+   * downgrade guard holds. It asks the phone's own store each time, not `me.mls` or `mlsActive`,
+   * which a server can set or which may not have caught up yet.
+   */
   const seal = useCallback(
     async (body: string, senderId: string, fresh = false) => {
+      if (await holdsMlsGroupHere(senderId, conversationId)) throw new MlsDowngradeError(conversationId);
       const me = await ensureDeviceKey(senderId);
       return sealFor(body, conversationId, senderId, me, await members(fresh));
     },
     [conversationId, members],
   );
+
+  const markFailed = useCallback((clientId: string) => {
+    setMessages((current) => current.map((message) => (message.clientId === clientId && message.pending ? { ...message, failed: true } : message)));
+  }, []);
 
   const sendOverHttp = useCallback(
     async (body: string, clientId: string) => {
@@ -271,11 +299,15 @@ export function useChat(conversationId: string, me: MlsUser | null | undefined, 
           if (!(error instanceof ApiError && error.status === 409)) throw error;
           await post(true);
         }
-      } catch {
-        setMessages((current) => current.map((message) => (message.clientId === clientId && message.pending ? { ...message, failed: true } : message)));
+      } catch (error) {
+        if (error instanceof MlsDowngradeError) {
+          unsent.current.delete(clientId);
+          setHeldWhileOff(true);
+        }
+        markFailed(clientId);
       }
     },
-    [conversationId, myId, read, seal],
+    [conversationId, markFailed, myId, read, seal],
   );
   useEffect(() => {
     sendOverHttpRef.current = sendOverHttp;
@@ -287,33 +319,46 @@ export function useChat(conversationId: string, me: MlsUser | null | undefined, 
       const optimistic: LocalMessage = { seq: Number.MAX_SAFE_INTEGER, id: `local-${clientId}`, senderId, body, kind: "text", meetupId: null, createdAt: Date.now(), clientId, pending: true };
       setMessages((current) => [...current.filter((message) => message.clientId !== clientId), optimistic]);
 
-      if (mls && mlsActive) {
+      const withMls = (messenger: NonNullable<typeof mls>) => {
         // The engine syncs, encrypts, saves, and sends. Its store then holds the sent copy.
-        void mls
-          .then((messenger) => messenger.send(conversationId, body))
+        void messenger
+          .then((engine) => engine.send(conversationId, body))
           .then(async () => {
             setMessages((current) => current.filter((message) => message.clientId !== clientId));
             await syncMls();
           })
           .catch(() => setMessages((current) => current.map((message) => (message.clientId === clientId ? { ...message, failed: true } : message))));
-        return;
-      }
+      };
+      if (mls && mlsActive) return withMls(mls);
 
-      unsent.current.set(clientId, body);
+      const withV1 = () => {
+        unsent.current.set(clientId, body);
+        const ws = socket.current;
+        if (ws?.readyState === WebSocket.OPEN) {
+          void seal(body, senderId)
+            .then((envelope) => {
+              ws.send(JSON.stringify({ type: "send", envelope, clientId }));
+              timers.current.set(clientId, setTimeout(() => void sendOverHttp(body, clientId), ECHO_TIMEOUT_MS));
+            })
+            .catch(() => void sendOverHttp(body, clientId));
+        } else {
+          void sendOverHttp(body, clientId);
+        }
+      };
 
-      const ws = socket.current;
-      if (ws?.readyState === WebSocket.OPEN) {
-        void seal(body, senderId)
-          .then((envelope) => {
-            ws.send(JSON.stringify({ type: "send", envelope, clientId }));
-            timers.current.set(clientId, setTimeout(() => void sendOverHttp(body, clientId), ECHO_TIMEOUT_MS));
-          })
-          .catch(() => void sendOverHttp(body, clientId));
-      } else {
-        void sendOverHttp(body, clientId);
-      }
+      // Not yet known to be in the group: the first sync may still be running, or MLS is off here.
+      // The phone's own store decides, so a chat this phone moved to MLS never gets v1 from it.
+      void holdsMlsGroupHere(senderId, conversationId).then((held) => {
+        const path = sendPath(mls !== null, held);
+        if (path === "mls" && mls) withMls(mls);
+        else if (path === "v1") withV1();
+        else {
+          setHeldWhileOff(true);
+          markFailed(clientId);
+        }
+      });
     },
-    [conversationId, mls, mlsActive, seal, sendOverHttp, syncMls],
+    [conversationId, markFailed, mls, mlsActive, seal, sendOverHttp, syncMls],
   );
 
   const loadOlder = useCallback(async () => {
@@ -336,5 +381,5 @@ export function useChat(conversationId: string, me: MlsUser | null | undefined, 
     [blocked, messages, myId],
   );
 
-  return { messages: shown, loaded, connected, send, loadOlder, mlsActive };
+  return { messages: shown, loaded, connected, send, loadOlder, mlsActive, mlsOnlyButOff };
 }

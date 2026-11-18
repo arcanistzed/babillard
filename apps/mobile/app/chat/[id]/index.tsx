@@ -21,6 +21,11 @@ const NOT_SENT = t("Not sent. Tap to retry.", "Non envoyé. Touchez pour réessa
 const UNREADABLE = t("Sent before you signed in on this phone", "Envoyé avant votre connexion sur ce téléphone");
 /** The sender's phone didn't commit to this text, so a report couldn't prove it was sent. */
 const UNVERIFIED = t("If reported, this message can't be confirmed", "En cas de signalement, ce message ne pourra pas être confirmé");
+/** The downgrade guard: this phone moved the chat to MLS, and MLS is off for it now. */
+const MLS_ONLY_BUT_OFF = t(
+  "This chat uses newer encryption on this phone, which is switched off for now. To keep your messages protected, they won't be sent with the older kind. Try again later.",
+  "Cette discussion utilise un chiffrement plus récent sur ce téléphone, désactivé pour le moment. Pour protéger vos messages, ils ne seront pas envoyés avec l'ancien. Réessayez plus tard.",
+);
 
 export default function Chat() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -37,7 +42,7 @@ export default function Chat() {
     if (router.canGoBack()) router.back();
     else router.replace("/inbox");
   }, [id]);
-  const { messages, loaded, send, loadOlder } = useChat(id, me, onRemoved);
+  const { messages, loaded, send, loadOlder, mlsOnlyButOff } = useChat(id, me, onRemoved);
 
   // Only messages that arrive while the chat is open slide in. History just appears.
   const [openedAt] = useState(() => Date.now());
@@ -169,6 +174,13 @@ export default function Chat() {
       )}
 
       <View style={[styles.composerArea, { borderTopColor: theme.line, backgroundColor: theme.paper, paddingBottom: bottomPadding }]}>
+        {mlsOnlyButOff ? (
+          <View accessibilityRole="alert" style={styles.notice}>
+            <T variant="small" style={{ color: theme.danger }}>
+              {MLS_ONLY_BUT_OFF}
+            </T>
+          </View>
+        ) : null}
         {openers.length > 0 ? (
           <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.openers} keyboardShouldPersistTaps="handled">
             {openers.map((opener) => (
@@ -220,6 +232,7 @@ const styles = StyleSheet.create({
   unreadable: { fontStyle: "italic" },
   time: { fontSize: 12, lineHeight: 16, marginTop: 2, marginHorizontal: 4 },
   composerArea: { borderTopWidth: StyleSheet.hairlineWidth, paddingTop: 8 },
+  notice: { paddingHorizontal: 16, paddingBottom: 8 },
   openers: { gap: 8, paddingHorizontal: 12, paddingBottom: 8 },
   composer: { flexDirection: "row", alignItems: "flex-end", gap: 8, paddingHorizontal: 10 },
   meetButton: { flexDirection: "row", alignItems: "center", gap: 5, minHeight: 44, paddingHorizontal: 11, borderRadius: 12 },
