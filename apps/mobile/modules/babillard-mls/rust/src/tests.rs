@@ -389,3 +389,82 @@ fn a_phone_that_forgets_a_group_rejoins_in_its_own_place() {
     let hello = send(&mut alice, "welcome back");
     assert_eq!(text(read(&mut bob, &hello, &trusted).unwrap()).0, "welcome back");
 }
+
+/// Starts `group` on `owner`'s phone and adds one phone from `package`. Returns the Welcome.
+fn start_with(owner: &mut Phone, group: &[u8], package: Vec<u8>, trusted: &[TrustedDevice]) -> Vec<u8> {
+    owner.state = create_group(owner.state.clone(), group.to_vec()).unwrap();
+    let output = add_members(owner.state.clone(), group.to_vec(), vec![package], trusted.to_vec()).unwrap();
+    owner.state = output.state;
+    output.welcome.unwrap()
+}
+
+#[test]
+fn a_last_resort_package_serves_several_welcomes_and_keeps_its_key() {
+    let (mut alice, mut bob, mut carol) = (phone("alice"), phone("bob"), phone("carol"));
+    let trusted = trust(&[&alice, &bob, &carol]);
+    let last_resort = create_last_resort_key_package(bob.state.clone()).unwrap();
+    bob.state = last_resort.state;
+
+    // Two people add Bob's phone to two chats from the same package, as the server hands it out
+    // once his single-use ones are gone. His state goes through bytes between the two, as on the phone.
+    let first = start_with(&mut alice, b"chat-a", last_resort.key_package.clone(), &trusted);
+    let joined = join_from_welcome(bob.state.clone(), first, trusted.clone()).unwrap();
+    assert!(joined.last_resort);
+    bob.state = joined.state;
+    let second = start_with(&mut carol, b"chat-b", last_resort.key_package.clone(), &trusted);
+    let joined = join_from_welcome(bob.state.clone(), second, trusted.clone()).unwrap();
+    assert!(joined.last_resort);
+    assert_eq!(joined.group_id, b"chat-b");
+    bob.state = joined.state;
+
+    // Both chats work, and Bob replaces the shared keys in each, as the engine does next.
+    for (owner, group) in [(&mut alice, b"chat-a"), (&mut carol, b"chat-b")] {
+        let sent = encrypt(owner.state.clone(), group.to_vec(), b"hi Bob".to_vec(), vec![]).unwrap();
+        owner.state = sent.state;
+        let Received::Application { plaintext, state, .. } = receive(bob.state.clone(), group.to_vec(), sent.message, trusted.clone()).unwrap() else { panic!("expected a message") };
+        assert_eq!(plaintext, b"hi Bob");
+        bob.state = state;
+        let update = update_keys(bob.state.clone(), group.to_vec()).unwrap();
+        bob.state = update.state;
+        let Received::Commit { state, removed_me: false } = receive(owner.state.clone(), group.to_vec(), update.commit, trusted.clone()).unwrap() else { panic!("expected a commit") };
+        owner.state = state;
+    }
+
+    // A single-use package works once. OpenMLS deletes its private key as the Welcome is used.
+    let (mut dave, mut erin) = (phone("dave"), phone("erin"));
+    let trusted = trust(&[&dave, &erin, &bob]);
+    let first = start_with(&mut dave, b"chat-c", bob.key_package.clone(), &trusted);
+    let joined = join_from_welcome(bob.state.clone(), first, trusted.clone()).unwrap();
+    assert!(!joined.last_resort);
+    bob.state = joined.state;
+    let second = start_with(&mut erin, b"chat-d", bob.key_package.clone(), &trusted);
+    assert!(join_from_welcome(bob.state.clone(), second, trusted).is_err());
+}
+
+#[test]
+fn only_the_last_resort_package_is_marked() {
+    let bob = phone("bob");
+    let read = |bytes: &[u8]| {
+        let MlsMessageBodyIn::KeyPackage(package) = read_message(bytes).unwrap() else { panic!("not a key package") };
+        package.validate(&RustCrypto::default(), ProtocolVersion::Mls10).unwrap()
+    };
+    assert!(!read(&bob.key_package).last_resort());
+    assert!(!read(&create_key_package(bob.state.clone()).unwrap().key_package).last_resort());
+    assert!(read(&create_last_resort_key_package(bob.state.clone()).unwrap().key_package).last_resort());
+}
+
+/// Writes an OpenMLS last-resort key package for the shared tests, which check that the server's
+/// parser and ts-mls accept it. Run with BABILLARD_MLS_LAST_RESORT_FIXTURE set to an absolute path.
+#[test]
+fn last_resort_fixture() {
+    let Ok(path) = std::env::var("BABILLARD_MLS_LAST_RESORT_FIXTURE") else { return };
+    let bob = phone("bob");
+    let package = create_last_resort_key_package(bob.state.clone()).unwrap().key_package;
+    let created_at = std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).unwrap().as_millis();
+    let json = format!(
+        r#"{{"userId":"bob","deviceId":"bob-phone","signatureKey":"{}","keyPackage":"{}","createdAt":{created_at}}}"#,
+        hex(&bob.signature_key),
+        hex(&package)
+    );
+    std::fs::write(path, json + "\n").unwrap();
+}

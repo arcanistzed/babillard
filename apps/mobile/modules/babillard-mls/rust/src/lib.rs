@@ -15,6 +15,7 @@ use openmls::prelude::*;
 use openmls_basic_credential::SignatureKeyPair;
 use openmls_memory_storage::MemoryStorage;
 use openmls_rust_crypto::RustCrypto;
+use openmls_traits::storage::StorageProvider as _;
 use openmls_traits::OpenMlsProvider;
 use std::collections::HashMap;
 use std::sync::RwLock;
@@ -86,6 +87,9 @@ pub struct ExternalJoin {
 pub struct Joined {
     pub state: Vec<u8>,
     pub group_id: Vec<u8>,
+    /// The Welcome used this phone's last-resort key package, whose keys other groups may share.
+    /// The phone should replace its keys in this group soon, with `update_keys`.
+    pub last_resort: bool,
 }
 
 #[derive(uniffi::Record)]
@@ -274,8 +278,13 @@ impl Device {
         CredentialWithKey { credential: BasicCredential::new(identity).into(), signature_key: self.signature_key.clone().into() }
     }
 
-    fn key_package(&self, signer: &SignatureKeyPair) -> Result<Vec<u8>> {
-        let bundle = KeyPackage::builder().build(CIPHERSUITE, &self.provider, signer, self.credential()).map_err(fail)?;
+    fn key_package(&self, signer: &SignatureKeyPair, last_resort: bool) -> Result<Vec<u8>> {
+        let mut builder = KeyPackage::builder();
+        if last_resort {
+            // RFC 9420 requires the leaf to list every non-default extension its key package carries.
+            builder = builder.leaf_node_capabilities(Capabilities::new(None, None, Some(&[ExtensionType::LastResort]), None, None)).mark_as_last_resort();
+        }
+        let bundle = builder.build(CIPHERSUITE, &self.provider, signer, self.credential()).map_err(fail)?;
         write_message(&MlsMessageOut::from(bundle.key_package().clone()))
     }
 
@@ -307,7 +316,7 @@ pub fn library_version() -> String {
 #[uniffi::export]
 pub fn create_identity(user_id: String, device_id: String) -> Result<Identity> {
     let (device, signer) = Device::new(&user_id, &device_id)?;
-    let key_package = device.key_package(&signer)?;
+    let key_package = device.key_package(&signer, false)?;
     Ok(Identity { state: device.save()?, key_package, signature_key: device.signature_key.clone() })
 }
 
@@ -315,7 +324,17 @@ pub fn create_identity(user_id: String, device_id: String) -> Result<Identity> {
 #[uniffi::export]
 pub fn create_key_package(state: Vec<u8>) -> Result<NewKeyPackage> {
     let device = Device::load(&state)?;
-    let key_package = device.key_package(&device.signer()?)?;
+    let key_package = device.key_package(&device.signer()?, false)?;
+    Ok(NewKeyPackage { state: device.save()?, key_package })
+}
+
+/// A key package the server hands out once this phone's single-use ones run out, as often as needed.
+/// It carries RFC 9420's last_resort extension, so OpenMLS keeps its private key after a Welcome uses
+/// it. Like every key package, it expires after OpenMLS's default lifetime, 84 days.
+#[uniffi::export]
+pub fn create_last_resort_key_package(state: Vec<u8>) -> Result<NewKeyPackage> {
+    let device = Device::load(&state)?;
+    let key_package = device.key_package(&device.signer()?, true)?;
     Ok(NewKeyPackage { state: device.save()?, key_package })
 }
 
@@ -433,13 +452,22 @@ pub fn join_from_welcome(state: Vec<u8>, welcome: Vec<u8>, trusted: Vec<TrustedD
     let MlsMessageBodyIn::Welcome(welcome) = read_message(&welcome)? else {
         return Err(fail("not a welcome"));
     };
+    // Which of this phone's key packages the Welcome is for. OpenMLS deletes a single-use one as it joins.
+    let mut last_resort = false;
+    for secrets in welcome.secrets() {
+        let bundle: Option<KeyPackageBundle> = device.provider.storage().key_package(&secrets.new_member()).map_err(fail)?;
+        if let Some(bundle) = bundle {
+            last_resort = bundle.key_package().last_resort();
+            break;
+        }
+    }
     let staged = StagedWelcome::new_from_welcome(&device.provider, &join_config(), welcome, None).map_err(fail)?;
     for member in staged.members() {
         check(&trusted, &member.credential, &member.signature_key)?;
     }
     let group = staged.into_group(&device.provider).map_err(fail)?;
     let group_id = group.group_id().as_slice().to_vec();
-    Ok(Joined { state: device.save()?, group_id })
+    Ok(Joined { state: device.save()?, group_id, last_resort })
 }
 
 /// Encrypts for the group. `aad` travels in the clear and is authenticated, which is where the report commitment goes.

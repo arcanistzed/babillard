@@ -31,9 +31,10 @@ const SCHEMA = `
     device_id TEXT NOT NULL,
     registered INTEGER NOT NULL,
     signature_key BLOB NOT NULL,
-    state BLOB NOT NULL
+    state BLOB NOT NULL,
+    last_resort_at INTEGER
   );
-  CREATE TABLE IF NOT EXISTS mls_cursors (conversation_id TEXT PRIMARY KEY, seq INTEGER NOT NULL);
+  CREATE TABLE IF NOT EXISTS mls_cursors (conversation_id TEXT PRIMARY KEY, seq INTEGER NOT NULL, keys_updated_at INTEGER);
   CREATE TABLE IF NOT EXISTS mls_messages (
     conversation_id TEXT NOT NULL,
     id TEXT NOT NULL,
@@ -63,6 +64,7 @@ interface DeviceRow {
   registered: number;
   signature_key: Uint8Array;
   state: Uint8Array;
+  last_resort_at: number | null;
 }
 
 interface MessageRow {
@@ -84,6 +86,8 @@ interface MessageRow {
 const ADDED_COLUMNS: [table: string, column: string, definition: string][] = [
   ["mls_messages", "franking_key", "BLOB"],
   ["mls_messages", "unverified", "INTEGER NOT NULL DEFAULT 0"],
+  ["mls_device", "last_resort_at", "INTEGER"],
+  ["mls_cursors", "keys_updated_at", "INTEGER"],
 ];
 
 export class SqlMlsStore implements MlsStore {
@@ -132,6 +136,7 @@ export class SqlMlsStore implements MlsStore {
       registered: row.registered === 1,
       signatureKey: new Uint8Array(row.signature_key),
       state: this.open(new Uint8Array(row.state), `mls-state:${row.device_id}`),
+      ...(row.last_resort_at !== null ? { lastResortAt: row.last_resort_at } : {}),
     };
   }
 
@@ -139,6 +144,12 @@ export class SqlMlsStore implements MlsStore {
     await this.init();
     const [row] = await this.db.all<{ seq: number }>("SELECT seq FROM mls_cursors WHERE conversation_id = ?", [conversationId]);
     return row?.seq ?? 0;
+  }
+
+  async keysUpdatedAt(conversationId: string): Promise<number | null> {
+    await this.init();
+    const [row] = await this.db.all<{ keys_updated_at: number | null }>("SELECT keys_updated_at FROM mls_cursors WHERE conversation_id = ?", [conversationId]);
+    return row?.keys_updated_at ?? null;
   }
 
   async messages(conversationId: string): Promise<MlsStoredMessage[]> {
@@ -203,12 +214,13 @@ export class SqlMlsStore implements MlsStore {
     }));
     await this.db.transaction(async (tx) => {
       if (device && state) {
-        await tx.run("INSERT OR REPLACE INTO mls_device (id, user_id, device_id, registered, signature_key, state) VALUES (1, ?, ?, ?, ?, ?)", [
+        await tx.run("INSERT OR REPLACE INTO mls_device (id, user_id, device_id, registered, signature_key, state, last_resort_at) VALUES (1, ?, ?, ?, ?, ?, ?)", [
           device.userId,
           device.deviceId,
           device.registered ? 1 : 0,
           device.signatureKey,
           state,
+          device.lastResortAt ?? null,
         ]);
       }
       for (const { conversationId, commit, state: sealed } of pending) {
@@ -218,8 +230,15 @@ export class SqlMlsStore implements MlsStore {
           await tx.run("DELETE FROM mls_pending_commits WHERE conversation_id = ?", [conversationId]);
         }
       }
+      // Upserts, not INSERT OR REPLACE, which would wipe the row's other column.
       for (const [conversationId, seq] of Object.entries(change.cursors ?? {})) {
-        await tx.run("INSERT OR REPLACE INTO mls_cursors (conversation_id, seq) VALUES (?, ?)", [conversationId, seq]);
+        await tx.run("INSERT INTO mls_cursors (conversation_id, seq) VALUES (?, ?) ON CONFLICT (conversation_id) DO UPDATE SET seq = excluded.seq", [conversationId, seq]);
+      }
+      for (const [conversationId, at] of Object.entries(change.keysUpdated ?? {})) {
+        await tx.run("INSERT INTO mls_cursors (conversation_id, seq, keys_updated_at) VALUES (?, 0, ?) ON CONFLICT (conversation_id) DO UPDATE SET keys_updated_at = excluded.keys_updated_at", [
+          conversationId,
+          at,
+        ]);
       }
       for (const { conversationId, id } of change.deleteMessages ?? []) {
         await tx.run("DELETE FROM mls_messages WHERE conversation_id = ? AND id = ?", [conversationId, id]);

@@ -5,6 +5,8 @@ import {
   addDevices,
   anotherKeyPackage,
   clientConfig,
+  lastResortKeyPackage,
+  LAST_RESORT_EXTENSION,
   createDevice,
   encodeKeyPackage,
   joinExternally,
@@ -70,6 +72,12 @@ export function tsMlsCrypto(cs: CiphersuiteImpl): MlsCrypto {
       const device = await anotherKeyPackage(identity(snapshot), cs);
       return { state: save({ ...snapshot, packages: [...snapshot.packages, device] }), keyPackage: encodeKeyPackage(device) };
     },
+    // A real last-resort package. This adapter never deletes a package after a Welcome, last-resort or not.
+    async createLastResortKeyPackage(state) {
+      const snapshot = load(state);
+      const device = await lastResortKeyPackage(identity(snapshot), cs);
+      return { state: save({ ...snapshot, packages: [...snapshot.packages, device] }), keyPackage: encodeKeyPackage(device) };
+    },
     async createGroup(state, conversationId) {
       const snapshot = load(state);
       return withGroup(snapshot, conversationId, await startGroup(conversationId, identity(snapshot), cs, configFor([])));
@@ -95,7 +103,8 @@ export function tsMlsCrypto(cs: CiphersuiteImpl): MlsCrypto {
       for (const device of [...snapshot.packages].reverse()) {
         try {
           const joined = await joinFromWelcome(welcome, device, cs, configFor(trusted));
-          return { state: withGroup(snapshot, conversationOf(joined), joined), conversationId: conversationOf(joined) };
+          const lastResort = device.keyPackage.extensions.some((extension) => extension.extensionType === LAST_RESORT_EXTENSION);
+          return { state: withGroup(snapshot, conversationOf(joined), joined), conversationId: conversationOf(joined), lastResort };
         } catch (error) {
           if (String(error).includes("credential")) throw error;
         }

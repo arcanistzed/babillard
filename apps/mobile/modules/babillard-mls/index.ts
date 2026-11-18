@@ -29,6 +29,7 @@ interface NativeModule {
   isReady(): boolean;
   createIdentity(userId: string, deviceId: string): Promise<Encoded<{ state: Uint8Array; keyPackage: Uint8Array; signatureKey: Uint8Array }>>;
   createKeyPackage(state: string): Promise<Encoded<{ state: Uint8Array; keyPackage: Uint8Array }>>;
+  createLastResortKeyPackage(state: string): Promise<Encoded<{ state: Uint8Array; keyPackage: Uint8Array }>>;
   createGroup(state: string, groupId: string): Promise<string>;
   addMembers(state: string, groupId: string, keyPackages: string[], trusted: Encoded<TrustedDevice>[]): Promise<{ state: string; commit: string; welcome: string | null; groupInfo: string }>;
   removeUser(state: string, groupId: string, userId: string): Promise<{ state: string; commit: string; groupInfo: string }>;
@@ -36,7 +37,7 @@ interface NativeModule {
   removeLeaves(state: string, groupId: string, leafIndexes: number[]): Promise<{ state: string; commit: string; groupInfo: string }>;
   joinExternal(state: string, groupInfo: string, trusted: Encoded<TrustedDevice>[]): Promise<{ state: string; groupId: string; commit: string; groupInfo: string }>;
   forgetGroup(state: string, groupId: string): Promise<string>;
-  joinFromWelcome(state: string, welcome: string, trusted: Encoded<TrustedDevice>[]): Promise<{ state: string; groupId: string }>;
+  joinFromWelcome(state: string, welcome: string, trusted: Encoded<TrustedDevice>[]): Promise<{ state: string; groupId: string; lastResort: boolean }>;
   encrypt(state: string, groupId: string, plaintext: string, aad: string): Promise<{ state: string; message: string }>;
   receive(state: string, groupId: string, message: string, trusted: Encoded<TrustedDevice>[]): Promise<Record<string, string | boolean>>;
   groupStatus(state: string, groupId: string): Promise<{ epoch: number; roster: { leafIndex: number; userId: string; deviceId: string; signatureKey: string }[] }>;
@@ -63,6 +64,12 @@ export async function createIdentity(userId: string, deviceId: string) {
 
 export async function createKeyPackage(state: Uint8Array) {
   const result = await module().createKeyPackage(toBase64(state));
+  return { state: fromBase64(result.state), keyPackage: fromBase64(result.keyPackage) };
+}
+
+/** A key package the server can hand out again and again once the single-use ones run out. OpenMLS keeps its private key after a Welcome. */
+export async function createLastResortKeyPackage(state: Uint8Array) {
+  const result = await module().createLastResortKeyPackage(toBase64(state));
   return { state: fromBase64(result.state), keyPackage: fromBase64(result.keyPackage) };
 }
 
@@ -114,7 +121,7 @@ export async function joinExternal(state: Uint8Array, groupInfo: Uint8Array, tru
 
 export async function joinFromWelcome(state: Uint8Array, welcome: Uint8Array, trusted: TrustedDevice[]) {
   const joined = await module().joinFromWelcome(toBase64(state), toBase64(welcome), encodeTrusted(trusted));
-  return { state: fromBase64(joined.state), conversationId: new TextDecoder().decode(fromBase64(joined.groupId)) };
+  return { state: fromBase64(joined.state), conversationId: new TextDecoder().decode(fromBase64(joined.groupId)), lastResort: joined.lastResort === true };
 }
 
 export async function encrypt(state: Uint8Array, conversationId: string, plaintext: Uint8Array, aad: Uint8Array = new Uint8Array()) {

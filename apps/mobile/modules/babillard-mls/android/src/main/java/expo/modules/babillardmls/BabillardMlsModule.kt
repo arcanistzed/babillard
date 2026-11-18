@@ -58,6 +58,13 @@ class BabillardMlsModule : Module() {
       }
     }
 
+    AsyncFunction("createLastResortKeyPackage") { state: String ->
+      mls {
+        val result = uniffi.babillard_mls.createLastResortKeyPackage(bytes(state))
+        mapOf("state" to text(result.state), "keyPackage" to text(result.keyPackage))
+      }
+    }
+
     AsyncFunction("createGroup") { state: String, groupId: String ->
       mls { text(uniffi.babillard_mls.createGroup(bytes(state), bytes(groupId))) }
     }
@@ -104,7 +111,7 @@ class BabillardMlsModule : Module() {
     AsyncFunction("joinFromWelcome") { state: String, welcome: String, devices: List<Map<String, String>> ->
       mls {
         val joined = uniffi.babillard_mls.joinFromWelcome(bytes(state), bytes(welcome), trusted(devices))
-        mapOf("state" to text(joined.state), "groupId" to text(joined.groupId))
+        mapOf("state" to text(joined.state), "groupId" to text(joined.groupId), "lastResort" to joined.lastResort)
       }
     }
 

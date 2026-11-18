@@ -26,11 +26,12 @@ export function httpMlsTransport(call: HttpCall): MlsTransport {
     async registerIdentity(deviceId, signatureKey) {
       await ok("POST", "/mls/identity", { deviceId, signatureKey: toBase64(signatureKey) });
     },
-    async uploadKeyPackages(deviceId, keyPackages) {
-      await ok("POST", "/mls/key-packages", { deviceId, keyPackages: keyPackages.map(toBase64) });
+    async uploadKeyPackages(deviceId, keyPackages, lastResort) {
+      await ok("POST", "/mls/key-packages", { deviceId, keyPackages: keyPackages.map(toBase64), ...(lastResort ? { lastResort: toBase64(lastResort) } : {}) });
     },
-    async keyPackageCount(deviceId) {
-      return (await ok<{ available: number }>("GET", `/mls/key-packages/${deviceId}`)).available;
+    async keyPackageStatus(deviceId) {
+      const status = await ok<{ available: number; lastResort?: boolean }>("GET", `/mls/key-packages/${deviceId}`);
+      return { available: status.available, lastResort: status.lastResort === true };
     },
     async claimKeyPackages(conversationId, deviceIds) {
       const result = await ok<{ keyPackages: { deviceId: string; keyPackage: string }[] }>("POST", `/mls/conversations/${conversationId}/key-packages`, { deviceIds });

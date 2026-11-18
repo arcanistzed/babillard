@@ -147,6 +147,40 @@ describe("the phone's encrypted MLS store", () => {
     expect((await store.messages("chat-1"))[0]!.frankingKey).toHaveLength(32);
   });
 
+  it("keeps when this phone last replaced its keys in each chat, through cursor moves, until the chat is forgotten", async () => {
+    const store = new SqlMlsStore(nodeDb(), random(32), random);
+    expect(await store.keysUpdatedAt("chat-1")).toBeNull();
+    await store.apply({ cursors: { "chat-1": 2 }, keysUpdated: { "chat-1": 5000 } });
+    await store.apply({ cursors: { "chat-1": 3, "chat-2": 1 } });
+    expect(await store.keysUpdatedAt("chat-1")).toBe(5000);
+    expect(await store.cursor("chat-1")).toBe(3);
+    expect(await store.keysUpdatedAt("chat-2")).toBeNull();
+    // A time recorded before the chat has a cursor leaves the cursor at the start.
+    await store.apply({ keysUpdated: { "chat-3": 0 } });
+    expect(await store.keysUpdatedAt("chat-3")).toBe(0);
+    expect(await store.cursor("chat-3")).toBe(0);
+    await store.apply({ forgetChats: ["chat-1"] });
+    expect(await store.keysUpdatedAt("chat-1")).toBeNull();
+  });
+
+  it("adds the key-update and last-resort columns to a database from before them", async () => {
+    const raw = new DatabaseSync(":memory:");
+    raw.exec(`CREATE TABLE mls_device (id INTEGER PRIMARY KEY CHECK (id = 1), user_id TEXT NOT NULL, device_id TEXT NOT NULL,
+      registered INTEGER NOT NULL, signature_key BLOB NOT NULL, state BLOB NOT NULL)`);
+    raw.exec("CREATE TABLE mls_cursors (conversation_id TEXT PRIMARY KEY, seq INTEGER NOT NULL)");
+    raw.exec("INSERT INTO mls_cursors (conversation_id, seq) VALUES ('chat-1', 7)");
+    const store = new SqlMlsStore(nodeDb(raw), random(32), random);
+    expect(await store.keysUpdatedAt("chat-1")).toBeNull();
+    expect(await store.cursor("chat-1")).toBe(7);
+    const device = { userId: "alice", deviceId: "alice-phone", state: random(40), signatureKey: random(32), registered: true };
+    await store.apply({ device });
+    expect((await store.loadDevice())?.lastResortAt).toBeUndefined();
+    await store.apply({ device: { ...device, lastResortAt: 1234 }, keysUpdated: { "chat-1": 99 } });
+    expect((await store.loadDevice())?.lastResortAt).toBe(1234);
+    expect(await store.keysUpdatedAt("chat-1")).toBe(99);
+    expect(await store.cursor("chat-1")).toBe(7);
+  });
+
   it("forgets a whole chat in one step, and nothing else", async () => {
     const store = new SqlMlsStore(nodeDb(), random(32), random);
     const pending = { epoch: 3, commit: random(20), state: random(30) };

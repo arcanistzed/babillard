@@ -6,6 +6,7 @@ import * as Mls from "../../modules/babillard-mls";
 export const nativeCrypto: MlsCrypto = {
   createIdentity: (userId, deviceId) => Mls.createIdentity(userId, deviceId),
   createKeyPackage: (state) => Mls.createKeyPackage(state),
+  createLastResortKeyPackage: (state) => Mls.createLastResortKeyPackage(state),
   createGroup: (state, conversationId) => Mls.createGroup(state, conversationId),
   addMembers: (state, conversationId, keyPackages, trusted) => Mls.addMembers(state, conversationId, keyPackages, trusted),
   removeLeaves: (state, conversationId, leafIndexes) => Mls.removeLeaves(state, conversationId, leafIndexes),

@@ -152,6 +152,19 @@ export async function removeLeaves(state: ClientState, leafIndexes: number[], cs
   return commit(state, leafIndexes.map((removed) => ({ proposalType: "remove", remove: { removed } })), cs);
 }
 
+/** RFC 9420's last_resort key package extension. ts-mls has no name for it, so it goes by number. */
+export const LAST_RESORT_EXTENSION = 10;
+
+/** A last-resort key package under the same identity and signing key: the leaf lists the extension, as RFC 9420 requires. */
+export async function lastResortKeyPackage(device: MlsDevice, cs: CiphersuiteImpl): Promise<MlsDevice> {
+  const credential = { credentialType: "basic" as const, identity: encoder.encode(`${device.userId}/${device.deviceId}`) };
+  const signatureKeyPair = { signKey: device.privatePackage.signaturePrivateKey, publicKey: device.keyPackage.leafNode.signaturePublicKey };
+  const capabilities = { ...defaultCapabilities(), extensions: [...defaultCapabilities().extensions, LAST_RESORT_EXTENSION] };
+  const extensions = [{ extensionType: LAST_RESORT_EXTENSION, extensionData: new Uint8Array() }];
+  const { publicPackage, privatePackage } = await generateKeyPackageWithKey(credential, capabilities, defaultLifetime, extensions, signatureKeyPair, cs);
+  return { ...device, keyPackage: publicPackage, privatePackage };
+}
+
 /** Another key package under the same identity and signing key. */
 export async function anotherKeyPackage(device: MlsDevice, cs: CiphersuiteImpl): Promise<MlsDevice> {
   const credential = { credentialType: "basic" as const, identity: encoder.encode(`${device.userId}/${device.deviceId}`) };

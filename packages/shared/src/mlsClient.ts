@@ -47,11 +47,17 @@ export type MlsReceived =
 export interface MlsCrypto {
   createIdentity(userId: string, deviceId: string): Promise<{ state: Uint8Array; keyPackage: Uint8Array; signatureKey: Uint8Array }>;
   createKeyPackage(state: Uint8Array): Promise<{ state: Uint8Array; keyPackage: Uint8Array }>;
+  /**
+   * A key package marked last-resort (RFC 9420's last_resort extension). The server hands it out once
+   * this phone's single-use ones run out, as often as needed, so its private key stays after a Welcome.
+   */
+  createLastResortKeyPackage(state: Uint8Array): Promise<{ state: Uint8Array; keyPackage: Uint8Array }>;
   createGroup(state: Uint8Array, conversationId: string): Promise<Uint8Array>;
   addMembers(state: Uint8Array, conversationId: string, keyPackages: Uint8Array[], trusted: TrustedDevice[]): Promise<MlsCommit>;
   removeLeaves(state: Uint8Array, conversationId: string, leafIndexes: number[]): Promise<MlsCommit>;
   updateKeys(state: Uint8Array, conversationId: string): Promise<MlsCommit>;
-  joinFromWelcome(state: Uint8Array, welcome: Uint8Array, trusted: TrustedDevice[]): Promise<{ state: Uint8Array; conversationId: string }>;
+  /** `lastResort` says the Welcome used this phone's last-resort key package, whose keys other groups may share. */
+  joinFromWelcome(state: Uint8Array, welcome: Uint8Array, trusted: TrustedDevice[]): Promise<{ state: Uint8Array; conversationId: string; lastResort?: boolean }>;
   /** `rejoin` says this phone is already in the group and wants its old leaf replaced. OpenMLS works that out by itself. */
   joinExternal(state: Uint8Array, groupInfo: Uint8Array, trusted: TrustedDevice[], rejoin?: boolean): Promise<MlsCommit & { conversationId: string }>;
   /** Drops this phone's copy of a group, before rejoining it. */
@@ -68,8 +74,10 @@ export type SubmitResult = { ok: true; entry: MlsLogEntry } | { ok: false; error
 
 export interface MlsTransport {
   registerIdentity(deviceId: string, signatureKey: Uint8Array): Promise<void>;
-  uploadKeyPackages(deviceId: string, keyPackages: Uint8Array[]): Promise<void>;
-  keyPackageCount(deviceId: string): Promise<number>;
+  /** `lastResort` replaces the phone's last-resort package, which the server keeps when it's claimed. */
+  uploadKeyPackages(deviceId: string, keyPackages: Uint8Array[], lastResort?: Uint8Array): Promise<void>;
+  /** How many single-use packages the server has left for this phone, and whether it has a last-resort one. */
+  keyPackageStatus(deviceId: string): Promise<{ available: number; lastResort: boolean }>;
   claimKeyPackages(conversationId: string, deviceIds: string[]): Promise<{ deviceId: string; keyPackage: Uint8Array }[]>;
   groupState(conversationId: string): Promise<MlsGroupState>;
   submit(conversationId: string, body: { deviceId: string; message: Uint8Array; welcome?: Uint8Array; groupInfo?: Uint8Array; clientId?: string }): Promise<SubmitResult>;
@@ -119,6 +127,8 @@ export interface MlsDeviceRecord {
   /** Kept so registration can be retried if the first attempt never reached the server. */
   signatureKey: Uint8Array;
   registered: boolean;
+  /** When this phone last uploaded a last-resort key package. It's replaced before it expires. */
+  lastResortAt?: number;
 }
 
 /**
@@ -148,11 +158,15 @@ export interface MlsChange {
   historyDone?: HistoryRef[];
   /** Backup v2: drops everything waiting, when history is turned off or its key changed. */
   clearHistoryOutbox?: boolean;
+  /** When this phone last replaced its own keys in each chat, by a commit with an update path or by joining. */
+  keysUpdated?: Record<string, number>;
 }
 
 export interface MlsStore {
   loadDevice(): Promise<MlsDeviceRecord | null>;
   cursor(conversationId: string): Promise<number>;
+  /** When this phone last replaced its own keys in the chat, or null if it hasn't been recorded. */
+  keysUpdatedAt(conversationId: string): Promise<number | null>;
   messages(conversationId: string): Promise<MlsStoredMessage[]>;
   pendingCommits(): Promise<Record<string, MlsPendingCommit>>;
   /** Every chat the store holds anything for. */
@@ -181,6 +195,18 @@ export function isOutOfChat(error: unknown): boolean {
 const encoder = new TextEncoder();
 const decoder = new TextDecoder();
 const KEY_PACKAGE_TARGET = 10;
+/**
+ * OpenMLS refuses a key package after its lifetime, 84 days from when it was made. The last-resort
+ * package can sit on the server for months, so it's replaced well before then.
+ */
+const LAST_RESORT_MAX_AGE_MS = 28 * 24 * 60 * 60 * 1000;
+/**
+ * A phone that never commits in a chat never replaces its own leaf keys there, so a stolen copy of
+ * them would read that chat for good. Once a week it commits new ones, for post-compromise security.
+ * It also keeps the leaf from expiring: a leaf never updated keeps its key package's 84-day
+ * lifetime, and a phone joining later refuses a group with an expired one.
+ */
+export const KEYS_MAX_AGE_MS = 7 * 24 * 60 * 60 * 1000;
 /**
  * How often a sync checks this phone's key packages. Others use them up adding this phone to
  * chats, and a phone with none can't be added, nor let a chat move to MLS.
@@ -289,20 +315,34 @@ export class MlsMessenger {
     }
   }
 
+  /**
+   * Keeps KEY_PACKAGE_TARGET single-use packages on the server, and one last-resort package for when
+   * those run out. The last-resort one is replaced only when the server has none or it's getting old.
+   */
   private async topUp(): Promise<void> {
     this.lastTopUp = Date.now();
-    const available = await this.transport.keyPackageCount(this.me.deviceId);
-    if (available >= KEY_PACKAGE_TARGET) return;
-    let state = (await this.device()).state;
+    const status = await this.transport.keyPackageStatus(this.me.deviceId);
+    const device = await this.device();
+    const replaceLastResort = !status.lastResort || device.lastResortAt === undefined || Date.now() - device.lastResortAt >= LAST_RESORT_MAX_AGE_MS;
+    if (status.available >= KEY_PACKAGE_TARGET && !replaceLastResort) return;
+    let state = device.state;
     const packages: Uint8Array[] = [];
-    for (let i = available; i < KEY_PACKAGE_TARGET; i++) {
+    for (let i = status.available; i < KEY_PACKAGE_TARGET; i++) {
       const created = await this.crypto.createKeyPackage(state);
       state = created.state;
       packages.push(created.keyPackage);
     }
+    let lastResort: Uint8Array | undefined;
+    if (replaceLastResort) {
+      const created = await this.crypto.createLastResortKeyPackage(state);
+      state = created.state;
+      lastResort = created.keyPackage;
+    }
     // The private halves are saved before the public halves go anywhere.
     await this.saveState(state);
-    await this.transport.uploadKeyPackages(this.me.deviceId, packages);
+    const uploadedAt = Date.now();
+    await this.transport.uploadKeyPackages(this.me.deviceId, packages, lastResort);
+    if (lastResort) await this.store.apply({ device: { ...(await this.device()), lastResortAt: uploadedAt } });
   }
 
   /** Brings a chat up to date and returns the messages it received. */
@@ -385,7 +425,7 @@ export class MlsMessenger {
    * Submits a commit made at `epoch`, and adopts its state only if the server takes it. If no answer
    * comes back, the commit stays recorded, and the next operation settles it from the log.
    */
-  private async commit(conversationId: string, output: MlsCommit, epoch: number): Promise<SubmitResult> {
+  private async commit(conversationId: string, output: MlsCommit, epoch: number, updatesKeys = false): Promise<SubmitResult> {
     await this.store.apply({ pendingCommits: { [conversationId]: { epoch, commit: output.commit, state: output.state } } });
     const result = await this.transport.submit(conversationId, {
       deviceId: this.me.deviceId,
@@ -393,7 +433,14 @@ export class MlsMessenger {
       groupInfo: output.groupInfo,
       ...(output.welcome ? { welcome: output.welcome } : {}),
     });
-    if (result.ok) await this.saveState(output.state, { cursors: { [conversationId]: result.entry.seq }, pendingCommits: { [conversationId]: null } });
+    if (result.ok) {
+      await this.saveState(output.state, {
+        cursors: { [conversationId]: result.entry.seq },
+        pendingCommits: { [conversationId]: null },
+        // A commit with an update path replaced this phone's leaf keys.
+        ...(updatesKeys ? { keysUpdated: { [conversationId]: Date.now() } } : {}),
+      });
+    }
     else await this.store.apply({ pendingCommits: { [conversationId]: null } });
     return result;
   }
@@ -444,7 +491,7 @@ export class MlsMessenger {
     if (!groupInfo) throw new MlsSyncError("Can't rejoin: the server has no GroupInfo");
     const forgotten = await this.crypto.forgetGroup((await this.device()).state, conversationId);
     const joined = await this.crypto.joinExternal(forgotten, groupInfo, trustedEver(server), true);
-    const result = await this.commit(conversationId, joined, server.epoch);
+    const result = await this.commit(conversationId, joined, server.epoch, true);
     if (!result.ok) throw new MlsSyncError(`Rejoin refused: ${result.error}`);
   }
 
@@ -478,7 +525,7 @@ export class MlsMessenger {
       // other phones are added in the next commit, by the chores below.
       const created = await this.crypto.createGroup(state, conversationId);
       const output = await this.crypto.updateKeys(created, conversationId);
-      const result = await this.commit(conversationId, output, server.epoch);
+      const result = await this.commit(conversationId, output, server.epoch, true);
       if (result.ok) return "joined";
       if (result.error === "not_ready") return "wait"; // Someone can't do MLS yet. The chat stays on v1.
       if (result.error === "stale_epoch") return "retry"; // Someone else made it first.
@@ -488,14 +535,17 @@ export class MlsMessenger {
     const welcome = await this.transport.welcome(conversationId, this.me.deviceId);
     if (welcome) {
       const joined = await this.crypto.joinFromWelcome(state, welcome.welcome, trusted);
-      await this.saveState(joined.state, { cursors: { [conversationId]: welcome.seq } });
+      // The leaf keys came with the key package, which may have waited on the server a while. The week
+      // counts from the join. If the Welcome used the last-resort package, whose keys other groups may
+      // share, they're due for replacing at once (RFC 9420, section 16.8).
+      await this.saveState(joined.state, { cursors: { [conversationId]: welcome.seq }, keysUpdated: { [conversationId]: joined.lastResort ? 0 : Date.now() } });
       return "joined";
     }
 
     const groupInfo = await this.transport.groupInfo(conversationId);
     if (!groupInfo) return "wait";
     const joined = await this.crypto.joinExternal(state, groupInfo, trusted);
-    const result = await this.commit(conversationId, joined, server.epoch);
+    const result = await this.commit(conversationId, joined, server.epoch, true);
     if (result.ok) return "joined";
     if (result.error === "stale_epoch") return "retry";
     throw new MlsSyncError(result.error);
@@ -574,7 +624,8 @@ export class MlsMessenger {
     if (server.pendingRemovals.length) {
       const state = (await this.device()).state;
       const output = await this.crypto.removeLeaves(state, conversationId, server.pendingRemovals.map((entry) => entry.leafIndex));
-      const result = await this.commit(conversationId, output, server.epoch);
+      // RFC 9420 requires an update path on a commit that removes anyone.
+      const result = await this.commit(conversationId, output, server.epoch, true);
       if (!result.ok) {
         if (result.error === "stale_epoch") return "retry";
         throw new MlsSyncError(result.error);
@@ -601,6 +652,29 @@ export class MlsMessenger {
         }
       }
     }
+    return this.maybeUpdateKeys(conversationId);
+  }
+
+  /**
+   * Commits new leaf keys for this phone if it hasn't replaced them in this chat for a week. A chat
+   * with no time recorded, as in a database from before this was kept, starts the clock instead.
+   */
+  private async maybeUpdateKeys(conversationId: string): Promise<"done" | "retry"> {
+    const updatedAt = await this.store.keysUpdatedAt(conversationId);
+    if (updatedAt === null) {
+      await this.store.apply({ keysUpdated: { [conversationId]: Date.now() } });
+      return "done";
+    }
+    if (Date.now() - updatedAt < KEYS_MAX_AGE_MS) return "done";
+    // Read fresh: the chores above may have moved the epoch on.
+    const server = await this.transport.groupState(conversationId);
+    // Someone has to be removed first, or this phone isn't in the group the server knows.
+    if (server.pendingRemovals.length || !server.roster.some((entry) => entry.deviceId === this.me.deviceId)) return "done";
+    const output = await this.crypto.updateKeys((await this.device()).state, conversationId);
+    const result = await this.commit(conversationId, output, server.epoch, true);
+    if (result.ok) return "done";
+    if (result.error === "stale_epoch") return "retry";
+    // Refused for another reason. Replacing keys can wait for the next sync, and mustn't stop this one.
     return "done";
   }
 
@@ -832,6 +906,7 @@ export class MlsMessenger {
 export class MemoryMlsStore implements MlsStore {
   private device: MlsDeviceRecord | null = null;
   private readonly cursors = new Map<string, number>();
+  private readonly keysUpdated = new Map<string, number>();
   private readonly stored = new Map<string, MlsStoredMessage>();
   private readonly pending = new Map<string, MlsPendingCommit>();
   /** Backup v2's queue, in the order queued, keyed so a message is queued once. */
@@ -850,6 +925,9 @@ export class MemoryMlsStore implements MlsStore {
   async cursor(conversationId: string) {
     return this.cursors.get(conversationId) ?? 0;
   }
+  async keysUpdatedAt(conversationId: string) {
+    return this.keysUpdated.get(conversationId) ?? null;
+  }
   async messages(conversationId: string) {
     return [...this.stored.values()].filter((m) => m.conversationId === conversationId).sort((a, b) => (a.seq ?? Infinity) - (b.seq ?? Infinity));
   }
@@ -859,6 +937,7 @@ export class MemoryMlsStore implements MlsStore {
   async apply(change: MlsChange) {
     if (change.device) this.device = change.device;
     for (const [id, cursor] of Object.entries(change.cursors ?? {})) this.cursors.set(id, cursor);
+    for (const [id, at] of Object.entries(change.keysUpdated ?? {})) this.keysUpdated.set(id, at);
     for (const [id, commit] of Object.entries(change.pendingCommits ?? {})) {
       if (commit) this.pending.set(id, commit);
       else this.pending.delete(id);
@@ -870,6 +949,7 @@ export class MemoryMlsStore implements MlsStore {
     for (const ref of change.historyDone ?? []) this.outbox.delete(`${ref.conversationId}/${ref.seq}`);
     for (const conversationId of change.forgetChats ?? []) {
       this.cursors.delete(conversationId);
+      this.keysUpdated.delete(conversationId);
       this.pending.delete(conversationId);
       for (const [key, message] of this.stored) if (message.conversationId === conversationId) this.stored.delete(key);
       for (const [key, ref] of this.outbox) if (ref.conversationId === conversationId) this.outbox.delete(key);

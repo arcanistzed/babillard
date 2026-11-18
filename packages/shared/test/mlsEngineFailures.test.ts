@@ -435,7 +435,7 @@ describe("the sync engine's key packages", () => {
           return base.uploadKeyPackages(...args);
         },
       }));
-      const count = () => server.transportFor("alice", "alice-phone").keyPackageCount("alice-phone");
+      const count = async () => (await server.transportFor("alice", "alice-phone").keyPackageStatus("alice-phone")).available;
       await alice.ensureIdentity();
       expect(await count()).toBe(10);
 

@@ -29,6 +29,8 @@ interface Chat {
 export class MemoryMlsServer {
   private readonly devices = new Map<string, { userId: string; signatureKey: string }>();
   private readonly packages = new Map<string, Uint8Array[]>();
+  /** Each phone's last-resort package, handed out once its single-use ones run out, and kept. */
+  private readonly lastResort = new Map<string, Uint8Array>();
   private readonly chats = new Map<string, Chat>();
   /** Backup v2: each person's key fingerprint, and their sealed history keyed by person, chat and seq. */
   private readonly historyKeys = new Map<string, string>();
@@ -47,6 +49,7 @@ export class MemoryMlsServer {
   retireDevice(deviceId: string): void {
     this.devices.delete(deviceId);
     this.packages.delete(deviceId);
+    this.lastResort.delete(deviceId);
   }
 
   private chat(conversationId: string): Chat {
@@ -58,7 +61,8 @@ export class MemoryMlsServer {
   private withKeyPackages(chat: Chat): Set<string> {
     const users = new Set<string>();
     for (const [deviceId, device] of this.devices) {
-      if (chat.members.has(device.userId) && this.packages.get(deviceId)?.length) users.add(device.userId);
+      // As the Worker does, a last-resort package counts too.
+      if (chat.members.has(device.userId) && (this.packages.get(deviceId)?.length || this.lastResort.has(deviceId))) users.add(device.userId);
     }
     return users;
   }
@@ -85,20 +89,21 @@ export class MemoryMlsServer {
         if (id !== deviceId) throw new Error("wrong device");
         this.devices.set(id, { userId, signatureKey: toBase64(signatureKey) });
       },
-      uploadKeyPackages: async (id, keyPackages) => {
-        for (const bytes of keyPackages) {
+      uploadKeyPackages: async (id, keyPackages, lastResort) => {
+        for (const bytes of lastResort ? [...keyPackages, lastResort] : keyPackages) {
           const parsed = readKeyPackage(bytes);
           if (parsed.identity !== `${userId}/${id}` || toBase64(parsed.signatureKey) !== this.devices.get(id)?.signatureKey) throw new Error("key package mismatch");
         }
         this.packages.set(id, [...(this.packages.get(id) ?? []), ...keyPackages]);
+        if (lastResort) this.lastResort.set(id, lastResort);
       },
-      keyPackageCount: async (id) => this.packages.get(id)?.length ?? 0,
+      keyPackageStatus: async (id) => ({ available: this.packages.get(id)?.length ?? 0, lastResort: this.lastResort.has(id) }),
       claimKeyPackages: async (conversationId, deviceIds) => {
         const chat = memberChat(conversationId);
         const waiting = new Set(pendingAdds(chat.roster, this.directory(chat)).map((device) => device.deviceId));
         return deviceIds.flatMap((id) => {
           if (!waiting.has(id)) throw new MlsHttpError(403, "not_waiting_to_join");
-          const keyPackage = this.packages.get(id)?.shift();
+          const keyPackage = this.packages.get(id)?.shift() ?? this.lastResort.get(id);
           return keyPackage ? [{ deviceId: id, keyPackage }] : [];
         });
       },
