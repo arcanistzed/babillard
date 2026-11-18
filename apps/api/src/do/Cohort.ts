@@ -1,8 +1,9 @@
 import { DurableObject } from "cloudflare:workers";
-import { GROUP_MAX_SIZE, ageOn, canJoin, formGroups, topicPhrase, type Stance, type Waiter } from "@babillard/shared";
+import { GROUP_MAX_SIZE, ageOn, canJoin, formGroups, isMlsTester, topicPhrase, type Stance, type Waiter } from "@babillard/shared";
 import { and, eq, inArray, isNotNull } from "drizzle-orm";
 import { getDb, schema } from "../db";
 import { blocksBetween, blockedWith } from "../lib/blocks";
+import { mlsMode, mlsTesters } from "../lib/config";
 import { sendPush } from "../lib/push";
 import { newId } from "../lib/tokens";
 
@@ -105,6 +106,7 @@ export class Cohort extends DurableObject<Env> {
     const blocked = await blockedWith(db, input.userId);
     const blockPairs = [...blocked].map((other) => [input.userId, other] as const);
     if (!canJoin(input.userId, memberIds, blockPairs)) return null;
+    if (!(await this.canFollowMls(input.userId, newest.id))) return null;
 
     await db
       .insert(schema.conversationMembers)
@@ -118,6 +120,18 @@ export class Cohort extends DurableObject<Env> {
       .where(eq(schema.profiles.userId, input.userId));
     await this.env.CHAT_ROOM.getByName(newest.id).postSystem(newest.id, `${profile?.name ?? "Someone new"} joined the group.`, { fr: `${profile?.name ?? "Une nouvelle personne"} a rejoint le groupe.` });
     return newest.id;
+  }
+
+  /**
+   * With MLS_ENABLED="testers", someone who isn't a tester has MLS off in their app. A group that
+   * already moved to MLS refuses v1, so they couldn't read or write in it: they wait for another
+   * group instead. In every other mode everyone who can see MLS chats has it on.
+   */
+  private async canFollowMls(userId: string, conversationId: string): Promise<boolean> {
+    if (mlsMode(this.env) !== "testers") return true;
+    const [user] = await getDb(this.env).select({ id: schema.users.id, email: schema.users.email }).from(schema.users).where(eq(schema.users.id, userId));
+    if (user && isMlsTester(mlsTesters(this.env), user)) return true;
+    return (await this.env.CHAT_ROOM.getByName(conversationId).mlsChatMode()) === "v1";
   }
 
   private async tryFormGroup(input: CohortJoin): Promise<string | null> {

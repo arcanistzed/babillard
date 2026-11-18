@@ -260,6 +260,11 @@ export class ChatRoom extends DurableObject<Env> {
     return new Set(rows.map((row) => row.userId));
   }
 
+  /** "mls" once the chat's first commit was accepted. Cheaper than mlsState, with no D1 read. */
+  async mlsChatMode(): Promise<"v1" | "mls"> {
+    return this.mls.mode;
+  }
+
   async mlsState(conversationId: string): Promise<MlsGroupState> {
     return this.mls.state(await this.mlsDirectory(conversationId));
   }

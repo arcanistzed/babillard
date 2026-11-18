@@ -31,6 +31,8 @@ interface __BaseEnv_Env {
 	AUTH_SECRET: string;
 	DEV_MODE: string;
 	MLS_ENABLED: string;
+	/** Emails or user IDs, for MLS_ENABLED="testers". A secret, so testers' emails stay out of the repository. */
+	MLS_TESTERS?: string;
 	PUSH_MODE: string;
 	PUBLIC_ORIGIN: string;
 	SES_ACCESS_KEY_ID: string;

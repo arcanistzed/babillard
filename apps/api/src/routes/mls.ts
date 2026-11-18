@@ -1,8 +1,8 @@
-import { fromBase64, mlsClaimSchema, mlsHistoryKeySchema, mlsHistoryUploadSchema, mlsIdentitySchema, mlsKeyPackagesSchema, mlsSubmitSchema, readKeyPackage, toBase64 } from "@babillard/shared";
+import { fromBase64, mlsClaimSchema, mlsMayMove, mlsHistoryKeySchema, mlsHistoryUploadSchema, mlsIdentitySchema, mlsKeyPackagesSchema, mlsSubmitSchema, readKeyPackage, toBase64 } from "@babillard/shared";
 import { and, asc, count, eq, gt, inArray, isNull } from "drizzle-orm";
 import { Hono } from "hono";
 import { getDb, schema, type Db } from "../db";
-import { mlsMode } from "../lib/config";
+import { mlsMode, mlsTesters } from "../lib/config";
 import { fail, parseJson } from "../lib/http";
 import { newId } from "../lib/tokens";
 import { requireAuth, requireOnboarded } from "../middleware";
@@ -10,7 +10,7 @@ import type { AppEnv } from "../types";
 import { requireMember, requireOpenMatch } from "./conversations";
 
 /**
- * MLS group chat. Every route answers 404 unless MLS_ENABLED is "true" or "paused" (see mlsMode).
+ * MLS group chat. Every route answers 404 unless MLS_ENABLED is "true", "testers" or "paused" (see mlsMode).
  * Production's wrangler.jsonc sets it to "false".
  *
  * The server never holds a key. It keeps each phone's public signing key and
@@ -169,12 +169,27 @@ mls.get("/conversations/:id", async (c) => {
   return c.json(await c.env.CHAT_ROOM.getByName(id).mlsState(id));
 });
 
+/**
+ * Whether this chat may move to MLS now. With "testers", only when every active member is a tester,
+ * the same members the Durable Object counts. The D1 read happens only in that mode.
+ */
+async function mayMove(env: Env, conversationId: string): Promise<boolean> {
+  const mode = mlsMode(env);
+  if (mode !== "testers") return mlsMayMove(mode, mlsTesters(env), []);
+  const members = await getDb(env)
+    .select({ id: schema.users.id, email: schema.users.email })
+    .from(schema.conversationMembers)
+    .innerJoin(schema.users, eq(schema.users.id, schema.conversationMembers.userId))
+    .where(and(eq(schema.conversationMembers.conversationId, conversationId), eq(schema.users.status, "active")));
+  return mlsMayMove(mode, mlsTesters(env), members);
+}
+
 /** A commit or a message. The Durable Object checks order and membership, and refuses with a reason the phone can act on. */
 mls.post("/conversations/:id/messages", async (c) => {
   const user = c.get("user");
   const id = c.req.param("id");
   const input = await parseJson(c, mlsSubmitSchema);
-  const result = await c.env.CHAT_ROOM.getByName(id).mlsSubmit(id, user.id, input, mlsMode(c.env) === "on");
+  const result = await c.env.CHAT_ROOM.getByName(id).mlsSubmit(id, user.id, input, await mayMove(c.env, id));
   if (!result.ok) {
     const conflict = ["stale_epoch", "pending_removal", "no_group", "not_ready"].includes(result.error);
     return c.json({ error: result.error, epoch: result.epoch }, conflict ? 409 : 403);

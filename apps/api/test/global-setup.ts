@@ -18,6 +18,10 @@ export const SES_PORT = 8797 + OFFSET;
 export const ANTHROPIC_PORT = 8796 + OFFSET;
 /** A Worker with MLS_ENABLED=paused, its own database, and nothing else of note. */
 export const PAUSED_PORT = 8795 + OFFSET;
+/** A Worker with MLS_ENABLED=testers and the tester emails below, on its own database. */
+export const TESTERS_PORT = 8794 + OFFSET;
+/** The testers Worker's MLS_TESTERS: tester-1@example.test to tester-9@example.test. */
+export const MLS_TESTER_EMAILS = Array.from({ length: 9 }, (_, index) => `tester-${index + 1}@example.test`);
 
 /** Stands in for Amazon SES. Records each request, and refuses addresses containing "ses-reject". */
 function startFakeSes() {
@@ -121,9 +125,10 @@ export default async function setup() {
   const devDb = join(persist, "dev");
   const prodDb = join(persist, "prod");
   const pausedDb = join(persist, "paused");
+  const testersDb = join(persist, "testers");
   execFileSync("node", ["scripts/gen-seed-sql.ts"], { cwd: apiDir, stdio: "pipe" });
   execFileSync("node", ["../site/scripts/build.ts"], { cwd: apiDir, stdio: "pipe" });
-  for (const dir of [devDb, prodDb, pausedDb]) {
+  for (const dir of [devDb, prodDb, pausedDb, testersDb]) {
     runWrangler(["d1", "migrations", "apply", "babillard", "--local", "--persist-to", dir]);
     runWrangler(["d1", "execute", "babillard", "--local", "--persist-to", dir, "--file", "seed/seed.sql"]);
   }
@@ -172,12 +177,27 @@ export default async function setup() {
     SES_SECRET_ACCESS_KEY: "e2e-fake-secret-value",
     MLS_ENABLED: "paused",
   });
-  await Promise.all([waitForHealthy(DEV_PORT), waitForHealthy(PROD_PORT), waitForHealthy(PAUSED_PORT)]);
+  const testers = startServer(TESTERS_PORT, "testers.log", testersDb, {
+    AUTH_SECRET: "e2e-secret",
+    DEV_MODE: "true",
+    PUSH_MODE: "log",
+    PUBLIC_ORIGIN: `http://localhost:${TESTERS_PORT}`,
+    EMAIL_FROM: "Babillard <login@example.test>",
+    SES_REGION: "ca-central-1",
+    SES_ENDPOINT: `http://localhost:${SES_PORT}`,
+    SES_ACCESS_KEY_ID: "AKIAE2EFAKEKEY",
+    SES_SECRET_ACCESS_KEY: "e2e-fake-secret-value",
+    MLS_ENABLED: "testers",
+    // Upper case on purpose: emails match without case.
+    MLS_TESTERS: MLS_TESTER_EMAILS.map((email) => email.toUpperCase()).join(","),
+  });
+  await Promise.all([waitForHealthy(DEV_PORT), waitForHealthy(PROD_PORT), waitForHealthy(PAUSED_PORT), waitForHealthy(TESTERS_PORT)]);
 
   return () => {
     dev.kill("SIGTERM");
     prod.kill("SIGTERM");
     paused.kill("SIGTERM");
+    testers.kill("SIGTERM");
     ses.close();
     anthropic.close();
   };

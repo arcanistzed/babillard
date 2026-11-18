@@ -1,9 +1,9 @@
-import { ageOn, deviceKeySchema, isAdult, LEGAL_VERSION, locationSchema, onboardingSchema, profileSaveSchema, pushTokenSchema, type Locality, type Me } from "@babillard/shared";
+import { ageOn, deviceKeySchema, isAdult, LEGAL_VERSION, locationSchema, mlsOnFor, onboardingSchema, profileSaveSchema, pushTokenSchema, type Locality, type Me } from "@babillard/shared";
 import { and, desc, eq, inArray, isNull } from "drizzle-orm";
 import { Hono } from "hono";
 import { getDb, schema } from "../db";
 import { deleteAccount } from "../lib/accounts";
-import { avatarUrl, mlsMode } from "../lib/config";
+import { avatarUrl, mlsMode, mlsTesters } from "../lib/config";
 import { fail, parseJson } from "../lib/http";
 import { newId } from "../lib/tokens";
 import { requireAuth } from "../middleware";
@@ -38,7 +38,7 @@ export async function loadMe(env: Env, user: UserRow): Promise<Me> {
     cityId: user.cityId,
     campusId: user.campusId,
     age: user.dob ? ageOn(user.dob) : null,
-    mls: mlsMode(env) !== "off",
+    mls: mlsOnFor(mlsMode(env), mlsTesters(env), user),
     profile: profile
       ? {
           displayName: profile.displayName,
