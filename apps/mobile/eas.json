@@ -48,7 +48,8 @@
       },
       "env": {
         "APP_VARIANT": "mlstest",
-        "EXPO_PUBLIC_API_URL": "http://localhost:8787"
+        "EXPO_PUBLIC_API_URL": "http://localhost:8787",
+        "ORG_GRADLE_PROJECT_reactNativeArchitectures": "arm64-v8a"
       }
     }
   },
