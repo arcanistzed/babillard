@@ -6,7 +6,10 @@
 import { fromBase64, toBase64, type MlsGroupState, type MlsLogEntry } from "@babillard/shared";
 import { addDevices, anotherKeyPackage, clientConfig, createDevice, encodeKeyPackage, encryptText, joinExternally, joinFromWelcome, receive, removeUser, startGroup, type MlsDevice } from "@babillard/shared/mls";
 import { mlsCiphersuite } from "@babillard/shared/mls";
+import { execFileSync } from "node:child_process";
 import { randomBytes } from "node:crypto";
+import { dirname, join } from "node:path";
+import { fileURLToPath } from "node:url";
 import type { ClientState } from "ts-mls";
 import { describe, expect, it } from "vitest";
 import { ApiError, Client, createPerson } from "../scripts/api-client.ts";
@@ -15,6 +18,7 @@ const PORT_OFFSET = Number(process.env.E2E_PORT_OFFSET ?? 0);
 const BASE = `http://localhost:${8799 + PORT_OFFSET}`;
 const PROD = `http://localhost:${8798 + PORT_OFFSET}`;
 const PAUSED = `http://localhost:${8795 + PORT_OFFSET}`;
+const apiDir = join(dirname(fileURLToPath(import.meta.url)), "..");
 const cs = mlsCiphersuite((length) => new Uint8Array(randomBytes(length)));
 
 let counter = 0;
@@ -22,6 +26,16 @@ async function person(cityId: string, base = BASE): Promise<Client & { email: st
   counter += 1;
   const email = `mls-${counter}-${Date.now()}@example.test`;
   return Object.assign(await createPerson(base, email, { displayName: `MLS ${counter}`, cityId }), { email });
+}
+
+/** Rows from the dev Worker's own database, for what no route shows. */
+function devQuery<T>(sql: string): T[] {
+  const out = execFileSync(join(apiDir, "../../node_modules/.bin/wrangler"), ["d1", "execute", "babillard", "--local", "--persist-to", ".wrangler/e2e/dev", "--json", "--command", sql], {
+    cwd: apiDir,
+    stdio: "pipe",
+    env: { ...process.env, CI: "true", WRANGLER_SEND_METRICS: "false" },
+  });
+  return JSON.parse(out.toString())[0].results as T[];
 }
 
 /** Two people who match on a topic, and their direct chat. */
@@ -357,4 +371,57 @@ describe("MLS delivery service", () => {
     await a.post("/mls/history/key", { keyId: null });
     expect(await a.get("/mls/history/key")).toEqual({ keyId: null });
   });
+
+  it("deletes the leaver's backup v2 history for a group they leave, and only that", async () => {
+    const people = await Promise.all(Array.from({ length: 4 }, () => person("minneapolis-mn-us")));
+    let groupId: string | null = null;
+    for (const client of people) groupId = (await client.post("/deck/topics/quantum-physics-without-the-hype/swipe", { direction: "right" })).groupConversationId ?? groupId;
+    expect(groupId).toBeTruthy();
+    const id = groupId!;
+    const phones = await Promise.all(people.map(phone));
+    const [first, stayer, , leaver] = phones as [Phone, Phone, Phone, Phone];
+    await startOnServer(first, id);
+    await addAll(first, id, phones.slice(1));
+    const hello = await encryptText(first.state!, "before anyone left", cs);
+    const inGroup = await submit(first, id, hello.message);
+    first.state = hello.state;
+
+    // The leaver and a stayer also share a direct chat, with history of its own.
+    await leaver.client.post("/deck/topics/everyday-physics/swipe", { direction: "right" });
+    await stayer.client.post("/deck/topics/everyday-physics/swipe", { direction: "right" });
+    await leaver.client.post(`/people/${stayer.client.id}/swipe`, { direction: "right" });
+    const { conversationId: directId } = await stayer.client.post(`/people/${leaver.client.id}/swipe`, { direction: "right" });
+    expect(directId).toBeTruthy();
+    // The group used up the stayer's only key package.
+    const fresh = await anotherKeyPackage(stayer.device, cs);
+    await stayer.client.post("/mls/key-packages", { deviceId: stayer.client.device.publicKey, keyPackages: [toBase64(encodeKeyPackage(fresh))] });
+    const leaverHere: Phone = { ...leaver, state: null, cursor: 0 };
+    const stayerHere: Phone = { ...stayer, device: fresh, state: null, cursor: 0 };
+    await startOnServer(leaverHere, directId);
+    await addAll(leaverHere, directId, [stayerHere]);
+    const direct = await encryptText(leaverHere.state!, "just us two", cs);
+    const inDirect = await submit(leaverHere, directId, direct.message);
+
+    const sealed = (byte: number) => toBase64(new Uint8Array(64).fill(byte));
+    for (const [p, byte] of [[leaver, 1], [stayer, 2]] as const) {
+      await p.client.post("/mls/history/key", { keyId: `key-${byte}` });
+      expect(await p.client.post("/mls/history", { keyId: `key-${byte}`, entries: [
+        { conversationId: id, seq: inGroup.seq, entry: sealed(byte) },
+        { conversationId: directId, seq: inDirect.seq, entry: sealed(byte) },
+      ] })).toEqual({ stored: 2, rejected: [] });
+    }
+    expect((await leaver.client.get(`/mls/history/${id}`)).entries).toEqual([{ seq: inGroup.seq, entry: sealed(1) }]);
+
+    await leaver.client.post(`/conversations/${id}/leave`);
+
+    // Once out, the history routes answer 404, so the rows are read from the database itself.
+    expect(await status(leaver.client.get(`/mls/history/${id}`))).toBe(404);
+    const rows = devQuery<{ user_id: string; conversation_id: string }>(
+      `SELECT user_id, conversation_id FROM mls_history WHERE conversation_id IN ('${id}', '${directId}') ORDER BY conversation_id, user_id`,
+    );
+    const kept = rows.map((row) => `${row.user_id === leaver.client.id ? "leaver" : row.user_id === stayer.client.id ? "stayer" : row.user_id} in ${row.conversation_id === id ? "group" : "direct"}`);
+    expect(kept.sort()).toEqual(["leaver in direct", "stayer in direct", "stayer in group"]);
+    expect((await stayer.client.get(`/mls/history/${id}`)).entries).toEqual([{ seq: inGroup.seq, entry: sealed(2) }]);
+    expect((await leaver.client.get(`/mls/history/${directId}`)).entries).toEqual([{ seq: inDirect.seq, entry: sealed(1) }]);
+  }, 60_000);
 });

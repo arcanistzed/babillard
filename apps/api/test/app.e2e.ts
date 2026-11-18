@@ -406,11 +406,15 @@ describe("topic deck", () => {
   });
 
   it("starts newcomers on the shared starter topics, then stops once they've swiped enough", async () => {
-    const client = await person("toronto", { fields: ["physics"] });
+    // A city no other test uses. In Toronto, a topic outside physics with a near-full cohort
+    // scores the same as a physics one, and the random tie-break made this test flaky.
+    const client = await person("kingston-08-ca", { fields: ["physics"] });
     const [first, second] = await client.get("/deck/topics");
     expect([first.id, second.id]).toEqual(["should-a-four-day-work-week-become-standard", "walkable-cities"]);
     for (const card of (await client.get("/deck/topics")).slice(0, NEWCOMER_SWIPES)) await client.post(`/deck/topics/${card.id}/swipe`, { direction: "left" });
     const later = await client.get("/deck/topics");
+    // If another test ever gathers people here, say so rather than flake.
+    expect(later.filter((card: any) => card.nearbyCount > 0)).toEqual([]);
     expect(later[0].fieldTags).toContain("physics");
   });
 
