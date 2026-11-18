@@ -12,7 +12,7 @@ export const LEGAL_PATHS: Record<LegalPage, Record<Language, string>> = {
 
 const privacyEn = `# Privacy policy
 
-Last updated: November 13, 2026
+Last updated: November 18, 2026
 
 Babillard helps people find others nearby who want to talk about the same topics, then meet in person. In this policy, "we" means the operator of Babillard, named in our Terms of use. We're based in Canada. Our privacy officer is responsible for how we handle your information. Questions and requests go to privacy@babillard.app.
 
@@ -201,7 +201,7 @@ Safety concerns, including anything involving a child: safety@babillard.app. Hel
 
 const privacyFr = `# Politique de confidentialité
 
-Dernière mise à jour: 13 novembre 2026
+Dernière mise à jour: 18 novembre 2026
 
 Babillard aide les gens à trouver des personnes près de chez eux qui veulent parler des mêmes sujets, puis à se rencontrer en personne. Dans cette politique, « nous » désigne l'exploitant de Babillard, nommé dans nos Conditions d'utilisation. Nous sommes établis au Canada. Notre responsable de la protection des renseignements personnels répond de la façon dont nous traitons vos renseignements. Adressez vos questions et demandes à privacy@babillard.app.
 

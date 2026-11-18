@@ -164,4 +164,4 @@ export const REPORT_REASONS = ["harassment", "spam", "fake_profile", "underage",
 export type ReportReason = (typeof REPORT_REASONS)[number];
 
 /** Bump this when the terms or policy change enough that people must agree again. */
-export const LEGAL_VERSION = "2026-11-13";
+export const LEGAL_VERSION = "2026-11-18";
