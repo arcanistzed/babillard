@@ -7,6 +7,7 @@ import auth from "./routes/auth";
 import clientErrors from "./routes/clientErrors";
 import conversations from "./routes/conversations";
 import deck from "./routes/deck";
+import devices from "./routes/devices";
 import me from "./routes/me";
 import meetups from "./routes/meetups";
 import people from "./routes/people";
@@ -33,6 +34,8 @@ app.use((c, next) => (c.req.header("upgrade")?.toLowerCase() === "websocket" ? n
 
 app.route("/", publicRoutes);
 app.route("/auth", auth);
+// Before /me, so only this router's middleware runs for it.
+app.route("/me/devices", devices);
 app.route("/me", me);
 app.route("/deck", deck);
 app.route("/people", people);
