@@ -109,27 +109,42 @@ export function mlsMessenger(me: MlsUser | null | undefined): Promise<MlsMesseng
   return current.messenger;
 }
 
+/** The guard's own read of the store, opened once per person and kept, so checks never race an open or a close. */
+let guardStore: { userId: string; opened: Promise<{ db: SQLite.SQLiteDatabase; store: SqlMlsStore } | null> } | null = null;
+
+function readStore(userId: string): Promise<SqlMlsStore | null> {
+  if (currentStore?.userId === userId) return Promise.resolve(currentStore.store);
+  if (guardStore?.userId !== userId) {
+    const opened = (async () => {
+      // The key is made the first time MLS opens. No key: no database and no group, and nothing to open.
+      const key = await SecureStore.getItemAsync(keyName(userId));
+      if (!key) return null;
+      const db = await SQLite.openDatabaseAsync(databaseName(userId));
+      return { db, store: new SqlMlsStore(expoSqlDb(db), fromBase64(key), random) };
+    })();
+    guardStore = { userId, opened };
+    // A failure is forgotten, so the next check tries again. Until then the guard fails closed.
+    opened.catch(() => {
+      if (guardStore?.opened === opened) guardStore = null;
+    });
+  }
+  return guardStore!.opened.then((opened) => opened?.store ?? null);
+}
+
 /**
  * The downgrade guard's question, asked whatever `/me` says: does this phone hold an MLS group for
  * this chat, or a commit that may have moved it? If so, the chat must never get v1 from here.
  *
- * It creates nothing and asks the server nothing. The database key is made the first time MLS opens,
- * so with no key there's no database and no group, and it stops there without opening anything.
- * With a key, it opens the database just to read it, never through `open()`, which registers.
- * A key whose database won't open counts as holding a group: the guard fails closed.
+ * It creates nothing and asks the server nothing. With no database key it opens nothing. With one,
+ * it reads the database directly, never through `open()`, which registers. If the messenger is
+ * open, it asks that store instead. A store that won't open or read counts as holding a group:
+ * the guard fails closed.
  */
 export async function holdsMlsGroupHere(userId: string, conversationId: string): Promise<boolean> {
   if (!isAvailable) return false;
-  if (currentStore?.userId === userId) return holdsMlsGroup(currentStore.store, nativeCrypto, conversationId).catch(() => true);
   try {
-    const key = await SecureStore.getItemAsync(keyName(userId));
-    if (!key) return false;
-    const db = await SQLite.openDatabaseAsync(databaseName(userId));
-    try {
-      return await holdsMlsGroup(new SqlMlsStore(expoSqlDb(db), fromBase64(key), random), nativeCrypto, conversationId);
-    } finally {
-      await db.closeAsync().catch(() => undefined);
-    }
+    const store = await readStore(userId);
+    return store !== null && (await holdsMlsGroup(store, nativeCrypto, conversationId));
   } catch (error) {
     console.warn("Couldn't check this phone's MLS groups, so v1 stays off for this chat", error);
     return true;
@@ -140,6 +155,9 @@ export async function holdsMlsGroupHere(userId: string, conversationId: string):
 export async function deleteMlsData(userId: string): Promise<void> {
   current = null;
   currentStore = null;
+  const guard = guardStore;
+  guardStore = null;
+  await guard?.opened.then((opened) => opened?.db.closeAsync()).catch(() => undefined);
   await SecureStore.deleteItemAsync(keyName(userId));
   await SecureStore.deleteItemAsync(historyKeyName(userId));
   await SQLite.deleteDatabaseAsync(databaseName(userId)).catch(() => undefined);

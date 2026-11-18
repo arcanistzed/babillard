@@ -64,6 +64,10 @@ describe("the downgrade guard", () => {
     expect(await holdsMlsGroup(aliceStore, crypto, CHAT)).toBe(true);
     expect(await holdsMlsGroup(aliceStore, crypto, OTHER)).toBe(false);
 
+    // Checks that overlap, as a chat opening and a quick first send do, agree with each other.
+    const together = await Promise.all([CHAT, OTHER, CHAT, OTHER, CHAT].map((chat) => holdsMlsGroup(aliceStore, crypto, chat)));
+    expect(together).toEqual([true, false, true, false, true]);
+
     await alice.forgetChat(CHAT);
     expect(await holdsMlsGroup(aliceStore, crypto, CHAT)).toBe(false);
   });
