@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { ENDED_UP, FIELDS, LOOKING_FOR, MAX_AGE_YEARS, MEET_AGAIN, MIN_AGE_YEARS, MIND_CHANGED, REPORT_REASONS, ROLES, STANCES, TAKEAWAY_MAX_LENGTH, VENUE_KINDS } from "./constants";
+import { HISTORY_ENTRY_MAX_BYTES } from "./mlsHistory";
 
 export const emailSchema = z.string().trim().toLowerCase().email().max(254);
 
@@ -89,7 +90,7 @@ export const mlsHistoryKeySchema = z.object({ keyId: encodedSchema.max(60).nulla
 export const mlsHistoryUploadSchema = z.object({
   keyId: encodedSchema.max(60),
   entries: z
-    .array(z.object({ conversationId: z.string().min(1).max(80), seq: z.number().int().positive(), entry: mlsBytes(22_000) }))
+    .array(z.object({ conversationId: z.string().min(1).max(80), seq: z.number().int().positive(), entry: mlsBytes(Math.ceil((HISTORY_ENTRY_MAX_BYTES * 4) / 3)) }))
     .min(1)
     .max(100),
 });

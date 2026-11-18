@@ -10,6 +10,8 @@ import { fromBase64, toBase64 } from "./e2ee";
  */
 
 export const HISTORY_KEY_LENGTH = 32;
+/** The largest sealed entry the server keeps. A phone skips a message that seals to more. */
+export const HISTORY_ENTRY_MAX_BYTES = 16 * 1024;
 const VERSION = 1;
 const NONCE_LENGTH = 24;
 const encoder = new TextEncoder();

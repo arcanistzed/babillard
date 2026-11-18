@@ -348,9 +348,10 @@ describe("MLS delivery service", () => {
     expect((await a.get(`/mls/history/${conversationId}`)).entries).toEqual([]);
     await upload(a, "second-key", [{ conversationId, seq: message.seq, entry: sealed(6) }]);
 
-    // A block closes the chat for both, and both people's history for it goes, as each phone deletes its copy.
+    // A block closes the chat for both. Its history is deleted, and none can be added or read back.
     await a.post(`/safety/blocks/${b.id}`);
-    expect((await b.get(`/mls/history/${conversationId}`)).entries).toEqual([]);
+    expect(await status(b.get(`/mls/history/${conversationId}`))).toBe(410);
+    expect(await upload(b, "bobs-key", [{ conversationId, seq: message.seq, entry: sealed(7) }])).toEqual({ stored: 0, rejected: [{ conversationId, seq: message.seq }] });
 
     // Turning backup off deletes the key.
     await a.post("/mls/history/key", { keyId: null });

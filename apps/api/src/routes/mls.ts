@@ -275,7 +275,9 @@ mls.post("/history", async (c) => {
   const accepted: typeof entries = [];
   const rejected: { conversationId: string; seq: number }[] = [];
   for (const [conversationId, chatEntries] of byChat) {
-    const messages = new Set(mine.has(conversationId) ? await c.env.CHAT_ROOM.getByName(conversationId).mlsApplicationSeqs(chatEntries.map((entry) => entry.seq)) : []);
+    // A closed chat keeps no history: each phone deletes its copy of one, as the server did on closing it.
+    const open = mine.has(conversationId) && (await requireOpenMatch(db, conversationId).then(() => true, () => false));
+    const messages = new Set(open ? await c.env.CHAT_ROOM.getByName(conversationId).mlsApplicationSeqs(chatEntries.map((entry) => entry.seq)) : []);
     for (const entry of chatEntries) {
       if (messages.has(entry.seq)) accepted.push(entry);
       else rejected.push({ conversationId, seq: entry.seq });
@@ -291,12 +293,11 @@ mls.post("/history", async (c) => {
   return c.json({ stored: accepted.length, rejected });
 });
 
-/** The caller's sealed history for one chat they're in, after `after`, oldest first. */
+/** The caller's sealed history for one open chat they're in, after `after`, oldest first. */
 mls.get("/history/:conversationId", async (c) => {
   const user = c.get("user");
   const conversationId = c.req.param("conversationId");
-  const db = getDb(c.env);
-  await requireMember(db, conversationId, user.id);
+  const db = await memberOfOpenChat(c, user.id, conversationId);
   const keyId = await historyKeyId(db, user.id);
   if (!keyId) return c.json({ keyId: null, entries: [] });
   const after = Number(c.req.query("after") ?? 0);

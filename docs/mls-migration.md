@@ -274,7 +274,10 @@ Tried on the emulator with `apps/api/scripts/mls-group-peers.ts` (its new "remov
 
 The flag hides the routes, but not everything:
 
-- **Deploy order.** Migration `0010` must be applied before this Worker is deployed. Account deletion now also deletes key packages, and that fails without the table. Every `ChatRoom` also creates its empty MLS tables when it wakes, flag or not. That's harmless, but it means the branch changes production storage the moment it's deployed.
+- **Deploy order.** Migrations `0010` and `0011` must be applied before this Worker is deployed. `0011` matters even with MLS off: leaving a group, blocking someone and deleting an account all delete from `mls_history`, so without the table those break for everyone.
+- **Migration numbers.** Main already has `0010` to `0013`, so the branch's two migrations and drizzle's journal need regenerating when it's merged.
+- **The privacy policy** doesn't mention backup v2's server copy. It still truthfully says only the phones in a chat can read messages, but it should say that turning backup on keeps a sealed copy on the server.
+- **Storage on deploy.** Account deletion also deletes key packages, which fails without `0010`'s table. Every `ChatRoom` also creates its empty MLS tables when it wakes, flag or not. That's harmless, but it means the branch changes production storage the moment it's deployed.
 - **New members after the switch.** The readiness check covers the moment a chat moves to MLS. Someone who joins an open group later with an app that can't do MLS would be stuck. Before the flag goes on, `ANDROID_MIN_VERSION` must require an MLS-capable app. See "Rolling it out".
 - **Phones that are gone but not retired.** A phone is retired only when someone has more than five, so a lost phone stays "active" and keeps its leaf. Nothing breaks, but those leaves never go away. The app needs a way to retire a phone, such as a list of signed-in phones under You, and then the server's pending-removal rule takes care of the group.
 - **Directory refresh.** Phones check every credential against the server's directory. A phone must fetch the directory again before applying new commits, or it will refuse a member's new phone. The end-to-end test client does this.
@@ -353,7 +356,7 @@ OpenMLS by default tolerates 5 messages out of order within one sender and skips
 
 Today the backup file holds device keys, and old messages open again because the server still has the envelopes. Under MLS the server's ciphertext can't be opened later by anyone. The keys are gone, by design. So "back up my keys" no longer means anything for MLS messages. Restoring MLS group state from a backup would also be wrong, since it would reuse keys.
 
-The replacement keeps today's experience: a small file and a passphrase, with history coming back on a new phone. The plan below is not built yet.
+The replacement keeps today's experience: a small file and a passphrase, with history coming back on a new phone. Built on the branch as described below (7c2e8f0 and the fixes after it). The code is `packages/shared/src/mlsHistory.ts`, the engine's history methods in `mlsClient.ts`, the `/mls/history` routes, and the key backup screen.
 
 **The idea.** Each person who turns backup on gets a random 32-byte **history key**. Their phones encrypt each MLS message they read or send under it and upload the result to a store only that person can read. A new phone restores the file, downloads the store, and fills in what was said before it joined.
 
@@ -384,14 +387,15 @@ The history key belongs to the person, not the phone, so their phones must agree
 
 #### The server
 
-- **A D1 table** `mls_history`: user id, conversation id, `seq`, key id, ciphertext, created time, with primary key (user, conversation, seq). D1 rather than each ChatRoom, so a restore can page through all of a person's chats in one place. A user column holds the key id.
+- **A D1 table** `mls_history`: user id, conversation id, `seq`, key id, ciphertext, created time, with primary key (user, conversation, seq). D1 rather than each ChatRoom, so a restore can page through all of a person's chats in one place. A second table, `mls_history_keys`, holds each person's key id. Migration `0011` adds both.
 - **Routes:**
-  - `PUT /mls/history/key`, to set or clear the key id. Clearing it deletes the history.
-  - `POST /mls/history`, at most 100 entries, each at most 16 KB.
-  - `GET /mls/history?conversation=&after=`, paged.
-- **Checks:** the caller must be a current member of the chat, the `seq` must be an application entry in its log, and the key id must be the caller's current one. Uploads take a rate limit, like key package claims.
+  - `GET` and `POST /mls/history/key`, to read, set or clear the key id. Clearing it deletes the history. Setting a different key from the one in place is refused with 409 unless the request says `replace`, which deletes the old history.
+  - `POST /mls/history`, at most 100 entries, each at most 16 KB sealed (`HISTORY_ENTRY_MAX_BYTES`, shared by the route's schema and the phone).
+  - `GET /mls/history/:conversationId?after=`, 200 at a time, oldest first.
+- **Checks:** the caller must be a current member of the chat, and the chat must be open. The `seq` must be an application entry in its log, and the key id must be the caller's current one. Entries that fail come back in `rejected`, and the phone stops trying them. Uploads take their own rate limit, `MLS_HISTORY_LIMIT`, 60 batches a minute per person.
+- **Sizes:** a phone skips a message that seals to more than 16 KB, and drops a batch the server calls malformed. Any member can send a message that large, and one entry that can never be stored mustn't hold up everything queued behind it.
 - **What it learns:** nothing new. It already knows who's in each chat and every entry's `seq`, time and size. A history entry also tells it that the person turned backup on.
-- **Deleting:** when someone is out of a chat, the server deletes their history for it, matching the phone deleting its own copy (decided 2026-11-17). Account deletion deletes all of it.
+- **Deleting:** leaving a group deletes the person's history for it, and a block deletes both people's history for the chat it closes. That matches each phone deleting its own copy (decided 2026-11-17). Account deletion deletes all of it.
 
 #### Restoring on a new phone
 
@@ -401,17 +405,35 @@ The history key belongs to the person, not the phone, so their phones must agree
 
 A restore can come before or after joining; both orders end the same. A message the history doesn't have, because no phone with the key read it, stays missing, as now.
 
+#### On the screen
+
+- **Saving** checks the key first and changes nothing. If another phone's key is in place, it asks whether to start over. It writes the file, and only then turns history on, so a save that fails leaves no history on the server without a file holding its key. Android's share sheet doesn't say whether the person cancelled, so a cancelled share still turns it on.
+- **Restoring** takes the file's history key only if it's still the person's current one, then queues what the phone holds and fills in every chat in the inbox. An old file can't turn history back on after the person stopped it or replaced it; the screen says the file no longer brings back history.
+- **At launch** the phone checks its stored key against the server's. If another phone started over, it forgets its key. If the check fails, it keeps queueing, and a refused upload stops it later.
+- **Stopping** asks first, then deletes the server's copy and the phone's key.
+
 #### Tests
 
-- Shared: the v2 file round trip, and a v1 file opening in the v2 code. Engine tests on the memory server: a phone with the key uploads what it reads and sends, a crash between storing and flushing still uploads, a new phone restores and shows history and live messages in order, two phones uploading the same message leave one entry, and a key mismatch is refused.
-- End to end: the routes' membership, key id, size and deletion rules through the Worker.
-- Emulator: back up on one phone, then sign in as the same person on a second emulator instance and restore. The earlier messages should appear above the new ones.
+- `rules.test.ts`: the v2 file carries the history key, and a v1 file still opens.
+- `mlsHistory.test.ts`, on the memory server:
+  - Sealing is bound to the person, chat and place in the log.
+  - A phone uploads what it held, read and sent. A new phone restores it in order, with nothing twice and the franking keys kept.
+  - One key per person, and starting over makes the old phone stop.
+  - Offline uploads are kept and sent later, and stopping deletes the history.
+  - An oversized message is skipped.
+  - An old file can't turn history back on.
+  - A launch that can't check its key keeps queueing.
+  - The SQL store keeps the queue through a restart and forgets a chat's queue with the chat.
+- `mls.e2e.ts`: the routes through the Worker: no upload without a key, one key per person, only messages in open chats the person is in, the first copy wins, an old key is refused, nobody reads anyone else's, starting over deletes, a block closes it, and turning off clears the key.
+- Not tested: leaving a group deleting that person's history. The route does it in the same batch as removing the membership.
+- On the emulator (2026-11-18), with `apps/api/scripts/mls-history-peer.ts` playing Alice's first phone and Bob. They moved a chat to MLS and traded three messages, and the first phone backed up its history and wrote Alice's backup file. The emulator, signed in as Alice's new phone, showed none of the three when it opened the chat.
+  - After restoring the file on the backup screen, all three showed, in order, Alice's own on her side. Ping and pong followed, and the server's history went from 3 entries to 5, the new phone's uploads included.
+  - "Stop backing up messages" left 0 history rows and 0 keys on the server.
+  - Restoring the same file again said it no longer brings back history, and the server stayed at 0 and 0.
 
-#### Questions for you
+#### Decided
 
-1. **Opt-in or on by default?** The plan keeps it opt-in, as the v1 backup is. On by default would need the key kept somewhere besides a file the person saves, which changes the design.
-2. **Delete a chat's history when the person leaves it?** The plan says yes, to match what the phone does.
-3. **The franking key in history?** The plan says yes, so restored messages can still be reported. Leaving it out would make the stored copy smaller and reveal less if the history key leaked, but restored messages couldn't be reported.
+On 2026-11-18 the user approved the plan as written: opt-in, history deleted when the person leaves a chat, and franking keys kept in history so restored messages can be reported.
 
 ### Reports to moderators
 
@@ -537,17 +559,16 @@ The ordering rule `admit` and the security-code function `codeForRoster` are wor
 
 ## What's left, and roughly how long
 
-One developer who knows the codebase. Done on the branch since the first estimate: the server's header reader, the key package service, the delivery service, the readiness check, external commits with GroupInfo export, the phone's sync engine with its encrypted SQLite store, the chat screens on MLS, recovery from lost answers and stuck entries, hiding blocked people's MLS messages, a person's second phone, the roster security code on the chat info screen, deleting a chat's MLS copy once the person is out of it, limits on key package claims, franked reports, the server's switch for a staged rollout, with a pause, and taking ts-mls out of the app.
+One developer who knows the codebase. Done on the branch since the first estimate: the server's header reader, the key package service, the delivery service, the readiness check, external commits with GroupInfo export, the phone's sync engine with its encrypted SQLite store, the chat screens on MLS, recovery from lost answers and stuck entries, hiding blocked people's MLS messages, a person's second phone, the roster security code on the chat info screen, deleting a chat's MLS copy once the person is out of it, limits on key package claims, franked reports, the server's switch for a staged rollout, with a pause, taking ts-mls out of the app, and backup v2 for MLS history.
 
 | Work | Estimate |
 |---|---|
 | Android build in EAS: install Rust there, or commit the built libraries | 2 to 3 days |
 | Server, still to do: a way for people to retire a lost phone | 1 day |
 | Rust wrapper: last-resort key packages and per-chat state | 2 to 4 days |
-| Backup v2 and history store: the file, the key id, the D1 store and routes, the engine's outbox and restore, the screen, and tests (planned under "Key backup") | 5 to 7 days |
 | Migration: the release itself, and watching the switch in production | 1 to 2 days |
 | End-to-end tests with two devices, and on a real phone | 4 to 5 days |
-| **Total** | **15 to 22 working days, about 3 to 4 weeks** |
+| **Total** | **10 to 15 working days, about 2 to 3 weeks** |
 
 iOS isn't in this estimate. It would add a Swift module over the same Rust crate.
 
@@ -568,4 +589,4 @@ iOS isn't in this estimate. It would add a Swift module over the same Rust crate
 10. **Downgrade to v1.** The app uses MLS only while `/me` says `mls: true`, so a server that says `false` gets v1 from a phone that's already in a chat's MLS group. v1 is still end-to-end encrypted, but it has no forward secrecy or post-compromise security. A guard is simple: once this phone holds a chat's group, never send v1 there, and say the chat can't be used instead. Not built yet.
 11. **The roster is the server's word.** It follows the commits the server accepted, and phones keep their own roster from the same commits. If they ever disagree, a phone should stop and show the security code, not trust either side.
 
-The D1 migration on the branch is `0010`. Main has moved on since the branch started, so check the number before merging.
+The D1 migrations on the branch are `0010` and `0011`. Main has moved on since the branch started, so renumber them before merging.

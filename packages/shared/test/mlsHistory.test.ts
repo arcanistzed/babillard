@@ -104,8 +104,7 @@ describe("backup v2 in the sync engine", () => {
     expect(await texts(newPhone)).toEqual(["after the new phone"]);
 
     // Restoring the file gives it the key, and history fills in the rest, in order, with nothing twice.
-    expect(await newPhone.enableHistory(key)).toBe("ok");
-    expect(await newPhone.restoreHistory(CHAT)).toBe(5);
+    expect(await newPhone.restoreFromHistoryKey(key, [CHAT])).toBe("restored");
     expect(await texts(newPhone)).toEqual(["before backup", "read", "sent", "one more", "and another", "after the new phone"]);
     expect(await newPhone.restoreHistory(CHAT)).toBe(0);
     // The restored messages keep their franking keys, so they can still be reported.
@@ -177,6 +176,74 @@ describe("backup v2 in the sync engine", () => {
     await bob.send(CHAT, "not kept");
     await alice.sync(CHAT);
     expect(server.historyCount("alice")).toBe(0);
+  });
+
+  it("skips a message too big to keep, so it can't hold up the rest", async () => {
+    const { server, phone } = world(["alice", "bob"]);
+    const [alice, bob] = [phone("alice"), phone("bob")];
+    await alice.ensureIdentity();
+    await bob.ensureIdentity();
+    await alice.sync(CHAT);
+    await bob.sync(CHAT);
+    await alice.enableHistory(random(32));
+    await bob.send(CHAT, "x".repeat(20_000));
+    await bob.send(CHAT, "after the big one");
+    await alice.sync(CHAT);
+    expect(server.historyCount("alice")).toBe(1);
+  });
+
+  it("won't let an old file turn history back on after the person stopped it", async () => {
+    const { server, phone } = world(["alice", "bob"]);
+    const [alice, bob] = [phone("alice"), phone("bob")];
+    await alice.ensureIdentity();
+    await bob.ensureIdentity();
+    await alice.sync(CHAT);
+    await bob.sync(CHAT);
+    const key = random(32);
+    await alice.enableHistory(key);
+    await alice.disableHistory();
+
+    const newPhone = phone("alice", "alice-phone-2");
+    await newPhone.ensureIdentity();
+    expect(await newPhone.historyKeyState(key)).toBe("none");
+    expect(await newPhone.restoreFromHistoryKey(key, [CHAT])).toBe("not_current");
+    expect(newPhone.historyActive()).toBe(false);
+    expect(await server.transportFor("alice", "alice-phone").historyKeyId()).toBeNull();
+  });
+
+  it("keeps queueing when it couldn't check its key at launch", async () => {
+    const { server, phone } = world(["alice", "bob"]);
+    let online = true;
+    const transport = (base: MlsTransport): MlsTransport => ({
+      ...base,
+      historyKeyId: async () => {
+        if (!online) throw new Error("offline");
+        return base.historyKeyId();
+      },
+      uploadHistory: async (...args) => {
+        if (!online) throw new Error("offline");
+        return base.uploadHistory(...args);
+      },
+    });
+    const store = new MemoryMlsStore();
+    const alice = phone("alice", "alice-phone", { transport, store });
+    const bob = phone("bob");
+    await alice.ensureIdentity();
+    await bob.ensureIdentity();
+    await alice.sync(CHAT);
+    await bob.sync(CHAT);
+    const key = random(32);
+    await alice.enableHistory(key);
+
+    // The app restarts offline.
+    online = false;
+    const restarted = phone("alice", "alice-phone", { transport, store });
+    expect(await restarted.useHistoryKey(key)).toBe(true);
+    await bob.send(CHAT, "while offline");
+    await restarted.sync(CHAT).catch(() => []);
+    online = true;
+    await restarted.sync(CHAT);
+    expect(server.historyCount("alice")).toBe(1);
   });
 
   it("drops what the server won't keep, such as a chat the person has left", async () => {

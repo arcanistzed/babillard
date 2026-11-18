@@ -2,7 +2,7 @@ import { sha256 } from "@noble/hashes/sha2.js";
 import type { MlsGroupState, MlsLogEntry } from "./api";
 import { fromBase64, toBase64 } from "./e2ee";
 import { FRANKING_KEY_LENGTH, checkFranking, decodeFrankedPayload, encodeFrankedPayload, frankingCommitment } from "./franking";
-import { historyKeyId, openHistoryEntry, sealHistoryEntry, type SealedHistoryEntry } from "./mlsHistory";
+import { HISTORY_ENTRY_MAX_BYTES, historyKeyId, openHistoryEntry, sealHistoryEntry, type SealedHistoryEntry } from "./mlsHistory";
 import { MlsHttpError } from "./mlsTransport";
 
 /**
@@ -628,11 +628,7 @@ export class MlsMessenger {
     return this.serial(async () => {
       if ((await this.transport.setHistoryKeyId(historyKeyId(key), replace)) === "exists") return "exists";
       this.historyKey = key;
-      const queued: HistoryRef[] = [];
-      for (const conversationId of await this.store.conversationIds()) {
-        for (const message of await this.store.messages(conversationId)) if (message.seq !== null && message.status === "sent") queued.push({ conversationId, seq: message.seq });
-      }
-      if (queued.length) await this.store.apply({ historyOutbox: queued });
+      await this.backfillHistory();
       await this.flushHistoryQuietly();
       return "ok";
     }, false);
@@ -644,11 +640,54 @@ export class MlsMessenger {
    */
   useHistoryKey(key: Uint8Array): Promise<boolean> {
     return this.serial(async () => {
-      const current = (await this.transport.historyKeyId()) === historyKeyId(key);
-      this.historyKey = current ? key : null;
-      if (!current) await this.store.apply({ clearHistoryOutbox: true });
+      // Held from the start, so messages stored while offline are still queued. An upload under a
+      // key that's no longer current is refused, and that stops it then.
+      this.historyKey = key;
+      let current: boolean;
+      try {
+        current = (await this.transport.historyKeyId()) === historyKeyId(key);
+      } catch {
+        return true;
+      }
+      if (!current) {
+        this.historyKey = null;
+        await this.store.apply({ clearHistoryOutbox: true });
+      }
       return current;
     }, false);
+  }
+
+  /** Whether this key is the person's current one, another key is, or history is off. Changes nothing. */
+  async historyKeyState(key: Uint8Array): Promise<"current" | "other" | "none"> {
+    const keyId = await this.transport.historyKeyId();
+    return keyId === null ? "none" : keyId === historyKeyId(key) ? "current" : "other";
+  }
+
+  /**
+   * A key from a restored backup file. It's taken up only if it's still the person's current key:
+   * restoring an old file mustn't turn history back on after the person stopped it. Then queues what
+   * this phone holds, uploads, and fills in each of these chats from history.
+   */
+  restoreFromHistoryKey(key: Uint8Array, conversationIds: string[]): Promise<"restored" | "not_current"> {
+    return this.serial(async () => {
+      if ((await this.transport.historyKeyId()) !== historyKeyId(key)) return "not_current";
+      this.historyKey = key;
+      await this.backfillHistory();
+      await this.flushHistoryQuietly();
+      return "restored";
+    }, false).then(async (outcome) => {
+      if (outcome === "restored") for (const conversationId of conversationIds) await this.restoreHistory(conversationId).catch(() => 0);
+      return outcome;
+    });
+  }
+
+  /** Queues every message this phone holds that has a place in the log. */
+  private async backfillHistory(): Promise<void> {
+    const queued: HistoryRef[] = [];
+    for (const conversationId of await this.store.conversationIds()) {
+      for (const message of await this.store.messages(conversationId)) if (message.seq !== null && message.status === "sent") queued.push({ conversationId, seq: message.seq });
+    }
+    if (queued.length) await this.store.apply({ historyOutbox: queued });
   }
 
   /** Turns history off for this person: the server deletes it, and nothing more is queued. */
@@ -705,13 +744,25 @@ export class MlsMessenger {
         const held = new Map((await this.store.messages(conversationId)).map((message) => [message.id, message]));
         for (const ref of refs.filter((candidate) => candidate.conversationId === conversationId)) {
           const message = held.get(String(ref.seq));
-          if (message) entries.push({ ...ref, sealed: sealHistoryEntry(key, this.me.userId, conversationId, ref.seq, message, (length) => this.crypto.randomBytes(length)) });
+          const sealed = message ? sealHistoryEntry(key, this.me.userId, conversationId, ref.seq, message, (length) => this.crypto.randomBytes(length)) : null;
+          // Too big for the server to keep: any member can send a message that large, and it mustn't stop the rest.
+          if (sealed && sealed.length <= HISTORY_ENTRY_MAX_BYTES) entries.push({ ...ref, sealed });
           else gone.push(ref);
         }
       }
       if (gone.length) await this.store.apply({ historyDone: gone });
       if (!entries.length) continue;
-      const result = await this.transport.uploadHistory(historyKeyId(key), entries);
+      let result: Awaited<ReturnType<MlsTransport["uploadHistory"]>>;
+      try {
+        result = await this.transport.uploadHistory(historyKeyId(key), entries);
+      } catch (error) {
+        // A batch the server says is malformed would fail every time and hold up everything behind it.
+        if (error instanceof MlsHttpError && error.status === 400) {
+          await this.store.apply({ historyDone: entries.map(({ conversationId, seq }) => ({ conversationId, seq })) });
+          continue;
+        }
+        throw error;
+      }
       if (result === "key_changed") {
         // Another of this person's phones started over with a new key. This one stops until it has that key.
         this.historyKey = null;

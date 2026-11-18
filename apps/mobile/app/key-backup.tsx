@@ -62,20 +62,16 @@ export default function KeyBackup() {
   const userId = me.id;
 
   /**
-   * With MLS on, the file carries the history key and this phone backs up history under it. Null
-   * means the file holds device keys only: MLS is off here, or the person chose not to start over.
+   * The history key the file will carry, and whether turning it on must replace another phone's key.
+   * Changes nothing yet, so a file that never gets written leaves no history on the server. Null
+   * when MLS is off here: the file then carries whatever key this phone already has.
    */
-  async function historyKeyForFile(): Promise<Uint8Array | null | "cancelled"> {
-    if (!mls) return storedHistoryKey(userId);
+  async function historyKeyForFile(): Promise<{ key: Uint8Array | null; replace: boolean } | "cancelled"> {
+    if (!mls) return { key: await storedHistoryKey(userId), replace: false };
     const messenger = await mls;
     const key = (await storedHistoryKey(userId)) ?? newHistoryKey();
-    if ((await messenger.enableHistory(key)) === "exists") {
-      if (!(await confirmStartOver())) return "cancelled";
-      await messenger.enableHistory(key, true);
-    }
-    await storeHistoryKey(userId, key);
-    setHistoryOn(true);
-    return key;
+    if ((await messenger.historyKeyState(key)) !== "other") return { key, replace: false };
+    return (await confirmStartOver()) ? { key, replace: true } : "cancelled";
   }
 
   async function save(target: "share" | "folder") {
@@ -83,9 +79,9 @@ export default function KeyBackup() {
     setError(null);
     setNotice(null);
     try {
-      const historyKey = await historyKeyForFile();
-      if (historyKey === "cancelled") return;
-      const contents = await saveBackupFile(userId, passphrase, historyKey);
+      const history = await historyKeyForFile();
+      if (history === "cancelled") return;
+      const contents = await saveBackupFile(userId, passphrase, history.key);
       if (target === "folder") {
         const folder = await Directory.pickDirectoryAsync();
         folder.createFile(FILE_NAME, "application/json").write(contents);
@@ -97,6 +93,12 @@ export default function KeyBackup() {
         await Sharing.shareAsync(file.uri, { mimeType: "application/json", dialogTitle: t("Save your key backup", "Enregistrer votre sauvegarde de clé") });
         file.delete();
       }
+      // Only now, with a file holding the key, does the server start keeping history under it.
+      if (mls && history.key) {
+        await (await mls).enableHistory(history.key, history.replace);
+        await storeHistoryKey(userId, history.key);
+        setHistoryOn(true);
+      }
       setPassphrase("");
       setConfirm("");
       setNotice(t("Backup ready. Keep the file and passphrase safe.", "Sauvegarde prête. Gardez le fichier et la phrase secrète en lieu sûr."));
@@ -107,19 +109,24 @@ export default function KeyBackup() {
     }
   }
 
-  /** Takes up the file's history key, if it's still the person's, and fills in each chat from it. */
+  /**
+   * Takes up the file's history key and fills in each chat from it, but only if it's still the
+   * person's key. An old file mustn't turn history back on after they stopped it, or replaced it.
+   */
   async function restoreHistory(historyKey: Uint8Array): Promise<"restored" | "replaced"> {
     if (!mls) {
+      // Checked against the server at the next launch with MLS on, and used only if current.
       await storeHistoryKey(userId, historyKey);
       return "restored";
     }
-    const messenger = await mls;
-    // Without `replace`, this only succeeds if the file's key is still the one in use.
-    if ((await messenger.enableHistory(historyKey)) === "exists") return "replaced";
+    const chats = await api.get<InboxItem[]>("/conversations");
+    const outcome = await (await mls).restoreFromHistoryKey(
+      historyKey,
+      chats.map((chat) => chat.id),
+    );
+    if (outcome === "not_current") return "replaced";
     await storeHistoryKey(userId, historyKey);
     setHistoryOn(true);
-    const chats = await api.get<InboxItem[]>("/conversations");
-    for (const chat of chats) await messenger.restoreHistory(chat.id).catch(() => 0);
     return "restored";
   }
 
@@ -142,8 +149,8 @@ export default function KeyBackup() {
       setNotice(
         history === "replaced"
           ? t(
-              "Restored. Older messages will open again, but this file's message history was replaced by a newer backup.",
-              "Clé restaurée. Les anciens messages s'ouvriront de nouveau, mais l'historique de ce fichier a été remplacé par une sauvegarde plus récente.",
+              "Restored. Older messages will open again, but this file no longer brings back message history: a newer backup replaced it, or backing up messages was stopped.",
+              "Clé restaurée. Les anciens messages s'ouvriront de nouveau, mais ce fichier ne rétablit plus l'historique des messages : une sauvegarde plus récente l'a remplacé, ou la sauvegarde des messages a été arrêtée.",
             )
           : t("Restored. Older messages will open again.", "Clé restaurée. Les anciens messages s'ouvriront de nouveau."),
       );
