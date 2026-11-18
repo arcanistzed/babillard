@@ -52,7 +52,7 @@ The app ranks topics and people automatically, using your fields, the topics you
 
 ## Your messages
 
-Messages are end-to-end encrypted. Only the phones of the people in a chat can read them, and we can't, so we couldn't hand them over even if asked. If you report someone from a chat, your phone shares the reported message and the ones around it with us so a moderator can review them, and we keep that text with the report. We can see who you chat with and when. Meetup times and places, and notes the app itself adds to a chat, aren't encrypted, because we use them to send reminders and share links. Takeaway lines aren't encrypted either, because a moderator reads each one before it can be shown. If you sign in on a new phone or reinstall the app, it can't read older messages unless you restore a backup. A backup is a file you choose to save, protected by a passphrase we never see. Each chat's About screen has a security code you can compare in person, to check that nobody else was added.
+Messages are end-to-end encrypted. Only the phones of the people in a chat can read them, and we can't, so we couldn't hand them over even if asked. If you report someone from a chat, your phone shares the reported message and the ones around it with us so a moderator can review them, and we keep that text with the report. We can see who you chat with and when. Meetup times and places, and notes the app itself adds to a chat, aren't encrypted, because we use them to send reminders and share links. Takeaway lines aren't encrypted either, because a moderator reads each one before it can be shown. If you sign in on a new phone or reinstall the app, it can't read older messages unless you restore a backup. A backup is a file you choose to save, protected by a passphrase we never see. When you save one, your phones also start keeping a copy of your messages on our servers, sealed with a key that only your backup file holds, so that a new phone can show them. We can't read that copy, but anyone with your backup file and passphrase could. Stopping this in the app deletes the copy. Each chat's About screen has a security code you can compare in person, to check that nobody else was added.
 
 ## Emails and notifications
 
@@ -75,6 +75,7 @@ These companies may process information outside Canada, including in the United 
 - Signed-in sessions: 90 days from sign-in, or until you sign out.
 - Crash reports: 30 days.
 - Reports, including any messages shared with them, and moderation history: two years after the case closes.
+- The backup copy of your messages: until you stop it, until you're no longer in the chat, or until you delete your account.
 - A banned person's email address: for as long as the ban lasts, so they can't sign up again.
 - Everything else: until you delete your account, or after two years without using the app. We email you 30 days before deleting an inactive account.
 
@@ -240,7 +241,7 @@ L'application classe automatiquement les sujets et les personnes selon vos domai
 
 ## Vos messages
 
-Les messages sont chiffrés de bout en bout. Seuls les téléphones des personnes d'une conversation peuvent les lire. Nous ne le pouvons pas, et nous ne pourrions donc pas les remettre même si on nous le demandait. Si vous signalez quelqu'un depuis une conversation, votre téléphone nous transmet le message signalé et ceux qui l'entourent pour qu'un modérateur les examine, et nous conservons ce texte avec le signalement. Nous pouvons voir avec qui vous discutez et quand. Les heures et lieux des rencontres, ainsi que les notes ajoutées par l'application, ne sont pas chiffrés, parce que nous les utilisons pour les rappels et les liens de partage. Les phrases à retenir ne le sont pas non plus, parce qu'un modérateur lit chacune avant qu'elle puisse être affichée. Si vous vous connectez sur un nouveau téléphone ou réinstallez l'application, elle ne pourra pas lire les anciens messages, sauf si vous restaurez une sauvegarde. Une sauvegarde est un fichier que vous choisissez d'enregistrer, protégé par une phrase secrète que nous ne voyons jamais. L'écran À propos de chaque conversation affiche un code de sécurité à comparer en personne, pour vérifier que personne d'autre n'a été ajouté.
+Les messages sont chiffrés de bout en bout. Seuls les téléphones des personnes d'une conversation peuvent les lire. Nous ne le pouvons pas, et nous ne pourrions donc pas les remettre même si on nous le demandait. Si vous signalez quelqu'un depuis une conversation, votre téléphone nous transmet le message signalé et ceux qui l'entourent pour qu'un modérateur les examine, et nous conservons ce texte avec le signalement. Nous pouvons voir avec qui vous discutez et quand. Les heures et lieux des rencontres, ainsi que les notes ajoutées par l'application, ne sont pas chiffrés, parce que nous les utilisons pour les rappels et les liens de partage. Les phrases à retenir ne le sont pas non plus, parce qu'un modérateur lit chacune avant qu'elle puisse être affichée. Si vous vous connectez sur un nouveau téléphone ou réinstallez l'application, elle ne pourra pas lire les anciens messages, sauf si vous restaurez une sauvegarde. Une sauvegarde est un fichier que vous choisissez d'enregistrer, protégé par une phrase secrète que nous ne voyons jamais. Quand vous en enregistrez une, vos téléphones commencent aussi à conserver une copie de vos messages sur nos serveurs, scellée avec une clé que seul votre fichier de sauvegarde contient, pour qu'un nouveau téléphone puisse les afficher. Nous ne pouvons pas lire cette copie, mais toute personne ayant votre fichier de sauvegarde et votre phrase secrète le pourrait. Arrêter cette copie dans l'application la supprime. L'écran À propos de chaque conversation affiche un code de sécurité à comparer en personne, pour vérifier que personne d'autre n'a été ajouté.
 
 ## Courriels et notifications
 
@@ -263,6 +264,7 @@ Ces entreprises peuvent traiter des renseignements à l'extérieur du Canada, y 
 - Sessions: 90 jours après la connexion, ou jusqu'à la déconnexion.
 - Rapports de plantage: 30 jours.
 - Signalements, y compris les messages transmis, et historique de modération: deux ans après la fermeture du dossier.
+- Copie de sauvegarde de vos messages: jusqu'à ce que vous l'arrêtiez, que vous ne fassiez plus partie de la conversation ou que vous supprimiez votre compte.
 - Adresse courriel d'une personne bannie: tant que dure le bannissement, pour l'empêcher de se réinscrire.
 - Tout le reste: jusqu'à la suppression de votre compte, ou après deux ans sans utiliser l'application. Nous vous écrivons 30 jours avant de supprimer un compte inactif.
 
