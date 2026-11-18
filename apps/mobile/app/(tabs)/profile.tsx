@@ -91,6 +91,7 @@ export default function Profile() {
           <Button label={t("Edit profile", "Modifier le profil")} kind="secondary" onPress={() => router.push("/profile-edit")} />
           <Button label={t("Suggest a topic", "Suggérer un sujet")} kind="secondary" onPress={() => router.push("/topic/new")} />
           <Button label={t("Back up messages", "Sauvegarder les messages")} kind="quiet" onPress={() => router.push("/key-backup")} />
+          <Button label={t("Signed-in phones", "Téléphones connectés")} kind="quiet" onPress={() => router.push("/phones")} />
           <Button label={t("Blocked people", "Personnes bloquées")} kind="quiet" onPress={() => router.push("/blocked")} />
           <Button label={t("Sign out", "Se déconnecter")} kind="quiet" onPress={signOut} />
           <Button label={t("Delete account", "Supprimer le compte")} kind="danger" onPress={confirmDelete} />

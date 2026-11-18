@@ -117,6 +117,7 @@ function Navigator() {
         <Stack.Screen name="topic/new" options={{ title: t("Suggest a topic", "Suggérer un sujet"), presentation: "modal" }} />
         <Stack.Screen name="key-backup" options={{ title: t("Back up messages", "Sauvegarder les messages") }} />
         <Stack.Screen name="blocked" options={{ title: t("Blocked people", "Personnes bloquées") }} />
+        <Stack.Screen name="phones" options={{ title: t("Signed-in phones", "Téléphones connectés") }} />
         <Stack.Screen name="profile-edit" options={{ title: t("Edit profile", "Modifier le profil") }} />
       </Stack>
       {ready && unreachable && !me ? <Unreachable /> : null}

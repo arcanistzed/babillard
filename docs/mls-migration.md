@@ -279,7 +279,10 @@ The flag hides the routes, but not everything:
 - **The privacy policy** now says that saving a backup keeps a sealed copy of the person's messages on the server, and for how long (9ccdb7a), and `LEGAL_VERSION` is 2026-11-18, so everyone agrees again (70c2b9b). That wording is only true once MLS is on. If the dormant release ships first, it would ask people to agree to something that isn't happening yet, so release these two commits with the switch-on, or reword the policy for the dormant release.
 - **Storage on deploy.** Account deletion also deletes key packages, which fails without `0010`'s table. Every `ChatRoom` also creates its empty MLS tables when it wakes, flag or not. That's harmless, but it means the branch changes production storage the moment it's deployed.
 - **New members after the switch.** The readiness check covers the moment a chat moves to MLS. Someone who joins an open group later with an app that can't do MLS would be stuck. Before the flag goes on, `ANDROID_MIN_VERSION` must require an MLS-capable app. See "Rolling it out".
-- **Phones that are gone but not retired.** A phone is retired only when someone has more than five, so a lost phone stays "active" and keeps its leaf. Nothing breaks, but those leaves never go away. The app needs a way to retire a phone, such as a list of signed-in phones under You, and then the server's pending-removal rule takes care of the group.
+- **Retiring a lost phone, now built.** You → Signed-in phones lists the person's phones, marks "This phone", and offers Retire on the others after a confirmation. The routes are `GET /me/devices` and `POST /me/devices/retire` in `routes/devices.ts`. Retiring sets `retired_at`, so the phone gets no new v1 messages and drops out of each MLS chat's directory, where the delivery rules already make it a pending removal: the next phone to send commits it. Its key packages are deleted.
+  - **Why it signs out the person's other phones.** Sessions aren't tied to a phone, and a phone registers its key each time the app starts, which un-retires it. So retiring also ends every session but the caller's, and every push token (the caller's phone registers its own again). The other phones sign in again with an email code and keep their keys and their place in each group. The confirmation says so. A `sessions.device_key` column would let it sign out only the lost phone, but it needs a migration.
+  - **A phone can't retire itself.** That's signing out, which keeps the key so history stays readable. The server can't tell which phone is calling, so its check, `thisDevice` in the request, only guards against an app bug.
+  - **Tests:** `apps/api/test/devices.e2e.ts` (listing, refusals, the lost phone signed out and unable to come back, v1 keys, the MLS pending removal) and `packages/shared/test/mlsRetirePhone.test.ts` (the next send removes it, the person's other phone reads on). Not tried on the emulator.
 - **Directory refresh.** Phones check every credential against the server's directory. A phone must fetch the directory again before applying new commits, or it will refuse a member's new phone. The end-to-end test client does this.
 - **Burned packages.** A commit the server refuses has already used the key packages it claimed. Phones don't upload a last-resort package yet. They refill from `GET /mls/key-packages/:deviceId` when the app opens and on a sync at most every 10 minutes.
 
@@ -336,7 +339,7 @@ How it's built:
 
 ### Several phones per person
 
-Each phone is its own member. A new phone joins each of its owner's chats by external commit, authorized because the device list has it. When a device is retired, by `MAX_DEVICES_PER_PERSON` or at sign-out, the server adds an `mls_pending` removal for it in each chat.
+Each phone is its own member. A new phone joins each of its owner's chats by external commit, authorized because the device list has it. When a device is retired, by `MAX_DEVICES_PER_PERSON` or by its owner under Signed-in phones (signing out doesn't retire it), the server adds an `mls_pending` removal for it in each chat.
 
 People notice nothing different. A new phone reads new messages and not old ones, unless they restore a backup. See below.
 
@@ -559,16 +562,15 @@ The ordering rule `admit` and the security-code function `codeForRoster` are wor
 
 ## What's left, and roughly how long
 
-One developer who knows the codebase. Done on the branch since the first estimate: the server's header reader, the key package service, the delivery service, the readiness check, external commits with GroupInfo export, the phone's sync engine with its encrypted SQLite store, the chat screens on MLS, recovery from lost answers and stuck entries, hiding blocked people's MLS messages, a person's second phone, the roster security code on the chat info screen, deleting a chat's MLS copy once the person is out of it, limits on key package claims, franked reports, the server's switch for a staged rollout, with a pause, taking ts-mls out of the app, and backup v2 for MLS history.
+One developer who knows the codebase. Done on the branch since the first estimate: the server's header reader, the key package service, the delivery service, the readiness check, external commits with GroupInfo export, the phone's sync engine with its encrypted SQLite store, the chat screens on MLS, recovery from lost answers and stuck entries, hiding blocked people's MLS messages, a person's second phone, the roster security code on the chat info screen, deleting a chat's MLS copy once the person is out of it, limits on key package claims, franked reports, the server's switch for a staged rollout, with a pause, taking ts-mls out of the app, backup v2 for MLS history, and retiring a lost phone.
 
 | Work | Estimate |
 |---|---|
 | Android build in EAS: install Rust there, or commit the built libraries | 2 to 3 days |
-| Server, still to do: a way for people to retire a lost phone | 1 day |
 | Rust wrapper: last-resort key packages and per-chat state | 2 to 4 days |
 | Migration: the release itself, and watching the switch in production | 1 to 2 days |
 | End-to-end tests with two devices, and on a real phone | 4 to 5 days |
-| **Total** | **10 to 15 working days, about 2 to 3 weeks** |
+| **Total** | **9 to 14 working days, about 2 to 3 weeks** |
 
 iOS isn't in this estimate. It would add a Swift module over the same Rust crate.
 

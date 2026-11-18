@@ -55,6 +55,9 @@ const encodedSchema = z.string().regex(/^[A-Za-z0-9_-]+$/);
 
 export const deviceKeySchema = z.object({ publicKey: publicKeySchema });
 
+/** `thisDevice` is the caller's own key, so a phone can't retire itself by mistake. That's signing out. */
+export const retireDeviceSchema = z.object({ publicKey: publicKeySchema, thisDevice: publicKeySchema });
+
 /** 4,000 characters of the longest UTF-8, base64 encoded, and 8 members with 5 devices each. */
 export const envelopeSchema = z.object({
   v: z.literal(1),

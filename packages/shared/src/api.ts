@@ -247,3 +247,9 @@ export interface WordingSuggestion {
 export interface AppVersionInfo {
   android: { latest: number; minimum: number; url: string };
 }
+
+/** One of the person's own phones that can read new messages. A phone registers its key each time the app starts, so `lastOpenedAt` is then. */
+export interface SignedInPhone {
+  publicKey: string;
+  lastOpenedAt: number;
+}
