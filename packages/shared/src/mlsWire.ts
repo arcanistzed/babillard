@@ -246,6 +246,35 @@ export function readKeyPackage(bytes: Uint8Array): Identity & { cipherSuite: num
   return body;
 }
 
+/**
+ * A key package's lifetime, in seconds since 1970, or null if its leaf has none. Each bound is a
+ * 64-bit number read as a float: ts-mls writes 2^63 - 1 for "never", past what `u64` accepts.
+ */
+export function keyPackageLifetime(bytes: Uint8Array): { notBefore: number; notAfter: number } | null {
+  const { reader, wireformat } = header(bytes);
+  if (wireformat !== WIRE.keyPackage) throw new MlsWireError("not a key package");
+  if (reader.u16() !== VERSION_MLS10) throw new MlsWireError("unknown key package version");
+  reader.u16(); // cipher suite
+  reader.vector(); // init key
+  reader.vector(); // encryption key
+  reader.vector(); // signature key
+  credential(reader);
+  capabilities(reader);
+  if (reader.u8() !== 1) return null;
+  const seconds = () => reader.u32() * 2 ** 32 + reader.u32();
+  return { notBefore: seconds(), notAfter: seconds() };
+}
+
+/** Whether OpenMLS would accept this key package at `now` (milliseconds): inside its lifetime, and well-formed. */
+export function keyPackageUsable(bytes: Uint8Array, now: number): boolean {
+  try {
+    const lifetime = keyPackageLifetime(bytes);
+    return lifetime === null || (lifetime.notBefore <= now / 1000 && now / 1000 <= lifetime.notAfter);
+  } catch {
+    return false;
+  }
+}
+
 /** Reads which group and epoch a GroupInfo is for. */
 export function readGroupInfo(bytes: Uint8Array): { groupId: string; epoch: number } {
   const { reader, wireformat } = header(bytes);

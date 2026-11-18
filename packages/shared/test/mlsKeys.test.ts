@@ -4,9 +4,9 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { toBase64 } from "../src/e2ee";
 import { KEYS_MAX_AGE_MS, MemoryMlsStore, MlsMessenger, type MlsChange, type MlsTransport } from "../src/mlsClient";
 import { MemoryMlsServer } from "../src/mlsMemoryServer";
-import { readKeyPackage } from "../src/mlsWire";
+import { keyPackageUsable, readKeyPackage } from "../src/mlsWire";
 import { tsMlsCrypto } from "../src/mls/adapter";
-import { addDevices, clientConfig, createDevice, startGroup } from "../src/mls/group";
+import { addDevices, clientConfig, createDevice, encodeKeyPackage, lastResortKeyPackage, startGroup } from "../src/mls/group";
 import { mlsCiphersuite } from "../src/mls/provider";
 
 /** Last-resort key packages, and each phone replacing its own keys once a week. */
@@ -165,6 +165,36 @@ describe("OpenMLS's last-resort key package", () => {
     const group = await startGroup(CHAT, alice, cs, clientConfig(() => true));
     const output = await addDevices(group, [bytes(fixture.keyPackage)], cs);
     expect(output.welcome).toBeDefined();
+  });
+
+  it("is usable for 84 days from when it was made, as OpenMLS checks", async () => {
+    const keyPackage = bytes(fixture.keyPackage);
+    expect(keyPackageUsable(keyPackage, fixture.createdAt + 60 * 1000)).toBe(true);
+    expect(keyPackageUsable(keyPackage, fixture.createdAt + 83 * DAY)).toBe(true);
+    expect(keyPackageUsable(keyPackage, fixture.createdAt + 85 * DAY)).toBe(false);
+    expect(keyPackageUsable(keyPackage, fixture.createdAt - 2 * 60 * 60 * 1000)).toBe(false);
+    expect(keyPackageUsable(new Uint8Array([0, 1, 0, 5]), fixture.createdAt)).toBe(false);
+    // ts-mls packages say "never" with a bound past 2^53, which must still read.
+    const bob = await createDevice("bob", "bob-phone", cs);
+    expect(keyPackageUsable(encodeKeyPackage(await lastResortKeyPackage(bob, cs)), Date.now())).toBe(true);
+  });
+
+  it("is skipped once expired, so the phone adding it carries on instead of failing every sync", async () => {
+    const { phone, server } = world(["alice", "bob"]);
+    const bob = phone("bob");
+    await bob.ensureIdentity();
+    // The server hands out a package that has expired, as it would for a phone gone quiet for 12 weeks.
+    const alice = phone("alice", (base) => ({
+      ...base,
+      claimKeyPackages: async (conversationId, deviceIds) => deviceIds.map((deviceId) => ({ deviceId, keyPackage: bytes(fixture.keyPackage) })),
+    }));
+    vi.setSystemTime(fixture.createdAt + 85 * DAY);
+    await alice.ensureIdentity();
+    await expect(alice.sync(CHAT)).resolves.toEqual([]);
+    await alice.send(CHAT, "anyone there?");
+    const state = await server.transportFor("alice", "alice-phone").groupState(CHAT);
+    expect(state.roster.map((entry) => entry.deviceId)).toEqual(["alice-phone"]);
+    expect(state.pendingAdds.map((entry) => entry.deviceId)).toEqual(["bob-phone"]);
   });
 });
 

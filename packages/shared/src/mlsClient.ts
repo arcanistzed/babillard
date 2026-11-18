@@ -4,6 +4,7 @@ import { fromBase64, toBase64 } from "./e2ee";
 import { FRANKING_KEY_LENGTH, checkFranking, decodeFrankedPayload, encodeFrankedPayload, frankingCommitment } from "./franking";
 import { HISTORY_ENTRY_MAX_BYTES, historyKeyId, openHistoryEntry, sealHistoryEntry, type SealedHistoryEntry } from "./mlsHistory";
 import { MlsHttpError } from "./mlsTransport";
+import { keyPackageUsable } from "./mlsWire";
 
 /**
  * The phone's side of MLS chat, independent of platform. It keeps a phone's
@@ -641,9 +642,12 @@ export class MlsMessenger {
         if (error instanceof MlsHttpError && error.status === 403) return "retry";
         throw error;
       }
-      if (packages.length) {
+      // An expired package would make the whole add fail, every time. A phone that's been away for 12
+      // weeks has only its old last-resort package left, so it waits until it comes back and replaces it.
+      const usable = packages.filter((p) => keyPackageUsable(p.keyPackage, Date.now()));
+      if (usable.length) {
         const state = (await this.device()).state;
-        const output = await this.crypto.addMembers(state, conversationId, packages.map((p) => p.keyPackage), trusted);
+        const output = await this.crypto.addMembers(state, conversationId, usable.map((p) => p.keyPackage), trusted);
         // The removal above, if any, moved the epoch on by one.
         const result = await this.commit(conversationId, output, server.epoch + (server.pendingRemovals.length ? 1 : 0));
         if (!result.ok) {
