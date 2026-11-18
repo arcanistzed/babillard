@@ -69,12 +69,13 @@ It also keeps the line clear. With ts-mls, we had to write our own crypto adapte
 
 ## The server's role
 
-The ChatRoom Durable Object is MLS's delivery service. It can't read any message, but it decides the order of commits, and that order is the group's history. This is built on the branch, behind `MLS_ENABLED`, which production's `wrangler.jsonc` sets to `"false"`. It takes three values:
+The ChatRoom Durable Object is MLS's delivery service. It can't read any message, but it decides the order of commits, and that order is the group's history. This is built on the branch, behind `MLS_ENABLED`, which production's `wrangler.jsonc` sets to `"false"`. It takes four values:
 - `"true"`: MLS is on, and chats move to it as their members become ready.
+- `"testers"`: MLS is on only for the people named in `MLS_TESTERS`. The routes are served as when paused, and a chat moves only when every active member is a tester. Otherwise its first commit gets `not_ready`.
 - `"paused"`: chats already on MLS carry on as normal, including new phones joining them, but no other chat moves. The server refuses a group's first commit with `not_ready`, which phones already read as "wait".
 - Anything else is off: every `/mls` route answers 404.
 
-`/me` says `mls: true` when the value is `"true"` or `"paused"`, and the app uses MLS only then. See "Rolling it out" for when each is safe.
+`/me` says `mls: true` when the value is `"true"` or `"paused"`, or when it's `"testers"` and the person is a tester. The app uses MLS only then, apart from the downgrade guard (see "In the app"). The rules are pure functions in `packages/shared/src/mlsRollout.ts`, tested in `mlsRollout.test.ts`. See "Rolling it out" for when each is safe.
 
 ### What it can see
 
@@ -218,7 +219,14 @@ When `/me` says `mls: true` and the native library loaded, `mlsMessenger(me)` in
 - The inbox shows an MLS chat's latest message from the phone's own store. The server keeps no preview for those.
 - The chat info screen shows the security code from the phone's own MLS group once it's in one, and the v1 code before that.
 
-With MLS off on the server, `mlsMessenger` returns null and the screens behave exactly as before: the app opens no MLS database and makes no MLS request. The one shared change is that the timeline is now sorted by server time instead of v1's sequence number. Both come from the same Durable Object's clock, so for a v1-only chat the order is the same.
+With MLS off on the server, `mlsMessenger` returns null and the screens behave as before: the app makes no MLS request, and it opens the MLS database only for the downgrade guard below, and only if this phone has used MLS before. The one shared change is that the timeline is now sorted by server time instead of v1's sequence number. Both come from the same Durable Object's clock, so for a v1-only chat the order is the same.
+
+**The downgrade guard.** Once this phone holds a chat's MLS group, it never sends v1 in that chat, whatever `/me` says. v1 has no forward secrecy, so without the guard a server that said MLS was off would get v1 from a phone in an MLS chat (open security question 10).
+- **How the phone knows.** It asks its own MLS store, not a separate record. `holdsMlsGroup` (`packages/shared/src/mlsGuard.ts`) reads the store's device state and asks the crypto for the chat's group. It counts a commit still waiting for its answer as well, since that commit may have moved the chat. It takes only the store and the crypto, with no transport, so it can't register, upload or call `/mls`. A separate list of moved chats was the other choice, but it would have to be kept in step with the store: written on every join, including joins during an inbox sync, and cleared by `forgetChat`. The store is already the truth.
+- **On the phone.** `holdsMlsGroupHere` in `apps/mobile/src/mls/index.ts` creates nothing. The database key is made the first time MLS opens, so with no key there's no database and no group, and it stops there. With a key, it opens the database just to read it, never through `open()`, which registers, and closes it again. If the messenger is already open, it asks that store instead. If the database won't open, it counts as holding a group, so the guard fails closed: a broken store shows the notice rather than letting v1 through.
+- **Where it holds.** In `useChat`'s `seal`, which every v1 send goes through: the socket, the HTTP fallback, the echo timeout and tap to retry. It asks the store each time rather than trusting `me.mls` or `mlsActive`: the server sets the first, and the second stays false until the first sync finishes. Before sending, `send` also asks: a phone that holds the group sends with MLS if `/me` says it's on, even if the first sync hasn't finished, and refuses if it's off (`sendPath`).
+- **On the screen.** The chat says, in English or French, "This chat uses newer encryption on this phone, which is switched off for now. To keep your messages protected, they won't be sent with the older kind. Try again later." It shows as soon as the chat opens with MLS off, and any message that was refused stays marked "Not sent" with its text, so it can be sent once MLS is back. While MLS is off, the chat's MLS messages don't show.
+- **Tests.** `mlsGuard.test.ts`: an empty store holds nothing; after a chat moves, the store holds that chat's group and not another chat's, giving the engine's own answer; `forgetChat` clears it; a commit in flight counts; and the three send paths. The screens haven't been tried on the emulator (see "Not done on the phone").
 
 To try it on a device:
 1. Run a local Worker with `DEV_MODE=true` and `MLS_ENABLED=true`.
@@ -268,6 +276,7 @@ Tried on the emulator with `apps/api/scripts/mls-group-peers.ts` (its new "remov
 
 - **Typing and sending states.** A message sent with MLS shows as pending until the engine returns, with no echo over the socket. That's fine on a quick connection and untested on a slow one.
 - **Recovery in the app.** The recovery cases have run in the engine on the emulator, but not through the chat screens with a live Worker. Nothing has run on a real ARM phone.
+- **The downgrade guard on a device.** Tested in the shared tests only. To try it: move a chat to MLS on the emulator with a local Worker, restart the Worker with `MLS_ENABLED=false`, reopen the chat, and check that the notice shows, a message stays "Not sent", and the Worker logs no v1 post and no `/mls` request.
 - **Backup v2 and per-chat state** remain as designed above.
 
 ## Before turning it on
@@ -470,21 +479,28 @@ Goal: nobody loses history they can read today.
 
 ## Rolling it out
 
-Built on the branch: the server's three modes (`MLS_ENABLED`), `/me`'s `mls` flag, and the app following that flag instead of a build-time one. The steps:
+Built on the branch: the server's four modes (`MLS_ENABLED`), the tester list (`MLS_TESTERS`), `/me`'s `mls` flag, the app following that flag instead of a build-time one, and the downgrade guard. The steps:
 
 1. **Deploy the Worker with `MLS_ENABLED` still `"false"`.** Apply migration `0010` first (see "Before turning it on").
 2. **Release the app with MLS dormant.** It's the normal release, with the native module and the engine in it. While `/me` says `mls: false` it never opens the MLS database or calls an MLS route, so it behaves as the current release does.
 3. **Raise `ANDROID_MIN_VERSION` to that release** once most phones have it. Older builds then show the required-update screen. The app checks the minimum at launch and on coming back to the foreground, at most hourly, and `/app/version` is cached for 5 minutes. So wait a few hours, a day to be safe, before the next step.
-4. **Set `MLS_ENABLED` to `"true"`.** Each phone registers when it next loads `/me` and opens the inbox or a chat. Each chat moves once all its members have registered.
+4. **Try it with named testers: `MLS_ENABLED="testers"`.** Set the list first, as a secret so testers' emails stay out of the repository: `wrangler secret put MLS_TESTERS`, with emails or user IDs separated by commas, spaces or new lines. Emails match without case. An empty or missing list names nobody. Then:
+   - `/me` says `mls: true` only to testers, so everyone else's app stays dormant, as in step 2.
+   - The MLS routes are served for everyone, as when paused.
+   - A chat moves only when every active member is a tester. Any other chat's first commit gets `not_ready`, and phones wait.
+   - Someone who isn't a tester doesn't join an open group that has moved, since their app couldn't read it or write in it. They wait for another group. A tester joins it as usual. (`Cohort.canFollowMls`)
+   - The list should only grow. Someone dropped from it hears MLS is off, and the downgrade guard then stops their phone sending in the chats it moved. Their chats would also refuse v1 from their other phones. To stop testing, use `"paused"`, which keeps those chats working for everyone in them.
+5. **Set `MLS_ENABLED` to `"true"`.** Each phone registers when it next loads `/me` and opens the inbox or a chat. Each chat moves once all its members have registered. Chats the testers moved carry on as before.
 
 This order matters because the readiness check counts members, not phones. A member with one MLS phone and one older build counts as ready. Once their chat moves, the older build can't read it, and its sends are refused with `mls_mode`, with no way to recover. With the minimum raised first, that build is already stuck on the update screen. A member's phone that registers after the switch joins by itself from the GroupInfo, but can't read what was sent before it joined until backup v2 exists.
 
-**Rolling back.** Once any chat has moved, use `"paused"`, never `"false"`:
+**Rolling back.** Once any chat has moved, use `"paused"`, never `"false"`, and never `"testers"` after `"true"`:
 - `"paused"` keeps every MLS chat working, new phones included, and moves no others. Chats not yet moved stay on v1. Setting `"true"` again lets them move.
+- `"testers"` after `"true"` would tell everyone but the testers that MLS is off. Their phones would then refuse to send in the chats that moved (the downgrade guard), and the server would refuse v1 there anyway.
 - `"false"` strands every chat that moved. The `ChatRoom` refuses v1 there because its stored mode is `mls`, whatever the flag says. Every `/mls` route answers 404. And the app, seeing `mls: false`, stops showing the chat's MLS messages and sends v1, which is refused. So `"false"` is safe only before the first chat moves.
-- Sending a chat back to v1 isn't built on the server. The phone, though, follows `/me`: if it says `mls: false`, the app sends v1 even in a chat where this phone is in an MLS group. An honest server refuses that with `mls_mode`. A dishonest one could accept it, which is a downgrade (see "Open security questions").
+- Sending a chat back to v1 isn't built on the server, and the phone won't do it either. If `/me` says `mls: false`, the app still refuses to send v1 in a chat where this phone holds an MLS group, and says why (the downgrade guard, in "In the app"). An honest server would refuse that v1 with `mls_mode` anyway. The guard means a dishonest one can't get it.
 
-Tested: `mlsDelivery.test.ts` checks the paused rule on its own. `mlsEngineFailures.test.ts` pauses the in-memory server after a chat moved: messages still go both ways, a new phone joins, another chat stays on v1 with no error, and it moves once unpaused. The end-to-end suite runs a third Worker with `MLS_ENABLED=paused`, where a chat's first commit gets 409 `not_ready` and the chat stays on v1, and checks that `/me` says `mls: true` there and `mls: false` on the Worker with MLS off.
+Tested: `mlsRollout.test.ts` checks the modes, the tester list, who hears MLS is on, and which chats may move. `mlsTesters.e2e.ts` runs a fourth Worker with `MLS_ENABLED=testers` (port 8794 plus the offset, its own database, testers `tester-1@example.test` to `tester-9@example.test`, given in upper case to check that case doesn't matter): `/me` says `mls: true` to a tester and `false` to anyone else; a chat between two testers moves, carries a message, and then refuses v1; a chat between a tester and someone else gets `not_ready` even with both phones registered, and v1 keeps working there; and once a group of testers has moved, someone who isn't a tester doesn't join it, and a tester does. `mlsDelivery.test.ts` checks the paused rule on its own. `mlsEngineFailures.test.ts` pauses the in-memory server after a chat moved: messages still go both ways, a new phone joins, another chat stays on v1 with no error, and it moves once unpaused. The end-to-end suite runs a third Worker with `MLS_ENABLED=paused`, where a chat's first commit gets 409 `not_ready` and the chat stays on v1, and checks that `/me` says `mls: true` there and `mls: false` on the Worker with MLS off.
 
 Tried on the emulator (2026-11-17), with a local Worker and `apps/api/scripts/mls-peer.ts` playing Bob, who now also waits for `/me` to say MLS is on:
 - **With `MLS_ENABLED=false`:** the phone signed in as Alice, opened the inbox and the chat twice, and sent "hello over v1" over the socket. The Worker logged no `/mls` request at all, and the phone had no MLS database, only the app's existing key-value store.
@@ -586,7 +602,7 @@ iOS isn't in this estimate. It would add a Swift module over the same Rust crate
    - **Per chat and phone, the real limit.** The ChatRoom records claims. One chat gets at most 3 fresh single-use packages for a phone in any 10 minutes, which covers a lost race or two. Past that, a claim gets the phone's last-resort package, which isn't used up, or nothing. The engine already treats nothing as "add them later". So a hostile member can use up at most 3 packages per 10 minutes, per chat they share with someone joining.
    - **Per person, a coarse limit.** A Workers rate limit (`MLS_CLAIM_LIMIT`, 30 a minute) answers 429 to anyone claiming across many chats at once.
    - **What's still open.** Phones don't upload a last-resort package yet (it's in the Rust wrapper row above). Until they do, a phone whose fresh packages are spoken for waits up to 10 minutes to be added.
-10. **Downgrade to v1.** The app uses MLS only while `/me` says `mls: true`, so a server that says `false` gets v1 from a phone that's already in a chat's MLS group. v1 is still end-to-end encrypted, but it has no forward secrecy or post-compromise security. A guard is simple: once this phone holds a chat's group, never send v1 there, and say the chat can't be used instead. Not built yet.
+10. **Downgrade to v1.** The app uses MLS only while `/me` says `mls: true`, so a server that says `false` would get v1 from a phone that's already in a chat's MLS group. v1 is still end-to-end encrypted, but it has no forward secrecy or post-compromise security. **Built:** once this phone holds a chat's group, or has a commit for it in flight, it never sends v1 there, and the chat says so instead (the downgrade guard, in "In the app"). It asks the phone's own store on every v1 send and fails closed if the store won't open. What's left: a phone that never joined the group, such as a new phone whose first sync hasn't run, can still send v1 when told MLS is off. An honest server refuses it with `mls_mode`. A dishonest server could accept it, but it could equally keep that phone out of the group. The server also still decides when a chat moves, so it could keep a chat on v1 from the start. Tried in the shared tests only, not yet on the emulator.
 11. **The roster is the server's word.** It follows the commits the server accepted, and phones keep their own roster from the same commits. If they ever disagree, a phone should stop and show the security code, not trust either side.
 
 The D1 migrations on the branch are `0010` and `0011`. Main has moved on since the branch started, so renumber them before merging.
