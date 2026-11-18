@@ -46,4 +46,31 @@ describe("retiring one of a person's phones", () => {
     await expect(lost.sync(CHAT)).rejects.toBeInstanceOf(MlsRemovedError);
     expect((await lost.messages(CHAT)).map((m) => m.text)).not.toContain("just your phone now");
   });
+
+  it("lets a found phone back in once it signs in again, as the chat screen syncs it", async () => {
+    const server = new MemoryMlsServer();
+    server.setMembers(CHAT, ["alice", "bob"]);
+    const lostStore = new MemoryMlsStore();
+    const phone = (userId: string, deviceId: string, store = new MemoryMlsStore()) => new MlsMessenger(crypto, server.transportFor(userId, deviceId), store, { userId, deviceId });
+    const alice = phone("alice", "alice-phone");
+    const lost = phone("bob", "bob-lost-phone", lostStore);
+    for (const p of [alice, lost]) await p.ensureIdentity();
+    await alice.sync(CHAT);
+    await lost.sync(CHAT);
+    server.retireDevice("bob-lost-phone");
+    await alice.send(CHAT, "while it was lost");
+
+    // Signing in again un-retires the key, and the server still has its MLS signing key.
+    const { signatureKey } = (await lostStore.loadDevice())!;
+    await server.transportFor("bob", "bob-lost-phone").registerIdentity("bob-lost-phone", signatureKey);
+    await lost.ensureIdentity();
+
+    // The chat screen's sync: the first finds the removal and drops the group, the second joins again.
+    await expect(lost.sync(CHAT)).rejects.toBeInstanceOf(MlsRemovedError);
+    await lost.sync(CHAT);
+    expect(await lost.inGroup(CHAT)).toBe(true);
+    await alice.send(CHAT, "welcome back");
+    expect((await lost.sync(CHAT)).map((m) => m.text)).toEqual(["welcome back"]);
+    expect(await lost.securityCode(CHAT)).toBe(await alice.securityCode(CHAT));
+  });
 });
