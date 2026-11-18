@@ -10,7 +10,8 @@
     "ios": "expo run:ios",
     "typecheck": "tsc --noEmit",
     "lint": "eslint .",
-    "release:android": "node scripts/release-android.ts"
+    "release:android": "node scripts/release-android.ts",
+    "eas-build-pre-install": "bash scripts/eas-install-rust.sh"
   },
   "dependencies": {
     "@babillard/shared": "workspace:*",

@@ -4,6 +4,9 @@
 # Needs rustup (it reads rust-toolchain.toml), cargo-ndk 4, and the Android NDK.
 set -euo pipefail
 
+# rustup installs here, and a build started from Gradle or an EAS hook may not have it on PATH.
+export PATH="$HOME/.cargo/bin:$PATH"
+
 here="$(cd "$(dirname "$0")" && pwd)"
 android="$here/../android/src/main"
 abis="${1:-armeabi-v7a,arm64-v8a,x86,x86_64}"

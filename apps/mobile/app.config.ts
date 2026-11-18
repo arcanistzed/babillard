@@ -8,13 +8,18 @@ const version = "0.3.2";
 const apiHost = new URL(process.env.EXPO_PUBLIC_API_URL ?? "https://babillard.app").hostname;
 const isRealHost = !["localhost", "10.0.2.2", "127.0.0.1"].includes(apiHost);
 
+// APP_VARIANT=mlstest builds a separate test app that installs beside the real one, with its own
+// package and link scheme and no Firebase, so trying the MLS branch on a phone touches nothing of
+// the installed app. Push notifications don't work in it.
+const testApp = process.env.APP_VARIANT === "mlstest";
+
 const config: ExpoConfig = {
-  name: "Babillard",
+  name: testApp ? "Babillard MLS test" : "Babillard",
   slug: "babillard",
   owner: "arcanistzed",
   version,
   orientation: "portrait",
-  scheme: "babillard",
+  scheme: testApp ? "babillard-mlstest" : "babillard",
   userInterfaceStyle: "automatic",
   icon: "./assets/icon.png",
   ios: {
@@ -26,12 +31,12 @@ const config: ExpoConfig = {
     ...(isRealHost ? { associatedDomains: [`applinks:${apiHost}`] } : {}),
   },
   android: {
-    package: "com.babillard",
+    package: testApp ? "com.babillard.mlstest" : "com.babillard",
     versionCode: versionCode(version),
     softwareKeyboardLayoutMode: "resize",
-    googleServicesFile: "./google-services.json",
+    ...(testApp ? {} : { googleServicesFile: "./google-services.json" }),
     adaptiveIcon: { foregroundImage: "./assets/adaptive-icon.png", monochromeImage: "./assets/monochrome-icon.png", backgroundColor: "#FF5FAE" },
-    ...(isRealHost
+    ...(isRealHost && !testApp
       ? {
           intentFilters: [
             {

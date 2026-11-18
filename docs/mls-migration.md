@@ -59,7 +59,8 @@ It also keeps the line clear. With ts-mls, we had to write our own crypto adapte
 
 ### What it costs
 
-- Every Android build now needs Rust 1.99 with the Android targets, `cargo-ndk` 4, and the NDK. EAS's builders don't have Rust, so the EAS build needs a custom step that installs it, or the built `.so` files get committed. That's not decided yet.
+- Every Android build now needs Rust 1.99 with the Android targets, `cargo-ndk` 4, and the NDK. EAS's builders have the NDK but not Rust, so `apps/mobile/scripts/eas-install-rust.sh` runs as EAS's `eas-build-pre-install` hook: it installs rustup, the toolchain pinned in `rust-toolchain.toml` with its targets, and `cargo-ndk`, and skips what's already there. No built libraries are committed. Tried in a clean Ubuntu 24.04 container with this machine's NDK: the hook ran, a second run reused everything, and the release library for x86_64 built in 52 seconds, so all four ABIs should add a few minutes to a build. Not yet tried on EAS itself.
+- `APP_VARIANT=mlstest` builds a separate test app, `com.babillard.mlstest` with the link scheme `babillard-mlstest` and no Firebase, which installs beside the real app. The `mls-test` EAS profile builds it as a debug dev client pointed at `http://localhost:8787`, for trying the branch on a real phone through `adb reverse` without touching the installed app.
 - Expo Go can't load the module, so chat testing needs a dev build. In Expo Go, `isAvailable` is false and chats stay on v1.
 - The library adds 2.5 MB on arm64, 1.8 MB on 32-bit ARM, 3.0 MB on x86_64, and 3.4 MB on x86, before compression. Play delivers only the one a phone needs.
 - Autolinking compiles the module into every Android build from this branch, so any build now needs Rust. The library ships dormant: the app uses it only once the server says MLS is on.
@@ -563,12 +564,12 @@ One developer who knows the codebase. Done on the branch since the first estimat
 
 | Work | Estimate |
 |---|---|
-| Android build in EAS: install Rust there, or commit the built libraries | 2 to 3 days |
+| Android build in EAS: the Rust hook is written and tried locally; a first EAS build and fixes | 1 day |
 | Server, still to do: a way for people to retire a lost phone | 1 day |
 | Rust wrapper: last-resort key packages and per-chat state | 2 to 4 days |
 | Migration: the release itself, and watching the switch in production | 1 to 2 days |
 | End-to-end tests with two devices, and on a real phone | 4 to 5 days |
-| **Total** | **10 to 15 working days, about 2 to 3 weeks** |
+| **Total** | **9 to 13 working days, about 2 to 3 weeks** |
 
 iOS isn't in this estimate. It would add a Swift module over the same Rust crate.
 
