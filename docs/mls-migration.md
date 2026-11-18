@@ -160,7 +160,7 @@ Built on the branch, and wired into the chat screens, which use it once the serv
   - If nobody has made the group, it makes it with an empty commit whose update path proves who made it. If the server answers `not_ready`, the chat stays on v1 and the engine waits.
   - If the phone isn't in the group, it joins from a waiting Welcome, or failing that by itself from the stored GroupInfo.
   - It reads the log from its cursor. For each entry it saves the new state, the cursor and any text in one step.
-  - Then it does the chores: commits the removal of phones that should be gone, and adds members' phones waiting to join.
+  - Then it does the chores: commits the removal of phones that should be gone, adds members' phones waiting to join, and commits new keys for this phone if it hasn't replaced its own in this chat for a week (see open security question 5).
 - `send` syncs first, encrypts, saves the new state and the pending message before sending, then submits. On `stale_epoch` or `pending_removal` it catches up, does the chores, and encrypts again. A message that couldn't be sent over the network stays pending with its exact bytes, and `retryPending` resends those bytes.
 - Every operation goes through one queue, because the state is one blob.
 - It checks the server's label for who sent a message against MLS's authenticated sender, and refuses a mismatch.
@@ -268,7 +268,7 @@ Tried on the emulator with `apps/api/scripts/mls-group-peers.ts` (its new "remov
 
 - **Typing and sending states.** A message sent with MLS shows as pending until the engine returns, with no echo over the socket. That's fine on a quick connection and untested on a slow one.
 - **Recovery in the app.** The recovery cases have run in the engine on the emulator, but not through the chat screens with a live Worker. Nothing has run on a real ARM phone.
-- **Backup v2 and per-chat state** remain as designed above.
+- **Per-chat state** isn't built. It was measured (see "Decrypting once, and local history"): the one blob costs real time per message for someone in many chats, but OpenMLS's storage doesn't split by chat cleanly.
 
 ## Before turning it on
 
@@ -281,7 +281,8 @@ The flag hides the routes, but not everything:
 - **New members after the switch.** The readiness check covers the moment a chat moves to MLS. Someone who joins an open group later with an app that can't do MLS would be stuck. Before the flag goes on, `ANDROID_MIN_VERSION` must require an MLS-capable app. See "Rolling it out".
 - **Phones that are gone but not retired.** A phone is retired only when someone has more than five, so a lost phone stays "active" and keeps its leaf. Nothing breaks, but those leaves never go away. The app needs a way to retire a phone, such as a list of signed-in phones under You, and then the server's pending-removal rule takes care of the group.
 - **Directory refresh.** Phones check every credential against the server's directory. A phone must fetch the directory again before applying new commits, or it will refuse a member's new phone. The end-to-end test client does this.
-- **Burned packages.** A commit the server refuses has already used the key packages it claimed. Phones don't upload a last-resort package yet. They refill from `GET /mls/key-packages/:deviceId` when the app opens and on a sync at most every 10 minutes.
+- **Burned packages.** A commit the server refuses has already used the key packages it claimed. Phones refill from `GET /mls/key-packages/:deviceId` when the app opens and on a sync at most every 10 minutes, and each keeps a last-resort package up, so it stays addable meanwhile (open security question 6).
+- **Old single-use packages.** OpenMLS refuses a key package 84 days after it was made. A phone whose 10 packages sit unclaimed for 12 weeks never tops up, since it still has 10, so the next people to add it get expired ones. The adding phone now skips an expired package rather than failing the whole add (62bafa7), but the claim has used it up, and the phone isn't added until a usable one comes round. The last-resort package is replaced every four weeks for this reason; single-use ones aren't yet. The server could drop packages older than about 60 days, or the phone could replace them.
 
 ## How each feature works under MLS
 
@@ -346,11 +347,43 @@ This is the biggest change for the app, and the brief didn't list it. MLS delete
 
 Today `useChat` and the inbox fetch ciphertext again and decrypt it every time the screen opens. Under MLS the phone needs:
 
-- **Stored group state.** In the OpenMLS prototype, one blob holds everything a phone has: its signing key, its unused key packages, and every group. That was about 12.8 KB with one three-member group. Production should keep one blob per chat, or use OpenMLS's SQLite storage, so a message in one chat doesn't rewrite the rest. It holds private keys. SecureStore is meant for values under about 2 KB, so encrypt the state under a key kept in SecureStore and store the result in the message database, saving it after every message processed.
+- **Stored group state.** One blob holds everything a phone has: its signing key, its unused key packages, and every group. It holds private keys. SecureStore is meant for values under about 2 KB, so the engine seals the state under a key kept in SecureStore and stores it in the message database, saving it after every message processed. Measured on 2026-11-18 (below), the blob is fine for someone in about 10 chats and costly by 50. It isn't split yet.
 - **A local message store.** `expo-sqlite` holding the text each phone decrypted, read by the chat screen and the inbox. The server's copy only feeds phones that haven't caught up.
 - **A sync loop.** Read the log from the phone's last `seq`, apply each entry in order, then save the new state, the text, and the cursor in one SQLite transaction. If the app dies halfway through, the same entry gets applied again, which fails, so the save has to be atomic. That means the encrypted state blob lives in the same database as the messages, not in a separate file.
 
 OpenMLS by default tolerates 5 messages out of order within one sender and skips ahead at most 1,000, and it keeps no keys from past epochs. Phones read the log in order, and the server only accepts messages at the current epoch, so none of those limits come up. Keeping no past epochs is the strictest setting for forward secrecy.
+
+#### How big the state gets, and what a message costs
+
+The Rust test `measure_state` (run with `cargo test --release measure_state -- --ignored --nocapture`) builds one phone in 1, 10 and 50 chats of three people. The phone keeps 10 unused key packages and a last-resort one, as the engine does, and each chat has moved on a few epochs. On this machine (x86-64, release build):
+
+| Chats | State | OpenMLS `receive` | `encrypt` | Parse and write the state alone |
+|---|---|---|---|---|
+| 1 | 34 KB | 0.18 ms | 0.16 ms | 0.01 ms |
+| 10 | 119 KB | 0.25 ms | 0.23 ms | 0.05 ms |
+| 50 | 499 KB | 1.1 ms | 1.2 ms | 0.64 ms |
+
+- **Per chat:** about 9.5 KB each with three people. Right after joining, a chat's share is 6.3 KB with 3 people, 8.6 KB with 5 and 11.3 KB with 8 (`measure_group_sizes`). Groups go up to 8, so 50 large chats would be about 700 KB.
+- **It doesn't grow with use:** one chat through 100 epochs and 300 messages stays at 9.4 KB (`measure_long_chat`). The size is the layout, not missing pruning.
+- **Nothing caps chats per person,** so 50 is reachable for someone who stays active.
+
+OpenMLS itself is cheap. The cost is in JavaScript, which handles the whole blob on every message: the engine opens the sealed state, sends it to the native module as base64, reads the new state back from base64, opens the stored state a second time (`saveState` reloads the device record), then seals and writes the new one. `mlsStateCost.test.ts` (skipped unless `MEASURE_MLS_STATE=1`) times that in Node with the real `SqlMlsStore`:
+
+| Chats | Before, in memory | After 98d55dd, in memory | Before, on disk | After, on disk |
+|---|---|---|---|---|
+| 1 | 8 ms | 3 ms | 8 ms | 9 to 10 ms |
+| 10 | 26 ms | 10 ms | 24 ms | 11 to 18 ms |
+| 50 | 113 ms, 89 of it base64 | 29 ms, 11 of it base64 | 81 ms, 48 of it base64 | 36 ms, 11 of it base64 |
+
+"Before" is base64 one character at a time; 98d55dd made it table-driven. "In memory" is an in-memory SQLite database, and "on disk" a file, which adds about 6 ms of writing to every message. Runs vary by a few milliseconds.
+
+Hermes, the phone's JavaScript engine, wasn't measured: the emulator belonged to another session, and the app has no measuring screen since the dev screen was taken out. Hermes has no JIT, so it's probably several times slower than Node here. That's a guess, not a measurement: on a phone, perhaps tens of milliseconds per message at 10 chats and over 100 ms at 50, for every message received or sent, plus the native side's own copies.
+
+Why it isn't split yet. OpenMLS's storage keys most entries by group, but not all. A phone's leaf encryption key pairs (`EncryptionKeyPair`) are keyed only by their public key, and pre-shared keys by their ID. A per-chat split would have to work out which chat owns each of those, by tracking what each call adds, and a mistake loses a private key and breaks that chat on that phone. That's a design of its own:
+- **The split.** A device part (signing key, key packages) and one part per chat. Each call takes the device part and one chat's part, and returns both.
+- **The engine.** It keeps state rows per chat, and `MlsPendingCommit` holds one chat's state, not the whole blob. The one-queue rule could then relax to one queue per chat.
+- **A cheaper step first.** Expo modules should be able to pass a `Uint8Array` to native code (not tried here), which would remove base64 altogether. And `saveState` could reuse the device record it already opened. Together these remove about half of what's left, without touching the format.
+- **No migration needed yet.** No released build has written MLS state, so changing its format now costs nothing. After the release it needs a migration.
 
 ### Key backup
 
@@ -490,7 +523,7 @@ Tried on the emulator (2026-11-17), with a local Worker and `apps/api/scripts/ml
 - **With `MLS_ENABLED=false`:** the phone signed in as Alice, opened the inbox and the chat twice, and sent "hello over v1" over the socket. The Worker logged no `/mls` request at all, and the phone had no MLS database, only the app's existing key-value store.
 - **After restarting the same Worker with `"true"`:** Bob registered on his next look at `/me`. The phone, reopened, registered, uploaded key packages and joined the chat's group. "ping over MLS" reached Bob, his "pong" showed on the phone, and both showed the same security code. The v1 message stayed in the timeline above them.
 - **A message was lost in the switch, now fixed.** Bob created the group the moment the phone registered its identity, about a second before its key packages went up. So his claim for the phone came back empty, and he said hello in a group of one. The phone then joined by itself at the next epoch, and couldn't read that hello. The fix: the readiness check now also wants a key package for every member but the author, so the creator can add everyone before it sends. `mlsEngineFailures.test.ts` reproduces the timing (it failed before the fix), `mlsDelivery.test.ts` checks the rule, and `mls.e2e.ts` checks it through the Worker. Tried again on the emulator the same way: Bob's 15 tries to start the group were refused while the phone hadn't registered. Once it had, with its key packages, the phone started the group and added Bob in the next commit, and Bob's "Hello from Bob", the first message after the move, showed on the phone. Ping and pong followed. In this run the phone happened to create the group, so it didn't hit the one-second window itself; the engine test covers that timing.
-- **What's left of it.** The check is per member, not per phone. A member's second phone that has registered but has no packages up when the group starts joins by itself and misses what came before, as any phone that signs in later does until backup v2. Holding sends until every phone is added would close that, but an abandoned phone with no packages left would then stop its chats for good, since phones don't upload a last-resort package yet and a phone is retired only when its owner has more than five. Phones top up their packages when the app opens, and now also on a sync at most every 10 minutes, so a phone left open refills too. A failed refill doesn't stop the sync. `mlsEngineFailures.test.ts` drains a phone and checks it refills without a relaunch.
+- **What's left of it.** The check is per member, not per phone. A member's second phone that has registered but has no packages up when the group starts joins by itself and misses what came before, as any phone that signs in later does until backup v2. Holding sends until every phone is added would close that, but an abandoned phone that's gone quiet would then hold up its chats until its last-resort package expires, and stop them for good after that. Phones top up their packages when the app opens, and now also on a sync at most every 10 minutes, so a phone left open refills too. A failed refill doesn't stop the sync. `mlsEngineFailures.test.ts` drains a phone and checks it refills without a relaunch.
 
 ## What the prototypes prove
 
@@ -532,7 +565,7 @@ Timings from the second run:
 | Alice reads | 59 ms |
 | Alice adds Carol | 70 ms |
 
-Most of each call is the bridge, not the cryptography. Every call copies the whole state, about 12.8 KB for Alice with three members, through base64 both ways. Storing state per chat, or using OpenMLS's SQLite storage, would shrink that. On the first run, creating identities took 518 ms while the native library loaded.
+Most of each call is the bridge, not the cryptography. Every call copies the whole state, about 12.8 KB for Alice with three members, through base64 both ways. With many chats that copy dominates; see "How big the state gets" above. On the first run, creating identities took 518 ms while the native library loaded.
 
 The release library is 2.9 MB for x86_64.
 
@@ -565,7 +598,7 @@ One developer who knows the codebase. Done on the branch since the first estimat
 |---|---|
 | Android build in EAS: install Rust there, or commit the built libraries | 2 to 3 days |
 | Server, still to do: a way for people to retire a lost phone | 1 day |
-| Rust wrapper: last-resort key packages and per-chat state | 2 to 4 days |
+| Rust wrapper: per-chat state (last-resort key packages are done) | 2 to 3 days |
 | Migration: the release itself, and watching the switch in production | 1 to 2 days |
 | End-to-end tests with two devices, and on a real phone | 4 to 5 days |
 | **Total** | **10 to 15 working days, about 2 to 3 weeks** |
@@ -578,14 +611,27 @@ iOS isn't in this estimate. It would add a Swift module over the same Rust crate
 2. **The server still decides who's a member.** MLS doesn't change that. The roster code is the only check, as today. Key transparency would be the real fix, and it's a big project.
 3. **The removal window.** It closes at the next message after someone leaves. Check that the server really stops serving the log to someone the moment their D1 row is gone, including over an open socket.
 4. **Forward secrecy versus local storage.** The local message store and the optional history store keep plaintext, or something that opens to plaintext, on purpose. That limits what MLS forward secrecy buys on a seized, unlocked phone. Decide whether to offer disappearing messages.
-5. **Post-compromise security needs updates.** A phone that never commits never refreshes its own leaf key. Have each phone call `update_keys` when it opens a chat and hasn't committed in a week.
-6. **Key package exhaustion.** If someone's packages run out, they can't be added until they come online. Keep one long-lived "last resort" package per phone, a common MLS practice, and accept that a join using it has weaker forward secrecy.
+5. **Post-compromise security needs updates.** A phone that never commits never refreshes its own leaf key. Built: in its chores, the engine commits `update_keys` in a chat when this phone hasn't replaced its own keys there for 7 days. Each chat's time is kept in the store (`mls_cursors.keys_updated_at`).
+   - **What counts.** Commits with an update path replace the leaf keys: creating the group, removals, external joins and rejoins, and the update itself. Add-only commits don't count, since not every library puts a path on them.
+   - **A Welcome join** starts the clock at the join. The leaf keys came with the key package, which may have waited on the server for days, so they can be older than a week by the first update.
+   - **An older database** with no time for a chat starts the clock rather than committing at once, so an upgrade doesn't make every phone commit in every chat together.
+   - **It only happens on a sync.** A chat nobody on this phone opens doesn't update.
+   - **Lifetimes.** It also matters for joining. A leaf that's never updated keeps its key package's lifetime, 84 days in OpenMLS, and OpenMLS checks those lifetimes when a phone joins from a Welcome or a GroupInfo. So a member who joined and never committed would, after 12 weeks, stop anyone new joining the chat. The weekly update clears that for phones that open the app. A phone that never does still blocks joins once it's 12 weeks old; the engine could join with lifetime checks skipped (`skip_lifetime_validation`), or the server could ask a stale phone to be removed.
+   - **Tests.** `mlsKeys.test.ts` checks it with a fake clock: nothing at 6 days, one commit past 7, the clock started on an old database, and a removal counting as a replacement.
+6. **Key package exhaustion.** If someone's packages run out, they can't be added until they come online. Built: each phone keeps one last-resort package on the server, marked with RFC 9420's `last_resort` extension. A join from it has weaker forward secrecy, since several groups can share its keys until the phone replaces them.
+   - **Making it.** `create_last_resort_key_package` in the Rust wrapper lists the extension in the leaf's capabilities, as OpenMLS requires, and OpenMLS keeps its private key after a Welcome uses it.
+   - **Uploading it.** The engine uploads it with its first top-up, and replaces it when the server has none or it's four weeks old. "Only when it's gone" wasn't enough: OpenMLS refuses a key package 84 days after it was made, so one left in place would stop working. The upload time is kept on the device record (`mls_device.last_resort_at`).
+   - **A phone gone quiet.** Its last-resort package expires 84 days after it was made, and nobody replaces it while the phone is away. The adding phone skips an expired package (62bafa7), so the quiet phone waits to be added, as one with no packages did before. Without that, every member's sync in its chats would fail on the same add.
+   - **After a join from it.** The phone commits new keys in that chat in its next chores, as RFC 9420 section 16.8 recommends, so the shared keys don't last.
+   - **What's left.** Replaced last-resort packages, and single-use packages that were never claimed, stay in the phone's state. That's about 2 KB each, and nothing prunes them yet.
+   - **The ts-mls adapter** makes a real last-resort package too (extension 10, which ts-mls has no name for), but it never deletes any package after a Welcome, so only the Rust test proves the key survives.
+   - **Tests.** The Rust test joins two chats from one package, with a save and load between them, and checks that a single-use package can't be used twice. `mlsKeys.test.ts` drains a phone's single-use packages, then adds it to two chats from the last-resort one. An OpenMLS last-resort package in `fixtures/openmls-last-resort.json` passes the server's parser and ts-mls's add.
 7. **Group state at rest.** It holds every private key for the group. It needs the same care as the SecureStore keys, and it must never go into a backup.
 8. **Keeping up with OpenMLS.** Its fixes only help if we take them. Watch its security advisories and update the pins promptly, rerunning the Rust tests each time.
 9. **Draining key packages.** A member can claim packages for any phone waiting to join, and a commit the server then refuses still uses them up. A hostile member could drain a newcomer's packages that way. The last-resort package keeps the phone addable. Claims are now limited in two ways:
    - **Per chat and phone, the real limit.** The ChatRoom records claims. One chat gets at most 3 fresh single-use packages for a phone in any 10 minutes, which covers a lost race or two. Past that, a claim gets the phone's last-resort package, which isn't used up, or nothing. The engine already treats nothing as "add them later". So a hostile member can use up at most 3 packages per 10 minutes, per chat they share with someone joining.
    - **Per person, a coarse limit.** A Workers rate limit (`MLS_CLAIM_LIMIT`, 30 a minute) answers 429 to anyone claiming across many chats at once.
-   - **What's still open.** Phones don't upload a last-resort package yet (it's in the Rust wrapper row above). Until they do, a phone whose fresh packages are spoken for waits up to 10 minutes to be added.
+   - **The last-resort package** (question 6) keeps a phone whose fresh packages are spoken for addable at once, instead of waiting up to 10 minutes.
 10. **Downgrade to v1.** The app uses MLS only while `/me` says `mls: true`, so a server that says `false` gets v1 from a phone that's already in a chat's MLS group. v1 is still end-to-end encrypted, but it has no forward secrecy or post-compromise security. A guard is simple: once this phone holds a chat's group, never send v1 there, and say the chat can't be used instead. Not built yet.
 11. **The roster is the server's word.** It follows the commits the server accepted, and phones keep their own roster from the same commits. If they ever disagree, a phone should stop and show the security code, not trust either side.
 
