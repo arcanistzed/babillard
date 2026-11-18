@@ -267,7 +267,16 @@ Tried on the emulator with `apps/api/scripts/mls-group-peers.ts` (its new "remov
 ### Not done on the phone
 
 - **Typing and sending states.** A message sent with MLS shows as pending until the engine returns, with no echo over the socket. That's fine on a quick connection and untested on a slow one.
-- **Recovery in the app.** The recovery cases have run in the engine on the emulator, but not through the chat screens with a live Worker. Nothing has run on a real ARM phone.
+- **Recovery in the app** was tried through the chat screens on the emulator with a live Worker on 2026-11-18. A proxy sat between the phone and the Worker, and `apps/api/scripts/mls-recovery-peer.ts` played Bob, logging each message he read and any duplicate.
+  - **It found a bug, now fixed (1677ffc).** When a send's answer was lost after the engine had saved its copy, the chat showed "Not sent. Tap to retry" beside that copy. The copy turned sent, and the tap sent the message a second time: Bob read it at two positions in the log. If the request never reached the server, the copy instead stayed faded for good, because the app never resent it.
+  - With the fix, `useChat` drops its placeholder once the engine holds a copy, and each successful sync resends pending copies with the same bytes (`retryPending`).
+    - A lost answer showed one bubble, marked sent, and Bob read the message once.
+    - A request cut before the Worker showed faded, then went out once when the app came back.
+    - Offline before encrypting still shows "Not sent. Tap to retry", and the tap sent the message once.
+  - **Left:** `retryPending` marks a copy failed on any refusal, 429 and 5xx included. Tapping that copy sends a fresh one and leaves the failed one on screen.
+  - **A stuck entry** also ran through the chat screens. The proxy corrupted one of Bob's entries, and the phone failed on it twice. The phone then rejoined by itself, and ping and pong went both ways. Bob's messages from that entry up to the rejoin never showed on the phone, as the design expects.
+  - Nothing has run on a real ARM phone.
+- **Franked reports** were tried on the emulator on 2026-11-18. A long-press on Bob's message, then Report with "Also block Bob" left on, put Bob's line in the local admin queue, marked as reported, under "checked against the stored messages". Its random word was never typed on the phone, so the text came from the franked evidence. The 10 messages around it showed too. Since the person blocked Bob themselves, the chat then closed with "You're no longer in this chat", which reads oddly.
 - **Backup v2 and per-chat state** remain as designed above.
 
 ## Before turning it on
@@ -425,7 +434,7 @@ A restore can come before or after joining; both orders end the same. A message 
   - A launch that can't check its key keeps queueing.
   - The SQL store keeps the queue through a restart and forgets a chat's queue with the chat.
 - `mls.e2e.ts`: the routes through the Worker: no upload without a key, one key per person, only messages in open chats the person is in, the first copy wins, an old key is refused, nobody reads anyone else's, starting over deletes, a block closes it, and turning off clears the key.
-- Not tested: leaving a group deleting that person's history. The route does it in the same batch as removing the membership.
+- `mls.e2e.ts` also covers leaving a group: the leaver's history for that group goes, while a stayer's history there and the leaver's history in another chat stay. Once someone has left, the history routes answer 404, so the test reads `mls_history` from the dev Worker's database.
 - On the emulator (2026-11-18), with `apps/api/scripts/mls-history-peer.ts` playing Alice's first phone and Bob. They moved a chat to MLS and traded three messages, and the first phone backed up its history and wrote Alice's backup file. The emulator, signed in as Alice's new phone, showed none of the three when it opened the chat.
   - After restoring the file on the backup screen, all three showed, in order, Alice's own on her side. Ping and pong followed, and the server's history went from 3 entries to 5, the new phone's uploads included.
   - "Stop backing up messages" left 0 history rows and 0 keys on the server.
