@@ -1,5 +1,5 @@
-import { fromBase64, mlsClaimSchema, mlsIdentitySchema, mlsKeyPackagesSchema, mlsSubmitSchema, readKeyPackage, toBase64 } from "@babillard/shared";
-import { and, count, eq, isNull } from "drizzle-orm";
+import { fromBase64, mlsClaimSchema, mlsHistoryKeySchema, mlsHistoryUploadSchema, mlsIdentitySchema, mlsKeyPackagesSchema, mlsSubmitSchema, readKeyPackage, toBase64 } from "@babillard/shared";
+import { and, asc, count, eq, gt, inArray, isNull } from "drizzle-orm";
 import { Hono } from "hono";
 import { getDb, schema, type Db } from "../db";
 import { mlsMode } from "../lib/config";
@@ -210,6 +210,110 @@ mls.get("/conversations/:id/group-info", async (c) => {
   const info = await c.env.CHAT_ROOM.getByName(id).mlsGroupInfo();
   if (!info) throw fail(404, "no_group_info");
   return c.json(info);
+});
+
+/*
+ * Backup v2: each person's MLS history, sealed on their phones under a history key the server never
+ * sees. The server keeps which key it is, by fingerprint, so a person's phones agree on one, and
+ * hands the sealed entries back only to their owner, and only for chats they're still in.
+ */
+
+const HISTORY_PAGE = 200;
+
+async function historyKeyId(db: Db, userId: string): Promise<string | null> {
+  const [row] = await db.select({ keyId: schema.mlsHistoryKeys.keyId }).from(schema.mlsHistoryKeys).where(eq(schema.mlsHistoryKeys.userId, userId));
+  return row?.keyId ?? null;
+}
+
+mls.get("/history/key", async (c) => c.json({ keyId: await historyKeyId(getDb(c.env), c.get("user").id) }));
+
+/**
+ * Sets which key the history is under. Null turns history off and deletes it. A different key from
+ * the one in place is refused unless `replace` says to start over, which deletes the old history.
+ */
+mls.post("/history/key", async (c) => {
+  const user = c.get("user");
+  const { keyId, replace } = await parseJson(c, mlsHistoryKeySchema);
+  const db = getDb(c.env);
+  const current = await historyKeyId(db, user.id);
+  const clearHistory = db.delete(schema.mlsHistory).where(eq(schema.mlsHistory.userId, user.id));
+  if (keyId === null) {
+    await db.batch([clearHistory, db.delete(schema.mlsHistoryKeys).where(eq(schema.mlsHistoryKeys.userId, user.id))]);
+    return c.json({ keyId: null });
+  }
+  if (current === keyId) return c.json({ keyId });
+  if (current && !replace) throw fail(409, "history_key_exists");
+  const now = Date.now();
+  await db.batch([
+    clearHistory,
+    db.insert(schema.mlsHistoryKeys).values({ userId: user.id, keyId, createdAt: now }).onConflictDoUpdate({ target: schema.mlsHistoryKeys.userId, set: { keyId, createdAt: now } }),
+  ]);
+  return c.json({ keyId });
+});
+
+/**
+ * Stores sealed entries under the caller's current key. An entry is kept only for a chat the caller
+ * is in and a message in its log. Others come back in `rejected`, and the phone stops trying them.
+ * The first copy of a message wins, since several of a person's phones upload the same one.
+ */
+mls.post("/history", async (c) => {
+  const user = c.get("user");
+  const { success } = await c.env.MLS_HISTORY_LIMIT.limit({ key: user.id });
+  if (!success) throw fail(429, "too_many_attempts");
+  const { keyId, entries } = await parseJson(c, mlsHistoryUploadSchema);
+  const db = getDb(c.env);
+  if ((await historyKeyId(db, user.id)) !== keyId) throw fail(409, "history_key_changed");
+
+  const byChat = new Map<string, typeof entries>();
+  for (const entry of entries) byChat.set(entry.conversationId, [...(byChat.get(entry.conversationId) ?? []), entry]);
+  const memberships = await db
+    .select({ conversationId: schema.conversationMembers.conversationId })
+    .from(schema.conversationMembers)
+    .where(and(eq(schema.conversationMembers.userId, user.id), inArray(schema.conversationMembers.conversationId, [...byChat.keys()])));
+  const mine = new Set(memberships.map((row) => row.conversationId));
+
+  const accepted: typeof entries = [];
+  const rejected: { conversationId: string; seq: number }[] = [];
+  for (const [conversationId, chatEntries] of byChat) {
+    const messages = new Set(mine.has(conversationId) ? await c.env.CHAT_ROOM.getByName(conversationId).mlsApplicationSeqs(chatEntries.map((entry) => entry.seq)) : []);
+    for (const entry of chatEntries) {
+      if (messages.has(entry.seq)) accepted.push(entry);
+      else rejected.push({ conversationId, seq: entry.seq });
+    }
+  }
+  if (accepted.length) {
+    const now = Date.now();
+    await db
+      .insert(schema.mlsHistory)
+      .values(accepted.map((entry) => ({ userId: user.id, conversationId: entry.conversationId, seq: entry.seq, keyId, entry: entry.entry, createdAt: now })))
+      .onConflictDoNothing();
+  }
+  return c.json({ stored: accepted.length, rejected });
+});
+
+/** The caller's sealed history for one chat they're in, after `after`, oldest first. */
+mls.get("/history/:conversationId", async (c) => {
+  const user = c.get("user");
+  const conversationId = c.req.param("conversationId");
+  const db = getDb(c.env);
+  await requireMember(db, conversationId, user.id);
+  const keyId = await historyKeyId(db, user.id);
+  if (!keyId) return c.json({ keyId: null, entries: [] });
+  const after = Number(c.req.query("after") ?? 0);
+  const rows = await db
+    .select({ seq: schema.mlsHistory.seq, entry: schema.mlsHistory.entry })
+    .from(schema.mlsHistory)
+    .where(
+      and(
+        eq(schema.mlsHistory.userId, user.id),
+        eq(schema.mlsHistory.conversationId, conversationId),
+        eq(schema.mlsHistory.keyId, keyId),
+        gt(schema.mlsHistory.seq, Number.isInteger(after) && after > 0 ? after : 0),
+      ),
+    )
+    .orderBy(asc(schema.mlsHistory.seq))
+    .limit(HISTORY_PAGE);
+  return c.json({ keyId, entries: rows });
 });
 
 export default mls;

@@ -20,4 +20,5 @@ export * from "./mlsClient";
 export * from "./mlsTransport";
 export * from "./mlsSqlStore";
 export * from "./mlsMemoryServer";
+export * from "./mlsHistory";
 export * from "./mlsEngineDemo";

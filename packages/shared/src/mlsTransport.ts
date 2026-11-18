@@ -1,6 +1,6 @@
 import type { MlsGroupState, MlsLogEntry } from "./api";
 import { fromBase64, toBase64 } from "./e2ee";
-import type { MlsTransport } from "./mlsClient";
+import type { HistoryRef, MlsTransport } from "./mlsClient";
 
 /** One HTTP call. Resolves with the status and parsed body, whatever the status, and rejects only on a network failure. */
 export type HttpCall = (method: "GET" | "POST", path: string, body?: unknown) => Promise<{ status: number; body: unknown }>;
@@ -65,6 +65,28 @@ export function httpMlsTransport(call: HttpCall): MlsTransport {
       if (response.status === 404) return null;
       if (response.status >= 400) throw new MlsHttpError(response.status, "group_info");
       return fromBase64((response.body as { groupInfo: string }).groupInfo);
+    },
+    async historyKeyId() {
+      return (await ok<{ keyId: string | null }>("GET", "/mls/history/key")).keyId;
+    },
+    async setHistoryKeyId(keyId, replace) {
+      const response = await call("POST", "/mls/history/key", { keyId, replace });
+      if (response.status === 409) return "exists";
+      if (response.status >= 400) throw new MlsHttpError(response.status, "history_key");
+      return "ok";
+    },
+    async uploadHistory(keyId, entries) {
+      const response = await call("POST", "/mls/history", {
+        keyId,
+        entries: entries.map((entry) => ({ conversationId: entry.conversationId, seq: entry.seq, entry: toBase64(entry.sealed) })),
+      });
+      if (response.status === 409) return "key_changed";
+      if (response.status >= 400) throw new MlsHttpError(response.status, "history");
+      return { rejected: (response.body as { rejected: HistoryRef[] }).rejected };
+    },
+    async history(conversationId, after) {
+      const body = await ok<{ entries: { seq: number; entry: string }[] }>("GET", `/mls/history/${conversationId}?after=${after}`);
+      return body.entries.map((entry) => ({ seq: entry.seq, sealed: fromBase64(entry.entry) }));
     },
   };
 }

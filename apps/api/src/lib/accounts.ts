@@ -30,6 +30,8 @@ export async function deleteAccount(env: Env, id: string): Promise<void> {
     db.delete(schema.pushTokens).where(eq(schema.pushTokens.userId, id)),
     db.delete(schema.deviceKeys).where(eq(schema.deviceKeys.userId, id)),
     db.delete(schema.mlsKeyPackages).where(eq(schema.mlsKeyPackages.userId, id)),
+    db.delete(schema.mlsHistory).where(eq(schema.mlsHistory.userId, id)),
+    db.delete(schema.mlsHistoryKeys).where(eq(schema.mlsHistoryKeys.userId, id)),
     db.delete(schema.sessions).where(eq(schema.sessions.userId, id)),
     db.delete(schema.profiles).where(eq(schema.profiles.userId, id)),
     db

@@ -1,5 +1,5 @@
 import { xchacha20poly1305 } from "@noble/ciphers/chacha.js";
-import type { MlsChange, MlsDeviceRecord, MlsPendingCommit, MlsStore, MlsStoredMessage } from "./mlsClient";
+import type { HistoryRef, MlsChange, MlsDeviceRecord, MlsPendingCommit, MlsStore, MlsStoredMessage } from "./mlsClient";
 
 /**
  * The sync engine's storage on SQLite, encrypted at rest. The phone runs it on
@@ -51,6 +51,7 @@ const SCHEMA = `
   );
   CREATE INDEX IF NOT EXISTS mls_messages_order ON mls_messages (conversation_id, seq);
   CREATE TABLE IF NOT EXISTS mls_pending_commits (conversation_id TEXT PRIMARY KEY, epoch INTEGER NOT NULL, commit_message BLOB NOT NULL, state BLOB NOT NULL);
+  CREATE TABLE IF NOT EXISTS mls_history_outbox (conversation_id TEXT NOT NULL, seq INTEGER NOT NULL, queued INTEGER PRIMARY KEY AUTOINCREMENT, UNIQUE (conversation_id, seq));
 `;
 
 const encoder = new TextEncoder();
@@ -168,6 +169,12 @@ export class SqlMlsStore implements MlsStore {
     return rows.map((row) => row.id);
   }
 
+  async historyOutbox(limit: number): Promise<HistoryRef[]> {
+    await this.init();
+    const rows = await this.db.all<{ conversation_id: string; seq: number }>("SELECT conversation_id, seq FROM mls_history_outbox ORDER BY queued LIMIT ?", [limit]);
+    return rows.map((row) => ({ conversationId: row.conversation_id, seq: row.seq }));
+  }
+
   async pendingCommits(): Promise<Record<string, MlsPendingCommit>> {
     await this.init();
     const rows = await this.db.all<{ conversation_id: string; epoch: number; commit_message: Uint8Array; state: Uint8Array }>("SELECT * FROM mls_pending_commits", []);
@@ -221,6 +228,14 @@ export class SqlMlsStore implements MlsStore {
         await tx.run("DELETE FROM mls_messages WHERE conversation_id = ?", [conversationId]);
         await tx.run("DELETE FROM mls_cursors WHERE conversation_id = ?", [conversationId]);
         await tx.run("DELETE FROM mls_pending_commits WHERE conversation_id = ?", [conversationId]);
+        await tx.run("DELETE FROM mls_history_outbox WHERE conversation_id = ?", [conversationId]);
+      }
+      if (change.clearHistoryOutbox) await tx.run("DELETE FROM mls_history_outbox", []);
+      for (const { conversationId, seq } of change.historyOutbox ?? []) {
+        await tx.run("INSERT OR IGNORE INTO mls_history_outbox (conversation_id, seq) VALUES (?, ?)", [conversationId, seq]);
+      }
+      for (const { conversationId, seq } of change.historyDone ?? []) {
+        await tx.run("DELETE FROM mls_history_outbox WHERE conversation_id = ? AND seq = ?", [conversationId, seq]);
       }
       for (const { m, text, frankingKey } of messages) {
         await tx.run(

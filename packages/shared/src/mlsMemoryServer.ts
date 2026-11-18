@@ -1,6 +1,6 @@
 import type { MlsGroupState, MlsLogEntry } from "./api";
 import { toBase64 } from "./e2ee";
-import type { MlsTransport } from "./mlsClient";
+import type { HistoryRef, MlsTransport } from "./mlsClient";
 import { decide, pendingAdds, pendingRemovals, type Directory, type RosterEntry } from "./mlsDelivery";
 import { readKeyPackage } from "./mlsWire";
 import { MlsHttpError } from "./mlsTransport";
@@ -11,6 +11,9 @@ import { MlsHttpError } from "./mlsTransport";
  * runs several phones' engines on one device. Not a security boundary: it
  * trusts the user and device each transport claims.
  */
+
+/** The page size the server uses, small here so tests go past one page. */
+const HISTORY_PAGE = 3;
 
 interface Chat {
   members: Set<string>;
@@ -27,6 +30,9 @@ export class MemoryMlsServer {
   private readonly devices = new Map<string, { userId: string; signatureKey: string }>();
   private readonly packages = new Map<string, Uint8Array[]>();
   private readonly chats = new Map<string, Chat>();
+  /** Backup v2: each person's key fingerprint, and their sealed history keyed by person, chat and seq. */
+  private readonly historyKeys = new Map<string, string>();
+  private readonly history = new Map<string, { keyId: string; conversationId: string; seq: number; sealed: Uint8Array }>();
   /** False is MLS_ENABLED=paused: no chat starts a group, and groups that exist carry on. */
   newGroups = true;
 
@@ -159,6 +165,49 @@ export class MemoryMlsServer {
       log: async (conversationId, since) => memberChat(conversationId).log.filter((entry) => entry.seq > since),
       welcome: async (conversationId, id) => memberChat(conversationId).welcomes.get(id) ?? null,
       groupInfo: async (conversationId) => memberChat(conversationId).groupInfo,
+      historyKeyId: async () => this.historyKeys.get(userId) ?? null,
+      setHistoryKeyId: async (keyId, replace) => {
+        const current = this.historyKeys.get(userId);
+        if (keyId !== null && current === keyId) return "ok";
+        if (keyId !== null && current && !replace) return "exists";
+        for (const key of this.history.keys()) if (key.startsWith(`${userId}/`)) this.history.delete(key);
+        if (keyId === null) this.historyKeys.delete(userId);
+        else this.historyKeys.set(userId, keyId);
+        return "ok";
+      },
+      uploadHistory: async (keyId, entries) => {
+        if (this.historyKeys.get(userId) !== keyId) return "key_changed";
+        const rejected: HistoryRef[] = [];
+        for (const entry of entries) {
+          const chat = this.chats.get(entry.conversationId);
+          const message = chat?.members.has(userId) ? chat.log.find((logged) => logged.seq === entry.seq && logged.kind === "application") : undefined;
+          if (!message) rejected.push({ conversationId: entry.conversationId, seq: entry.seq });
+          else {
+            const key = `${userId}/${entry.conversationId}/${entry.seq}`;
+            if (!this.history.has(key)) this.history.set(key, { keyId, conversationId: entry.conversationId, seq: entry.seq, sealed: entry.sealed });
+          }
+        }
+        return { rejected };
+      },
+      history: async (conversationId, after) => {
+        memberChat(conversationId);
+        const keyId = this.historyKeys.get(userId);
+        return [...this.history.entries()]
+          .filter(([key, entry]) => key.startsWith(`${userId}/`) && entry.conversationId === conversationId && entry.keyId === keyId && entry.seq > after)
+          .map(([, entry]) => ({ seq: entry.seq, sealed: entry.sealed }))
+          .sort((a, b) => a.seq - b.seq)
+          .slice(0, HISTORY_PAGE);
+      },
     };
+  }
+
+  /** As the leave route does: the person's history for the chat goes with them. */
+  forgetHistory(userId: string, conversationId: string): void {
+    for (const [key, entry] of this.history) if (key.startsWith(`${userId}/`) && entry.conversationId === conversationId) this.history.delete(key);
+  }
+
+  /** How many history entries the server holds for someone, for tests. */
+  historyCount(userId: string): number {
+    return [...this.history.keys()].filter((key) => key.startsWith(`${userId}/`)).length;
   }
 }

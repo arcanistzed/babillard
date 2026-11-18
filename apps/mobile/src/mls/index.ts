@@ -1,4 +1,4 @@
-import { MlsMessenger, SqlMlsStore, fromBase64, httpMlsTransport, toBase64, type HttpCall, type SqlDb } from "@babillard/shared";
+import { HISTORY_KEY_LENGTH, MlsMessenger, SqlMlsStore, fromBase64, httpMlsTransport, toBase64, type HttpCall, type SqlDb } from "@babillard/shared";
 import * as Crypto from "expo-crypto";
 import * as SecureStore from "expo-secure-store";
 import * as SQLite from "expo-sqlite";
@@ -19,7 +19,24 @@ import { nativeCrypto } from "./nativeCrypto";
 
 const random = (length: number) => Crypto.getRandomBytes(length);
 const keyName = (userId: string) => `babillard.mls-store-key.${userId}`;
+const historyKeyName = (userId: string) => `babillard.mls-history-key.${userId}`;
 const databaseName = (userId: string) => `babillard-mls-${userId}.db`;
+
+/** Backup v2: the person's history key on this phone, if they back up history. It also goes in their backup file. */
+export async function storedHistoryKey(userId: string): Promise<Uint8Array | null> {
+  const stored = await SecureStore.getItemAsync(historyKeyName(userId));
+  return stored ? fromBase64(stored) : null;
+}
+
+export async function storeHistoryKey(userId: string, key: Uint8Array | null): Promise<void> {
+  if (key) await SecureStore.setItemAsync(historyKeyName(userId), toBase64(key));
+  else await SecureStore.deleteItemAsync(historyKeyName(userId));
+}
+
+/** A new history key, for someone turning backup of history on. */
+export function newHistoryKey(): Uint8Array {
+  return random(HISTORY_KEY_LENGTH);
+}
 
 /** expo-sqlite behind the store's SQL interface. Statements inside a transaction use its own handle. */
 export function expoSqlDb(db: SQLite.SQLiteDatabase): SqlDb {
@@ -60,6 +77,12 @@ async function open(userId: string): Promise<MlsMessenger> {
   const store = new SqlMlsStore(expoSqlDb(db), await storeKey(userId), random);
   const messenger = new MlsMessenger(nativeCrypto, httpMlsTransport(call), store, { userId, deviceId: device.publicKey });
   await messenger.ensureIdentity();
+  const historyKey = await storedHistoryKey(userId);
+  if (historyKey) {
+    // Another of the person's phones may have started over with a new key. Then this one's is no use.
+    const current = await messenger.useHistoryKey(historyKey).catch(() => true);
+    if (!current) await storeHistoryKey(userId, null);
+  }
   return messenger;
 }
 
@@ -87,5 +110,6 @@ export function mlsMessenger(me: MlsUser | null | undefined): Promise<MlsMesseng
 export async function deleteMlsData(userId: string): Promise<void> {
   current = null;
   await SecureStore.deleteItemAsync(keyName(userId));
+  await SecureStore.deleteItemAsync(historyKeyName(userId));
   await SQLite.deleteDatabaseAsync(databaseName(userId)).catch(() => undefined);
 }

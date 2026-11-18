@@ -1,3 +1,5 @@
+import { xchacha20poly1305 } from "@noble/ciphers/chacha.js";
+import { scryptAsync } from "@noble/hashes/scrypt.js";
 import { webcrypto } from "node:crypto";
 import { describe, expect, it } from "vitest";
 import {
@@ -594,8 +596,27 @@ describe("key backup", () => {
     const envelope = sealMessage({ text: "from before", conversationId: "c", senderId: "s", sender, readers: [old.publicKey], random });
     const file = JSON.stringify(await createKeyBackup(secrets, "correct horse", random));
     const restored = await openKeyBackup(file, "correct horse");
-    expect(restored?.map(toBase64)).toEqual(secrets.map(toBase64));
-    expect(openMessage({ envelope, conversationId: "c", senderId: "s", me: deviceKeyFromSecret(restored![0]!) })?.text).toBe("from before");
+    expect(restored?.deviceKeys.map(toBase64)).toEqual(secrets.map(toBase64));
+    expect(restored?.historyKey).toBeNull();
+    expect(openMessage({ envelope, conversationId: "c", senderId: "s", me: deviceKeyFromSecret(restored!.deviceKeys[0]!) })?.text).toBe("from before");
+  }, 30_000);
+
+  it("carries the MLS history key in version 2, and still opens a version 1 file", async () => {
+    const historyKey = random(32);
+    const file = await createKeyBackup(secrets, "correct horse", random, historyKey);
+    expect(file.v).toBe(2);
+    const restored = await openKeyBackup(JSON.stringify(file), "correct horse");
+    expect(restored?.historyKey && toBase64(restored.historyKey)).toBe(toBase64(historyKey));
+    expect(JSON.stringify(file)).not.toContain(toBase64(historyKey));
+
+    // A file saved by an app from before MLS: the keys as a bare list, under the same scrypt and cipher.
+    const [salt, nonce] = [random(16), random(24)];
+    const key = await scryptAsync(new TextEncoder().encode("correct horse"), salt, { N: 2 ** 15, r: 8, p: 1, dkLen: 32 });
+    const ciphertext = xchacha20poly1305(key, nonce).encrypt(new TextEncoder().encode(JSON.stringify(secrets.map(toBase64))));
+    const v1 = JSON.stringify({ app: "babillard", v: 1, salt: toBase64(salt), nonce: toBase64(nonce), ciphertext: toBase64(ciphertext) });
+    const old = await openKeyBackup(v1, "correct horse");
+    expect(old?.deviceKeys.map(toBase64)).toEqual(secrets.map(toBase64));
+    expect(old?.historyKey).toBeNull();
   }, 30_000);
 
   it("gives nothing for a wrong passphrase, or a file that isn't a backup", async () => {

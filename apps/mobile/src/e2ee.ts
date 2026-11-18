@@ -78,21 +78,22 @@ export async function readingKeys(userId: string): Promise<DeviceKey[]> {
   return [await ensureDeviceKey(userId), ...(await restoredKeys(userId))];
 }
 
-export async function saveBackupFile(userId: string, passphrase: string): Promise<string> {
+/** The backup file: this phone's device keys, and the MLS history key when the person backs up history. */
+export async function saveBackupFile(userId: string, passphrase: string, historyKey: Uint8Array | null): Promise<string> {
   const keys = await readingKeys(userId);
-  return JSON.stringify(await createKeyBackup(keys.map((key) => key.secretKey), passphrase, random));
+  return JSON.stringify(await createKeyBackup(keys.map((key) => key.secretKey), passphrase, random, historyKey));
 }
 
-/** False for a wrong passphrase. */
-export async function restoreFromBackup(userId: string, fileText: string, passphrase: string): Promise<boolean> {
-  const secrets = await openKeyBackup(fileText, passphrase);
-  if (!secrets) return false;
+/** Null for a wrong passphrase. Otherwise keeps the device keys, and hands back the history key, if the file has one. */
+export async function restoreFromBackup(userId: string, fileText: string, passphrase: string): Promise<{ historyKey: Uint8Array | null } | null> {
+  const contents = await openKeyBackup(fileText, passphrase);
+  if (!contents) return null;
   const current = await ensureDeviceKey(userId);
   const existing = await restoredKeys(userId);
   const known = new Set([current.publicKey, ...existing.map((key) => key.publicKey)]);
-  const added = secrets.map(deviceKeyFromSecret).filter((key) => !known.has(key.publicKey));
+  const added = contents.deviceKeys.map(deviceKeyFromSecret).filter((key) => !known.has(key.publicKey));
   await SecureStore.setItemAsync(restoredName(userId), JSON.stringify([...existing, ...added].map((key) => toBase64(key.secretKey))));
-  return true;
+  return { historyKey: contents.historyKey };
 }
 
 export function readMessage(message: ChatMessage, conversationId: string, keys: DeviceKey[], members?: ConversationMember[]): ReadableMessage {

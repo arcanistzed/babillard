@@ -202,6 +202,16 @@ export class MlsLog {
   }
 
   /** Particular entries, for checking a report against what was really sent. */
+  /** Which of these are messages, not commits, in this chat's log. Backup v2 keeps only messages. */
+  applicationSeqs(seqs: number[]): number[] {
+    const wanted = [...new Set(seqs)].slice(0, 100);
+    if (!wanted.length) return [];
+    return this.storage.sql
+      .exec<{ seq: number }>(`SELECT seq FROM mls_log WHERE kind = 'application' AND seq IN (${wanted.map(() => "?").join(", ")})`, ...wanted)
+      .toArray()
+      .map((row) => row.seq);
+  }
+
   entries(seqs: number[]): MlsLogEntry[] {
     const wanted = [...new Set(seqs)].slice(0, 50);
     if (!wanted.length) return [];

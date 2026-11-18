@@ -83,6 +83,17 @@ export const mlsKeyPackagesSchema = z.object({
 
 export const mlsClaimSchema = z.object({ deviceIds: z.array(publicKeySchema).min(1).max(40) });
 
+/** Backup v2. Null turns history off and deletes it. `replace` starts over when another key is in place. */
+export const mlsHistoryKeySchema = z.object({ keyId: encodedSchema.max(60).nullable(), replace: z.boolean().default(false) });
+
+export const mlsHistoryUploadSchema = z.object({
+  keyId: encodedSchema.max(60),
+  entries: z
+    .array(z.object({ conversationId: z.string().min(1).max(80), seq: z.number().int().positive(), entry: mlsBytes(22_000) }))
+    .min(1)
+    .max(100),
+});
+
 export const mlsSubmitSchema = z.object({
   deviceId: publicKeySchema,
   message: mlsBytes(150_000),

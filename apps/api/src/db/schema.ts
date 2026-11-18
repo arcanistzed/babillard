@@ -330,3 +330,31 @@ export const mlsKeyPackages = sqliteTable(
   },
   (t) => [index("mls_key_packages_device_idx").on(t.deviceId, t.lastResort)],
 );
+
+/**
+ * Backup v2: which history key a person's MLS history is sealed under, named by its fingerprint.
+ * The key itself never reaches the server. Present only while the person has backup turned on.
+ */
+export const mlsHistoryKeys = sqliteTable("mls_history_keys", {
+  userId: text("user_id").primaryKey(),
+  keyId: text("key_id").notNull(),
+  createdAt: integer("created_at").notNull(),
+});
+
+/**
+ * Backup v2: a person's MLS messages, each sealed on their phone under their history key, so a new
+ * phone can show what came before it joined. Only that person can read them back. Not forward secret.
+ */
+export const mlsHistory = sqliteTable(
+  "mls_history",
+  {
+    userId: text("user_id").notNull(),
+    conversationId: text("conversation_id").notNull(),
+    seq: integer("seq").notNull(),
+    keyId: text("key_id").notNull(),
+    /** Sealed by the phone, base64url. */
+    entry: text("entry").notNull(),
+    createdAt: integer("created_at").notNull(),
+  },
+  (t) => [primaryKey({ columns: [t.userId, t.conversationId, t.seq] })],
+);

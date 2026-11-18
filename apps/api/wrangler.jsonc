@@ -38,7 +38,9 @@
     { "name": "CLIENT_ERROR_LIMIT", "namespace_id": "1003", "simple": { "limit": 20, "period": 60 } },
     { "name": "AI_LIMIT", "namespace_id": "1004", "simple": { "limit": 10, "period": 60 } },
     // Key package claims, per person. The real limit is per chat and phone, in the ChatRoom.
-    { "name": "MLS_CLAIM_LIMIT", "namespace_id": "1005", "simple": { "limit": 30, "period": 60 } }
+    { "name": "MLS_CLAIM_LIMIT", "namespace_id": "1005", "simple": { "limit": 30, "period": 60 } },
+    // Backup v2 history uploads, per person: 100 messages each, so a phone back-fills 6,000 a minute.
+    { "name": "MLS_HISTORY_LIMIT", "namespace_id": "1006", "simple": { "limit": 60, "period": 60 } }
   ],
   "triggers": { "crons": ["*/5 * * * *"] },
   "vars": {

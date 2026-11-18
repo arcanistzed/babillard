@@ -102,6 +102,8 @@ safety.post("/blocks/:userId", async (c) => {
       db
         .delete(schema.conversationMembers)
         .where(and(eq(schema.conversationMembers.conversationId, match.conversationId), eq(schema.conversationMembers.userId, user.id))),
+      // The chat is closed for both of them now, and each phone deletes its copy, so backup v2's goes too.
+      db.delete(schema.mlsHistory).where(eq(schema.mlsHistory.conversationId, match.conversationId)),
     ]);
     const stub = c.env.CHAT_ROOM.getByName(match.conversationId);
     await Promise.all([stub.kick(user.id), stub.kick(blockedId)]);

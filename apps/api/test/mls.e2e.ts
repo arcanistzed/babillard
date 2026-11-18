@@ -305,4 +305,55 @@ describe("MLS delivery service", () => {
     expect(after.roster.filter((entry) => entry.userId === b.id)).toHaveLength(2);
     expect(after.pendingAdds).toEqual([]);
   });
+
+  it("keeps each person's backup v2 history to themselves, under one key, for messages in chats they're in", async () => {
+    const { a, b, conversationId } = await directChat("climate-physics");
+    const [alice, bob] = await Promise.all([phone(a), phone(b)]);
+    await startOnServer(alice, conversationId);
+    await addAll(alice, conversationId, [bob]);
+    const hello = await encryptText(alice.state!, "kept", cs);
+    const message = await submit(alice, conversationId, hello.message);
+    alice.state = hello.state;
+    const sealed = (byte: number) => toBase64(new Uint8Array(64).fill(byte));
+    const upload = (client: Client, keyId: string, entries: { conversationId: string; seq: number; entry: string }[]) => client.post("/mls/history", { keyId, entries });
+
+    // No key yet, so nothing can be uploaded.
+    expect(await a.get("/mls/history/key")).toEqual({ keyId: null });
+    expect(await status(upload(a, "first-key", [{ conversationId, seq: message.seq, entry: sealed(1) }]))).toBe(409);
+
+    // One key per person. A second is refused unless the person starts over.
+    await a.post("/mls/history/key", { keyId: "first-key" });
+    expect(await status(a.post("/mls/history/key", { keyId: "second-key" }))).toBe(409);
+    expect(await upload(a, "first-key", [{ conversationId, seq: message.seq, entry: sealed(1) }])).toEqual({ stored: 1, rejected: [] });
+
+    // Only messages in chats the person is in: not commits, not someone else's chat.
+    const other = await directChat("everyday-physics");
+    expect(await upload(a, "first-key", [
+      { conversationId, seq: 1, entry: sealed(2) },
+      { conversationId: other.conversationId, seq: 1, entry: sealed(3) },
+    ])).toEqual({ stored: 0, rejected: [{ conversationId, seq: 1 }, { conversationId: other.conversationId, seq: 1 }] });
+    // The first copy wins, and an old key is refused.
+    await upload(a, "first-key", [{ conversationId, seq: message.seq, entry: sealed(4) }]);
+    expect((await a.get(`/mls/history/${conversationId}`)).entries).toEqual([{ seq: message.seq, entry: sealed(1) }]);
+    expect(await status(upload(a, "old-key", [{ conversationId, seq: message.seq, entry: sealed(1) }]))).toBe(409);
+
+    // Nobody else reads it, and Bob's own history is separate.
+    expect((await b.get(`/mls/history/${conversationId}`)).entries).toEqual([]);
+    expect(await status(other.a.get(`/mls/history/${conversationId}`))).toBe(404);
+
+    // Starting over deletes the old history.
+    await b.post("/mls/history/key", { keyId: "bobs-key" });
+    await upload(b, "bobs-key", [{ conversationId, seq: message.seq, entry: sealed(5) }]);
+    await a.post("/mls/history/key", { keyId: "second-key", replace: true });
+    expect((await a.get(`/mls/history/${conversationId}`)).entries).toEqual([]);
+    await upload(a, "second-key", [{ conversationId, seq: message.seq, entry: sealed(6) }]);
+
+    // A block closes the chat for both, and both people's history for it goes, as each phone deletes its copy.
+    await a.post(`/safety/blocks/${b.id}`);
+    expect((await b.get(`/mls/history/${conversationId}`)).entries).toEqual([]);
+
+    // Turning backup off deletes the key.
+    await a.post("/mls/history/key", { keyId: null });
+    expect(await a.get("/mls/history/key")).toEqual({ keyId: null });
+  });
 });

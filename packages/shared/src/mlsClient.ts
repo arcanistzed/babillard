@@ -2,6 +2,7 @@ import { sha256 } from "@noble/hashes/sha2.js";
 import type { MlsGroupState, MlsLogEntry } from "./api";
 import { fromBase64, toBase64 } from "./e2ee";
 import { FRANKING_KEY_LENGTH, checkFranking, decodeFrankedPayload, encodeFrankedPayload, frankingCommitment } from "./franking";
+import { historyKeyId, openHistoryEntry, sealHistoryEntry, type SealedHistoryEntry } from "./mlsHistory";
 import { MlsHttpError } from "./mlsTransport";
 
 /**
@@ -75,6 +76,20 @@ export interface MlsTransport {
   log(conversationId: string, since: number): Promise<MlsLogEntry[]>;
   welcome(conversationId: string, deviceId: string): Promise<{ seq: number; welcome: Uint8Array } | null>;
   groupInfo(conversationId: string): Promise<Uint8Array | null>;
+  /** Backup v2: the fingerprint of the key this person's history is under, or null when it's off. */
+  historyKeyId(): Promise<string | null>;
+  /** Null turns history off and deletes it. "exists" means another key is in place and `replace` wasn't set. */
+  setHistoryKeyId(keyId: string | null, replace: boolean): Promise<"ok" | "exists">;
+  /** "key_changed" means another phone started over with a new key. Otherwise, the entries the server won't keep. */
+  uploadHistory(keyId: string, entries: SealedHistoryEntry[]): Promise<"key_changed" | { rejected: HistoryRef[] }>;
+  /** This person's sealed history for one chat, after `after`, oldest first, a page at a time. */
+  history(conversationId: string, after: number): Promise<{ seq: number; sealed: Uint8Array }[]>;
+}
+
+/** One message in the log, as backup v2 refers to it. */
+export interface HistoryRef {
+  conversationId: string;
+  seq: number;
 }
 
 export interface MlsStoredMessage {
@@ -125,8 +140,14 @@ export interface MlsChange {
   messages?: MlsStoredMessage[];
   /** Local message IDs to delete, when a pending message is replaced by its sent copy. */
   deleteMessages?: { conversationId: string; id: string }[];
-  /** Chats to drop entirely: their messages, cursor and any commit in flight. */
+  /** Chats to drop entirely: their messages, cursor, any commit in flight, and any history not yet uploaded. */
   forgetChats?: string[];
+  /** Backup v2: messages to upload to history. Queued with the message itself, so a crash can't skip one. */
+  historyOutbox?: HistoryRef[];
+  /** Backup v2: messages the server has dealt with, kept or refused. */
+  historyDone?: HistoryRef[];
+  /** Backup v2: drops everything waiting, when history is turned off or its key changed. */
+  clearHistoryOutbox?: boolean;
 }
 
 export interface MlsStore {
@@ -136,6 +157,8 @@ export interface MlsStore {
   pendingCommits(): Promise<Record<string, MlsPendingCommit>>;
   /** Every chat the store holds anything for. */
   conversationIds(): Promise<string[]>;
+  /** Backup v2: messages waiting to be uploaded to history, oldest first. */
+  historyOutbox(limit: number): Promise<HistoryRef[]>;
   apply(change: MlsChange): Promise<void>;
 }
 
@@ -195,6 +218,8 @@ export class MlsMessenger {
   private queue: Promise<unknown> = Promise.resolve();
   /** When this phone last checked its key packages. Zero, so the first sync checks. */
   private lastTopUp = 0;
+  /** Backup v2: the person's history key, while they have backup on. The app keeps it, not the store. */
+  private historyKey: Uint8Array | null = null;
 
   constructor(
     private readonly crypto: MlsCrypto,
@@ -284,45 +309,53 @@ export class MlsMessenger {
   sync(conversationId: string): Promise<MlsStoredMessage[]> {
     return this.serial(async () => {
       await this.maybeTopUp();
-      return this.syncLocked(conversationId);
+      const received = await this.syncLocked(conversationId);
+      await this.flushHistoryQuietly();
+      return received;
     });
   }
 
   /** Sends text, after syncing and doing any chores the server needs first. */
   send(conversationId: string, text: string): Promise<MlsStoredMessage> {
     return this.serial(async () => {
-      await this.syncLocked(conversationId);
-      const localId = `local-${this.newClientId()}`;
-      for (let attempt = 0; attempt < MAX_ATTEMPTS; attempt++) {
-        const state = (await this.device()).state;
-        // A fresh franking key for every message, so a report reveals only the message reported.
-        const frankingKey = this.crypto.randomBytes(FRANKING_KEY_LENGTH);
-        const commitment = frankingCommitment(frankingKey, conversationId, this.me.userId, text);
-        const sealed = await this.crypto.encrypt(state, conversationId, encodeFrankedPayload(text, frankingKey), commitment);
-        const pending: MlsStoredMessage = {
-          conversationId,
-          id: localId,
-          seq: null,
-          senderId: this.me.userId,
-          senderDeviceId: this.me.deviceId,
-          text,
-          createdAt: Date.now(),
-          status: "pending",
-          ciphertext: sealed.message,
-          clientId: this.newClientId(),
-          // Kept too, so a report can show a moderator this side of the conversation as well.
-          frankingKey,
-        };
-        // Saved first: the key is used up whether or not the send gets through.
-        await this.saveState(sealed.state, { messages: [pending] });
-        const result = await this.transport.submit(conversationId, { deviceId: this.me.deviceId, message: sealed.message, clientId: pending.clientId! });
-        if (result.ok) return this.markSent(pending, result.entry);
-        if (result.error !== "stale_epoch" && result.error !== "pending_removal") throw new MlsSyncError(result.error);
-        // Behind, or someone has to be removed first. Catch up, do the chores, and encrypt again.
-        await this.syncLocked(conversationId);
-      }
-      throw new MlsSyncError("Couldn't send after several tries");
+      const sent = await this.sendLocked(conversationId, text);
+      await this.flushHistoryQuietly();
+      return sent;
     });
+  }
+
+  private async sendLocked(conversationId: string, text: string): Promise<MlsStoredMessage> {
+    await this.syncLocked(conversationId);
+    const localId = `local-${this.newClientId()}`;
+    for (let attempt = 0; attempt < MAX_ATTEMPTS; attempt++) {
+      const state = (await this.device()).state;
+      // A fresh franking key for every message, so a report reveals only the message reported.
+      const frankingKey = this.crypto.randomBytes(FRANKING_KEY_LENGTH);
+      const commitment = frankingCommitment(frankingKey, conversationId, this.me.userId, text);
+      const sealed = await this.crypto.encrypt(state, conversationId, encodeFrankedPayload(text, frankingKey), commitment);
+      const pending: MlsStoredMessage = {
+        conversationId,
+        id: localId,
+        seq: null,
+        senderId: this.me.userId,
+        senderDeviceId: this.me.deviceId,
+        text,
+        createdAt: Date.now(),
+        status: "pending",
+        ciphertext: sealed.message,
+        clientId: this.newClientId(),
+        // Kept too, so a report can show a moderator this side of the conversation as well.
+        frankingKey,
+      };
+      // Saved first: the key is used up whether or not the send gets through.
+      await this.saveState(sealed.state, { messages: [pending] });
+      const result = await this.transport.submit(conversationId, { deviceId: this.me.deviceId, message: sealed.message, clientId: pending.clientId! });
+      if (result.ok) return this.markSent(pending, result.entry);
+      if (result.error !== "stale_epoch" && result.error !== "pending_removal") throw new MlsSyncError(result.error);
+      // Behind, or someone has to be removed first. Catch up, do the chores, and encrypt again.
+      await this.syncLocked(conversationId);
+    }
+    throw new MlsSyncError("Couldn't send after several tries");
   }
 
   /** Resends messages still pending after a network error, with exactly the same bytes. */
@@ -339,8 +372,13 @@ export class MlsMessenger {
 
   private async markSent(pending: MlsStoredMessage, entry: MlsLogEntry): Promise<MlsStoredMessage> {
     const sent: MlsStoredMessage = { ...pending, id: String(entry.seq), seq: entry.seq, status: "sent", createdAt: entry.createdAt, ciphertext: undefined, clientId: undefined };
-    await this.store.apply({ messages: [sent], deleteMessages: [{ conversationId: pending.conversationId, id: pending.id }] });
+    await this.store.apply({ messages: [sent], deleteMessages: [{ conversationId: pending.conversationId, id: pending.id }], ...this.toHistory(sent) });
     return sent;
+  }
+
+  /** Backup v2: queues a message for history with the change that stores it, while backup is on. */
+  private toHistory(message: MlsStoredMessage): Pick<MlsChange, "historyOutbox"> {
+    return this.historyKey && message.seq !== null ? { historyOutbox: [{ conversationId: message.conversationId, seq: message.seq }] } : {};
   }
 
   /**
@@ -523,7 +561,7 @@ export class MlsMessenger {
           status: "sent",
           ...(franked ? { frankingKey: opened.frankingKey } : { unverified: true }),
         };
-        await this.saveState(result.state, { cursors: { [conversationId]: cursor }, messages: [message] });
+        await this.saveState(result.state, { cursors: { [conversationId]: cursor }, messages: [message], ...this.toHistory(message) });
         received.push(message);
       }
     }
@@ -570,6 +608,120 @@ export class MlsMessenger {
    * Deletes everything this phone holds for a chat: its copy of the group, the messages, the cursor
    * and any commit in flight, in one step. For when the person is no longer in the chat. Works offline.
    */
+  /*
+   * Backup v2. While the person has backup on, every message this phone stores is queued, sealed
+   * under their history key, and uploaded after each sync or send. A new phone with the key fills in
+   * what came before it joined. See "Key backup" in docs/mls-migration.md.
+   */
+
+  /** Whether this phone is uploading history. False until a key is set, and after the key changed elsewhere. */
+  historyActive(): boolean {
+    return this.historyKey !== null;
+  }
+
+  /**
+   * Turns history on with this key, or says another phone of this person already did with a
+   * different one ("exists"); `replace` starts over instead, deleting that history. Then queues every
+   * message this phone holds, and uploads them.
+   */
+  enableHistory(key: Uint8Array, replace = false): Promise<"ok" | "exists"> {
+    return this.serial(async () => {
+      if ((await this.transport.setHistoryKeyId(historyKeyId(key), replace)) === "exists") return "exists";
+      this.historyKey = key;
+      const queued: HistoryRef[] = [];
+      for (const conversationId of await this.store.conversationIds()) {
+        for (const message of await this.store.messages(conversationId)) if (message.seq !== null && message.status === "sent") queued.push({ conversationId, seq: message.seq });
+      }
+      if (queued.length) await this.store.apply({ historyOutbox: queued });
+      await this.flushHistoryQuietly();
+      return "ok";
+    }, false);
+  }
+
+  /**
+   * A key this phone already holds, from an earlier launch. It's used only if it's still the
+   * person's current one: another phone may have started over since. Returns whether it is.
+   */
+  useHistoryKey(key: Uint8Array): Promise<boolean> {
+    return this.serial(async () => {
+      const current = (await this.transport.historyKeyId()) === historyKeyId(key);
+      this.historyKey = current ? key : null;
+      if (!current) await this.store.apply({ clearHistoryOutbox: true });
+      return current;
+    }, false);
+  }
+
+  /** Turns history off for this person: the server deletes it, and nothing more is queued. */
+  disableHistory(): Promise<void> {
+    return this.serial(async () => {
+      await this.transport.setHistoryKeyId(null, false);
+      this.historyKey = null;
+      await this.store.apply({ clearHistoryOutbox: true });
+    }, false);
+  }
+
+  /** Fills in a chat from history: whatever this phone doesn't already hold. Returns how many messages it added. */
+  restoreHistory(conversationId: string): Promise<number> {
+    return this.serial(async () => {
+      const key = this.historyKey;
+      if (!key) return 0;
+      const held = new Set((await this.store.messages(conversationId)).map((message) => message.id));
+      let after = 0;
+      let added = 0;
+      for (;;) {
+        const page = await this.transport.history(conversationId, after);
+        if (!page.length) return added;
+        const messages: MlsStoredMessage[] = [];
+        for (const { seq, sealed } of page) {
+          after = seq;
+          // The same id a message from the log gets, so whichever arrives second changes nothing.
+          if (held.has(String(seq))) continue;
+          const entry = openHistoryEntry(key, this.me.userId, conversationId, seq, sealed);
+          if (entry) messages.push({ conversationId, id: String(seq), seq, status: "sent", ...entry });
+        }
+        if (messages.length) await this.store.apply({ messages });
+        added += messages.length;
+      }
+    }, false);
+  }
+
+  private async flushHistoryQuietly(): Promise<void> {
+    try {
+      await this.flushHistory();
+    } catch {
+      // Offline, or the server is busy. The queue keeps them, and the next sync tries again.
+    }
+  }
+
+  private async flushHistory(): Promise<void> {
+    for (;;) {
+      const key = this.historyKey;
+      if (!key) return;
+      const refs = await this.store.historyOutbox(100);
+      if (!refs.length) return;
+      const entries: SealedHistoryEntry[] = [];
+      const gone: HistoryRef[] = [];
+      for (const conversationId of new Set(refs.map((ref) => ref.conversationId))) {
+        const held = new Map((await this.store.messages(conversationId)).map((message) => [message.id, message]));
+        for (const ref of refs.filter((candidate) => candidate.conversationId === conversationId)) {
+          const message = held.get(String(ref.seq));
+          if (message) entries.push({ ...ref, sealed: sealHistoryEntry(key, this.me.userId, conversationId, ref.seq, message, (length) => this.crypto.randomBytes(length)) });
+          else gone.push(ref);
+        }
+      }
+      if (gone.length) await this.store.apply({ historyDone: gone });
+      if (!entries.length) continue;
+      const result = await this.transport.uploadHistory(historyKeyId(key), entries);
+      if (result === "key_changed") {
+        // Another of this person's phones started over with a new key. This one stops until it has that key.
+        this.historyKey = null;
+        await this.store.apply({ clearHistoryOutbox: true });
+        return;
+      }
+      await this.store.apply({ historyDone: entries.map(({ conversationId, seq }) => ({ conversationId, seq })) });
+    }
+  }
+
   forgetChat(conversationId: string): Promise<void> {
     return this.serial(async () => {
       const device = await this.store.loadDevice();
@@ -631,9 +783,14 @@ export class MemoryMlsStore implements MlsStore {
   private readonly cursors = new Map<string, number>();
   private readonly stored = new Map<string, MlsStoredMessage>();
   private readonly pending = new Map<string, MlsPendingCommit>();
+  /** Backup v2's queue, in the order queued, keyed so a message is queued once. */
+  private readonly outbox = new Map<string, HistoryRef>();
 
   async pendingCommits() {
     return Object.fromEntries(this.pending);
+  }
+  async historyOutbox(limit: number) {
+    return [...this.outbox.values()].slice(0, limit);
   }
 
   async loadDevice() {
@@ -657,10 +814,14 @@ export class MemoryMlsStore implements MlsStore {
     }
     for (const message of change.deleteMessages ?? []) this.stored.delete(`${message.conversationId}/${message.id}`);
     for (const message of change.messages ?? []) this.stored.set(`${message.conversationId}/${message.id}`, message);
+    if (change.clearHistoryOutbox) this.outbox.clear();
+    for (const ref of change.historyOutbox ?? []) if (!this.outbox.has(`${ref.conversationId}/${ref.seq}`)) this.outbox.set(`${ref.conversationId}/${ref.seq}`, ref);
+    for (const ref of change.historyDone ?? []) this.outbox.delete(`${ref.conversationId}/${ref.seq}`);
     for (const conversationId of change.forgetChats ?? []) {
       this.cursors.delete(conversationId);
       this.pending.delete(conversationId);
       for (const [key, message] of this.stored) if (message.conversationId === conversationId) this.stored.delete(key);
+      for (const [key, ref] of this.outbox) if (ref.conversationId === conversationId) this.outbox.delete(key);
     }
   }
 }

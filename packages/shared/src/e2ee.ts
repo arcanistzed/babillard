@@ -163,10 +163,19 @@ const BACKUP_KDF = { N: 2 ** 15, r: 8, p: 1, dkLen: 32 };
 
 export interface KeyBackup {
   app: "babillard";
-  v: 1;
+  /** 1 holds device keys only. 2 adds the MLS history key, when the person has one. */
+  v: 1 | 2;
   salt: string;
   nonce: string;
   ciphertext: string;
+}
+
+/** What a backup file holds once opened. */
+export interface KeyBackupContents {
+  /** v1 device keys, which open messages from before MLS. */
+  deviceKeys: Uint8Array[];
+  /** Opens the person's MLS history on the server. Null in a v1 file, or when history isn't backed up. */
+  historyKey: Uint8Array | null;
 }
 
 function backupKey(passphrase: string, salt: Uint8Array): Promise<Uint8Array> {
@@ -175,21 +184,23 @@ function backupKey(passphrase: string, salt: Uint8Array): Promise<Uint8Array> {
 }
 
 /** Wraps private keys so that the file is useless without the passphrase, which is never stored or sent anywhere. */
-export async function createKeyBackup(secretKeys: Uint8Array[], passphrase: string, random: Random): Promise<KeyBackup> {
+export async function createKeyBackup(secretKeys: Uint8Array[], passphrase: string, random: Random, historyKey: Uint8Array | null = null): Promise<KeyBackup> {
   const [salt, nonce] = [random(16), random(24)];
   const key = await backupKey(passphrase, salt);
-  const plain = encoder.encode(JSON.stringify(secretKeys.map(toBase64)));
-  return { app: "babillard", v: 1, salt: toBase64(salt), nonce: toBase64(nonce), ciphertext: toBase64(xchacha20poly1305(key, nonce).encrypt(plain)) };
+  const plain = encoder.encode(JSON.stringify({ deviceKeys: secretKeys.map(toBase64), historyKey: historyKey ? toBase64(historyKey) : null }));
+  return { app: "babillard", v: 2, salt: toBase64(salt), nonce: toBase64(nonce), ciphertext: toBase64(xchacha20poly1305(key, nonce).encrypt(plain)) };
 }
 
-/** Returns null for a wrong passphrase or a file that isn't a backup. */
-export async function openKeyBackup(text: string, passphrase: string): Promise<Uint8Array[] | null> {
+/** Reads both versions. Returns null for a wrong passphrase or a file that isn't a backup. */
+export async function openKeyBackup(text: string, passphrase: string): Promise<KeyBackupContents | null> {
   try {
     const backup = JSON.parse(text) as KeyBackup;
-    if (backup.app !== "babillard" || backup.v !== 1) return null;
+    if (backup.app !== "babillard" || (backup.v !== 1 && backup.v !== 2)) return null;
     const key = await backupKey(passphrase, fromBase64(backup.salt));
-    const plain = xchacha20poly1305(key, fromBase64(backup.nonce)).decrypt(fromBase64(backup.ciphertext));
-    return (JSON.parse(decoder.decode(plain)) as string[]).map(fromBase64);
+    const plain = JSON.parse(decoder.decode(xchacha20poly1305(key, fromBase64(backup.nonce)).decrypt(fromBase64(backup.ciphertext)))) as unknown;
+    if (backup.v === 1) return { deviceKeys: (plain as string[]).map(fromBase64), historyKey: null };
+    const contents = plain as { deviceKeys: string[]; historyKey: string | null };
+    return { deviceKeys: contents.deviceKeys.map(fromBase64), historyKey: contents.historyKey ? fromBase64(contents.historyKey) : null };
   } catch {
     return null;
   }

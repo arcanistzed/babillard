@@ -201,7 +201,11 @@ conversations.post("/:id/leave", async (c) => {
   const { conversation } = await requireMember(db, id, user.id);
   if (conversation.kind !== "group") throw fail(400, "only_groups_can_be_left");
 
-  await db.delete(members).where(and(eq(members.conversationId, id), eq(members.userId, user.id)));
+  await db.batch([
+    db.delete(members).where(and(eq(members.conversationId, id), eq(members.userId, user.id))),
+    // Backup v2's copy goes too, as the phone deletes its own.
+    db.delete(schema.mlsHistory).where(and(eq(schema.mlsHistory.conversationId, id), eq(schema.mlsHistory.userId, user.id))),
+  ]);
   const stub = c.env.CHAT_ROOM.getByName(id);
   await stub.kick(user.id);
   const [profile] = await db.select({ name: schema.profiles.displayName }).from(schema.profiles).where(eq(schema.profiles.userId, user.id));
