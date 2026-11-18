@@ -1,6 +1,6 @@
 # Moving chat encryption to MLS
 
-Status: proposal, with prototypes on the `mls-prototype` branch. Nothing here is in the app people use. Written 2026-11-13, revised 2026-11-16 after deciding on OpenMLS.
+Status: **parked on 2026-11-18.** The user decided MLS is more than Babillard needs for now and kept v1. v1 already encrypts end to end. What MLS adds is forward secrecy and post-compromise security, and Babillard's chats are small, short-lived and meant to set up meetings in person. Everything below is built on the local `mls-prototype` branch and four side branches (`claude/mls-retire-phone-7a7d03`, `claude/mls-testers-guard-1c061f`, `claude/mls-small-gaps-c78d96`, `claude/mls-last-resort-01ba2b`), none merged, pushed or deployed, so it can be picked up again. Nothing here is in the app people use. Written 2026-11-13, revised 2026-11-16 after deciding on OpenMLS.
 
 Chats today use the v1 envelope scheme in `packages/shared/src/e2ee.ts`. Every message gets a random key, and that key is wrapped once for every current device in the chat. It works, and it's simple. It has two weaknesses the README already admits. A stolen device key opens everything that device could ever read, because nothing ratchets. And the work and the envelope size grow with every phone in the chat.
 
