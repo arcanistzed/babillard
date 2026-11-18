@@ -141,6 +141,9 @@ export function useChat(conversationId: string, me: MlsUser | null | undefined, 
     }
     // Anything else leaves what's stored on screen. The next socket event or visit tries again.
     if (failure) console.warn("MLS sync failed", failure);
+    // The sync marked sent any of this phone's messages the log shows. One still pending never
+    // reached the server, so send the same bytes again. The server keeps one copy either way.
+    else await messenger.retryPending(conversationId).catch(() => undefined);
     const stored = (await messenger.messages(conversationId)).map(fromMls);
     setMlsActive(await messenger.inGroup(conversationId));
     setMessages((current) => merge(current.filter((message) => !message.id.startsWith(MLS_PREFIX)), stored));
@@ -289,10 +292,21 @@ export function useChat(conversationId: string, me: MlsUser | null | undefined, 
 
       if (mls && mlsActive) {
         // The engine syncs, encrypts, saves, and sends. Its store then holds the sent copy.
+        const dropOptimistic = () => setMessages((current) => current.filter((message) => message.clientId !== clientId));
         void mls
-          .then((messenger) => messenger.send(conversationId, body))
-          .then(async () => {
-            setMessages((current) => current.filter((message) => message.clientId !== clientId));
+          .then(async (messenger) => {
+            const before = new Set((await messenger.messages(conversationId)).map((message) => message.id));
+            try {
+              await messenger.send(conversationId, body);
+            } catch (error) {
+              // Once the engine has saved its copy, that copy is the message: it's marked sent when
+              // the log shows it, or sent again with the same bytes. "Not sent. Tap to retry" beside
+              // it would send a second one. Its copy has no clientId here, so it's found by being new,
+              // mine and the same text. Another of my phones sending the same text now would match too.
+              const saved = (await messenger.messages(conversationId)).some((message) => !before.has(message.id) && message.senderId === senderId && message.text === body);
+              if (!saved) throw error;
+            }
+            dropOptimistic();
             await syncMls();
           })
           .catch(() => setMessages((current) => current.map((message) => (message.clientId === clientId ? { ...message, failed: true } : message))));
