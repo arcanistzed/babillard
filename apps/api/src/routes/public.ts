@@ -18,8 +18,8 @@ const IPHONE_PATHS: Record<Language, string> = { en: "/iphone", fr: "/fr/iphone"
 
 function getApp(language: Language = "en") {
   return language === "fr"
-    ? html`<p><a class="button" href="/download/android">Obtenir l'application Android</a></p><p class="muted">Seulement sur Android pour l'instant. Vous avez un iPhone? <a href="${IPHONE_PATHS.fr}">Inscrivez-vous à la liste d'attente</a> et nous vous dirons quand l'application sera prête.</p>`
-    : html`<p><a class="button" href="/download/android">Get the Android app</a></p><p class="muted">Android only for now. On an iPhone? <a href="${IPHONE_PATHS.en}">Join the waitlist</a> and we'll tell you when it's ready.</p>`;
+    ? html`<p><a class="button" href="/download/android">Obtenir l'application Android</a></p><p class="muted">Vous avez un iPhone? <a href="${IPHONE_PATHS.fr}">Inscrivez-vous à la liste d'attente</a> et nous vous dirons quand l'application sera prête.</p>`
+    : html`<p><a class="button" href="/download/android">Get the Android app</a></p><p class="muted">On an iPhone? <a href="${IPHONE_PATHS.en}">Join the waitlist</a> and we'll tell you when it's ready.</p>`;
 }
 
 type WaitlistState = "form" | "invalid" | "joined" | "limited";

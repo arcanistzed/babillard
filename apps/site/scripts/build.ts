@@ -132,7 +132,7 @@ function page(lang: Lang): string {
     <div class="hero-copy">
       <h1><span>${esc(c.hero.h1[0])}</span> <span>${esc(c.hero.h1[1])}</span></h1>
       <p class="lede">${esc(c.hero.lede)}</p>
-      <p class="cta">${download("btn")}<span class="note">${esc(c.hero.note)}</span></p>
+      <p class="cta">${download("btn")}</p>
       ${iphone}
     </div>
     <div class="board" aria-hidden="true">
