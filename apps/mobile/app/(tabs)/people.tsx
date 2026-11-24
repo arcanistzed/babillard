@@ -220,7 +220,7 @@ const styles = StyleSheet.create({
   screen: { flex: 1 },
   header: { paddingHorizontal: 20, paddingVertical: 6, minHeight: 64, justifyContent: "center" },
   deck: { flex: 1, marginHorizontal: 16 },
-  center: { flex: 1, justifyContent: "center", gap: 12 },
+  center: { flex: 1, justifyContent: "center", gap: 12, paddingHorizontal: 4 },
   controls: { paddingHorizontal: 16, paddingVertical: 12 },
   card: { flex: 1, borderWidth: 2, borderRadius: 6, overflow: "hidden" },
   cardBody: { padding: 20, gap: 16 },

@@ -119,7 +119,7 @@ export function DateOfBirthField({ onChange }: { onChange: (dob: string) => void
       ) : (
         // One line either way, so finishing the date doesn't push the rest of the form down.
         <T variant="small" muted>
-          {!iso ? t("Others see your age, never your date of birth.", "Les autres voient votre âge, jamais votre date de naissance.") : t(`${MONTHS_EN[Number(month) - 1]} ${Number(day)}, ${year}`, `${Number(day) === 1 ? "1er" : Number(day)} ${MONTHS_FR[Number(month) - 1]} ${year}`)}
+          {!iso ? t("Others see your age, never the date.", "Les autres voient votre âge, jamais la date.") : t(`${MONTHS_EN[Number(month) - 1]} ${Number(day)}, ${year}`, `${Number(day) === 1 ? "1er" : Number(day)} ${MONTHS_FR[Number(month) - 1]} ${year}`)}
         </T>
       )}
     </View>

@@ -3,9 +3,9 @@ import { t } from "@/i18n";
 import { flyerInk, fonts } from "@/theme";
 
 const FLYERS = [
-  { field: "urbanism", title: t("Walkable cities", "Villes marchables"), rotate: "-7deg", left: "0%", top: 30, missing: 2 },
-  { field: "psychology", title: t("Loneliness", "La solitude"), rotate: "6deg", left: "58%", top: 18, missing: 4 },
-  { field: "economics", title: t("The four-day work week", "La semaine de quatre jours"), rotate: "-1deg", left: "27%", top: 0, missing: 3 },
+  { field: "urbanism", title: t("Walkable cities", "Villes marchables"), rotate: "-6deg", left: "0%", top: 30, missing: 2 },
+  { field: "psychology", title: t("Loneliness", "La solitude"), rotate: "6deg", left: "64%", top: 22, missing: 4 },
+  { field: "economics", title: t("The four-day work week", "La semaine de quatre jours"), rotate: "-1deg", left: "32%", top: 0, missing: 3 },
 ] as const;
 const TABS = 6;
 
@@ -36,9 +36,10 @@ export function FlyerStack() {
 
 const styles = StyleSheet.create({
   stack: { height: 216 },
-  flyer: { position: "absolute", width: "42%" },
-  sheet: { height: 150, padding: 12, justifyContent: "center", borderTopLeftRadius: 4, borderTopRightRadius: 4 },
-  title: { fontFamily: fonts.display, fontSize: 20, lineHeight: 22 },
+  flyer: { position: "absolute", width: "36%" },
+  // Extra room on the left, where the middle flyer covers the one behind it.
+  sheet: { height: 150, padding: 10, paddingLeft: 20, justifyContent: "center", borderTopLeftRadius: 4, borderTopRightRadius: 4 },
+  title: { fontFamily: fonts.display, fontSize: 16, lineHeight: 19 },
   tabs: { flexDirection: "row", gap: 1, height: 20 },
   tab: { flex: 1, borderBottomLeftRadius: 2, borderBottomRightRadius: 2 },
 });

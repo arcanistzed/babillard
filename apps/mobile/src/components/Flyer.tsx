@@ -1,5 +1,5 @@
 import { GROUP_MAX_SIZE, GROUP_MIN_SIZE, type Field, type Lean, type Stance, type TopicCard } from "@babillard/shared";
-import { Pressable, StyleSheet, Text, View } from "react-native";
+import { Pressable, StyleSheet, Text, useWindowDimensions, View } from "react-native";
 import Animated, { Extrapolation, FadeIn, interpolate, useAnimatedStyle, type SharedValue } from "react-native-reanimated";
 import { fonts, flyerInk } from "@/theme";
 import { fieldLabel, listOf, t } from "@/i18n";
@@ -61,7 +61,10 @@ export function Flyer({ topic, stance, onStance, isTop = true, pull }: { topic: 
         `Après les rencontres: ${topic.outcomes.mindChanged} % ont vu quelqu'un changer d'avis, ${topic.outcomes.meetAgain} % se reverraient`,
       )
     : null;
-  const titleSize = topic.title.length > 48 ? 32 : topic.title.length > 26 ? 38 : 46;
+  const { height } = useWindowDimensions();
+  // Short screens, such as a 640dp phone, have no room for a long title at full size.
+  const short = height < 720;
+  const titleSize = (topic.title.length > 48 ? 32 : topic.title.length > 26 ? 38 : 46) * (short ? 0.75 : 1);
 
   return (
     <View style={styles.flyer} accessible={false}>
@@ -76,7 +79,7 @@ export function Flyer({ topic, stance, onStance, isTop = true, pull }: { topic: 
           <Text accessibilityRole="header" maxFontSizeMultiplier={1.2} adjustsFontSizeToFit minimumFontScale={0.6} numberOfLines={7} style={[styles.title, { color: fg, fontSize: titleSize, lineHeight: titleSize * 1.04 }]}>
             {topic.title}
           </Text>
-          {topic.blurb ? <Text maxFontSizeMultiplier={1.3} numberOfLines={5} style={[styles.blurb, { color: fg }]}>{topic.blurb}</Text> : null}
+          {topic.blurb ? <Text maxFontSizeMultiplier={1.3} numberOfLines={short ? 3 : 5} style={[styles.blurb, short ? styles.blurbShort : null, { color: fg }]}>{topic.blurb}</Text> : null}
         </View>
 
         {isQuestion ? (
@@ -126,6 +129,7 @@ const styles = StyleSheet.create({
   middle: { flex: 1, justifyContent: "center", gap: 12 },
   title: { fontFamily: fonts.display },
   blurb: { fontFamily: fonts.body, fontSize: 18, lineHeight: 25 },
+  blurbShort: { fontSize: 16, lineHeight: 21 },
   stances: { marginBottom: 12, gap: 10 },
   lean: { gap: 5 },
   leanBar: { flexDirection: "row", height: 8, borderRadius: 4, overflow: "hidden", gap: 2 },

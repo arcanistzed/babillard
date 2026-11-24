@@ -1,5 +1,5 @@
 import { MAX_AGE_YEARS, MIN_AGE_YEARS } from "@babillard/shared";
-import { StyleSheet, TextInput, View } from "react-native";
+import { StyleSheet, TextInput, useWindowDimensions, View } from "react-native";
 import { t } from "@/i18n";
 import { fonts, useTheme } from "@/theme";
 import { T } from "@/ui";
@@ -26,7 +26,8 @@ export function parseAgeRange(text: AgeRangeText): { ageMin: number | null; ageM
 
 export function AgeRangeField({ value, onChange, error }: { value: AgeRangeText; onChange: (value: AgeRangeText) => void; error: string | null }) {
   const theme = useTheme();
-  const box = [styles.input, { color: theme.ink, borderColor: error ? theme.danger : theme.ink, backgroundColor: theme.surface }];
+  const { fontScale } = useWindowDimensions();
+  const box = [styles.input, { width: 72 * Math.min(Math.max(fontScale, 1), 1.6), color: theme.ink, borderColor: error ? theme.danger : theme.ink, backgroundColor: theme.surface }];
   const digits = (text: string) => text.replace(/\D/g, "").slice(0, 2);
   return (
     <View style={styles.field}>
@@ -71,5 +72,5 @@ export function AgeRangeField({ value, onChange, error }: { value: AgeRangeText;
 const styles = StyleSheet.create({
   field: { gap: 8 },
   row: { flexDirection: "row", alignItems: "center", gap: 10 },
-  input: { width: 72, minHeight: 52, borderWidth: 2, borderRadius: 12, paddingHorizontal: 12, paddingVertical: 10, fontFamily: fonts.body, fontSize: 17, textAlign: "center" },
+  input: { minHeight: 52, borderWidth: 2, borderRadius: 12, paddingHorizontal: 12, paddingVertical: 10, fontFamily: fonts.body, fontSize: 17, textAlign: "center" },
 });

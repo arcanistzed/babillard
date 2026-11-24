@@ -3,6 +3,7 @@ import type { ComponentProps } from "react";
 import type { InboxItem } from "@babillard/shared";
 import { useQuery } from "@tanstack/react-query";
 import { Tabs } from "expo-router";
+import { useWindowDimensions } from "react-native";
 import { api } from "@/api";
 import { fonts, useTheme } from "@/theme";
 import { t } from "@/i18n";
@@ -14,6 +15,7 @@ function TabIcon({ name, color, size }: { name: ComponentProps<typeof Ionicons>[
 
 export default function TabsLayout() {
   const theme = useTheme();
+  const { fontScale } = useWindowDimensions();
   const inbox = useQuery({ queryKey: ["inbox"], queryFn: () => api.get<InboxItem[]>("/conversations"), refetchInterval: 30_000 });
   const unread = inbox.data?.reduce((total, item) => total + item.unreadCount, 0) ?? 0;
 
@@ -25,7 +27,9 @@ export default function TabsLayout() {
         tabBarActiveTintColor: theme.accent,
         tabBarInactiveTintColor: theme.muted,
         tabBarStyle: { backgroundColor: theme.paper, borderTopColor: theme.line },
-        tabBarLabelStyle: { fontFamily: fonts.bodyBold, fontSize: 12 },
+        // Grows with the text size only as far as "Discussions" still fits in a quarter of the screen.
+        tabBarAllowFontScaling: false,
+        tabBarLabelStyle: { fontFamily: fonts.bodyBold, fontSize: 12 * Math.min(fontScale, 1.15) },
       }}
     >
       <Tabs.Screen name="deck" options={{ title: t("Topics", "Sujets"), tabBarAccessibilityLabel: t("Topics", "Sujets"), tabBarIcon: ({ color, size }) => <TabIcon name="albums" color={String(color)} size={size} /> }} />

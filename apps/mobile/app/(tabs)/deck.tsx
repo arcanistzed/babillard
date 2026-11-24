@@ -248,6 +248,6 @@ const styles = StyleSheet.create({
   nudge: { flexDirection: "row", alignItems: "center", gap: 12 },
   nudgeText: { flex: 1 },
   deck: { flex: 1, marginHorizontal: 16 },
-  center: { flex: 1, justifyContent: "center", gap: 12 },
+  center: { flex: 1, justifyContent: "center", gap: 12, paddingHorizontal: 4 },
   controls: { paddingHorizontal: 16, paddingVertical: 12 },
 });

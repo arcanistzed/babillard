@@ -142,7 +142,7 @@ export default function Onboard() {
             ) : (
               <Button label={t("Continue", "Continuer")} onPress={() => goTo(step + 1)} disabled={!canContinue} />
             )}
-            {step > 0 ? <Button label={t("Back", "Retour")} kind="quiet" onPress={() => goTo(step - 1)} /> : <Button label={t("Use a different email", "Utiliser un autre courriel")} kind="quiet" onPress={signOut} />}
+            {keyboardOpen ? null : step > 0 ? <Button label={t("Back", "Retour")} kind="quiet" onPress={() => goTo(step - 1)} /> : <Button label={t("Use a different email", "Utiliser un autre courriel")} kind="quiet" onPress={signOut} />}
           </ActionBar>
         )}
       </KeyboardScreen>

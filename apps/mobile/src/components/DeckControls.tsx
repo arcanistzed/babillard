@@ -12,5 +12,6 @@ export function DeckControls({ leftLabel, rightLabel, onLeft, onRight }: { leftL
 
 const styles = StyleSheet.create({
   row: { flexDirection: "row", gap: 10 },
-  button: { flex: 1 },
+  // Less side padding than usual, so "J'embarque" stays whole on a small screen with large text.
+  button: { flex: 1, paddingHorizontal: 6 },
 });
