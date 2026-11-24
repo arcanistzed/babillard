@@ -1,5 +1,5 @@
 import { emailSchema, outcomeSummary, type AppVersionInfo, versionCode, type OutcomeCounts, type TopicOutcomes } from "@babillard/shared";
-import { and, desc, eq, inArray, sql } from "drizzle-orm";
+import { and, desc, eq, inArray, isNotNull, sql } from "drizzle-orm";
 import { Hono, type Context } from "hono";
 import { html, raw } from "hono/html";
 import { getDb, schema } from "../db";
@@ -7,7 +7,8 @@ import { LEGAL_PATHS, LEGAL_TEXT, type Language, type LegalPage } from "../legal
 import { isDevMode } from "../lib/config";
 import { buildIcs } from "../lib/ics";
 import { localizeTopic, requestLanguage, venueNames } from "../lib/language";
-import { legalTabs, page } from "../lib/page";
+import { flyer } from "../lib/flyer";
+import { appLink, legalTabs, page } from "../lib/page";
 import type { AppEnv } from "../types";
 
 const ANDROID_APK_KEY = "releases/babillard.apk";
@@ -18,9 +19,18 @@ const IPHONE_PATHS: Record<Language, string> = { en: "/iphone", fr: "/fr/iphone"
 
 function getApp(language: Language = "en") {
   return language === "fr"
-    ? html`<p><a class="button" href="/download/android">Obtenir l'application Android</a></p><p class="muted">Vous avez un iPhone? <a href="${IPHONE_PATHS.fr}">Inscrivez-vous à la liste d'attente</a> et nous vous dirons quand l'application sera prête.</p>`
-    : html`<p><a class="button" href="/download/android">Get the Android app</a></p><p class="muted">On an iPhone? <a href="${IPHONE_PATHS.en}">Join the waitlist</a> and we'll tell you when it's ready.</p>`;
+    ? html`<p>${appLink("fr", "Obtenir l'application Android", "button")}</p><p class="muted">Vous avez un iPhone? <a href="${IPHONE_PATHS.fr}">Inscrivez-vous à la liste d'attente</a></p>`
+    : html`<p>${appLink("en", "Get the Android app", "button")}</p><p class="muted">On an iPhone? <a href="${IPHONE_PATHS.en}">Join the waitlist</a></p>`;
 }
+
+/** How groups work, for someone who followed a link and hasn't seen the home page. */
+function howItWorks(language: Language) {
+  return language === "fr"
+    ? html`<p class="lead">Sur Babillard, quand trois personnes d'une même ville choisissent le même sujet, une discussion de groupe s'ouvre et elles planifient une rencontre.</p>`
+    : html`<p class="lead">On Babillard, when three people in a city pick the same topic, a group chat opens and they plan a time to meet.</p>`;
+}
+
+const homeLink = (language: Language) => (language === "fr" ? html`<p><a href="/fr/">Voir comment ça marche</a></p>` : html`<p><a href="/">See how it works</a></p>`);
 
 type WaitlistState = "form" | "invalid" | "joined" | "limited";
 
@@ -31,8 +41,8 @@ function waitlistPage(language: Language, state: WaitlistState, email = "") {
   const alternate = IPHONE_PATHS[fr ? "en" : "fr"];
   if (state === "joined") {
     const body = fr
-      ? html`<h1>Vous êtes sur la liste</h1><p>Nous vous écrirons une seule fois, quand Babillard sera sur iPhone, puis nous supprimerons votre adresse.</p><p><a class="button" href="/fr/">Retour à l'accueil</a></p>`
-      : html`<h1>You're on the list</h1><p>We'll email you once, when Babillard is on the iPhone, and then delete your address.</p><p><a class="button" href="/">Back to the home page</a></p>`;
+      ? html`<h1>Vous êtes sur la liste</h1><p>Si Babillard arrive sur iPhone, nous vous écrirons une seule fois, puis nous supprimerons votre adresse.</p><p><a class="button" href="/fr/">Retour à l'accueil</a></p>`
+      : html`<h1>You're on the list</h1><p>If Babillard comes to the iPhone, we'll email you once and then delete your address.</p><p><a class="button" href="/">Back to the home page</a></p>`;
     return page(fr ? "Inscription reçue" : "You're on the list", body, language, { hidden: true });
   }
   const error =
@@ -46,19 +56,23 @@ function waitlistPage(language: Language, state: WaitlistState, email = "") {
     <input type="hidden" name="language" value="${language}" />
     <label>${fr ? "Courriel" : "Email"}<input type="email" name="email" value="${email}" required maxlength="254" autocomplete="email"${flagged} /></label>
     <label class="trap" aria-hidden="true">Website<input type="text" name="website" tabindex="-1" autocomplete="off" /></label>
-    <button class="button" type="submit">${fr ? "Prévenez-moi" : "Tell me when it's ready"}</button>
+    <button class="button" type="submit">${fr ? "M'inscrire" : "Join the waitlist"}</button>
     ${error}
   </form>`;
   const body = fr
     ? html`<h1>Babillard sur iPhone</h1>
-        <p>Babillard n'existe que sur Android pour l'instant. Laissez votre courriel et nous vous écrirons une seule fois, quand l'application iPhone sera prête. Le nombre d'inscriptions nous aide à décider quand la faire.</p>
+        <p>Il n'y a pas encore d'application iPhone. Le nombre d'inscriptions nous aide à décider s'il faut en faire une. Laissez votre courriel et nous vous écrirons une seule fois, si elle sort.</p>
         ${form}
-        <p class="muted">Nous ne gardons que votre adresse et votre langue, seulement pour ce courriel, et nous les supprimons ensuite. Pour retirer votre adresse plus tôt, écrivez à <a href="mailto:${CONTACT}">${CONTACT}</a>. Voir la <a href="${privacy}">politique de confidentialité</a>.</p>`
+        <p class="muted">Nous ne gardons que votre adresse et votre langue, seulement pour ce courriel, et nous les supprimons ensuite, ou après deux ans au plus. Pour retirer votre adresse plus tôt, écrivez à <a href="mailto:${CONTACT}">${CONTACT}</a>. Voir la <a href="${privacy}">politique de confidentialité</a>.</p>`
     : html`<h1>Babillard for iPhone</h1>
-        <p>Babillard is only on Android for now. Leave your email and we'll write once, when the iPhone app is ready. How many people sign up helps us decide when to make it.</p>
+        <p>There's no iPhone app yet. How many people sign up helps us decide whether to make one. Leave your email and we'll write once, if it comes out.</p>
         ${form}
-        <p class="muted">We keep only your address and language, use them for that one email, and delete them afterwards. To be removed sooner, write to <a href="mailto:${CONTACT}">${CONTACT}</a>. See the <a href="${privacy}">privacy policy</a>.</p>`;
-  return page(fr ? "Babillard sur iPhone" : "Babillard for iPhone", body, language, { alternate });
+        <p class="muted">We keep only your address and language, use them for that one email, and delete them afterwards, or after two years at most. To be removed sooner, write to <a href="mailto:${CONTACT}">${CONTACT}</a>. See the <a href="${privacy}">privacy policy</a>.</p>`;
+  return page(fr ? "Babillard sur iPhone" : "Babillard for iPhone", body, language, {
+    alternate,
+    path: IPHONE_PATHS[language],
+    description: fr ? "Inscrivez-vous à la liste d'attente de Babillard sur iPhone." : "Join the waitlist for Babillard on the iPhone.",
+  });
 }
 
 /**
@@ -117,11 +131,17 @@ function renderLegal(text: string): string {
     .join("\n");
 }
 
+const LEGAL_DESCRIPTIONS: Record<LegalPage, Record<Language, string>> = {
+  privacy: { en: "What Babillard collects, who sees it, and how long we keep it.", fr: "Ce que Babillard recueille, qui le voit et combien de temps nous le gardons." },
+  terms: { en: "The rules for using Babillard.", fr: "Les règles d'utilisation de Babillard." },
+  safety: { en: "How Babillard handles reports, harmful content, and meeting safely.", fr: "Comment Babillard traite les signalements, les contenus préjudiciables et la sécurité des rencontres." },
+};
+
 function legalPage(pageName: LegalPage, language: Language) {
   const other: Language = language === "en" ? "fr" : "en";
   const text = LEGAL_TEXT[pageName][language];
   const title = text.split("\n")[0]!.slice(2);
-  return page(title, html`${legalTabs(pageName, language)}${raw(renderLegal(text))}`, language, { alternate: LEGAL_PATHS[pageName][other] });
+  return page(title, html`${legalTabs(pageName, language)}${raw(renderLegal(text))}`, language, { alternate: LEGAL_PATHS[pageName][other], path: LEGAL_PATHS[pageName][language], description: LEGAL_DESCRIPTIONS[pageName][language] });
 }
 
 const MAX_TAKEAWAYS_SHOWN = 10;
@@ -261,12 +281,22 @@ publicRoutes.post("/iphone", async (c) => {
   return c.html(waitlistPage(language, "joined"));
 });
 
-publicRoutes.get("/invite", (c) => {
+publicRoutes.get("/invite", async (c) => {
   const language = requestLanguage(c);
+  const fr = language === "fr";
+  const starters = await getDb(c.env).select().from(schema.topics).where(and(isNotNull(schema.topics.starter), eq(schema.topics.status, "seeded"))).orderBy(schema.topics.starter).limit(4);
+  const flyers = starters.map((topic, i) => flyer(localizeTopic(topic, language).title, "", { field: topic.fieldTags[0], question: topic.kind === "question", taken: [2, 5, 1, 3][i], decorative: true }));
+  const title = fr ? "Quelqu'un veut parler d'idées avec vous" : "Someone wants to talk ideas with you";
   return c.html(
-    language === "fr"
-      ? page("Rejoindre Babillard", html`<h1>Quelqu'un veut parler d'idées avec vous</h1><p>Faites glisser les sujets qui vous intéressent, trouvez des gens près de chez vous et rencontrez-les.</p>${getApp("fr")}`, "fr", { hidden: true })
-      : page("Join Babillard", html`<h1>Someone wants to talk ideas with you</h1><p>Swipe on the topics you care about, match with people nearby, and meet up.</p>${getApp()}`, "en", { hidden: true }),
+    page(
+      title,
+      html`<div class="poster">
+        <div class="fan">${flyers}</div>
+        <div><h1>${title}</h1>${howItWorks(language)}${getApp(language)}${homeLink(language)}</div>
+      </div>`,
+      language,
+      { hidden: true, wide: true, description: fr ? "Choisissez un sujet et rencontrez les gens près de chez vous qui l'ont choisi aussi." : "Pick a topic and meet the people near you who picked it too." },
+    ),
   );
 });
 
@@ -280,7 +310,18 @@ publicRoutes.get("/t/:id", async (c) => {
   const language = requestLanguage(c);
   const { title, blurb } = localizeTopic(topic, language);
   const [{ outcomes, takeaways }, picked] = await Promise.all([topicOutcomes(db, topic.id), pickedCount(db, topic.id)]);
-  return c.html(page(title, html`<h1>${title}</h1><p>${blurb}</p>${pickedLine(picked, language)}${outcomesSection(outcomes, takeaways, language)}${getApp(language)}`, language));
+  return c.html(
+    page(
+      title,
+      html`<div class="poster">
+          ${flyer(title, blurb ? html`<p>${blurb}</p>` : "", { field: topic.fieldTags[0], question: topic.kind === "question" })}
+          <div>${howItWorks(language)}${pickedLine(picked, language)}${getApp(language)}${homeLink(language)}</div>
+        </div>
+        ${outcomesSection(outcomes, takeaways, language)}`,
+      language,
+      { path: `/t/${topic.id}`, wide: true, description: blurb || undefined },
+    ),
+  );
 });
 
 /** Reachable only through an unguessable token. Shows the plan, never who's going. */
@@ -291,14 +332,14 @@ publicRoutes.get("/m/:file", async (c) => {
   const db = getDb(c.env);
 
   const [row] = await db
-    .select({ meetup: schema.meetups, englishTitle: schema.topics.title, topicFr: schema.topics.fr, topicId: schema.topics.id, kind: schema.conversations.kind })
+    .select({ meetup: schema.meetups, englishTitle: schema.topics.title, topicFr: schema.topics.fr, topicId: schema.topics.id, topicKind: schema.topics.kind, fieldTags: schema.topics.fieldTags, kind: schema.conversations.kind })
     .from(schema.meetups)
     .innerJoin(schema.conversations, eq(schema.conversations.id, schema.meetups.conversationId))
     .leftJoin(schema.topics, eq(schema.topics.id, schema.conversations.topicId))
     .where(eq(schema.meetups.shareToken, token));
   if (!row || row.meetup.state === "cancelled") return c.notFound();
 
-  const { meetup, englishTitle, topicFr, topicId, kind } = row;
+  const { meetup, englishTitle, topicFr, topicId, topicKind, fieldTags, kind } = row;
   const language = requestLanguage(c);
   const fr = language === "fr";
   // Topics people suggest have no French version, so they show as written.
@@ -318,22 +359,21 @@ publicRoutes.get("/m/:file", async (c) => {
   return c.html(
     page(
       summary,
-      html`<h1>${topicTitle ?? (fr ? "Une rencontre" : "A meetup")}</h1>
-        <p><strong>${location}</strong></p>
-        <p><time datetime="${new Date(meetup.startsAt).toISOString()}" data-local>${new Date(meetup.startsAt).toUTCString()}</time></p>
-        <p><a class="button" href="${url}.ics">${fr ? "Ajouter au calendrier" : "Add to calendar"}</a></p>
+      html`<div class="poster">
+        ${flyer(topicTitle ?? (fr ? "Une rencontre" : "A meetup"), html`<p class="when"><time datetime="${new Date(meetup.startsAt).toISOString()}" data-local>${new Date(meetup.startsAt).toUTCString()}</time></p><p>${location}</p>`, { field: fieldTags?.[0], question: topicKind === "question" })}
+        <div><p><a class="button" href="${url}.ics">${fr ? "Ajouter au calendrier" : "Add to calendar"}</a></p>
         ${welcomesGuests
           ? html`<p>${fr ? "Les personnes invitées sont les bienvenues. Venez en parler avec le groupe." : "Guests are welcome. Come and talk about it with the group."}</p>
               ${topicId ? html`<p><a href="/t/${topicId}">${fr ? "En savoir plus sur ce sujet" : "More about this topic"}</a></p>` : ""}
               <p>${fr ? "Pour trouver d'autres groupes près de chez vous, obtenez Babillard." : "To find more groups near you, get Babillard."}</p>
               ${getApp(language)}`
-          : ""}
+          : ""}</div></div>
         <script>
           // The server doesn't know the reader's time zone, but their browser does.
-          for (const el of document.querySelectorAll("time[data-local]")) el.textContent = new Date(el.getAttribute("datetime")).toLocaleString(undefined, { weekday: "long", month: "long", day: "numeric", hour: "numeric", minute: "2-digit" });
+          for (const el of document.querySelectorAll("time[data-local]")) el.textContent = new Date(el.getAttribute("datetime")).toLocaleString(document.documentElement.lang, { weekday: "long", month: "long", day: "numeric", hour: "numeric", minute: "2-digit" });
         </script>`,
       language,
-      { hidden: true },
+      { hidden: true, wide: true },
     ),
   );
 });

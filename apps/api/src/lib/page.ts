@@ -1,6 +1,7 @@
 import { html, raw } from "hono/html";
 import { LEGAL_PATHS, type Language, type LegalPage } from "../legal/content";
 import { SOURCE_URL } from "@babillard/shared";
+import { FLYER_STYLE } from "./flyer";
 
 /**
  * The frame for every page the API serves to browsers: the policies, invites, and share
@@ -30,7 +31,7 @@ a { color: inherit; }
 .brand { display: flex; align-items: center; gap: 10px; font: 800 1.2rem/1 "Bricolage", system-ui, sans-serif; text-decoration: none; }
 .brand img { border-radius: 8px; }
 .bar nav { display: flex; align-items: center; gap: 16px; font-weight: 700; font-size: 0.95rem; }
-.bar nav a { text-decoration: none; }
+.bar nav a { display: inline-flex; align-items: center; min-height: 44px; text-decoration: none; }
 .bar nav a:hover { text-decoration: underline; text-underline-offset: 4px; }
 main { flex: 1; width: 100%; max-width: 44rem; margin: 0 auto; padding: clamp(32px, 6vw, 64px) var(--gutter) 72px; }
 h1, h2, h3 { font-family: "Bricolage", system-ui, sans-serif; letter-spacing: -0.015em; text-wrap: balance; }
@@ -45,9 +46,11 @@ strong { font-weight: 700; }
 .meta, .muted { color: var(--muted); }
 .meta { font-size: 0.95rem; margin-bottom: 8px; }
 .tabs { display: flex; flex-wrap: wrap; gap: 8px; margin: 0 0 28px; padding: 0; list-style: none; }
-.tabs a { display: inline-flex; align-items: center; min-height: 40px; padding: 0 16px; border: 2px solid var(--ink); border-radius: 999px; font-weight: 700; font-size: 0.95rem; text-decoration: none; }
+.tabs a { display: inline-flex; align-items: center; min-height: 44px; padding: 0 16px; border: 2px solid var(--ink); border-radius: 999px; font-weight: 700; font-size: 0.95rem; text-decoration: none; }
 .tabs a[aria-current="page"] { background: var(--ink); color: var(--paper); }
 .button { display: inline-flex; align-items: center; min-height: 50px; padding: 0 22px; border-radius: 10px; background: var(--accent); color: var(--on-accent); font-weight: 700; text-decoration: none; }
+a.on-desktop { display: none !important; }
+@media (min-width: 861px) and (not (pointer: coarse)) { .on-phone { display: none !important; } a.on-desktop { display: inline-flex !important; } }
 .button:hover { background: var(--accent-hover); }
 button.button { border: 0; font: inherit; font-weight: 700; cursor: pointer; }
 .form { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 12px; margin: 0 0 20px; }
@@ -58,11 +61,14 @@ button.button { border: 0; font: inherit; font-weight: 700; cursor: pointer; }
 .trap { position: absolute; left: -10000px; width: 1px; height: 1px; overflow: hidden; }
 blockquote { margin: 0 0 14px; padding: 14px 18px; background: var(--surface); border-left: 4px solid var(--accent); border-radius: 0 10px 10px 0; }
 .card { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 20px 22px; margin: 0 0 20px; }
+main.wide { max-width: 64rem; display: flex; flex-direction: column; justify-content: center; }
+.lead { font-size: 1.1875rem; line-height: 1.55; }
+.when { font-weight: 700; font-size: 1.125rem; }
 .foot { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 12px 24px; padding: 24px var(--gutter) 32px; background: var(--panel); color: var(--on-panel); font-size: 0.95rem; }
 .foot ul { display: flex; flex-wrap: wrap; gap: 6px 22px; list-style: none; margin: 0; padding: 0; }
 .foot li { margin: 0; }
 .foot li::marker { content: none; }
-.foot a { text-decoration: none; }
+.foot a { display: inline-block; padding: 6px 0; text-decoration: none; }
 .foot a:hover { text-decoration: underline; text-underline-offset: 4px; }
 .foot p { margin: 0; color: #A9ADCB; }
 `;
@@ -72,6 +78,19 @@ export interface PageOptions {
   alternate?: string;
   /** Share pages carry an unguessable link and shouldn't appear in search results. */
   hidden?: boolean;
+  /** What search results and link previews say under the title. */
+  description?: string;
+  /** This page's own path, for search engines. Left out of pages that aren't indexed. */
+  path?: string;
+  /** Room for a flyer beside the text. */
+  wide?: boolean;
+}
+
+const ORIGIN = "https://babillard.app";
+
+/** Downloads the app on a phone. The file is no use on a computer, so there it goes to the home page's QR code. */
+export function appLink(language: Language, label: string, style = "") {
+  return html`<a class="${style} on-phone" href="/download/android">${label}</a><a class="${style} on-desktop" href="${language === "fr" ? "/fr/#get" : "/#get"}">${label}</a>`;
 }
 
 export function page(title: string, body: unknown, language: Language = "en", options: PageOptions = {}) {
@@ -81,6 +100,7 @@ export function page(title: string, body: unknown, language: Language = "en", op
   const legal = [
     ...(Object.keys(LEGAL_PATHS) as LegalPage[]).map((name) => html`<li><a href="${LEGAL_PATHS[name][language]}">${LEGAL_NAMES[name][language]}</a></li>`),
     html`<li><a href="${SOURCE_URL}">${fr ? "Code source" : "Source code"}</a></li>`,
+    html`<li><a href="mailto:info@babillard.app">Contact</a></li>`,
   ];
   return html`<!doctype html>
     <html lang="${fr ? "fr-CA" : "en-CA"}">
@@ -90,19 +110,32 @@ export function page(title: string, body: unknown, language: Language = "en", op
         <meta name="color-scheme" content="light dark" />
         ${options.hidden ? html`<meta name="robots" content="noindex" />` : ""}
         <title>${title} · Babillard</title>
+        ${options.description ? html`<meta name="description" content="${options.description}" /><meta property="og:description" content="${options.description}" />` : ""}
+        <meta property="og:type" content="website" />
+        <meta property="og:site_name" content="Babillard" />
+        <meta property="og:title" content="${title}" />
+        <meta property="og:image" content="${ORIGIN}/site/${fr ? "share-fr" : "share"}.png" />
+        <meta property="og:image:width" content="1200" />
+        <meta property="og:image:height" content="630" />
+        <meta name="twitter:card" content="summary_large_image" />
+        ${options.path && !options.hidden ? html`<link rel="canonical" href="${ORIGIN}${options.path}" /><meta property="og:url" content="${ORIGIN}${options.path}" />` : ""}
+        ${options.path && options.alternate ? html`<link rel="alternate" hreflang="${language}-CA" href="${ORIGIN}${options.path}" /><link rel="alternate" hreflang="${other}-CA" href="${ORIGIN}${options.alternate}" />` : ""}
+        <meta name="theme-color" content="#EEF0F8" media="(prefers-color-scheme: light)" />
+        <meta name="theme-color" content="#13142E" media="(prefers-color-scheme: dark)" />
         <link rel="icon" href="/site/icon.png" />
+        <link rel="apple-touch-icon" href="/site/icon.png" />
         <link rel="preload" href="/site/fonts/bricolage-800.woff2" as="font" type="font/woff2" crossorigin />
-        <style>${raw(STYLE)}</style>
+        <style>${raw(STYLE + FLYER_STYLE)}</style>
       </head>
       <body>
         <header class="bar">
           <a class="brand" href="${home}"><img src="/site/icon.png" alt="" width="32" height="32" />Babillard</a>
-          <nav>${options.alternate ? html`<a href="${options.alternate}" hreflang="${other}" lang="${other}">${fr ? "English" : "Français"}</a>` : ""}<a href="/download/android">${fr ? "Télécharger" : "Download"}</a></nav>
+          <nav>${options.alternate ? html`<a href="${options.alternate}" hreflang="${other}" lang="${other}">${fr ? "English" : "Français"}</a>` : ""}${appLink(language, fr ? "Télécharger" : "Download")}</nav>
         </header>
-        <main>${body}</main>
+        <main class="${options.wide ? "wide" : ""}">${body}</main>
         <footer class="foot">
           <ul>${legal}</ul>
-          <p>${fr ? "Rencontrez les gens qui veulent parler des mêmes idées." : "Meet the people who want to talk about the same ideas."}</p>
+          <p>Babillard</p>
         </footer>
       </body>
     </html>`;

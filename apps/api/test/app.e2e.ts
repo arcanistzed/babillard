@@ -1451,14 +1451,14 @@ describe("meetups", () => {
     const french = { headers: { "accept-language": "fr-CA" } };
 
     const page = await (await fetch(meetup.shareUrl, french)).text();
-    expect(page).toContain("<h1>Science du sommeil</h1>");
-    expect(page).toContain("<strong>Bibliothèque</strong>");
+    expect(page).toContain(">Science du sommeil</h1>");
+    expect(page).toContain("<p>Bibliothèque</p>");
     expect(page).not.toContain("Sleep science");
     expect(await (await fetch(`${meetup.shareUrl}.ics`, french)).text()).toContain("SUMMARY:Rencontre Babillard: Science du sommeil");
 
     const english = await (await fetch(meetup.shareUrl)).text();
-    expect(english).toContain("<h1>Sleep science</h1>");
-    expect(english).toContain("<strong>Library</strong>");
+    expect(english).toContain(">Sleep science</h1>");
+    expect(english).toContain("<p>Library</p>");
   });
 
   it("reminds before, asks did-you-meet after, and records the answer", async () => {
@@ -2375,7 +2375,7 @@ describe("crash reports and public pages", () => {
     const join = (fields: Record<string, string>, base = BASE) =>
       fetch(`${base}/iphone`, { method: "POST", headers: { "content-type": "application/x-www-form-urlencoded" }, body: new URLSearchParams(fields) });
 
-    for (const [path, lang, button] of [["/iphone", "en", "Tell me when it's ready"], ["/fr/iphone", "fr", "Prévenez-moi"]] as const) {
+    for (const [path, lang, button] of [["/iphone", "en", "Join the waitlist"], ["/fr/iphone", "fr", "M'inscrire"]] as const) {
       const form = await (await fetch(`${BASE}${path}`)).text();
       expect(form).toContain(`<html lang="${lang}-CA">`);
       expect(form).toContain(`name="language" value="${lang}"`);
@@ -2456,7 +2456,7 @@ describe("crash reports and public pages", () => {
     expect((await other.get("/conversations")).find((row: any) => row.id === conversationId).lastMessagePreview).toMatch(/^You both/);
 
     const invite = await (await fetch(`${BASE}/invite`, { headers: { "accept-language": "fr" } })).text();
-    expect(invite).toContain("Obtenir l'application Android");
+    expect(invite).toContain("Obtenir l&#39;application Android");
     expect(await (await fetch(`${BASE}/t/behavioral-economics`, { headers: { "accept-language": "fr" } })).text()).toContain("Économie comportementale");
   });
 
