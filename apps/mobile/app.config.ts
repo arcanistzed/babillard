@@ -2,7 +2,7 @@ import type { ExpoConfig } from "expo/config";
 import { versionCode } from "../../packages/shared/src/version.ts";
 
 // The one number to change for a release. Android's build code comes from it (0.2.0 is 200).
-const version = "0.3.5";
+const version = "0.3.6";
 
 // The API domain hosts the Universal Link and App Link association files.
 const apiHost = new URL(process.env.EXPO_PUBLIC_API_URL ?? "https://babillard.app").hostname;
@@ -13,7 +13,7 @@ function appLink(path: { path: string } | { pathPrefix: string }) {
   return { action: "VIEW", autoVerify: true, data: [{ scheme: "https", host: apiHost, ...path }], category: ["BROWSABLE", "DEFAULT"] };
 }
 
-const projectId ="90b977e9-6bcd-4b3b-9059-d63e4b4d5bc1";
+const projectId = "90b977e9-6bcd-4b3b-9059-d63e4b4d5bc1";
 
 const config: ExpoConfig = {
   name: "Babillard",
