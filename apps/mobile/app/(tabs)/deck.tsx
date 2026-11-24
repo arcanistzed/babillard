@@ -1,8 +1,9 @@
+import { Ionicons } from "@expo/vector-icons";
 import { FIELD_GROUPS, GROUP_MIN_SIZE, type FieldGroupId, type Stance, type TopicCard, type TopicSwipeResult } from "@babillard/shared";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { router } from "expo-router";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { ActivityIndicator, StyleSheet, View } from "react-native";
+import { ActivityIndicator, Pressable, StyleSheet, View } from "react-native";
 import Animated, { FadeIn, FadeOut } from "react-native-reanimated";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { api } from "@/api";
@@ -11,6 +12,7 @@ import { DeckControls } from "@/components/DeckControls";
 import { Flyer } from "@/components/Flyer";
 import { SwipeDeck, type SwipeDeckHandle, type SwipeDirection } from "@/components/SwipeDeck";
 import { inviteToApp, inviteToTopic } from "@/invite";
+import { fonts, useTheme } from "@/theme";
 import { Button, Chip, ChipRow, ErrorText, T } from "@/ui";
 import { shortGroupLabel, t } from "@/i18n";
 
@@ -22,6 +24,7 @@ const IN_LABEL = t("I'm in", "J'embarque");
 const PASS_LABEL = t("Pass", "Passer");
 
 export default function Deck() {
+  const theme = useTheme();
   const queryClient = useQueryClient();
   const deck = useRef<SwipeDeckHandle>(null);
   const [cards, setCards] = useState<TopicCard[]>([]);
@@ -36,10 +39,12 @@ export default function Deck() {
   const [swipeFailed, setSwipeFailed] = useState(false);
   const swiped = useRef(new Set<string>());
 
+  const [filtersOpen, setFiltersOpen] = useState(false);
   const [group, setGroupFilter] = useState<FieldGroupId | null>(null);
   const topics = useQuery({ queryKey: ["topics", group], queryFn: () => api.get<TopicCard[]>(`/deck/topics${group ? `?group=${group}` : ""}`), staleTime: 0 });
 
   function chooseGroup(next: FieldGroupId | null) {
+    setFiltersOpen(false);
     if (next === group) return;
     setCards([]);
     setGroupFilter(next);
@@ -114,6 +119,7 @@ export default function Deck() {
   );
 
   const empty = cards.length === 0;
+  const filterLabel = group ? shortGroupLabel(group) : t("All topics", "Tous les sujets");
 
   return (
     <SafeAreaView edges={["top"]} style={styles.screen}>
@@ -122,9 +128,12 @@ export default function Deck() {
           <ErrorText>{t("That didn't save. Check your connection.", "Ce choix n'a pas été enregistré. Vérifiez votre connexion.")}</ErrorText>
         ) : nudge ? (
           <Animated.View key={nudge.topic.id} entering={FadeIn.duration(180)} exiting={FadeOut.duration(120)} style={styles.nudge}>
-            <T variant="bodyBold" numberOfLines={2} style={styles.nudgeText}>
-              {t(`${nudge.topic.title} needs ${nudge.needed} more for a group`, `${nudge.topic.title} : encore ${nudge.needed} pour former un groupe`)}
-            </T>
+            <View style={styles.nudgeText}>
+              <T variant="bodyBold">{t(`${nudge.needed} more for a group`, `Encore ${nudge.needed} pour un groupe`)}</T>
+              <T variant="small" muted numberOfLines={1}>
+                {nudge.topic.title}
+              </T>
+            </View>
             <Button
               label={t("Invite", "Inviter")}
               onPress={() => {
@@ -132,21 +141,40 @@ export default function Deck() {
                 setNudge(null);
               }}
             />
+            <Pressable accessibilityRole="button" accessibilityLabel={t("Dismiss", "Fermer")} onPress={() => setNudge(null)} style={styles.close}>
+              <Ionicons name="close" size={24} color={theme.ink} />
+            </Pressable>
           </Animated.View>
         ) : (
-          <T variant="title" numberOfLines={2}>
-            {t("What do you want to talk about?", "De quoi voulez-vous parler?")}
-          </T>
+          <View style={styles.titleRow}>
+            <T variant="title" style={styles.title}>
+              {t("Topics", "Sujets")}
+            </T>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityState={{ expanded: filtersOpen }}
+              accessibilityLabel={t(`Show topics from: ${filterLabel}`, `Afficher les sujets de: ${filterLabel}`)}
+              onPress={() => setFiltersOpen(!filtersOpen)}
+              style={[styles.filterButton, { borderColor: theme.control, backgroundColor: theme.surface }]}
+            >
+              <T variant="small" style={styles.filterLabel}>
+                {filterLabel}
+              </T>
+              <Ionicons name={filtersOpen ? "chevron-up" : "chevron-down"} size={16} color={theme.ink} accessibilityElementsHidden importantForAccessibility="no-hide-descendants" />
+            </Pressable>
+          </View>
         )}
       </View>
 
       {/* Wraps rather than scrolls, so at large text sizes no filter hides off the edge. */}
-      <ChipRow accessibilityRole="radiogroup" accessibilityLabel={t("Show topics from", "Afficher les sujets de")} style={styles.filters}>
-        <Chip role="radio" label={t("All", "Tous")} selected={group === null} onPress={() => chooseGroup(null)} />
-        {FIELD_GROUPS.map((entry) => (
-          <Chip key={entry.id} role="radio" label={shortGroupLabel(entry.id)} selected={group === entry.id} onPress={() => chooseGroup(entry.id)} />
-        ))}
-      </ChipRow>
+      {filtersOpen ? (
+        <ChipRow accessibilityRole="radiogroup" accessibilityLabel={t("Show topics from", "Afficher les sujets de")} style={styles.filters}>
+          <Chip role="radio" label={t("All", "Tous")} selected={group === null} onPress={() => chooseGroup(null)} />
+          {FIELD_GROUPS.map((entry) => (
+            <Chip key={entry.id} role="radio" label={shortGroupLabel(entry.id)} selected={group === entry.id} onPress={() => chooseGroup(entry.id)} />
+          ))}
+        </ChipRow>
+      ) : null}
 
       <View style={styles.deck}>
         {empty ? (
@@ -209,9 +237,14 @@ export default function Deck() {
 
 const styles = StyleSheet.create({
   screen: { flex: 1 },
-  // Tall enough for two lines of title, so swapping in the invite prompt doesn't resize the card.
-  header: { paddingHorizontal: 20, paddingTop: 10, paddingBottom: 8, minHeight: 80, justifyContent: "center" },
-  filters: { paddingHorizontal: 16, paddingBottom: 10 },
+  // Tall enough for the invite prompt, so swapping it in doesn't resize the card.
+  header: { paddingHorizontal: 20, paddingVertical: 6, minHeight: 64, justifyContent: "center" },
+  titleRow: { flexDirection: "row", alignItems: "center", gap: 12 },
+  title: { flex: 1 },
+  filterButton: { flexDirection: "row", alignItems: "center", gap: 6, minHeight: 44, paddingHorizontal: 14, borderWidth: 1.5, borderRadius: 22 },
+  filterLabel: { fontFamily: fonts.bodyBold },
+  filters: { paddingHorizontal: 16, paddingTop: 0, paddingBottom: 10 },
+  close: { width: 44, height: 44, marginHorizontal: -8, alignItems: "center", justifyContent: "center" },
   nudge: { flexDirection: "row", alignItems: "center", gap: 12 },
   nudgeText: { flex: 1 },
   deck: { flex: 1, marginHorizontal: 16 },

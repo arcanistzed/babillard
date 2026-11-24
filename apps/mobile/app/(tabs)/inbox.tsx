@@ -62,11 +62,6 @@ function Row({ item, preview }: { item: InboxItem; preview: string | null }) {
             {item.topicTitle}
           </T>
         ) : null}
-        {item.kind === "group" ? (
-          <T variant="small" muted>
-            {t(`${item.memberCount} people`, `${item.memberCount} personnes`)}
-          </T>
-        ) : null}
         {preview ? (
           <T numberOfLines={1} variant={unread ? "bodyBold" : "body"} muted={!unread}>
             {preview}
@@ -141,7 +136,7 @@ export default function Inbox() {
 
 const styles = StyleSheet.create({
   screen: { flex: 1 },
-  title: { paddingHorizontal: 20, paddingTop: 10, paddingBottom: 8 },
+  title: { paddingHorizontal: 20, paddingTop: 16, paddingBottom: 14 },
   row: { flexDirection: "row", gap: 14, alignItems: "center", paddingHorizontal: 20, paddingVertical: 14, borderBottomWidth: StyleSheet.hairlineWidth },
   rowBody: { flex: 1, gap: 1 },
   badge: { minWidth: 26, height: 26, borderRadius: 13, paddingHorizontal: 7, alignItems: "center", justifyContent: "center" },

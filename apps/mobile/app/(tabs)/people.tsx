@@ -2,7 +2,7 @@ import { type PeopleSwipeResult, type PersonCard } from "@babillard/shared";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { router, useFocusEffect } from "expo-router";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { ActivityIndicator, Pressable, StyleSheet, Text, View } from "react-native";
+import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, useWindowDimensions, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { api } from "@/api";
 import { useAuth } from "@/auth";
@@ -12,61 +12,65 @@ import { SwipeDeck, type SwipeDeckHandle, type SwipeDirection } from "@/componen
 import { inviteToApp } from "@/invite";
 import { fonts, useTheme } from "@/theme";
 import { Avatar, Button, Chip, ChipRow, ErrorText, T } from "@/ui";
-import { fieldLabel, lookingForLabel, nameWithAge, roleLabel, t } from "@/i18n";
+import { fieldLabel, listOf, lookingForLabel, nameWithAge, roleLabel, t } from "@/i18n";
 
 function PersonFlyer({ person }: { person: PersonCard }) {
   const theme = useTheme();
+  const { fontScale } = useWindowDimensions();
+  const largeText = fontScale > 1.3;
   const subtitle = [roleLabel(person.role), person.campusName].filter(Boolean).join(", ");
   return (
     <View style={[styles.card, { backgroundColor: theme.surface, borderColor: theme.ink }]}>
+      {/* Scrolls up and down under the swipe, so nothing is cut off at large text sizes. */}
+      <ScrollView contentContainerStyle={styles.cardBody} showsVerticalScrollIndicator={false}>
+        <View style={styles.identity}>
+          <Avatar name={person.displayName} url={person.avatarUrl} size={largeText ? 60 : 84} />
+          <View style={styles.identityText}>
+            <Text accessibilityRole="header" maxFontSizeMultiplier={1.2} style={[styles.name, largeText ? styles.nameSmall : null, { color: theme.ink }]}>{nameWithAge(person.displayName, person.age)}</Text>
+            <T muted>{subtitle}</T>
+            {person.verifiedInstitution ? (
+              <T variant="small" style={{ color: theme.good, fontFamily: fonts.bodyBold }}>
+                {t("Verified school email", "Courriel scolaire vérifié")}
+              </T>
+            ) : null}
+          </View>
+        </View>
+
+        {person.bio ? <T>{person.bio}</T> : null}
+
+        <View style={styles.section}>
+          <T variant="heading">{t("You both picked", "Vos sujets en commun")}</T>
+          {person.sharedTopics.slice(0, 3).map((topic) => (
+            <T key={topic.id} variant="bodyBold">
+              {topic.title}
+            </T>
+          ))}
+          {person.sharedTopics.length > 3 ? <T muted>{t(`and ${person.sharedTopics.length - 3} more`, `et ${person.sharedTopics.length - 3} de plus`)}</T> : null}
+        </View>
+
+        <View style={styles.section}>
+          <T variant="heading">{t("Looking for", "À la recherche de")}</T>
+          <ChipRow>
+            {person.lookingFor.map((item) => (
+              <Chip key={item} label={lookingForLabel(item)} />
+            ))}
+          </ChipRow>
+        </View>
+
+        <T variant="small" muted>
+          {t("Into", "Intérêts:")} {listOf(person.fields.map((field) => fieldLabel(field)))}
+        </T>
+      </ScrollView>
       <Pressable
         accessibilityRole="button"
         accessibilityLabel={t(`Report or block ${person.displayName}`, `Signaler ou bloquer ${person.displayName}`)}
-        hitSlop={{ left: 8, right: 8 }}
-        style={styles.report}
+        style={[styles.report, { borderTopColor: theme.line }]}
         onPress={() => router.push({ pathname: "/report", params: { targetUserId: person.id, name: person.displayName } })}
       >
         <T variant="small" muted>
           {t("Report or block", "Signaler ou bloquer")}
         </T>
       </Pressable>
-      <View style={styles.identity}>
-        <Avatar name={person.displayName} url={person.avatarUrl} size={92} />
-        <View style={styles.identityText}>
-          <Text style={[styles.name, { color: theme.ink }]}>{nameWithAge(person.displayName, person.age)}</Text>
-          <T muted>{subtitle}</T>
-          {person.verifiedInstitution ? (
-            <T variant="small" style={{ color: theme.good, fontFamily: fonts.bodyBold }}>
-              {t("Verified school email", "Courriel scolaire vérifié")}
-            </T>
-          ) : null}
-        </View>
-      </View>
-
-      {person.bio ? <T numberOfLines={4}>{person.bio}</T> : null}
-
-      <View style={styles.section}>
-        <T variant="heading">{t("You both picked", "Vos sujets en commun")}</T>
-        {person.sharedTopics.slice(0, 3).map((topic) => (
-          <T key={topic.id} variant="bodyBold">
-            {topic.title}
-          </T>
-        ))}
-        {person.sharedTopics.length > 3 ? <T muted>{t(`and ${person.sharedTopics.length - 3} more`, `et ${person.sharedTopics.length - 3} de plus`)}</T> : null}
-      </View>
-
-      <View style={styles.section}>
-        <T variant="heading">{t("Looking for", "À la recherche de")}</T>
-        <ChipRow>
-          {person.lookingFor.map((item) => (
-            <Chip key={item} label={lookingForLabel(item)} />
-          ))}
-        </ChipRow>
-      </View>
-
-      <T variant="small" muted numberOfLines={2}>
-        {t("Into", "Intérêts:")} {person.fields.map((field) => fieldLabel(field)).join(", ")}
-      </T>
     </View>
   );
 }
@@ -143,7 +147,7 @@ export default function People() {
   return (
     <SafeAreaView edges={["top"]} style={styles.screen}>
       <View style={styles.header}>
-        {swipeFailed ? <ErrorText>{t("That didn't save. Check your connection.", "Ce choix n'a pas été enregistré. Vérifiez votre connexion.")}</ErrorText> : <T variant="title" numberOfLines={2}>{t("People who picked your topics", "Personnes qui ont choisi vos sujets")}</T>}
+        {swipeFailed ? <ErrorText>{t("That didn't save. Check your connection.", "Ce choix n'a pas été enregistré. Vérifiez votre connexion.")}</ErrorText> : <T variant="title">{t("People", "Personnes")}</T>}
       </View>
 
       <View style={styles.deck}>
@@ -214,15 +218,16 @@ export default function People() {
 
 const styles = StyleSheet.create({
   screen: { flex: 1 },
-  header: { paddingHorizontal: 20, paddingTop: 10, paddingBottom: 12, minHeight: 84, justifyContent: "center" },
+  header: { paddingHorizontal: 20, paddingVertical: 6, minHeight: 64, justifyContent: "center" },
   deck: { flex: 1, marginHorizontal: 16 },
   center: { flex: 1, justifyContent: "center", gap: 12 },
   controls: { paddingHorizontal: 16, paddingVertical: 12 },
-  card: { flex: 1, borderWidth: 2, borderRadius: 6, padding: 20, gap: 14, overflow: "hidden" },
-  // A full 44dp target, pulled into the card's padding so the card's layout doesn't move.
-  report: { alignSelf: "flex-end", minHeight: 44, justifyContent: "center", marginVertical: -10 },
+  card: { flex: 1, borderWidth: 2, borderRadius: 6, overflow: "hidden" },
+  cardBody: { padding: 20, gap: 16 },
+  report: { minHeight: 48, paddingHorizontal: 20, justifyContent: "center", borderTopWidth: StyleSheet.hairlineWidth },
   identity: { flexDirection: "row", alignItems: "center", gap: 14 },
   identityText: { flex: 1, gap: 2 },
   name: { fontFamily: fonts.display, fontSize: 32, lineHeight: 36 },
+  nameSmall: { fontSize: 24, lineHeight: 28 },
   section: { gap: 6 },
 });

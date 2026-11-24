@@ -94,7 +94,7 @@ export function Flyer({ topic, stance, onStance, isTop = true, pull }: { topic: 
                     onPress={() => onStance(selected ? null : value)}
                     style={[styles.stance, { borderColor: fg, backgroundColor: selected ? fg : "transparent" }]}
                   >
-                    <Text style={[styles.stanceText, { color: selected ? bg : fg }]}>{STANCE_LABELS[value]}</Text>
+                    <Text maxFontSizeMultiplier={1.3} numberOfLines={1} adjustsFontSizeToFit style={[styles.stanceText, { color: selected ? bg : fg }]}>{STANCE_LABELS[value]}</Text>
                   </Pressable>
                 );
               })}
