@@ -61,7 +61,7 @@ export function AgeRangeField({ value, onChange, error }: { value: AgeRangeText;
         </T>
       ) : (
         <T variant="small" muted>
-          {t("Leave a box blank for no limit. You'll only see people whose own range includes you.", "Laissez une case vide pour ne pas fixer de limite. Vous ne verrez que les personnes dont la tranche vous inclut.")}
+          {t("Blank means no limit. You'll only see people whose own range includes you.", "Une case vide signifie aucune limite. Vous ne verrez que les personnes dont la tranche vous inclut.")}
         </T>
       )}
     </View>

@@ -9,7 +9,7 @@ import { AgeRangeField, ageRangeText, parseAgeRange } from "@/components/AgeRang
 import { CityPicker } from "@/components/CityPicker";
 import { FieldPicker } from "@/components/FieldPicker";
 import { LookingForPicker } from "@/components/LookingForPicker";
-import { Button, Chip, ChipRow, ErrorText, Field, KeyboardScreen, T, useBottomPadding } from "@/ui";
+import { ActionBar, Button, Chip, ChipRow, ErrorText, Field, KeyboardScreen, T, useBottomPadding } from "@/ui";
 import { roleLabel, t } from "@/i18n";
 
 const GROUP_SIZE_LABELS: Record<GroupSize, string> = {
@@ -58,38 +58,51 @@ export default function ProfileEdit() {
   return (
     <KeyboardScreen style={styles.screen}>
       <ScrollView contentContainerStyle={styles.body} keyboardShouldPersistTaps="handled">
-        <Field label={t("Your first name", "Votre prénom")} value={displayName} onChangeText={setDisplayName} maxLength={50} />
-        <Field label={t("A line about you", "Une phrase sur vous")} value={bio} onChangeText={setBio} multiline maxLength={500} style={styles.bio} />
-        <T variant="heading">{t("What do you do?", "Que faites-vous?")}</T>
-        <ChipRow accessibilityRole="radiogroup">{ROLES.map((value) => <Chip key={value} role="radio" label={roleLabel(value)} selected={role === value} onPress={() => setRole(value)} />)}</ChipRow>
-        <T variant="heading">{t("What are you looking for?", "Que recherchez-vous?")}</T>
-        <LookingForPicker value={lookingFor} onChange={setLookingFor} />
+        <View style={styles.names}>
+          <Field label={t("Your first name", "Votre prénom")} value={displayName} onChangeText={setDisplayName} maxLength={50} />
+          <Field label={t("A line about you", "Une phrase sur vous")} value={bio} onChangeText={setBio} multiline maxLength={500} style={styles.bio} />
+        </View>
+        <View style={styles.section}>
+          <T variant="heading">{t("What do you do?", "Que faites-vous?")}</T>
+          <ChipRow accessibilityRole="radiogroup">{ROLES.map((value) => <Chip key={value} role="radio" label={roleLabel(value)} selected={role === value} onPress={() => setRole(value)} />)}</ChipRow>
+        </View>
+        <View style={styles.section}>
+          <T variant="heading">{t("What are you looking for?", "Que recherchez-vous?")}</T>
+          <LookingForPicker value={lookingFor} onChange={setLookingFor} />
+        </View>
         <AgeRangeField value={ageRange} onChange={setAgeRange} error={range.error} />
-        <T variant="heading">{t("Group size", "Taille du groupe")}</T>
-        <ChipRow accessibilityRole="radiogroup">
-          {GROUP_SIZES.map((value) => (
-            <Chip key={value} role="radio" label={GROUP_SIZE_LABELS[value]} selected={groupSize === value} onPress={() => setGroupSize(value)} />
-          ))}
-        </ChipRow>
-        <T variant="small" muted>
-          {t("Groups form fastest when you pick Either.", "Les groupes se forment plus vite si vous choisissez Peu importe.")}
-        </T>
-        <T variant="heading">{t("Where can you meet people?", "Où pouvez-vous rencontrer des gens?")}</T>
-        <CityPicker cityId={cityId} campusId={campusId} onChange={setLocation} />
-        <T variant="heading">{t("Fields you care about", "Domaines qui vous intéressent")}</T>
-        <FieldPicker value={fields} onChange={setFields} max={8} />
+        <View style={styles.section}>
+          <T variant="heading">{t("Group size", "Taille du groupe")}</T>
+          <ChipRow accessibilityRole="radiogroup">
+            {GROUP_SIZES.map((value) => (
+              <Chip key={value} role="radio" label={GROUP_SIZE_LABELS[value]} selected={groupSize === value} onPress={() => setGroupSize(value)} />
+            ))}
+          </ChipRow>
+          <T variant="small" muted>
+            {t("Groups form fastest with Either.", "Les groupes se forment plus vite avec Peu importe.")}
+          </T>
+        </View>
+        <View style={styles.section}>
+          <T variant="heading">{t("Where can you meet people?", "Où pouvez-vous rencontrer des gens?")}</T>
+          <CityPicker cityId={cityId} campusId={campusId} onChange={setLocation} />
+        </View>
+        <View style={styles.section}>
+          <T variant="heading">{t("Fields you care about", "Domaines qui vous intéressent")}</T>
+          <FieldPicker value={fields} onChange={setFields} max={8} />
+        </View>
         {error ? <ErrorText>{error}</ErrorText> : null}
       </ScrollView>
-      <View style={[styles.actions, { paddingBottom: bottomPadding }]}>
+      <ActionBar style={{ paddingHorizontal: 20, paddingBottom: bottomPadding }}>
         <Button label={t("Save changes", "Enregistrer")} onPress={save} busy={busy} disabled={!displayName.trim() || fields.length === 0 || lookingFor.length === 0 || !cityId || range.error !== null} />
-      </View>
+      </ActionBar>
     </KeyboardScreen>
   );
 }
 
 const styles = StyleSheet.create({
   screen: { flex: 1 },
-  body: { padding: 20, gap: 14 },
+  body: { padding: 20, gap: 28 },
+  section: { gap: 10 },
+  names: { gap: 14 },
   bio: { minHeight: 96, textAlignVertical: "top" },
-  actions: { paddingHorizontal: 20, paddingTop: 12 },
 });

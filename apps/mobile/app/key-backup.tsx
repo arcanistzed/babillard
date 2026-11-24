@@ -86,8 +86,8 @@ export default function KeyBackup() {
         <T variant="small" muted>
           {t("We can't recover a lost passphrase. Back up again on each new phone.", "Nous ne pouvons pas récupérer une phrase secrète perdue. Refaites une sauvegarde sur chaque nouveau téléphone.")}
         </T>
-        <Button label={t("Save to Google Drive or another app", "Enregistrer dans Google Drive ou une autre application")} onPress={() => save("share")} busy={busy === "save"} disabled={!canSave} />
-        {Platform.OS === "android" ? <Button label={t("Save to a folder on this phone", "Enregistrer dans un dossier du téléphone")} kind="secondary" onPress={() => save("folder")} disabled={!canSave} /> : null}
+        <Button label={t("Save to Drive or another app", "Enregistrer dans Drive ou une autre appli")} onPress={() => save("share")} busy={busy === "save"} disabled={!canSave} />
+        {Platform.OS === "android" ? <Button label={t("Save to this phone", "Enregistrer sur ce téléphone")} kind="secondary" onPress={() => save("folder")} disabled={!canSave} /> : null}
       </View>
       <View style={styles.section}>
         <T variant="heading">{t("Restore from a backup", "Restaurer une sauvegarde")}</T>

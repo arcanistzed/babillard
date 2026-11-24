@@ -12,7 +12,7 @@ import { TermsAgreement } from "@/components/TermsAgreement";
 import { LookingForPicker } from "@/components/LookingForPicker";
 import { PhotoPicker, pickAndResizePhoto } from "@/components/PhotoPicker";
 import { useTheme } from "@/theme";
-import { Button, Chip, ChipRow, ErrorText, Field, KeyboardScreen, T, useKeyboardOpen } from "@/ui";
+import { ActionBar, Button, Chip, ChipRow, ErrorText, Field, KeyboardScreen, T, useKeyboardOpen } from "@/ui";
 import { roleLabel, t } from "@/i18n";
 
 const STEP_COUNT = 5;
@@ -90,16 +90,13 @@ export default function Onboard() {
                 <T variant="title">{t("Who are you?", "Qui êtes-vous?")}</T>
                 <Field label={t("Your first name", "Votre prénom")} value={displayName} onChangeText={setDisplayName} autoComplete="given-name" maxLength={50} autoFocus />
                 <DateOfBirthField onChange={setDob} />
-                <T variant="small" muted>
-                  {t("Others see your age, never your date of birth.", "Les autres voient votre âge, jamais votre date de naissance.")}
-                </T>
                 <TermsAgreement agreed={agreed} onChange={setAgreed} />
               </>
             ) : null}
 
             {step === 1 ? (
               <>
-                <T variant="title">{t("What do you study or work on?", "Qu'étudiez-vous, ou sur quoi travaillez-vous?")}</T>
+                <T variant="title">{t("What do you do?", "Que faites-vous?")}</T>
                 <ChipRow accessibilityRole="radiogroup">
                   {ROLES.map((value) => (
                     <Chip key={value} role="radio" label={roleLabel(value)} selected={role === value} onPress={() => setRole(value)} />
@@ -139,14 +136,14 @@ export default function Onboard() {
         </ScrollView>
 
         {searchingForCity ? null : (
-          <View style={styles.actions}>
+          <ActionBar>
             {step === STEP_COUNT - 1 ? (
               <Button label={t("Start swiping", "Commencer")} onPress={finish} busy={busy} />
             ) : (
               <Button label={t("Continue", "Continuer")} onPress={() => goTo(step + 1)} disabled={!canContinue} />
             )}
             {step > 0 ? <Button label={t("Back", "Retour")} kind="quiet" onPress={() => goTo(step - 1)} /> : <Button label={t("Use a different email", "Utiliser un autre courriel")} kind="quiet" onPress={signOut} />}
-          </View>
+          </ActionBar>
         )}
       </KeyboardScreen>
     </SafeAreaView>
@@ -159,6 +156,5 @@ const styles = StyleSheet.create({
   step: { gap: 16 },
   progress: { height: 6, borderRadius: 3, overflow: "hidden" },
   progressFill: { height: "100%", borderRadius: 3 },
-  actions: { paddingHorizontal: 24, paddingBottom: 8, gap: 4 },
   bio: { minHeight: 96, textAlignVertical: "top" },
 });

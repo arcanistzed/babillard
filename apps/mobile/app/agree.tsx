@@ -5,7 +5,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { api, friendlyError } from "@/api";
 import { useAuth } from "@/auth";
 import { TermsAgreement } from "@/components/TermsAgreement";
-import { Button, ErrorText, T } from "@/ui";
+import { ActionBar, Button, ErrorText, T } from "@/ui";
 import { t } from "@/i18n";
 
 /** Shown to existing members when the terms or policy change enough to need their agreement again. */
@@ -33,10 +33,10 @@ export default function Agree() {
         <TermsAgreement agreed={agreed} onChange={setAgreed} />
         {error ? <ErrorText>{error}</ErrorText> : null}
       </View>
-      <View style={styles.actions}>
+      <ActionBar>
         <Button label={t("Continue", "Continuer")} onPress={accept} busy={busy} disabled={!agreed} />
         <Button label={t("Sign out", "Se déconnecter")} kind="quiet" onPress={signOut} />
-      </View>
+      </ActionBar>
     </SafeAreaView>
   );
 }
@@ -44,5 +44,4 @@ export default function Agree() {
 const styles = StyleSheet.create({
   screen: { flex: 1 },
   body: { flex: 1, padding: 24, gap: 20, justifyContent: "center" },
-  actions: { paddingHorizontal: 24, paddingBottom: 8, gap: 4 },
 });

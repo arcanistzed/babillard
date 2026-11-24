@@ -41,8 +41,9 @@ export default function CheckInbox() {
     <KeyboardScreen style={styles.body}>
       <View style={styles.copy}>
         <T variant="title">{t("Check your email", "Vérifiez vos courriels")}</T>
-        <T muted>{t(`We sent a code to ${email}.`, `Nous avons envoyé un code à ${email}.`)}</T>
-        <T muted>{t("Not there? Check junk and quarantine.", "Rien reçu? Vérifiez les courriels indésirables et la quarantaine.")}</T>
+        <T muted>
+          {t(`We sent a code to ${email}. Not there? Check junk and quarantine.`, `Nous avons envoyé un code à ${email}. Rien reçu? Vérifiez les courriels indésirables et la quarantaine.`)}
+        </T>
       </View>
       <Field
         label={t("Six-digit code", "Code à six chiffres")}

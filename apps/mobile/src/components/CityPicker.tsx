@@ -160,7 +160,8 @@ export function CityPicker({
       {locationError ? <ErrorText>{locationError}</ErrorText> : null}
       {query.trim() ? null : <T variant="heading">{t("Major Canadian cities", "Grandes villes canadiennes")}</T>}
       {results.map((city) => {
-        const matchedSuburb = query.trim() ? city.aliases.find((alias) => alias.toLowerCase().startsWith(query.trim().toLowerCase())) : undefined;
+        // Says why a city came up, when it isn't its own name that matched.
+        const matchedSuburb = query.trim() && !city.name.toLowerCase().startsWith(query.trim().toLowerCase()) ? city.aliases.find((alias) => alias.toLowerCase().startsWith(query.trim().toLowerCase())) : undefined;
         return (
           <Pressable
             key={city.id}

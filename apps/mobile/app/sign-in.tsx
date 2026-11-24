@@ -1,13 +1,18 @@
 import { router } from "expo-router";
 import { useState } from "react";
-import { StyleSheet, View } from "react-native";
+import { StyleSheet, useWindowDimensions, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { api, friendlyError } from "@/api";
-import { Button, ErrorText, Field, T, KeyboardScreen } from "@/ui";
+import { FlyerStack } from "@/components/FlyerStack";
+import { Button, ErrorText, Field, T, KeyboardScreen, useKeyboardOpen } from "@/ui";
 import { t } from "@/i18n";
 
 export default function SignIn() {
   const [email, setEmail] = useState("");
+  const { height, fontScale } = useWindowDimensions();
+  const keyboardOpen = useKeyboardOpen();
+  // The picture only goes where there is space to spare for it.
+  const roomForPicture = !keyboardOpen && height >= 700 && fontScale <= 1.2;
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -29,6 +34,10 @@ export default function SignIn() {
     <SafeAreaView style={styles.screen}>
       <KeyboardScreen style={styles.body}>
         <View style={styles.pitch}>
+          {roomForPicture ? <FlyerStack /> : null}
+          <T variant="heading" accessibilityRole="text">
+            Babillard
+          </T>
           <T variant="display">{t("Find people who want to talk about the same things.", "Trouvez des gens qui veulent parler des mêmes choses.")}</T>
           <T muted>{t("Pick topics, match with people in your city, and meet in person.", "Choisissez des sujets, trouvez des gens de votre ville et rencontrez-les en personne.")}</T>
         </View>
@@ -40,7 +49,7 @@ export default function SignIn() {
             autoCapitalize="none"
             autoComplete="email"
             keyboardType="email-address"
-            placeholder={t("you@uottawa.ca", "vous@uottawa.ca")}
+            placeholder={t("you@example.com", "vous@exemple.com")}
             returnKeyType="go"
             onSubmitEditing={submit}
           />

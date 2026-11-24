@@ -68,7 +68,7 @@ export default function NewTopic() {
           maxLength={120}
           placeholder={kind === "question" ? t("Should jury duty pay a living wage?", "Siéger à un jury devrait-il rapporter un salaire décent?") : t("The history of cartography", "L'histoire de la cartographie")}
         />
-        <Field label={t("One line on why it's interesting (optional)", "Pourquoi c'est intéressant, en une ligne (facultatif)")} value={blurb} onChangeText={setBlurb} maxLength={400} multiline style={styles.blurb} />
+        <Field label={t("Why it's interesting (optional)", "Pourquoi c'est intéressant (facultatif)")} value={blurb} onChangeText={setBlurb} maxLength={400} multiline style={styles.blurb} />
         <Button label={t("Suggest clearer wording", "Suggérer une formulation plus claire")} kind="secondary" onPress={suggestWording} busy={wordingBusy} disabled={title.trim().length < 4} />
         {wordingError ? <T variant="small" muted>{wordingError}</T> : null}
         {suggestion ? (
