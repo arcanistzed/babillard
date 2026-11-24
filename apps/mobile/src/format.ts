@@ -10,7 +10,8 @@ function isSameDay(a: Date, b: Date): boolean {
 /** Reads like speech: "today at 6:00 PM", "tomorrow at 12:00 PM", "Sat, Nov 7 at 2:00 PM". */
 export function describeWhen(ms: number, now: Date = new Date()): string {
   const date = new Date(ms);
-  const time = date.toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit" });
+  // Non-breaking, so a narrow screen never splits "6:00 PM" or "18 h 00" over two lines.
+  const time = date.toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit" }).replace(/\s/g, "\u00a0");
   if (isSameDay(date, now)) return t(`today at ${time}`, `aujourd'hui à ${time}`);
   if (isSameDay(date, new Date(now.getTime() + DAY))) return t(`tomorrow at ${time}`, `demain à ${time}`);
   const day = date.toLocaleDateString(undefined, { weekday: "short", month: "short", day: "numeric" });

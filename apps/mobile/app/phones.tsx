@@ -1,6 +1,6 @@
 import type { SignedInPhone } from "@babillard/shared";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Alert, FlatList, StyleSheet, View } from "react-native";
+import { ActivityIndicator, Alert, FlatList, StyleSheet, View } from "react-native";
 import { api, friendlyError } from "@/api";
 import { useAuth } from "@/auth";
 import { ensureDeviceKey } from "@/e2ee";
@@ -8,7 +8,7 @@ import { describeWhen } from "@/format";
 import { t } from "@/i18n";
 import { registerForPush } from "@/push";
 import { useTheme } from "@/theme";
-import { Button, ErrorText, T } from "@/ui";
+import { Button, ErrorText, LoadError, T, useScrollPadding } from "@/ui";
 
 function confirmRetire(): Promise<boolean> {
   return new Promise((resolve) =>
@@ -31,6 +31,7 @@ function confirmRetire(): Promise<boolean> {
 export default function Phones() {
   const { me } = useAuth();
   const theme = useTheme();
+  const padding = useScrollPadding();
   const queryClient = useQueryClient();
   const phones = useQuery({ queryKey: ["phones"], queryFn: () => api.get<SignedInPhone[]>("/me/devices") });
   const thisPhone = useQuery({ queryKey: ["this-phone", me?.id], queryFn: async () => (await ensureDeviceKey(me!.id)).publicKey, enabled: !!me });
@@ -47,14 +48,17 @@ export default function Phones() {
     if (await confirmRetire()) retire.mutate(publicKey);
   }
 
+  if (phones.isPending) return <ActivityIndicator accessibilityLabel={t("Loading your phones", "Chargement de vos téléphones")} size="large" style={styles.loading} />;
+  if (!phones.data) return <LoadError message={friendlyError(phones.error)} onRetry={() => void phones.refetch()} />;
+
   const mine = thisPhone.data;
-  const sorted = [...(phones.data ?? [])].sort((a, b) => Number(b.publicKey === mine) - Number(a.publicKey === mine));
+  const sorted = [...phones.data].sort((a, b) => Number(b.publicKey === mine) - Number(a.publicKey === mine));
 
   return (
     <FlatList
       data={sorted}
       keyExtractor={(item) => item.publicKey}
-      contentContainerStyle={styles.body}
+      contentContainerStyle={padding}
       ListHeaderComponent={
         <View style={styles.header}>
           <T muted>
@@ -63,7 +67,6 @@ export default function Phones() {
               "Chaque téléphone connecté à votre compte reçoit vos messages. Si vous en avez perdu un, retirez-le ici.",
             )}
           </T>
-          {phones.isError ? <ErrorText>{friendlyError(phones.error)}</ErrorText> : null}
           {retire.isError ? <ErrorText>{friendlyError(retire.error)}</ErrorText> : null}
         </View>
       }
@@ -86,7 +89,7 @@ export default function Phones() {
 }
 
 const styles = StyleSheet.create({
-  body: { padding: 20 },
+  loading: { flex: 1 },
   header: { gap: 12, paddingBottom: 8 },
   row: { flexDirection: "row", alignItems: "center", gap: 12, paddingVertical: 12, borderBottomWidth: StyleSheet.hairlineWidth },
   text: { flex: 1, gap: 2 },

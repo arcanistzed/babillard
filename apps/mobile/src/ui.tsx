@@ -1,4 +1,5 @@
-import { ActivityIndicator, Keyboard, KeyboardAvoidingView, Pressable, ScrollView, StyleSheet, Text, TextInput, View, type PressableProps, type StyleProp, type TextInputProps, type TextProps, type TextStyle, type ViewProps, type ViewStyle } from "react-native";
+import { Ionicons } from "@expo/vector-icons";
+import { ActivityIndicator, Keyboard, KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Switch, Text, TextInput, View, type PressableProps, type StyleProp, type TextInputProps, type TextProps, type TextStyle, type ViewProps, type ViewStyle } from "react-native";
 import { HeaderHeightContext } from "expo-router/react-navigation";
 import { useContext, useEffect, useState, type ReactNode } from "react";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -67,7 +68,7 @@ export function Button({ label, kind = "primary", busy, disabled, style, textCol
       {...props}
       style={[styles.button, { backgroundColor: shown.bg, borderColor: shown.border }, pressStyle, style]}
     >
-      {busy ? <ActivityIndicator color={textColor ?? shown.fg} /> : <Text style={[VARIANTS.bodyBold, { color: disabled ? shown.fg : (textColor ?? shown.fg) }]}>{label}</Text>}
+      {busy ? <ActivityIndicator color={textColor ?? shown.fg} /> : <Text style={[VARIANTS.bodyBold, styles.buttonLabel, { color: disabled ? shown.fg : (textColor ?? shown.fg) }]}>{label}</Text>}
     </AnimatedPressable>
   );
 }
@@ -86,7 +87,10 @@ export function Chip({ label, selected, onPress, disabled, role, accessibilityLa
   const theme = useTheme();
   const scale = useSharedValue(1);
   const popStyle = useAnimatedStyle(() => ({ transform: [{ scale: scale.value }] }));
-  const look = [styles.chip, { borderColor: selected ? theme.ink : theme.line, backgroundColor: selected ? theme.ink : "transparent", opacity: disabled ? 0.45 : 1 }];
+  // A plain label is a filled tag without an edge, so only the chips that do something look tappable.
+  const look = onPress
+    ? [styles.chip, { borderColor: selected ? theme.ink : theme.control, backgroundColor: selected ? theme.ink : theme.surface, opacity: disabled ? 0.45 : 1 }]
+    : [styles.chip, { borderColor: theme.line, backgroundColor: theme.line }];
   const text = <Text style={[VARIANTS.small, { fontFamily: fonts.bodyBold, color: selected ? theme.paper : theme.ink }]}>{label}</Text>;
   if (!onPress) {
     return (
@@ -152,6 +156,57 @@ export function ErrorText({ children }: { children: ReactNode }) {
   );
 }
 
+/** What a screen shows when it can't load, with the one thing there is to do about it. */
+export function LoadError({ message, onRetry }: { message: string; onRetry: () => void }) {
+  return (
+    <View style={styles.loadError}>
+      <ErrorText>{message}</ErrorText>
+      <Button label={t("Try again", "Réessayer")} kind="secondary" onPress={onRetry} />
+    </View>
+  );
+}
+
+/** Rows boxed together, so a long list of them reads as a few groups. */
+export function RowGroup({ title, children }: { title?: string; children: ReactNode }) {
+  const theme = useTheme();
+  return (
+    <View style={styles.rowGroup}>
+      {title ? <T variant="heading">{title}</T> : null}
+      <View style={[styles.rowBox, { backgroundColor: theme.surface, borderColor: theme.line }]}>{children}</View>
+    </View>
+  );
+}
+
+/** An arrow means the row opens a screen, or a page outside the app for a link. Rows that act on the spot, set with `acts`, have none. */
+export function Row({ label, onPress, role = "button", acts, danger, first }: { label: string; onPress: () => void; role?: "button" | "link"; acts?: boolean; danger?: boolean; first?: boolean }) {
+  const theme = useTheme();
+  return (
+    <Pressable
+      accessibilityRole={role}
+      accessibilityLabel={label}
+      onPress={onPress}
+      style={({ pressed }) => [styles.row, first ? null : { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: theme.line }, pressed ? { backgroundColor: theme.line } : null]}
+    >
+      <T variant="bodyBold" style={[styles.rowLabel, danger ? { color: theme.danger } : null]}>
+        {label}
+      </T>
+      {acts ? null : <Ionicons name={role === "link" ? "open-outline" : "chevron-forward"} size={18} color={theme.muted} accessibilityElementsHidden importantForAccessibility="no-hide-descendants" />}
+    </Pressable>
+  );
+}
+
+/** A switch whose track shows up in both themes. The system's own one disappears on a dark background. */
+export function Toggle({ label, value, onValueChange, disabled }: { label: string; value: boolean; onValueChange: (value: boolean) => void; disabled?: boolean }) {
+  const theme = useTheme();
+  return <Switch accessibilityLabel={label} value={value} onValueChange={onValueChange} disabled={disabled} trackColor={{ false: theme.control, true: theme.accent }} thumbColor={Platform.OS === "android" ? "#FFFFFF" : undefined} />;
+}
+
+/** The buttons fixed under a form that scrolls, with a line so the form reads as going under them. */
+export function ActionBar({ children, style }: { children: ReactNode; style?: StyleProp<ViewStyle> }) {
+  const theme = useTheme();
+  return <View style={[styles.actionBar, { borderTopColor: theme.line, backgroundColor: theme.paper }, style]}>{children}</View>;
+}
+
 /** `topic` is for a group named after its topic, whose letter skips a leading article like "La" or "The". */
 export function Avatar({ name, url, size = 44, tint, topic }: { name: string; url?: string | null; size?: number; tint?: { bg: string; fg: string }; topic?: boolean }) {
   const theme = useTheme();
@@ -168,6 +223,13 @@ export function Avatar({ name, url, size = 44, tint, topic }: { name: string; ur
 
 const styles = StyleSheet.create({
   button: { minHeight: 52, paddingHorizontal: 20, borderRadius: 14, borderWidth: 2, alignItems: "center", justifyContent: "center" },
+  buttonLabel: { textAlign: "center" },
+  loadError: { padding: 20, gap: 12 },
+  rowGroup: { gap: 8 },
+  rowBox: { borderWidth: 1, borderRadius: 14, overflow: "hidden" },
+  row: { flexDirection: "row", alignItems: "center", gap: 12, minHeight: 52, paddingHorizontal: 16, paddingVertical: 10 },
+  rowLabel: { flex: 1 },
+  actionBar: { paddingHorizontal: 24, paddingTop: 12, paddingBottom: 8, gap: 4, borderTopWidth: StyleSheet.hairlineWidth },
   chip: { minHeight: 36, paddingHorizontal: 13, alignSelf: "flex-start", justifyContent: "center", borderRadius: 18, borderWidth: 1.5 },
   chipRow: { flexDirection: "row", flexWrap: "wrap", gap: 8, paddingVertical: 4, marginVertical: -4 },
   field: { gap: 6 },
@@ -214,6 +276,12 @@ export function useKeyboardOpen(): boolean {
     };
   }, []);
   return keyboardOpen;
+}
+
+/** Padding for a screen that scrolls to the bottom edge, so its last control clears the Android navigation bar. */
+export function useScrollPadding(padding = 20): { padding: number; paddingBottom: number } {
+  const insets = useSafeAreaInsets();
+  return { padding, paddingBottom: padding + insets.bottom };
 }
 
 /** Height of the safe area below content, dropped while the keyboard is up since the keyboard already covers it. */

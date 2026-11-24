@@ -2,14 +2,14 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import * as Calendar from "expo-calendar/legacy";
 import { useLocalSearchParams } from "expo-router";
 import { useState } from "react";
-import { ActivityIndicator, Linking, ScrollView, Share, StyleSheet, View } from "react-native";
+import { ActivityIndicator, Alert, Linking, ScrollView, Share, StyleSheet, View } from "react-native";
 import { api, friendlyError } from "@/api";
 import { useAuth } from "@/auth";
 import { hasEnded, RsvpChips, stateLine, useMeetup } from "@/components/MeetupCard";
 import { OutcomeForm } from "@/components/OutcomeForm";
 import { describeWhen } from "@/format";
 import { useTheme } from "@/theme";
-import { Button, ErrorText, T } from "@/ui";
+import { Button, ErrorText, LoadError, T, useScrollPadding } from "@/ui";
 import { t, venueLabel } from "@/i18n";
 
 export default function MeetupScreen() {
@@ -17,6 +17,7 @@ export default function MeetupScreen() {
   const { me } = useAuth();
   const theme = useTheme();
   const queryClient = useQueryClient();
+  const padding = useScrollPadding();
   const { query, respond } = useMeetup(id);
   const [error, setError] = useState<string | null>(null);
   const invalidate = (meetup: unknown) => queryClient.setQueryData(["meetup", id], meetup);
@@ -35,7 +36,7 @@ export default function MeetupScreen() {
   const stopRepeating = useMutation({ mutationFn: () => api.post(`/meetups/${id}/repeat`, { repeat: "none" }), onSuccess: invalidate, onError: (caught) => setError(friendlyError(caught)) });
 
   const meetup = query.data;
-  if (query.isError) return <View style={styles.body}><ErrorText>{t("Couldn't load this meetup.", "Impossible de charger cette rencontre.")}</ErrorText></View>;
+  if (query.isError && !meetup) return <LoadError message={t("Couldn't load this meetup. Check your connection.", "Impossible de charger cette rencontre. Vérifiez votre connexion.")} onRetry={() => void query.refetch()} />;
   if (!meetup) return <ActivityIndicator accessibilityLabel={t("Loading meetup", "Chargement de la rencontre")} size="large" style={styles.loading} />;
 
   const place = meetup.venueNote || venueLabel(meetup.venueKind);
@@ -63,10 +64,27 @@ export default function MeetupScreen() {
     }
   }
 
+  function confirmCancel() {
+    Alert.alert(t("Cancel this meetup?", "Annuler cette rencontre?"), t("Everyone in the chat will see that it's off.", "Tout le monde dans la discussion verra qu'elle n'a plus lieu."), [
+      { text: t("Keep it", "La garder"), style: "cancel" },
+      { text: t("Cancel meetup", "Annuler la rencontre"), style: "destructive", onPress: () => cancel.mutate() },
+    ]);
+  }
+
+  function confirmStopRepeating() {
+    Alert.alert(t("Stop repeating?", "Arrêter la répétition?"), t("No more dates will be proposed after this one, for anyone.", "Aucune autre date ne sera proposée après celle-ci, pour personne."), [
+      { text: t("Keep repeating", "Continuer"), style: "cancel" },
+      { text: t("Stop", "Arrêter"), style: "destructive", onPress: () => stopRepeating.mutate() },
+    ]);
+  }
+
   return (
-    <ScrollView contentContainerStyle={styles.body}>
+    <ScrollView contentContainerStyle={[padding, styles.body]}>
       <T variant="display">{when.replace(/^./, (letter) => letter.toUpperCase())}</T>
       <T variant="heading">{place}</T>
+      {upcoming && meetup.repeat !== "none" ? (
+        <T muted>{meetup.repeat === "weekly" ? t("Repeats every week.", "Se répète chaque semaine.") : t("Repeats every two weeks.", "Se répète toutes les deux semaines.")}</T>
+      ) : null}
       <T variant="bodyBold" style={live ? { color: theme.good } : undefined} muted={!live}>
         {stateLine(meetup)}
       </T>
@@ -91,19 +109,16 @@ export default function MeetupScreen() {
 
       {upcoming ? (
         <View style={styles.actions}>
-          {meetup.state === "confirmed" && meetup.myResponse !== "no" ? <Button label={t("Add to calendar", "Ajouter au calendrier")} onPress={addToCalendar} /> : null}
+          {meetup.state === "confirmed" && meetup.myResponse !== "no" ? <Button label={t("Add to calendar", "Ajouter au calendrier")} kind={meetup.myResponse === "yes" ? "primary" : "secondary"} onPress={addToCalendar} /> : null}
           {meetup.inviteOpen ? (
             <Button label={t("Invite someone", "Inviter quelqu'un")} kind="secondary" onPress={() => void inviteSomeone()} />
           ) : (
             <Button label={t("Share the details", "Partager les détails")} kind="secondary" onPress={() => void Share.share({ message: t(`Meetup ${when} at ${place}: ${meetup.shareUrl}`, `Rencontre ${when}, ${place}: ${meetup.shareUrl}`) })} />
           )}
           {meetup.repeat !== "none" ? (
-            <>
-              <T muted>{meetup.repeat === "weekly" ? t("Repeats every week.", "Se répète chaque semaine.") : t("Repeats every two weeks.", "Se répète toutes les deux semaines.")}</T>
-              <Button label={t("Stop repeating", "Arrêter la répétition")} kind="quiet" onPress={() => stopRepeating.mutate()} busy={stopRepeating.isPending} />
-            </>
+            <Button label={t("Stop repeating", "Arrêter la répétition")} kind="quiet" onPress={confirmStopRepeating} busy={stopRepeating.isPending} />
           ) : null}
-          {meetup.proposedBy === me?.id ? <Button label={t("Cancel this meetup", "Annuler cette rencontre")} kind="danger" onPress={() => cancel.mutate()} busy={cancel.isPending} /> : null}
+          {meetup.proposedBy === me?.id ? <Button label={t("Cancel this meetup", "Annuler cette rencontre")} kind="danger" onPress={confirmCancel} busy={cancel.isPending} /> : null}
         </View>
       ) : null}
 
@@ -119,7 +134,7 @@ export default function MeetupScreen() {
 
 const styles = StyleSheet.create({
   loading: { flex: 1 },
-  body: { padding: 20, gap: 14 },
+  body: { gap: 14 },
   checkin: { gap: 10, paddingVertical: 8 },
   row: { flexDirection: "row", gap: 10 },
   flex: { flex: 1 },

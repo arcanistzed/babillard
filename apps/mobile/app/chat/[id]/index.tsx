@@ -11,7 +11,7 @@ import { MeetupCard } from "@/components/MeetupCard";
 import { messageTime, timeLeft } from "@/format";
 import { haptics } from "@/haptics";
 import { fonts, useTheme } from "@/theme";
-import { Chip, KeyboardScreen, T, useBottomPadding } from "@/ui";
+import { Chip, KeyboardScreen, LoadError, T, useBottomPadding } from "@/ui";
 import { useChat, type LocalMessage } from "@/useChat";
 import { isFrench, t } from "@/i18n";
 
@@ -81,6 +81,8 @@ export default function Chat() {
     const name = item.senderId ? (names.get(item.senderId) ?? t("Former member", "Ex-membre")) : "";
     // The list is newest first. A time goes under the last message of each run from one person.
     const next = reversed[index - 1];
+    const previous = reversed[index + 1];
+    const startsRun = !previous || previous.senderId !== item.senderId || previous.kind !== "text" || item.createdAt - previous.createdAt > SAME_RUN_MS;
     const endsRun = !next || next.senderId !== item.senderId || next.kind !== "text" || next.createdAt - item.createdAt > SAME_RUN_MS;
     return (
       // An inverted list flips its cells, so entering "from above" shows as rising from the composer.
@@ -96,7 +98,7 @@ export default function Chat() {
           style={[styles.bubbleRow, mine ? styles.bubbleRowMine : null]}
         >
           <View style={[styles.bubble, mine ? { backgroundColor: theme.ink } : { backgroundColor: theme.surface, borderColor: theme.line, borderWidth: 1 }, item.pending && !item.failed ? styles.pending : null]}>
-            {!mine && detail?.kind === "group" ? (
+            {!mine && startsRun && detail?.kind === "group" ? (
               <T variant="small" style={{ fontFamily: fonts.bodyBold }}>
                 {name}
               </T>
@@ -146,7 +148,11 @@ export default function Chat() {
         </View>
       ) : null}
 
-      {!loaded ? (
+      {conversation.isError && !detail && messages.length === 0 ? (
+        <View style={styles.loading}>
+          <LoadError message={t("Couldn't load this chat. Check your connection.", "Impossible de charger cette discussion. Vérifiez votre connexion.")} onRetry={() => void conversation.refetch()} />
+        </View>
+      ) : !loaded ? (
         <ActivityIndicator accessibilityLabel={t("Loading messages", "Chargement des messages")} size="large" style={styles.loading} />
       ) : (
         <FlatList

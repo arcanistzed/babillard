@@ -13,6 +13,8 @@ const light = {
   ink: "#15173D",
   muted: "#55597A",
   line: "#D5D8E8",
+  /** The edge of something tappable, at least 3:1 against paper and surface. */
+  control: "#777CA0",
   accent: "#C7146F",
   onAccent: "#FFFFFF",
   danger: "#B3261E",
@@ -25,6 +27,7 @@ const dark: typeof light = {
   ink: "#EEF0FA",
   muted: "#A9ADCB",
   line: "#34376B",
+  control: "#7F85BD",
   accent: "#FF6AAE",
   onAccent: "#15173D",
   danger: "#FF8A80",

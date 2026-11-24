@@ -1,12 +1,13 @@
 import { securityCode, type ConversationDetail, type Stance } from "@babillard/shared";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { router, useLocalSearchParams } from "expo-router";
-import { Alert, Pressable, ScrollView, StyleSheet, Switch, View } from "react-native";
-import { api } from "@/api";
+import { useState } from "react";
+import { ActivityIndicator, Alert, Pressable, ScrollView, StyleSheet, View } from "react-native";
+import { api, friendlyError } from "@/api";
 import { useAuth } from "@/auth";
 import { inviteToTopic } from "@/invite";
 import { fonts, useTheme } from "@/theme";
-import { Avatar, Button, T } from "@/ui";
+import { Avatar, Button, ErrorText, LoadError, T, Toggle, useScrollPadding } from "@/ui";
 import { t } from "@/i18n";
 
 const STANCE_LABELS: Record<Stance, string> = { for: t("For", "Pour"), against: t("Against", "Contre"), unsure: t("Not sure", "Hésitation") };
@@ -33,13 +34,18 @@ export default function ChatInfo() {
   const { me } = useAuth();
   const theme = useTheme();
   const queryClient = useQueryClient();
+  const padding = useScrollPadding();
+  const [error, setError] = useState<string | null>(null);
   const conversation = useQuery({ queryKey: ["conversation", id], queryFn: () => api.get<ConversationDetail>(`/conversations/${id}`) });
   const mute = useMutation({
     mutationFn: (muted: boolean) => api.post(`/conversations/${id}/mute`, { muted }),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["conversation", id] }),
+    onMutate: () => setError(null),
+    onError: (caught) => setError(friendlyError(caught)),
   });
   const detail = conversation.data;
-  if (!detail) return null;
+  if (conversation.isPending) return <ActivityIndicator accessibilityLabel={t("Loading chat details", "Chargement des détails")} size="large" style={styles.loading} />;
+  if (!detail) return <LoadError message={t("Couldn't load this chat. Check your connection.", "Impossible de charger cette discussion. Vérifiez votre connexion.")} onRetry={() => void conversation.refetch()} />;
 
   function confirmLeave() {
     Alert.alert(
@@ -54,7 +60,13 @@ export default function ChatInfo() {
         text: t("Leave group", "Quitter le groupe"),
         style: "destructive",
         onPress: async () => {
-          await api.post(`/conversations/${id}/leave`);
+          setError(null);
+          try {
+            await api.post(`/conversations/${id}/leave`);
+          } catch (caught) {
+            setError(friendlyError(caught));
+            return;
+          }
           await queryClient.invalidateQueries({ queryKey: ["inbox"] });
           router.replace("/inbox");
         },
@@ -65,7 +77,7 @@ export default function ChatInfo() {
   const blockedNames = detail.members.filter((member) => member.blockedByMe).map((member) => member.displayName);
 
   return (
-    <ScrollView contentContainerStyle={styles.body}>
+    <ScrollView contentContainerStyle={[padding, styles.body]}>
       <T variant="title">{detail.topic?.title ?? detail.title}</T>
       {detail.stanceSpread ? <StanceSpread spread={detail.stanceSpread} /> : null}
       {detail.kind === "group" && blockedNames.length ? (
@@ -119,10 +131,11 @@ export default function ChatInfo() {
 
       <View style={styles.setting}>
         <T variant="bodyBold">{t("Mute notifications", "Couper les notifications")}</T>
-        <Switch accessibilityLabel={t("Mute notifications", "Couper les notifications")} value={detail.muted} onValueChange={(value) => mute.mutate(value)} />
+        <Toggle label={t("Mute notifications", "Couper les notifications")} value={mute.isPending ? mute.variables : detail.muted} onValueChange={(value) => mute.mutate(value)} />
       </View>
 
       {detail.kind === "group" && detail.topic ? <Button label={t("Invite someone to this topic", "Inviter quelqu'un à ce sujet")} kind="secondary" onPress={() => inviteToTopic(detail.topic!)} /> : null}
+      {error ? <ErrorText>{error}</ErrorText> : null}
       {detail.kind === "group" ? <Button label={t("Leave group", "Quitter le groupe")} kind="danger" onPress={confirmLeave} /> : null}
     </ScrollView>
   );
@@ -130,7 +143,8 @@ export default function ChatInfo() {
 
 const styles = StyleSheet.create({
   code: { fontFamily: fonts.bodyBold, fontSize: 18, letterSpacing: 1 },
-  body: { padding: 20, gap: 22 },
+  loading: { flex: 1 },
+  body: { gap: 22 },
   section: { gap: 8 },
   bar: { flexDirection: "row", height: 14, borderRadius: 7, overflow: "hidden" },
   member: { flexDirection: "row", alignItems: "center", gap: 12, minHeight: 56, borderBottomWidth: StyleSheet.hairlineWidth },

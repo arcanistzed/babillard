@@ -5,7 +5,7 @@ import { useState } from "react";
 import { ActivityIndicator, Alert, SectionList, StyleSheet, View } from "react-native";
 import { api, friendlyError } from "@/api";
 import { useTheme } from "@/theme";
-import { Button, Chip, ChipRow, ErrorText, T } from "@/ui";
+import { Button, Chip, ChipRow, ErrorText, LoadError, T, useScrollPadding } from "@/ui";
 import { t } from "@/i18n";
 
 const STANCE_LABELS: Record<Stance, string> = { for: t("For", "Pour"), against: t("Against", "Contre"), unsure: t("Not sure", "J'hésite") };
@@ -13,6 +13,7 @@ const STANCE_LABELS: Record<Stance, string> = { for: t("For", "Pour"), against: 
 /** The topics someone joined, with their answer and whether a group opened, and the ones they passed on. */
 export default function YourTopics() {
   const theme = useTheme();
+  const padding = useScrollPadding();
   const queryClient = useQueryClient();
   const [error, setError] = useState<string | null>(null);
   const mine = useQuery({ queryKey: ["myTopics"], queryFn: () => api.get<MyTopics>("/deck/mine") });
@@ -59,14 +60,10 @@ export default function YourTopics() {
 
   if (mine.isPending) return <ActivityIndicator accessibilityLabel={t("Loading your topics", "Chargement de vos sujets")} size="large" style={styles.loading} />;
   if (!mine.data) {
-    return (
-      <View style={styles.body}>
-        <ErrorText>{t("Couldn't load your topics. Check your connection.", "Impossible de charger vos sujets. Vérifiez votre connexion.")}</ErrorText>
-        <Button label={t("Try again", "Réessayer")} kind="secondary" onPress={() => mine.refetch()} />
-      </View>
-    );
+    return <LoadError message={t("Couldn't load your topics. Check your connection.", "Impossible de charger vos sujets. Vérifiez votre connexion.")} onRetry={() => void mine.refetch()} />;
   }
 
+  const answersSomething = mine.data.joined.some((topic) => topic.kind === "question");
   const sections = [
     { key: "joined", title: t("Topics you joined", "Sujets que vous avez choisis"), data: mine.data.joined },
     ...(mine.data.passed.length ? [{ key: "passed", title: t("Topics you passed", "Sujets que vous avez passés"), data: mine.data.passed }] : []),
@@ -76,12 +73,17 @@ export default function YourTopics() {
     <SectionList
       sections={sections}
       keyExtractor={(item) => item.id}
-      contentContainerStyle={styles.body}
+      contentContainerStyle={[padding, styles.body]}
       stickySectionHeadersEnabled={false}
       ListHeaderComponent={error ? <ErrorText>{error}</ErrorText> : undefined}
       renderSectionHeader={({ section }) => (
         <View style={styles.header}>
           <T variant="heading">{section.title}</T>
+          {section.key === "joined" && answersSomething ? (
+            <T variant="small" muted>
+              {t("Your answers are never shown as yours. You can change or clear them.", "Vos réponses ne sont jamais présentées comme les vôtres. Vous pouvez les changer ou les effacer.")}
+            </T>
+          ) : null}
           {section.key === "joined" && section.data.length === 0 ? <T muted>{t("You haven't joined a topic yet. Swipe right on one in Topics.", "Vous n'avez encore choisi aucun sujet. Glissez vers la droite sur un sujet dans Sujets.")}</T> : null}
         </View>
       )}
@@ -100,11 +102,7 @@ export default function YourTopics() {
                     : t("Waiting for a group", "En attente d'un groupe")}
               </T>
               {item.kind === "question" ? (
-                <View style={styles.answer}>
-                  <T variant="small" muted>
-                    {t("Your answer. Nobody else sees it, and you can change it or leave it blank.", "Votre réponse. Personne d'autre ne la voit, et vous pouvez la changer ou la laisser vide.")}
-                  </T>
-                  <ChipRow accessibilityRole="radiogroup">
+                  <ChipRow accessibilityRole="radiogroup" accessibilityLabel={t("Your answer", "Votre réponse")}>
                     {(Object.keys(STANCE_LABELS) as Stance[]).map((stance) => (
                       <Chip
                         key={stance}
@@ -116,12 +114,11 @@ export default function YourTopics() {
                       />
                     ))}
                   </ChipRow>
-                </View>
               ) : null}
               {item.groupConversationId ? (
                 <Button label={t("Open the group", "Ouvrir le groupe")} kind="secondary" onPress={() => router.push(`/chat/${item.groupConversationId}`)} />
               ) : (
-                <Button label={t("Leave topic", "Quitter le sujet")} kind="quiet" disabled={busy} onPress={() => confirmLeave(item)} />
+                <Button label={t("Leave topic", "Quitter le sujet")} kind="quiet" disabled={busy} style={styles.leave} onPress={() => confirmLeave(item)} />
               )}
             </>
           )}
@@ -133,8 +130,8 @@ export default function YourTopics() {
 
 const styles = StyleSheet.create({
   loading: { flex: 1 },
-  body: { padding: 20, gap: 4 },
+  body: { gap: 4 },
   header: { gap: 6, paddingTop: 12, paddingBottom: 4 },
   row: { gap: 8, paddingVertical: 14, borderBottomWidth: StyleSheet.hairlineWidth },
-  answer: { gap: 6 },
+  leave: { alignSelf: "flex-start", paddingHorizontal: 0, minHeight: 44 },
 });
