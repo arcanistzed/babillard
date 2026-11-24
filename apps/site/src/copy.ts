@@ -95,14 +95,15 @@ export const copy = {
       ["Contact", "mailto:info@babillard.app"],
     ],
     phone: {
-      chips: ["All", "Society", "Humanities", "Arts"],
+      title: "Topics",
+      filter: "All topics",
+      tabs: ["Topics", "People", "Chats", "You"],
       walk: { fields: "Cities & urbanism and Environment & climate", title: "Walkable cities", blurb: "Why some places are pleasant to be in on foot.", nearby: "5 nearby" },
       vote: { fields: "Politics and Mathematics", title: "Should Canada replace first-past-the-post?", stances: ["For", "Against", "Not sure"], nearby: "2 nearby. You'd open the group." },
       skip: "Pass",
       like: "I'm in",
       opened: "A group on electoral reform just opened in Ottawa.",
       groupTitle: "Should Canada replace first-past-the-post?",
-      groupSub: "3 people",
       group: [
         ["Maya", "Has your vote ever felt wasted?"],
         ["Jon", "Every federal election in my riding, honestly."],
@@ -111,7 +112,6 @@ export const copy = {
         ["Jon", "Yes please"],
       ],
       pairName: "Sam",
-      pairSub: "Walkable cities",
       pairOpener: "You both picked Walkable cities. Where's the best walk in this city?",
       pair: [
         ["them", "The canal path in October, easily"],
@@ -125,8 +125,8 @@ export const copy = {
       meetPending: "2 yes so far, 3 needed",
       meetOn: "It's on",
       meetChips: ["I'll be there", "Maybe", "Can't make it"],
-      composer: "Message",
-      encrypted: "Encrypted",
+      composer: "Write a message",
+      meetUp: "Meet up",
     },
   },
   fr: {
@@ -181,14 +181,15 @@ export const copy = {
       ["Contact", "mailto:info@babillard.app"],
     ],
     phone: {
-      chips: ["Tous", "Société", "Humanités", "Arts"],
+      title: "Sujets",
+      filter: "Tous les sujets",
+      tabs: ["Sujets", "Personnes", "Discussions", "Vous"],
       walk: { fields: "Villes et urbanisme et Environnement et climat", title: "Villes marchables", blurb: "Pourquoi certains lieux sont agréables à pied.", nearby: "5 à proximité" },
       vote: { fields: "Politique et Mathématiques", title: "Le Canada devrait-il remplacer le scrutin uninominal à un tour?", stances: ["Pour", "Contre", "J'hésite"], nearby: "2 à proximité. Vous ouvririez le groupe." },
       skip: "Passer",
       like: "J'embarque",
       opened: "Un groupe sur la réforme électorale vient de s'ouvrir à Ottawa.",
       groupTitle: "Le Canada devrait-il remplacer le scrutin uninominal à un tour?",
-      groupSub: "3 personnes",
       group: [
         ["Maya", "Votre vote vous a-t-il déjà semblé inutile?"],
         ["Jon", "À chaque élection fédérale dans ma circonscription, franchement."],
@@ -197,7 +198,6 @@ export const copy = {
         ["Jon", "Oui, avec plaisir"],
       ],
       pairName: "Sam",
-      pairSub: "Villes marchables",
       pairOpener: "Vous partagez l'envie d'explorer Villes marchables. Quelle est la plus belle marche de cette ville?",
       pair: [
         ["them", "Le long du canal en octobre, sans hésiter"],
@@ -211,8 +211,8 @@ export const copy = {
       meetPending: "2 oui jusqu'ici, 3 requis",
       meetOn: "C'est confirmé",
       meetChips: ["J'y serai", "Peut-être", "Je ne peux pas"],
-      composer: "Message",
-      encrypted: "Chiffré",
+      composer: "Écrire un message",
+      meetUp: "Se voir",
     },
   },
 } as const;

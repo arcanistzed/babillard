@@ -29,18 +29,21 @@ const icons = {
   people: `<svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 4-6 8-6s8 2 8 6"/></svg>`,
   chats: `<svg viewBox="0 0 24 24"><path d="M4 5h16v11H9l-5 4z"/></svg>`,
   you: `<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/><circle cx="12" cy="10" r="3"/></svg>`,
-  lock: `<svg viewBox="0 0 24 24"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>`,
   back: `<svg viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7"/></svg>`,
+  info: `<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 11v6M12 7.5v.1"/></svg>`,
+  down: `<svg viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg>`,
+  calendar: `<svg viewBox="0 0 24 24"><rect x="4" y="5" width="16" height="16" rx="2"/><path d="M4 10h16M8 2v4M16 2v4"/></svg>`,
   pin: `<svg viewBox="0 0 24 24"><path d="M12 22s7-7 7-12a7 7 0 0 0-14 0c0 5 7 12 7 12z"/><circle cx="12" cy="10" r="2.5"/></svg>`,
 };
 
 function phone(lang: Lang): string {
   const p = copy[lang].phone;
   const tabBar = (active: string) =>
-    `<nav class="tabbar">${(["topics", "people", "chats", "you"] as const).map((k) => `<span class="${k === active ? "on" : ""}">${icons[k]}</span>`).join("")}</nav>`;
-  const chatHead = (title: string, sub: string, avatars: string[]) =>
-    `<header class="chathead">${icons.back}<span class="avatars">${avatars.map((a, i) => `<span class="av av${i}">${esc(a[0]!)}</span>`).join("")}</span><span class="who"><b>${esc(title)}</b><small>${icons.lock}${esc(p.encrypted)} · ${esc(sub)}</small></span></header>`;
-  const composer = `<div class="composer"><span>${esc(p.composer)}</span></div>`;
+    `<nav class="tabbar">${(["topics", "people", "chats", "you"] as const).map((k, i) => `<span class="${k === active ? "on" : ""}">${icons[k]}<small>${esc(p.tabs[i]!)}</small></span>`).join("")}</nav>`;
+  const chatHead = (title: string) => `<header class="chathead">${icons.back}<b>${esc(title)}</b>${icons.info}</header>`;
+  const message = (who: string, text: string, i?: number) =>
+    `<div class="msg ${who === "me" ? "me" : "them"}"${i === undefined ? "" : ` style="--i:${i}"`}><span>${who === "me" || who === "them" ? "" : `<b>${esc(who)}</b>`}${esc(text)}</span></div>`;
+  const composer = `<div class="composer"><b>${icons.calendar}${esc(p.meetUp)}</b><span>${esc(p.composer)}</span></div>`;
   const stances = `<div class="stances">${p.vote.stances.map((s, i) => `<span class="stance${i === 0 ? " pick" : ""}">${esc(s)}</span>`).join("")}</div>`;
   const vote = { fields: p.vote.fields, title: p.vote.title, bg: "#FF6A47", fg: "#15173D", question: true };
   const walk = { fields: p.walk.fields, title: p.walk.title, blurb: p.walk.blurb, bg: "#C93410", fg: "#FFFFFF" };
@@ -48,7 +51,7 @@ function phone(lang: Lang): string {
   return `<div class="phone" aria-hidden="true"><div class="screen">
   <div class="statusbar"><span>9:41</span><span class="dots"></span></div>
   <section class="scene scene-deck">
-    <div class="chips">${p.chips.map((c, i) => `<span class="chip${i === 0 ? " on" : ""}">${esc(c)}</span>`).join("")}</div>
+    <div class="deckhead"><b>${esc(p.title)}</b><span>${esc(p.filter)}${icons.down}</span></div>
     <div class="stack">
       <div class="card under">${flyer(vote, stances + `<p class="nearby">${esc(p.vote.nearby)}</p>`, 2).replace('<span class="tab"></span>', '<span class="tab next"></span>')}</div>
       <div class="card top">${flyer(walk, `<p class="nearby">${esc(p.walk.nearby)}</p>`, 5)}</div>
@@ -57,25 +60,25 @@ function phone(lang: Lang): string {
     ${tabBar("topics")}
   </section>
   <section class="scene scene-group">
-    ${chatHead(p.groupTitle, p.groupSub, ["Maya", "Jon", "Y"])}
+    ${chatHead(p.groupTitle)}
     <div class="log">
       <p class="sys">${esc(p.opened)}</p>
-      ${p.group.map(([who, text], i) => (who === "me" ? `<div class="msg me" style="--i:${i}"><span>${esc(text)}</span></div>` : `<div class="msg them" style="--i:${i}"><small>${esc(who)}</small><span>${esc(text)}</span></div>`)).join("")}
+      ${p.group.map(([who, text], i) => message(who, text, i)).join("")}
     </div>
     ${composer}
   </section>
   <section class="scene scene-pair">
-    ${chatHead(p.pairName, p.pairSub, ["Sam"])}
+    ${chatHead(p.pairName)}
     <div class="log">
       <p class="sys opener">${esc(p.pairOpener)}</p>
-      ${p.pair.map(([who, text], i) => `<div class="msg ${who}" style="--i:${i}"><span>${esc(text)}</span></div>`).join("")}
+      ${p.pair.map(([who, text], i) => message(who, text, i)).join("")}
     </div>
     ${composer}
   </section>
   <section class="scene scene-meet">
-    ${chatHead(p.groupTitle, p.groupSub, ["Maya", "Jon", "Y"])}
+    ${chatHead(p.groupTitle)}
     <div class="log">
-      ${p.group.slice(-2).map(([who, text]) => (who === "me" ? `<div class="msg me"><span>${esc(text)}</span></div>` : `<div class="msg them"><small>${esc(who)}</small><span>${esc(text)}</span></div>`)).join("")}
+      ${p.group.slice(-2).map(([who, text]) => message(who, text)).join("")}
       <p class="sys">${esc(p.meetLine)}</p>
       <div class="meetup" style="--i:1">
         <b class="when">${esc(p.meetWhen)}</b>
